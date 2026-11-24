@@ -3,6 +3,7 @@
 // the stand-in only: coin flips and a scripted perfect player.
 
 #include "run/run_flags.hpp"
+#include "run/task_ticker.hpp"
 #include "world/plug.hpp"
 #include "world/plug_print.hpp"
 #include "world/standin.hpp"
@@ -77,47 +78,27 @@ static bool run_life(Driver driver, const RunFlags& flags, std::vector<double>& 
         genome_learning_off(genome);
     }
     Blob* blob = birth(driver, genome, flags.seed);
-    Task task;
-    task_reset(task, flags.task, flags.task_settings, flags.task_seed);
-    Plug plug;
-    if (!plug_attach(plug, *blob, task_shape(task), flags.plug)) {
+    TaskTicker tt;
+    if (!ticker_start(tt, *blob, flags)) {
         death(driver, blob);
         return false;
     }
-    TaskSense sense;
-    int ticks = flags.plug.ticks_per_step;
 
-    for (int64_t step = 0; step < flags.steps; step++) {
-        task_sense(task, sense);
-        plug_set_lines(plug, sense);
-        int perfect_move = task_perfect_move(task);
-
-        // the blob ticks several times per step; motor spikes are counted over all of them
-        TaskStepIn in;
-        in.sensed_neurons = plug.sensed_neurons;
-        for (int t = 0; t < ticks; t++) {
-            plug_write(plug, *blob);
-            tick(driver, *blob, plug, perfect_move);
-            if (t == 0) {
-                in.surprise = (int)blob->stats.surprise;
-            }
-            plug_count(plug, *blob);
+    // the blob ticks several times per step; the ticker senses, counts motor spikes, and
+    // has the answer on the step's last tick (then rest ticks, if any, before the next)
+    int64_t step = 0;
+    while (step < flags.steps) {
+        int perfect_move = ticker_before_tick(tt, *blob);
+        tick(driver, *blob, tt.plug, perfect_move);
+        if (!ticker_after_tick(tt, *blob)) {
+            continue;
         }
-        in.move = plug_choice(plug);
-
-        int valence = task_step(task, in);
-        if (valence != 0) {
-            reward(driver, *blob, valence);
-            plug_reward(plug, valence);
-            // optional quiet ticks so good/bad lands on this step's activity, not the next
-            plug_quiet_lines(plug);
-            for (int t = 0; t < flags.plug.rest_ticks; t++) {
-                plug_write(plug, *blob);
-                tick(driver, *blob, plug, -1);
-            }
+        if (tt.valence != 0) {
+            reward(driver, *blob, tt.valence);
         }
-        if ((step + 1) % flags.window == 0) {
-            scores.push_back(task_window_score(task));
+        step++;
+        if (step % flags.window == 0) {
+            scores.push_back(task_window_score(tt.task));
         }
     }
     death(driver, blob);
