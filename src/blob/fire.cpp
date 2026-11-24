@@ -1,5 +1,8 @@
 #include <cstddef>
 #include <cstring>
+#if defined(__AVX512F__)
+#include <immintrin.h>
+#endif
 
 #include "blob/blob.hpp"
 #include "blob/random_words.hpp"
@@ -44,6 +47,32 @@ static inline void add_far_slot(int32_t* __restrict drive, const uint64_t* __res
         int excite = __builtin_popcountll(s[b] & a0[b]) + 4 * __builtin_popcountll(s[b] & a1[b]);
         drive[b] += excite + (excite >= bt ? bonus : 0);
     }
+}
+
+// each neuron's word from one source tile at its own delay: words[b] = column[delay[b]],
+// where column holds that tile's 16 ring maps by delay. with AVX-512 the column is two
+// registers and the pick is one permute per 8 neurons; otherwise one select pass per delay
+// value in the genome's range (that vectorizes too, where a plain table lookup does not).
+static inline void pick_by_delay(uint64_t* __restrict words, const uint64_t* column,
+                                 const uint8_t* __restrict delay, int delay_min, int delay_max) {
+#if defined(__AVX512F__)
+    (void)delay_min, (void)delay_max;
+    __m512i low = _mm512_loadu_si512(column);
+    __m512i high = _mm512_loadu_si512(column + 8);
+    for (int b = 0; b < TILE_NEURONS; b += 8) {
+        __m512i index = _mm512_cvtepu8_epi64(_mm_loadl_epi64((const __m128i*)(delay + b)));
+        _mm512_store_si512(words + b, _mm512_permutex2var_epi64(low, index, high));
+    }
+#else
+    for (int b = 0; b < TILE_NEURONS; b++) {
+        words[b] = 0;
+    }
+    for (int d = delay_min; d <= delay_max; d++) {
+        for (int b = 0; b < TILE_NEURONS; b++) {
+            words[b] = delay[b] == d ? column[d] : words[b];
+        }
+    }
+#endif
 }
 
 // 64 flags of 0 or 1, one per byte, into one word (bit b = flag b). eight bytes at a time:
@@ -103,18 +132,13 @@ void tick_fire(Blob& blob, uint64_t* out) {
                 add_slot_shared(drive, s & ~inh[src], s & inh[src], a0, a1, gain, bt, bonus);
                 continue;
             }
-            // each neuron picks its own age of this source tile: one select pass per delay
-            // in the genome's range, which vectorizes where a table lookup would not
-            const uint8_t* __restrict delay = tile_delay + k * TILE_NEURONS;
-            for (int b = 0; b < TILE_NEURONS; b++) {
-                words[b] = 0;
+            // each neuron picks its own age of this source tile
+            alignas(64) uint64_t column[HISTORY];
+            for (int d = 0; d < HISTORY; d++) {
+                column[d] = ring[offset[d] + src];
             }
-            for (int d = g.local_delay_min; d <= g.local_delay_max; d++) {
-                uint64_t s = ring[offset[d] + src];
-                for (int b = 0; b < TILE_NEURONS; b++) {
-                    words[b] = delay[b] == d ? s : words[b];
-                }
-            }
+            pick_by_delay(words, column, tile_delay + k * TILE_NEURONS, g.local_delay_min,
+                          g.local_delay_max);
             add_slot_own(drive, words, inh[src], a0, a1, gain, bt, bonus);
         }
         // the 2 far slots: each neuron its own tile and delay
