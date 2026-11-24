@@ -14,8 +14,10 @@ Three jobs run side by side on separate folders, then get put together.
      report plainly that it does not and what was tried.
    - A stage 0 run: a million ticks idle and with random input, activity per sector logged.
 2. **Viewer** (`src/view/`, `shaders/`, `scripts/offscreen.sh`).
-   - SDL3 + Vulkan + ImGui, structured like `~/Coding/Graphics/foolswud` (`src/vk`,
-     `src/app`). Vendor ImGui the same way.
+   - SDL3 + Vulkan + ImGui, following Mans In My House (`~/Coding/GameDev/mansinmyhouse`):
+     Gubsy/GView for the window, input, settings and ImGui layer, and its `src/renderer`
+     conventions for the Vulkan side. (First briefed against foolswud by mistake; the owner
+     corrected it the same day.)
    - Draws only from a plain snapshot struct it owns (`ViewFrame`), filled from a `Blob` by
      one function. A fake filler stands in until the core lands.
    - The views listed under "The viewer" in the design. Headless capture to PNG.

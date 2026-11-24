@@ -63,3 +63,6 @@ A request that becomes work also gets a line in `docs/plan.md`.
 - "regarding the delays. i dont know if delay ends up being extremely important ...
   everything in the world is some form of time pattern" -> every slot has a delay, and a
   genome with all delays at 1 stays valid so it can be measured.
+- The viewer was first modelled on foolswud. Owner: "foolswud is a tiny little thing. i would
+  really rather we had focused on mans in my house something i put tons of work into" ->
+  Mans In My House is the reference for structure, renderer and libraries. Never foolswud.

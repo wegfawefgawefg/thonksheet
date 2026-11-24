@@ -11,7 +11,9 @@ the owner asked for, in his words, with dates. Add to it when he asks for someth
 
 ## Style
 
-C+- as in `~/Coding/AGENTS.md`, splonks-cpp and Mans In My House: plain structs, free
+C+- as in `~/Coding/AGENTS.md` and Mans In My House (`~/Coding/GameDev/mansinmyhouse`), which
+is the reference codebase for structure, rendering and the g* libraries (Gubsy, GView, gfxp,
+gsexp). Read it, never edit it. In short: plain structs, free
 functions, direct dispatch, a thin `main.cpp` with the loop visible. No classes with behavior,
 no templates of our own, no virtuals, no inheritance. Files stay under 500 lines and carry a
 meaningful name (no `utils`, no `common`). Terse lowercase "what" comments above code
