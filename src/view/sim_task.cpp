@@ -116,7 +116,7 @@ static void line_label(const Plug& plug, TaskKind kind, int line, char* out, int
         } else {
             std::snprintf(out, size, "cue %d", i);
         }
-    } else if (line == plug.first_sheet) {
+    } else if (line == plug.first_sheet && plug.first_number > plug.first_sheet) {
         std::snprintf(out, size, "bitmap %dx%d", plug.shape.sheet_w, plug.shape.sheet_h);
     } else if (line >= plug.first_number && plug.shape.number_lines > 0 &&
                (line - plug.first_number) % plug.shape.number_lines == 0) {

@@ -298,7 +298,8 @@ void task_panel(State& s) {
 }
 
 // each named line's name just above its group on the sheet, on a dark patch so it reads
-// over firing cells
+// over firing cells. A name that would cover one already drawn is left out (small sheets);
+// zooming in brings it back.
 void task_labels(State& s) {
     const ViewFrame& f = s.frame;
     if (!f.task.on || !s.view.task_marks || s.mode == RUN_TURBO) {
@@ -308,6 +309,7 @@ void task_labels(State& s) {
     const SheetPlace p = sheet_place(r, f.tiles_w * 8, f.tiles_h * 8, s.view);
     ImDrawList* dl = ImGui::GetBackgroundDrawList();
     dl->PushClipRect(ImVec2(r.x, r.y), ImVec2(r.x + r.w, r.y + r.h), true);
+    std::vector<ImVec4> drawn; // x0, y0, x1, y1 of each name drawn
     for (const TaskLine& l : f.task.lines) {
         if (l.label[0] == '\0') {
             continue;
@@ -318,6 +320,15 @@ void task_labels(State& s) {
                                                      : ImVec4(0.92f, 0.94f, 0.96f, 1.0f);
         const ImVec2 size = ImGui::CalcTextSize(l.label);
         const ImVec2 at(p.origin_x + l.x0 * p.cell_px, p.origin_y + l.y0 * p.cell_px - size.y - 3);
+        const ImVec4 box(at.x - 2, at.y - 1, at.x + size.x + 2, at.y + size.y + 1);
+        bool covers = false;
+        for (const ImVec4& d : drawn) {
+            covers = covers || (box.x < d.z && d.x < box.z && box.y < d.w && d.y < box.w);
+        }
+        if (covers) {
+            continue;
+        }
+        drawn.push_back(box);
         dl->AddRectFilled(ImVec2(at.x - 2, at.y - 1), ImVec2(at.x + size.x + 2, at.y + size.y + 1),
                           IM_COL32(11, 13, 18, 210));
         dl->AddText(at, color(c), l.label);
