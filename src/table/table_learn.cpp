@@ -15,6 +15,12 @@
 //   mode 2: the same with the sign turned over: better than average moves a flipped
 //           neuron back toward its table's answer, worse moves it toward what noise did.
 //           (mode 1 settles on the wrong answer here; see the results doc.)
+//   mode 3: mode 1 with the flip's average taken out: an unflipped neuron is graded too,
+//           with the same chance a flip has, toward its table's answer on better than
+//           average. a flip that did not change the answer then nets to zero in each
+//           context, where in mode 1 it is pushed toward the flip in contexts that do better
+//           than the average and toward the table in those that do worse, which leads to the
+//           wrong answer (docs/results-2026-11-24-noise-sign.md).
 // with baseline (always in mode 1) the direction is reward minus its running average, and
 // the chance shrinks in proportion to that difference.
 void table_reward(Blob& blob, int valence) {
@@ -24,7 +30,7 @@ void table_reward(Blob& blob, int valence) {
         return;
     }
     Blob& b = tb.shell;
-    bool noise_mode = tg.learn_mode == 1 || tg.learn_mode == 2;
+    bool noise_mode = tg.learn_mode >= 1 && tg.learn_mode <= 3;
     bool toward = valence > 0;
     int shift = tg.reward_shift;
     if (noise_mode || tg.baseline) {
@@ -58,6 +64,10 @@ void table_reward(Blob& blob, int valence) {
             }
             if (noise_mode) {
                 graded &= flips[t];
+            }
+            if (tg.learn_mode == 3) {
+                graded |= ~b.sensor[t] & ~flips[t] &
+                          sparse_word(tb.rng, tg.noise_shift + tg.reward_shift);
             }
             // a step toward fire also needs this, so blind grading drifts toward quiet
             uint64_t may_rise = graded ? sparse_word(tb.rng, rise_shift) : 0;
