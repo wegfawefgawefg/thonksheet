@@ -32,3 +32,12 @@ In other words a sheet that organises itself, with reinforcement mostly at the e
 Where most ideas will fail: teaching neurons deep inside the sheet from reward alone. That
 is the hard, unsolved part. The find worth the whole exercise would be any rule that makes
 inner neurons measurably better for a task than unsupervised wiring already makes them.
+
+## 2026-11-24, on richness against credit
+
+9. **On today's small tasks the binding problem is credit, not richness.** (60%)
+10. **A frozen sheet with a learned readout already supports order-of-two-cues and
+    both-but-not-either,** and supports more of them after a reward-free life and on a
+    bigger sheet. (55%) If this holds, the owner's thesis (richness turns learning into
+    selection) is carrying real weight; if a frozen sheet fails these however large it is,
+    the missing piece is credit reaching the inside.

@@ -138,3 +138,10 @@ Status words: idea, building, tried (with result), kept, dropped.
 48. **Pool before deciding.** [known] credit. A motor cell listens to many weak neurons
     through one hop of relay cells that each sum a neighbourhood, so thinly spread
     information gets gathered before the reward rule has to find it. *idea*
+49. **Richness test.** [ours] The owner's thesis: a sheet rich enough in features (in time,
+    shape and place) turns learning into selection, so deep credit is not needed. Test it
+    directly: freeze the sheet, learn only the readout, on tasks whose answer needs a
+    feature the input does not hand over (which of two cues came first; two cues both on
+    but not either alone; the same shape in a new place; a gap of N ticks). Count how many
+    of these a frozen sheet already supports, at birth and after a reward-free life, and how
+    that grows with sheet size. *idea*
