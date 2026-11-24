@@ -49,7 +49,12 @@ def jobs_for(life, readout):
         "beat": (["--task", "beat", "--period", "4"] + plain, 1),
         "sequence": (["--task", "sequence"] + plain, 1),
         "catch": (["--task", "catch", "--catch-size", "4", "4"] + plain, 1),
-        "cartpole": (["--task", "cartpole", "--sensor-side", "2"] + plain, 1),
+        # 24 number lines need 2x2 sensor groups. lean rewards every step; sparse only every
+        # 25 steps up, the slow-credit row
+        "cartpole": (["--task", "cartpole", "--sensor-side", "2", "--cart-reward", "lean",
+                      "--number-code", "place"] + plain, 1),
+        "cartpole-sparse": (["--task", "cartpole", "--sensor-side", "2", "--cart-reward",
+                             "sparse", "--number-code", "place"] + plain, 1),
         "reach": (["--reach"] + life["reach"], 0.2),
         "retention": (["--task", "echo", "--retention", "echo", "--steps", s, "--window",
                        str(life["phase_window"]), "--retest", str(life["retest"])], 2.3),
@@ -82,7 +87,9 @@ def rows_for():
         ("a sense of time", "sequence, surprise falling (late - early)", "sequence",
          "late_minus_early"),
         ("acting in a world", "catch 4x4", "catch", "late"),
-        ("acting in a world", "cartpole (steps per fall)", "cartpole", "late"),
+        ("acting in a world", "cartpole, lean reward (steps per fall)", "cartpole", "late"),
+        ("acting in a world", "cartpole, sparse reward (steps per fall)", "cartpole-sparse",
+         "late"),
         ("reach", "cue readable how far (tiles)", "reach", "reach"),
     ]
     for d in range(1, 8):

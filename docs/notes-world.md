@@ -200,7 +200,8 @@ scripts/scoreboard.sh                            all scorecards into docs/scoreb
 Rows and their blobrun lines are in `scripts/suite.py` (`jobs_for`, `rows_for`). The
 standard life is `scripts/task.sh`'s: 20 ticks a step, 3x3 groups, 40,000 steps, windows of
 1,000. Exceptions: catch is 4x4 (6x6 does not fit at 3x3 groups), cartpole uses 2x2 sensor
-groups (24 number lines do not fit at 3x3), retention and idle use windows of 200 so the
+groups (24 number lines do not fit at 3x3) and the place number code, run twice: with
+the lean reward (the main row) and the sparse one (slow credit), retention and idle use windows of 200 so the
 first retest window is short. Everything after the name is appended to every call, so it
 overrides the row's own flags. Runs and logs go to `out/suite/<name>/`; the scorecard to
 `out/scorecards/<name>.csv` (committed; the rest of `out/` is not). Speed is measured last,
