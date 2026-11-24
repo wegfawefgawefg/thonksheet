@@ -30,6 +30,17 @@ in its own dated doc.
 - **Scale.** 4,096 neurons is far too few for anything past the first reflex tasks; it is
   the size for checking the learning rule fast. Next: the tick across all cores (it is a
   stencil), then sheets of 100,000 to 1,000,000 neurons, then the GPU.
+- **Throughput numbers in `blobbench`.** Print, per size: neuron updates per second,
+  possible-synapse checks per second (704 per neuron per tick), real synaptic events per
+  second (a spike arriving over an existing connection), signal bits per tick (entropy of
+  the spike map), and stored bits (connections chosen plus their strengths). These are the
+  numbers to set beside a float network's multiply-adds and weights. Owner: "the total
+  throughput of the machine i think can be determined no? and matched to different neural
+  networks?"
+- **Fewer slots per neuron.** A neuron scans 704 possible sources to use at most 96. Let
+  each neuron listen to a drawn subset of its 9 local tiles (say 4) plus the far slots:
+  about half the work and half the memory per neuron, and more varied listening areas. A
+  genome number; measure learning and speed against the full 9.
 - **Fine locality inside a tile**, as a birth and growth preference by cell distance, also a
   genome number.
 
