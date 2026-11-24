@@ -316,7 +316,7 @@ Ticks per second. With learning off the ratio is 3.6x, 3.8x, 2.7x.
 | bytes per neuron | 82 (72 mask, 1 threshold, 8 for the two 32-deep rings, the rest per tile) | 208 (176 for two weight planes, 11 delays, 8 far tiles, 9 per-neuron state, ring) |
 | bytes per neuron with least recently useful | 155 | |
 | AND+popcounts per neuron per tick | 18 (9 slots x excitatory, inhibitory) | 44 plus a delay pick per slot |
-| lines of code, engine only (no blank or comment-only lines) | 534 in `src/minimal/` | 1,047 in `src/blob/` |
+| lines of code, engine only (no blank or comment-only lines) | 543 in `src/minimal/` | 1,047 in `src/blob/` |
 | mechanisms | 4 (popcount neuron, threshold regulation, noise-graded swaps under a budget, co-activity swaps) | about 21 |
 
 At 1M neurons both fall out of cache (75 MB of masks against 218 MB of weights), and the
