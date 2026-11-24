@@ -145,3 +145,10 @@ Status words: idea, building, tried (with result), kept, dropped.
     but not either alone; the same shape in a new place; a gap of N ticks). Count how many
     of these a frozen sheet already supports, at birth and after a reward-free life, and how
     that grows with sheet size. *idea*
+50. **The minimal engine.** [ours] A fresh, tiny engine with three things only: a neuron is
+    a popcount over a mask against a threshold; a synapse changes by chance on an outcome,
+    graded only where the spike was noise, under a per-neuron budget; each neuron keeps its
+    own firing rate. Plus wiring by co-activity, switchable. Does it match the 21-mechanism
+    engine? *building*
+51. **The suite.** One script scores any engine on every property in `docs/bench.md` and
+    writes a scorecard; a second joins them into `docs/scoreboard.md`. *building*
