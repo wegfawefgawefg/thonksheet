@@ -62,3 +62,11 @@ engine list. That is what lets many agents work at once without colliding.
 - No wiring at birth that solves a task.
 - If a plain method beats a brain-style one, that is a result to build on.
 - A finding that only holds at a cost the hardware cannot pay is not a finding.
+
+## Sharing the machine
+
+The owner capped the CPU clock at about 4.6 GHz on 2026-11-24 because agents' runs were
+taking it to 96 C. So: an agent runs at most 2 single-threaded jobs at once, always under
+`nice -n 19`. Speed numbers taken while other agents are running, or after the cap, are
+not comparable with earlier ones: say which it was beside every ticks-per-second figure,
+and take the figures that matter on a quiet machine.
