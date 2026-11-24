@@ -28,7 +28,9 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
 5. **Memory that is specific to the situation holds more.** [likely] Table neurons, where a
    neuron stores a separate answer for each pattern of its inputs, learn four cues (0.68)
    where both popcount engines manage 0.31 to 0.41, and reach one tile further. The cost
-   is no speed gain on a CPU.
+   is no speed gain on a CPU. In the suite they are also the only engine that learns a
+   second task after the first (two new cues and buttons: 0.96, against 0.13 and 0.11) and
+   still has the first afterwards (0.61 at once, 0.90 after a short retest).
 6. **The sheet makes its own variety.** [likely] Switching injected noise off changes
    nothing in the full engine; rules that grade only injected-noise spikes lose in two
    engines out of three.
