@@ -83,6 +83,8 @@ static const GenomeField fields[] = {
     {"noise_learn_shift", &Genome::noise_learn_shift},
     {"noise_trace_ticks", &Genome::noise_trace_ticks},
     {"reward_average_shift", &Genome::reward_average_shift},
+    {"noise_learn_sign", &Genome::noise_learn_sign},
+    {"noise_learn_pair", &Genome::noise_learn_pair},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

@@ -205,6 +205,8 @@ static const MinimalField fields[] = {
     {"cowire_on", &MinimalGenome::cowire_on},
     {"cowire_shift", &MinimalGenome::cowire_shift},
     {"cowire_needs_input", &MinimalGenome::cowire_needs_input},
+    {"noise_sign", &MinimalGenome::noise_sign},
+    {"noise_pair", &MinimalGenome::noise_pair},
 };
 
 void apply_minimal_args(int argc, char** argv, MinimalGenome& mg) {

@@ -44,6 +44,11 @@ struct MinimalGenome {
     int cowire_on = 1;          // wiring by co-activity
     int cowire_shift = 6;       // on firing, chance to swap one connection for a just-active source
     int cowire_needs_input = 0; // 1: co-activity wiring only while a sensor line is attached
+    // idea 57 (docs/results-2026-11-24-noise-sign.md). noise_sign -1 turns the reward rule
+    // over. noise_pair 1 also grades neurons that stayed quiet on a tick, at the noise chance,
+    // the other way, which takes the mean out of the rule.
+    int noise_sign = 1;
+    int noise_pair = 0;
 };
 
 struct MinimalStats {
