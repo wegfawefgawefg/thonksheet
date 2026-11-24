@@ -43,6 +43,32 @@ to earn its complexity:
    and looks up a 64-entry table of tiny counters. One lookup per tick, any function of its
    inputs, and it is the cell FPGAs are made of. Learning nudges the entry that was just used.
 
+## The rule train (agreed 2026-11-24)
+
+The sheet, the tasks, the viewer and the sweep stay fixed. The learning rule is the part
+that changes: one rule, one file, picked by `learn_mode`, run up the same ladder on the same
+seeds, one table. Each is marked known or new so we know when we are off the map.
+
+Two separate problems, tested separately:
+- **Carrying:** does a cue reach across N tiles at all? Measure how far a cue can be read
+  from activity, at birth and after a life with no reward. Needs no reward rule.
+- **Credit:** given the cue arrives, does good/bad wire it to the right button without
+  saturating?
+
+Rules, in the order to try them:
+1. Noise is the experiment (known rule; exact noise bit is ours). Credit. *being built*
+2. A budget per neuron: every strengthening is paid for by a weakening elsewhere on the same
+   neuron (known idea). Credit, aimed at saturation.
+3. Causal credit: only a source that fired exactly its slot's delay before the target fired
+   gets graded (known family). Credit, sharper.
+4. Every neuron predicts: each neuron learns to guess its own next firing from its delayed
+   inputs, no reward; reward only acts at the motor cells (known family). Carrying.
+5. Selection among tiles: copy the masks of tiles that were active before good outcomes over
+   tiles that did poorly (new, as far as we know). Both.
+6. Learned delays: move a slot's delay by one tick, by chance, on an outcome (rare). Carrying.
+7. Table neurons, a different neuron altogether (old idea, new on this sheet). Both.
+Baselines kept alongside: frozen blob with learned readout, random flips.
+
 ## Asked for, queued behind the gate
 
 - **Layers inside a tile.** Split the 64 bit positions into input, middle and output groups;
