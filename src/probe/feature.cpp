@@ -13,6 +13,7 @@
 // reader of that tile could get, so it is an upper bound on what any readout can learn.
 
 #include "blob/blob.hpp"
+#include "probe/linear_fit.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -128,6 +129,9 @@ int probe_feature(int argc, char** argv) {
     int cue_y = int_arg(argc, argv, "--cue-y", 1);
     uint64_t seed = (uint64_t)int_arg(argc, argv, "--seed", 1);
     const char* label = text_arg(argc, argv, "--label", "run");
+    // --linear 1: also fit a plain linear reader to the same counts (idea 58)
+    bool linear = int_arg(argc, argv, "--linear", 0) != 0;
+    LinearData kept;
 
     Blob* blob = blob_birth(genome, seed);
     int cue_tile = cue_y * blob->tiles_w + cue_x;
@@ -174,6 +178,13 @@ int probe_feature(int argc, char** argv) {
         }
         measured++;
         seen[t.label]++;
+        if (linear) {
+            for (int n = 0; n < neurons; n++) {
+                int c = count[(size_t)n];
+                kept.counts.push_back((uint8_t)(c < 255 ? c : 255));
+            }
+            kept.label.push_back(t.label);
+        }
         for (int n = 0; n < neurons; n++) {
             sum[(size_t)(t.label * neurons + n)] += count[(size_t)n];
             squares[(size_t)(t.label * neurons + n)] += (double)count[(size_t)n] * count[(size_t)n];
@@ -211,6 +222,13 @@ int probe_feature(int argc, char** argv) {
         std::printf(" %6.2f", readable[d] / tiles_at[d]);
     }
     std::printf("\n");
+    if (linear) {
+        kept.neurons = neurons;
+        kept.tiles_w = blob->tiles_w;
+        kept.tiles_h = blob->tiles_h;
+        kept.classes = 2;
+        linear_report(kept, label, cue_tile, {});
+    }
     blob_free(blob);
     return 0;
 }
