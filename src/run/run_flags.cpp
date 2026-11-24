@@ -61,6 +61,9 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             return false;
         }
         const char* value = argv[++i];
+        if (std::strncmp(flag, "--g.", 4) == 0) {
+            continue; // a genome number, read by apply_genome_args
+        }
         if (std::strcmp(flag, "--task") == 0) {
             if (!task_from_name(value, flags.task)) {
                 std::fprintf(stderr, "blobrun: no task '%s'\n%s", value, usage);

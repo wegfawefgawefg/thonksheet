@@ -91,8 +91,8 @@ static void fill_histograms(ViewFrame& f, const Blob& b) {
             if (src >= b.tile_count) {
                 continue;
             }
-            const uint64_t w0 = b.w0[n * SLOTS + k];
-            const uint64_t w1 = b.w1[n * SLOTS + k];
+            const uint64_t w0 = b.w0[blob_weight_index(n, k)];
+            const uint64_t w1 = b.w1[blob_weight_index(n, k)];
             const uint64_t any = w0 | w1;
             const int connected = std::popcount(any);
             f.weight_levels[0] += TILE_NEURONS - connected;
@@ -114,10 +114,9 @@ static void fill_histograms(ViewFrame& f, const Blob& b) {
     }
 }
 
-// the one place a slot's delay is read: far slots have far_delay, local slots one tick.
-// When blob.hpp has slot_delay[neuron * SLOTS + slot] this becomes that one line.
+// the one place a slot's delay is read
 static int slot_delay(const Blob& b, int neuron, int slot) {
-    return slot < LOCAL_SLOTS ? 1 : b.far_delay[neuron * FAR_SLOTS + slot - LOCAL_SLOTS];
+    return b.slot_delay[blob_weight_index(neuron, slot)];
 }
 
 static Link make_link(const Blob& b, int neuron, int strength, bool far) {
@@ -139,7 +138,7 @@ static void fill_links(Selected& s, const Blob& b, int n) {
         if (src >= b.tile_count) {
             continue;
         }
-        const uint64_t any = b.w0[n * SLOTS + k] | b.w1[n * SLOTS + k];
+        const uint64_t any = b.w0[blob_weight_index(n, k)] | b.w1[blob_weight_index(n, k)];
         for (uint64_t bits = any; bits != 0; bits &= bits - 1) {
             const int bit = std::countr_zero(bits);
             Link l =

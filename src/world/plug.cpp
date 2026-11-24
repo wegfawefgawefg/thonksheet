@@ -34,10 +34,10 @@ static bool in_mask(const uint64_t* mask, int neuron) {
 
 // the side x side neurons of one group, row by row
 static bool fill_group(const Blob& blob, const uint64_t* mask, int cell_x, int cell_y, int side,
-                       int* out) {
+                       int stride, int* out) {
     for (int dy = 0; dy < side; dy++) {
         for (int dx = 0; dx < side; dx++) {
-            int n = blob_neuron_at(blob, cell_x + dx, cell_y + dy);
+            int n = blob_neuron_at(blob, cell_x + dx * stride, cell_y + dy * stride);
             if (!in_mask(mask, n)) {
                 return false;
             }
@@ -45,6 +45,13 @@ static bool fill_group(const Blob& blob, const uint64_t* mask, int cell_x, int c
         }
     }
     return true;
+}
+
+// sensor and motor cells are lattices (every stride-th cell), and a signal fades about 3x
+// per tile, so blocks are packed from the corner of their area nearest the other area:
+// sensing and acting then sit a tile or two apart
+static int near_origin(int grid, int at, int span, bool from_far_end) {
+    return from_far_end ? grid - (at + span) : at;
 }
 
 // place a block of w x h sensor lines (row-major) starting at line index `first`
@@ -56,14 +63,17 @@ static bool place_sensor_block(Plug& plug, const Blob& blob, Shelf& shelf, int f
     }
     const Genome& g = blob.genome;
     int side = plug.settings.sensor_side;
+    int pitch = side * g.sensor_stride;
+    gx = near_origin(shelf.grid_w, gx, w, g.motor_x + g.motor_w / 2 > g.sensor_x + g.sensor_w / 2);
+    gy = near_origin(shelf.grid_h, gy, h, g.motor_y + g.motor_h / 2 > g.sensor_y + g.sensor_h / 2);
     for (int ly = 0; ly < h; ly++) {
         for (int lx = 0; lx < w; lx++) {
             int line = first + ly * w + lx;
-            plug.sensor_cell_x[line] = g.sensor_x + (gx + lx) * side;
-            plug.sensor_cell_y[line] = g.sensor_y + (gy + ly) * side;
+            plug.sensor_cell_x[line] = g.sensor_x + (gx + lx) * pitch;
+            plug.sensor_cell_y[line] = g.sensor_y + (gy + ly) * pitch;
             int* group = &plug.sensor_neuron[line * PLUG_MAX_GROUP];
             if (!fill_group(blob, blob.sensor, plug.sensor_cell_x[line], plug.sensor_cell_y[line],
-                            side, group)) {
+                            side, g.sensor_stride, group)) {
                 std::fprintf(stderr, "plug: sensor line %d lands off the sensor neurons\n", line);
                 return false;
             }
@@ -76,8 +86,8 @@ static bool lay_sensors(Plug& plug, const Blob& blob, const TaskShape& shape) {
     const Genome& g = blob.genome;
     int side = plug.settings.sensor_side;
     Shelf shelf;
-    shelf.grid_w = g.sensor_w / side;
-    shelf.grid_h = g.sensor_h / side;
+    shelf.grid_w = g.sensor_w / (side * g.sensor_stride);
+    shelf.grid_h = g.sensor_h / (side * g.sensor_stride);
 
     int numbers_total = shape.numbers * shape.number_lines;
     plug.first_single = 2;
@@ -115,8 +125,9 @@ static bool lay_motors(Plug& plug, const Blob& blob, const TaskShape& shape) {
     const Genome& g = blob.genome;
     int side = plug.settings.motor_side;
     Shelf shelf;
-    shelf.grid_w = g.motor_w / side;
-    shelf.grid_h = g.motor_h / side;
+    shelf.grid_w = g.motor_w / (side * g.motor_stride);
+    shelf.grid_h = g.motor_h / (side * g.motor_stride);
+    int pitch = side * g.motor_stride;
     plug.motor_lines = shape.motors;
     if (plug.motor_lines > PLUG_MAX_MOTOR_LINES) {
         std::fprintf(stderr, "plug: %d motor lines, at most %d\n", plug.motor_lines,
@@ -129,11 +140,13 @@ static bool lay_motors(Plug& plug, const Blob& blob, const TaskShape& shape) {
             std::fprintf(stderr, "plug: motor lines do not fit the motor region\n");
             return false;
         }
-        plug.motor_cell_x[line] = g.motor_x + gx * side;
-        plug.motor_cell_y[line] = g.motor_y + gy * side;
+        gx = near_origin(shelf.grid_w, gx, 1, g.sensor_x + g.sensor_w / 2 > g.motor_x + g.motor_w / 2);
+        gy = near_origin(shelf.grid_h, gy, 1, g.sensor_y + g.sensor_h / 2 > g.motor_y + g.motor_h / 2);
+        plug.motor_cell_x[line] = g.motor_x + gx * pitch;
+        plug.motor_cell_y[line] = g.motor_y + gy * pitch;
         int* group = &plug.motor_neuron[line * PLUG_MAX_GROUP];
         if (!fill_group(blob, blob.motor, plug.motor_cell_x[line], plug.motor_cell_y[line], side,
-                        group)) {
+                        g.motor_stride, group)) {
             std::fprintf(stderr, "plug: motor line %d lands off the motor neurons\n", line);
             return false;
         }
@@ -177,9 +190,7 @@ void plug_detach(Plug& plug, Blob& blob) {
         }
         for (int k = 0; k < group; k++) {
             int n = plug.sensor_neuron[line * PLUG_MAX_GROUP + k];
-            uint64_t bit = 1ull << (n % TILE_NEURONS);
-            blob.sense_in[n / TILE_NEURONS] &= ~bit;
-            blob.sense_attached[n / TILE_NEURONS] &= ~bit;
+            blob_detach(blob, n);
         }
         plug.attached[line] = 0;
     }

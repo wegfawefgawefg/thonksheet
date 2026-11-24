@@ -12,9 +12,6 @@ int run_learn_check(int argc, char** argv);
 // a genome for a square sheet of `tiles` x `tiles`, sensor and motor regions kept inside it
 Genome genome_for_sheet(int tiles);
 
-// "--g.name value" overrides a genome number
-void apply_genome_args(int argc, char** argv, Genome& g);
-
 // "--name value" lookup over argv; returns fallback when absent
 int64_t arg_int(int argc, char** argv, const char* name, int64_t fallback);
 

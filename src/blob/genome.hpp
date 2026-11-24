@@ -13,7 +13,7 @@ struct Genome {
     // sensor neurons are all excitatory; motor neurons are ordinary in every other way.
     int sensor_x = 0, sensor_y = 0, sensor_w = 32, sensor_h = 32;
     int sensor_stride = 2;
-    int motor_x = 32, motor_y = 32, motor_w = 32, motor_h = 32;
+    int motor_x = 0, motor_y = 32, motor_w = 32, motor_h = 32; // shares an edge with the input area
     int motor_stride = 2;
 
     // kinds and spreads (each neuron draws its own value inside the range)
@@ -64,3 +64,6 @@ struct Genome {
     int surprise_boost = 1;    // shifts taken off the chances while surprise is high
     int surprise_high_per_1024 = 80;
 };
+
+// "--g.name value" on a command line overrides one genome number, for tuning runs
+void apply_genome_args(int argc, char** argv, Genome& g);

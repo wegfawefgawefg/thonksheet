@@ -41,6 +41,7 @@ static void allocate(FakeBlob& f) {
     for (int h = 0; h < HISTORY; ++h) {
         b.spikes[h] = &f.spike_store[static_cast<size_t>(h) * words];
     }
+    b.spike_stride = words;
     f.word_store.assign(static_cast<size_t>(7) * words, 0);
     b.recent = &f.word_store[0 * words];
     b.inhibitory = &f.word_store[1 * words];
@@ -54,10 +55,10 @@ static void allocate(FakeBlob& f) {
     b.w1 = &f.weight_store[static_cast<size_t>(n) * SLOTS];
     f.local_store.assign(static_cast<size_t>(b.tile_count) * LOCAL_SLOTS, 0);
     f.far_store.assign(static_cast<size_t>(n) * FAR_SLOTS, 0);
-    f.far_delay.assign(static_cast<size_t>(n) * FAR_SLOTS, 0);
+    f.far_delay.assign(static_cast<size_t>(n) * SLOTS, 1); // every slot has a delay; local ones 1
     b.local_tile = f.local_store.data();
     b.far_tile = f.far_store.data();
-    b.far_delay = f.far_delay.data();
+    b.slot_delay = f.far_delay.data();
     f.potential.assign(n, 0);
     f.threshold.assign(n, 0);
     f.leak_shift.assign(n, 0);
@@ -164,7 +165,7 @@ static void wire_far(FakeBlob& f) {
             const int distance =
                 std::max(std::abs(fx - t % b.tiles_w), std::abs(fy - t / b.tiles_w));
             b.far_tile[n * FAR_SLOTS + k] = static_cast<uint32_t>(fy * b.tiles_w + fx);
-            b.far_delay[n * FAR_SLOTS + k] =
+            b.slot_delay[blob_weight_index(n, LOCAL_SLOTS + k)] =
                 static_cast<uint8_t>(std::clamp(1 + distance * g.far_delay_per_tile, 2, 15));
         }
     }
@@ -195,8 +196,8 @@ static void wire_weights(FakeBlob& f) {
                 strong &= fake_random(f.rng);
             }
             const uint64_t five = strong & fake_random(f.rng);
-            b.w1[n * SLOTS + k] = strong;
-            b.w0[n * SLOTS + k] = (wired & ~strong) | five;
+            b.w1[blob_weight_index(n, k)] = strong;
+            b.w0[blob_weight_index(n, k)] = (wired & ~strong) | five;
             fan_in += std::popcount(wired);
         }
         b.fan_in[n] = static_cast<uint16_t>(fan_in);

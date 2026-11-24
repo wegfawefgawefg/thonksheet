@@ -5,12 +5,13 @@ in its own dated doc.
 
 ## Now: first blob (docs/effort-2026-11-24-first-blob.md)
 
-1. Core: birth, tick, regulation, learning, speed test. *in progress*
-2. Viewer: the sheet, raster, sector bars, histograms, neuron picker. *in progress*
-3. World plug, the stage 1 tasks, the headless runner with baselines. *in progress*
+1. Core: birth, tick, regulation, learning, speed test. *done*
+2. Viewer: the sheet, raster, sector bars, histograms, neuron picker. *done, shown on a fake blob; not yet driving a task*
+3. World plug, the stage 1 tasks, the headless runner with baselines. *done*
 4. Put the three together. Stage 0: does it stay alive, with and without input.
-5. **The gate: one hand-set blob visibly learns Echo.** Nothing below starts until this
-   holds.
+5. **The gate: one hand-set blob visibly learns Echo.** *Holds on 3 seeds of 4 (0.84 to
+   0.95 against about 0.5 with learning off), only with sensing and acting a tile apart.
+   Numbers in the effort doc.*
 
 ## Next
 

@@ -1,4 +1,4 @@
-#include "bench/bench_modes.hpp"
+#include "blob/genome.hpp"
 
 #include <cstdio>
 #include <cstdlib>

@@ -52,8 +52,8 @@ static void fake_learning(FakeBlob& f, int n) {
     if (b.local_tile[(n / TILE_NEURONS) * LOCAL_SLOTS + k] >= static_cast<uint32_t>(b.tile_count)) {
         return;
     }
-    uint64_t& w0 = b.w0[n * SLOTS + k];
-    uint64_t& w1 = b.w1[n * SLOTS + k];
+    uint64_t& w0 = b.w0[blob_weight_index(n, k)];
+    uint64_t& w1 = b.w1[blob_weight_index(n, k)];
     const uint64_t bit = 1ull << (fake_random(f.rng) % TILE_NEURONS);
     const uint64_t roll = fake_random(f.rng) % 64;
     const bool empty = ((w0 | w1) & bit) == 0;

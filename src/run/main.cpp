@@ -18,14 +18,9 @@ enum class Driver { blob, learn_off, coin, perfect, count };
 static const char* const driver_names[(int)Driver::count] = {"blob", "learn_off", "coin",
                                                              "perfect"};
 
-// stopgap until the genome has a learning switch: make every learning chance 2^-30
+// the learning-off twin: same genome and seed, nothing changes its wiring
 static void genome_learning_off(Genome& g) {
-    g.predict_shift = 30;
-    g.reward_shift = 30;
-    g.grow_shift = 30;
-    g.prune_shift = 30;
-    g.far_redraw_shift = 30;
-    g.surprise_boost = 0;
+    g.learning_on = 0;
 }
 
 static bool real_blob(Driver driver) {
@@ -170,6 +165,7 @@ static bool write_csv(const std::string& path, const RunFlags& flags, const bool
 
 int main(int argc, char** argv) {
     RunFlags flags;
+    apply_genome_args(argc, argv, flags.genome);
     if (!run_flags_parse(argc, argv, flags)) {
         return 1;
     }
