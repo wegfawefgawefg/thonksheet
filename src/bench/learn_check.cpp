@@ -22,17 +22,24 @@ struct EchoSetup {
     int cue_line[MAX_CUES][MAX_LINES];
     int group_neuron[MAX_CUES][MAX_LINES];
     int answer[MAX_CUES]; // motor group that is right for each cue
+    // cells the lines and groups are drawn from (whole sheet unless narrowed)
+    int sensor_box[4] = {0, 0, 1 << 20, 1 << 20}; // x0, y0, x1, y1
+    int motor_box[4] = {0, 0, 1 << 20, 1 << 20};
 };
 
 // distinct random neurons of one kind (sensor or motor word set)
-static void pick_neurons(const Blob& blob, const uint64_t* kind, uint64_t* rng, int count,
-                         int* out, uint64_t* taken) {
+static void pick_neurons(const Blob& blob, const uint64_t* kind, const int* box, uint64_t* rng,
+                         int count, int* out, uint64_t* taken) {
     int found = 0;
     while (found < count) {
         int n = (int)rng_below(rng, (uint32_t)blob.neuron_count);
         uint64_t bit = 1ull << (n % TILE_NEURONS);
         int t = n / TILE_NEURONS;
         if (!(kind[t] & bit) || (taken[t] & bit)) {
+            continue;
+        }
+        int x = blob_neuron_x(blob, n), y = blob_neuron_y(blob, n);
+        if (x < box[0] || y < box[1] || x >= box[2] || y >= box[3]) {
             continue;
         }
         taken[t] |= bit;
@@ -45,8 +52,10 @@ static void setup_echo(const Blob& blob, EchoSetup& e, uint64_t seed) {
     rng_seed(rng, seed * 31337 + 5);
     uint64_t* taken = new uint64_t[blob.tile_count + 1]();
     for (int c = 0; c < e.cues; c++) {
-        pick_neurons(blob, blob.sensor, rng, e.lines_per_cue, e.cue_line[c], taken);
-        pick_neurons(blob, blob.motor, rng, e.group_size, e.group_neuron[c], taken);
+        pick_neurons(blob, blob.sensor, e.sensor_box, rng, e.lines_per_cue, e.cue_line[c],
+                     taken);
+        pick_neurons(blob, blob.motor, e.motor_box, rng, e.group_size, e.group_neuron[c],
+                     taken);
         e.answer[c] = c;
     }
     // shuffle which group answers which cue
@@ -183,8 +192,18 @@ int run_learn_check(int argc, char** argv) {
         g.sensor_x = 0, g.sensor_y = 0, g.sensor_w = cells, g.sensor_h = 8;
         g.motor_x = 0, g.motor_y = 16, g.motor_w = cells, g.motor_h = 8;
     }
-
     apply_genome_args(argc, argv, g);
+    if (layout == 3) {
+        // genome areas, but lines from the 16x16 sensor corner nearest the motor area and
+        // groups from the 16x16 motor corner nearest the sensor area
+        int sx1 = g.sensor_x + g.sensor_w, sy1 = g.sensor_y + g.sensor_h;
+        int box_s[4] = {sx1 - 16, sy1 - 16, sx1, sy1};
+        int box_m[4] = {g.motor_x, g.motor_y, g.motor_x + 16, g.motor_y + 16};
+        for (int k = 0; k < 4; k++) {
+            e.sensor_box[k] = box_s[k];
+            e.motor_box[k] = box_m[k];
+        }
+    }
 
     int64_t windows = trials / report;
     int64_t* hits[2] = {new int64_t[windows](), new int64_t[windows]()};
