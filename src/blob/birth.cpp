@@ -56,6 +56,11 @@ static void sanitize_genome(Genome& g) {
     g.sector_smooth_shift = clamp_int(g.sector_smooth_shift, 0, 12);
     g.threshold_cap = clamp_int(g.threshold_cap, g.threshold_max, 30000);
     g.strong_log = clamp_int(g.strong_log, 0, 4);
+    g.flip_count = clamp_int(g.flip_count, 1, FLIP_MAX);
+    g.flip_window_ticks = clamp_int(g.flip_window_ticks, 1, 1 << 30);
+    g.flip_average_shift = clamp_int(g.flip_average_shift, 0, 16);
+    g.noise_trace_ticks = clamp_int(g.noise_trace_ticks, 1, HISTORY);
+    g.reward_average_shift = clamp_int(g.reward_average_shift, 0, 16);
 }
 
 int count_fan_in(const Blob& blob, int neuron) {
@@ -259,6 +264,9 @@ Blob* blob_birth(const Genome& genome, uint64_t seed) {
         blob->spikes[h] = ring + (size_t)h * blob->spike_stride;
     }
     blob->recent = (uint64_t*)alloc_lines(map_bytes);
+    blob->noise_ring = (uint64_t*)alloc_lines(sizeof(uint64_t) * blob->spike_stride * HISTORY);
+    blob->noise_trace = (uint64_t*)alloc_lines(map_bytes);
+    blob->active_trace = (uint64_t*)alloc_lines(map_bytes);
     blob->inhibitory = (uint64_t*)alloc_lines(map_bytes);
     blob->sensor = (uint64_t*)alloc_lines(map_bytes);
     blob->motor = (uint64_t*)alloc_lines(map_bytes);
@@ -297,6 +305,7 @@ void blob_free(Blob* blob) {
         blob->w1,          blob->potential,       blob->threshold,       blob->leak_shift,
         blob->cooldown,    blob->cooldown_len,    blob->fan_in,          blob->tile_sector,
         blob->sector_bias, blob->sector_activity, blob->sector_surprise, blob->sector_target,
+        blob->noise_ring,  blob->noise_trace,     blob->active_trace,
     };
     for (void* p : arrays) {
         std::free(p);
@@ -310,4 +319,7 @@ void blob_reward(Blob& blob, int valence) {
     } else if (valence < 0) {
         blob.bad_ticks = blob.genome.reward_ticks;
     }
+    // the rival modes read these; mode 0 ignores them
+    blob.flips.score += valence;
+    blob.pending_valence = valence;
 }

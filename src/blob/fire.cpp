@@ -115,6 +115,9 @@ void tick_fire(Blob& blob, uint64_t* out) {
         offset[d] = ((blob.now + 1 - d) & (HISTORY - 1)) * blob.spike_stride;
     }
 
+    // spikes that came from noise alone, at the same place in the noise ring
+    uint64_t* noise_out = blob.noise_ring + (out - blob.spikes[0]);
+
     alignas(64) int32_t drive[TILE_NEURONS];
     alignas(64) uint64_t words[TILE_NEURONS];
     for (int t = 0; t < blob.tile_count; t++) {
@@ -181,6 +184,7 @@ void tick_fire(Blob& blob, uint64_t* out) {
         uint64_t inner = (would | noise | blob.pacemaker[t]) & rested & ~sensor;
         uint64_t fired = inner | (blob.sense_in[t] & sensor);
         out[t] = fired;
+        noise_out[t] = noise & ~would & ~blob.pacemaker[t] & rested & ~sensor;
 
         // reset the fired, count down the rest
         const uint8_t* __restrict cool_len = blob.cooldown_len + t * TILE_NEURONS;
