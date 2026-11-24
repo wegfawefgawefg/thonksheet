@@ -1,0 +1,83 @@
+#pragma once
+
+#include "blob/blob.hpp"
+#include "world/task.hpp"
+
+#include <cstdint>
+
+// The world plug: puts a task's sensor lines onto the genome's sensor region and reads its
+// motor lines off the motor region. Every line is a square group of side x side cells. Lines
+// are packed onto a grid of such groups, left to right in shelves, so a bitmap keeps its
+// geometry: pixel (px, py) is the group at (px, py) from the bitmap's corner.
+//
+// Sensor order: good, bad (always the two top-left groups, so they stay put across tasks),
+// then the task's on/off lines, then its bitmap, then its numbers, each number a row of
+// threshold lines. A task that uses no reward leaves good and bad unattached.
+
+constexpr int PLUG_MAX_SENSOR_LINES = 256;
+constexpr int PLUG_MAX_MOTOR_LINES = 64;
+constexpr int PLUG_MAX_SIDE = 4;
+constexpr int PLUG_MAX_GROUP = PLUG_MAX_SIDE * PLUG_MAX_SIDE;
+constexpr int PLUG_GOOD_LINE = 0;
+constexpr int PLUG_BAD_LINE = 1;
+
+struct PlugSettings {
+    int sensor_side = 2;       // a sensor line drives side x side neurons
+    int motor_side = 2;        // a motor line is read from side x side neurons
+    int ticks_per_step = 8;    // blob ticks per task step
+    int reward_line_ticks = 2; // ticks the good or bad line stays on after a reward
+    int rest_ticks = 0;        // quiet ticks after a rewarded step (task lines off)
+};
+
+struct Plug {
+    PlugSettings settings;
+    TaskShape shape;
+
+    // sensor lines, in the order above. line_cell_x/y is the group's top-left cell.
+    int sensor_lines = 0;
+    int first_single = 0, first_sheet = 0, first_number = 0;
+    int sensor_cell_x[PLUG_MAX_SENSOR_LINES] = {};
+    int sensor_cell_y[PLUG_MAX_SENSOR_LINES] = {};
+    int sensor_neuron[PLUG_MAX_SENSOR_LINES * PLUG_MAX_GROUP] = {};
+    uint8_t attached[PLUG_MAX_SENSOR_LINES] = {};
+    uint8_t line_on[PLUG_MAX_SENSOR_LINES] = {};
+    int sensed_neurons = 0; // attached neurons, good and bad included when attached
+
+    // motor lines
+    int motor_lines = 0;
+    int motor_cell_x[PLUG_MAX_MOTOR_LINES] = {};
+    int motor_cell_y[PLUG_MAX_MOTOR_LINES] = {};
+    int motor_neuron[PLUG_MAX_MOTOR_LINES * PLUG_MAX_GROUP] = {};
+    int motor_count[PLUG_MAX_MOTOR_LINES] = {}; // spikes this step
+
+    // ticks left on the good and bad lines
+    int good_left = 0, bad_left = 0;
+};
+
+// lay the task's lines onto the blob and attach them. false (with a message on stderr) if
+// they do not fit the genome's regions or land on neurons that are not sensor/motor.
+bool plug_attach(Plug& plug, Blob& blob, const TaskShape& shape, const PlugSettings& settings);
+// take the lines back out: the blob stops learning from them
+void plug_detach(Plug& plug, Blob& blob);
+
+// task values to line bits, once per step
+void plug_set_lines(Plug& plug, const TaskSense& sense);
+// all task lines off (rest ticks); good and bad keep their own timers
+void plug_quiet_lines(Plug& plug);
+// write every attached line onto the blob; call once before each tick
+void plug_write(Plug& plug, Blob& blob);
+// add this tick's motor spikes; call once after each tick
+void plug_count(Plug& plug, const Blob& blob);
+// the motor line with the most spikes this step, or -1 on a tie or no spikes. clears counts.
+int plug_choice(Plug& plug);
+void plug_clear_counts(Plug& plug);
+// raise the good (+1) or bad (-1) line for the next reward_line_ticks ticks
+void plug_reward(Plug& plug, int valence);
+
+// cells per line
+inline int plug_sensor_group(const Plug& plug) {
+    return plug.settings.sensor_side * plug.settings.sensor_side;
+}
+inline int plug_motor_group(const Plug& plug) {
+    return plug.settings.motor_side * plug.settings.motor_side;
+}
