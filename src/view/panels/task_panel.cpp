@@ -223,7 +223,7 @@ static void move_name(int move, char* out, int size) {
 }
 
 static const char* answer_word(int valence) {
-    return valence > 0 ? "good" : valence < 0 ? "bad" : "nothing";
+    return valence > 0 ? "good" : valence < 0 ? "bad" : "neutral";
 }
 
 void task_panel(State& s) {

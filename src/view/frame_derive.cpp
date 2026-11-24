@@ -78,7 +78,7 @@ static void derive_lags(ViewFrame& f) {
 
 // the fired count per tick against itself `lag` ticks later, over the whole tape. A sheet
 // that pulses every P ticks peaks at P (and weaker at 2P, 3P). The period is the first
-// peak at least 0.6 of the highest one and above 0.15, so a harmonic is never taken for it.
+// peak at least 0.6 of the highest one and above 0.3, so a harmonic is never taken for it.
 static void derive_rhythm(ViewFrame& f) {
     const Tape& t = f.tape;
     const int rows = rows_valid(t);
@@ -120,7 +120,7 @@ static void derive_rhythm(ViewFrame& f) {
     for (int lag = 2; lag < LAG_MAX; ++lag) {
         const float r = f.fired_lag[lag - 1];
         const bool peak = r >= f.fired_lag[lag - 2] && r >= f.fired_lag[lag];
-        if (peak && r > 0.15f && r >= 0.6f * top) {
+        if (peak && r > 0.3f && r >= 0.6f * top) {
             f.period = lag;
             break;
         }

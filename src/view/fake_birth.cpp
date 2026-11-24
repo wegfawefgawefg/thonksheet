@@ -90,15 +90,18 @@ static void place_kinds(FakeBlob& f) {
         const int y = blob_neuron_y(b, n);
         const uint64_t bit = 1ull << (n % TILE_NEURONS);
         const int t = n / TILE_NEURONS;
-        // sensors: a lattice, every 2nd cell both ways inside the sensor rect, all excitatory
-        const bool lattice = (x - g.sensor_x) % 2 == 0 && (y - g.sensor_y) % 2 == 0;
+        // sensors: a lattice, every sensor_stride-th cell both ways inside the sensor rect, all
+        // excitatory
+        const int ss = std::max(1, g.sensor_stride);
+        const bool lattice = (x - g.sensor_x) % ss == 0 && (y - g.sensor_y) % ss == 0;
         if (in_rect(x, y, g.sensor_x, g.sensor_y, g.sensor_w, g.sensor_h) && lattice) {
             b.sensor[t] |= bit;
         } else if (static_cast<int>(fake_random(f.rng) % 100) < g.inhibitory_percent) {
             b.inhibitory[t] |= bit;
         }
         // motor cells: a lattice through the motor rect the same way, among ordinary neurons
-        const bool motor_lattice = (x - g.motor_x) % 2 == 0 && (y - g.motor_y) % 2 == 0;
+        const int ms = std::max(1, g.motor_stride);
+        const bool motor_lattice = (x - g.motor_x) % ms == 0 && (y - g.motor_y) % ms == 0;
         if (in_rect(x, y, g.motor_x, g.motor_y, g.motor_w, g.motor_h) && motor_lattice) {
             b.motor[t] |= bit;
         }
