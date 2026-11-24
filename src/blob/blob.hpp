@@ -52,7 +52,9 @@ struct Blob {
     uint32_t* far_tile = nullptr;
     uint8_t* far_delay = nullptr;
 
-    // weights: two bit planes per slot. w0[neuron * SLOTS + slot], same for w1.
+    // weights: two bit planes per slot, at w0[blob_weight_index(neuron, slot)], same for w1.
+    // slot-major inside a tile: ((tile * SLOTS + slot) * 64 + bit), so the 64 neurons of a
+    // tile sit side by side for each slot, which is what SIMD and GPUs want.
     // (w1, w0) = 00 none, 01 strength 1, 10 strength 4, 11 strength 5.
     uint64_t* w0 = nullptr;
     uint64_t* w1 = nullptr;
@@ -75,6 +77,11 @@ struct Blob {
     int good_ticks = 0; // ticks left of the "that was good" signal
     int bad_ticks = 0;
     int surprise_high = 0; // 1 while surprise is above the genome's line
+
+    // added by the core after the first draft of this header
+    uint64_t* pacemaker = nullptr;     // fixed at birth, one word per tile (tile_count + 1)
+    uint32_t* sector_target = nullptr; // wanted sector_activity, same units (x256)
+    uint32_t surprise_level = 0; // smoothed wrong predictions per 1,024 attached lines, x256
 
     uint64_t rng[4] = {};
     BlobStats stats;
@@ -117,9 +124,15 @@ inline void blob_sense(Blob& blob, int neuron, bool on) {
     }
 }
 
+// where one neuron's mask word for one slot lives in w0 and w1
+inline int64_t blob_weight_index(int neuron, int slot) {
+    return ((int64_t)(neuron / TILE_NEURONS) * SLOTS + slot) * TILE_NEURONS +
+           neuron % TILE_NEURONS;
+}
+
 // strength of the connection in one slot from source bit `bit`: 0, 1, 4 or 5
 inline int blob_weight(const Blob& blob, int neuron, int slot, int bit) {
-    int low = (blob.w0[neuron * SLOTS + slot] >> bit) & 1;
-    int high = (blob.w1[neuron * SLOTS + slot] >> bit) & 1;
+    int low = (blob.w0[blob_weight_index(neuron, slot)] >> bit) & 1;
+    int high = (blob.w1[blob_weight_index(neuron, slot)] >> bit) & 1;
     return low + 4 * high;
 }

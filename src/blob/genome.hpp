@@ -18,6 +18,7 @@ struct Genome {
     int leak_shift_min = 1, leak_shift_max = 4;
     int cooldown_min = 1, cooldown_max = 4;
     int pacemakers_per_1024 = 4; // born with threshold 0, so they tick by themselves
+    int pacemaker_period_min = 4, pacemaker_period_max = 16; // ticks between beats
 
     // wiring at birth
     int local_connect_shift = 3; // each possible local source is wired in with this chance
@@ -25,6 +26,7 @@ struct Genome {
     int far_percent = 15;        // share of excitatory neurons that get a far slot
     int far_reach_tiles = 3;     // typical far distance; the draw has a long tail
     int far_delay_per_tile = 1;  // ticks of delay per tile of distance (2..15 total)
+    int far_connect_shift = 2;   // each excitatory bit of a far tile is wired with this chance
     int fan_in_max = 96;         // cap on connections per neuron
 
     // integration
@@ -39,14 +41,18 @@ struct Genome {
     int sector_bias_max = 16;
     int threshold_up_shift = 4;    // on firing, raise own threshold with this chance
     int threshold_down_shift = 9;  // every tick, lower own threshold with this chance
+    int threshold_cap = 64;        // regulation never raises a threshold past this
+    int sector_smooth_shift = 4;   // sector activity is smoothed over about 2^this ticks
 
     // learning (all changes are one weight level, taken by chance)
+    int learn = 1;               // 0 freezes every weight: the learning-off baseline
     int recent_ticks = 6;        // how long "fired recently" lasts (1..8)
     int predict_shift = 3;       // sensor prediction: strengthen right, weaken wrong
     int reward_shift = 2;        // good/bad broadcast acting on recently co-active pairs
     int reward_ticks = 4;        // how long one good/bad event keeps acting
     int grow_shift = 5;          // on firing, chance to grow one new connection
     int prune_shift = 6;         // on firing, chance to weaken idle weak connections
+    int prune_bit_shift = 4;     // then each idle weak connection goes with this chance
     int far_redraw_shift = 14;   // per tick, chance an empty far slot is redrawn
     int surprise_boost = 1;      // shifts taken off the chances while surprise is high
     int surprise_high_per_1024 = 80;
