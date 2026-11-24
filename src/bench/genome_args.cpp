@@ -1,0 +1,88 @@
+#include "bench/bench_modes.hpp"
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+// "--g.name value" on the command line overrides one genome number, for tuning runs.
+
+struct GenomeField {
+    const char* name;
+    int Genome::*field;
+};
+
+static const GenomeField fields[] = {
+    {"tiles_w", &Genome::tiles_w},
+    {"tiles_h", &Genome::tiles_h},
+    {"inhibitory_percent", &Genome::inhibitory_percent},
+    {"threshold_min", &Genome::threshold_min},
+    {"threshold_max", &Genome::threshold_max},
+    {"leak_shift_min", &Genome::leak_shift_min},
+    {"leak_shift_max", &Genome::leak_shift_max},
+    {"cooldown_min", &Genome::cooldown_min},
+    {"cooldown_max", &Genome::cooldown_max},
+    {"pacemakers_per_1024", &Genome::pacemakers_per_1024},
+    {"pacemaker_period_min", &Genome::pacemaker_period_min},
+    {"pacemaker_period_max", &Genome::pacemaker_period_max},
+    {"local_connect_shift", &Genome::local_connect_shift},
+    {"strong_shift", &Genome::strong_shift},
+    {"far_percent", &Genome::far_percent},
+    {"far_reach_tiles", &Genome::far_reach_tiles},
+    {"far_delay_per_tile", &Genome::far_delay_per_tile},
+    {"far_connect_shift", &Genome::far_connect_shift},
+    {"local_delay_min", &Genome::local_delay_min},
+    {"local_delay_max", &Genome::local_delay_max},
+    {"sensor_x", &Genome::sensor_x},
+    {"sensor_y", &Genome::sensor_y},
+    {"sensor_w", &Genome::sensor_w},
+    {"sensor_h", &Genome::sensor_h},
+    {"sensor_stride", &Genome::sensor_stride},
+    {"motor_x", &Genome::motor_x},
+    {"motor_y", &Genome::motor_y},
+    {"motor_w", &Genome::motor_w},
+    {"motor_h", &Genome::motor_h},
+    {"motor_stride", &Genome::motor_stride},
+    {"fan_in_max", &Genome::fan_in_max},
+    {"inhibit_gain", &Genome::inhibit_gain},
+    {"branch_threshold", &Genome::branch_threshold},
+    {"branch_bonus", &Genome::branch_bonus},
+    {"noise_shift", &Genome::noise_shift},
+    {"sector_tiles", &Genome::sector_tiles},
+    {"sector_target_per_1024", &Genome::sector_target_per_1024},
+    {"sector_bias_max", &Genome::sector_bias_max},
+    {"threshold_up_shift", &Genome::threshold_up_shift},
+    {"threshold_down_shift", &Genome::threshold_down_shift},
+    {"threshold_cap", &Genome::threshold_cap},
+    {"sector_smooth_shift", &Genome::sector_smooth_shift},
+    {"learning_on", &Genome::learning_on},
+    {"recent_ticks", &Genome::recent_ticks},
+    {"predict_shift", &Genome::predict_shift},
+    {"reward_shift", &Genome::reward_shift},
+    {"reward_ticks", &Genome::reward_ticks},
+    {"grow_shift", &Genome::grow_shift},
+    {"prune_shift", &Genome::prune_shift},
+    {"prune_bit_shift", &Genome::prune_bit_shift},
+    {"far_redraw_shift", &Genome::far_redraw_shift},
+    {"surprise_boost", &Genome::surprise_boost},
+    {"surprise_high_per_1024", &Genome::surprise_high_per_1024},
+};
+
+void apply_genome_args(int argc, char** argv, Genome& g) {
+    for (int i = 0; i + 1 < argc; i++) {
+        if (std::strncmp(argv[i], "--g.", 4) != 0) {
+            continue;
+        }
+        const char* name = argv[i] + 4;
+        bool known = false;
+        for (const GenomeField& f : fields) {
+            if (std::strcmp(f.name, name) == 0) {
+                g.*f.field = (int)std::strtol(argv[i + 1], nullptr, 10);
+                known = true;
+            }
+        }
+        if (!known) {
+            std::fprintf(stderr, "unknown genome field: %s\n", name);
+            std::exit(1);
+        }
+    }
+}

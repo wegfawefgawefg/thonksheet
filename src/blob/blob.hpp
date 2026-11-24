@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
-
 #include "blob/genome.hpp"
+
+#include <cstdint>
 
 // The blob's whole state, as flat arrays. See docs/design.md for what each mechanism is.
 // This header is the contract between the core, the viewer and the tasks. Only the core
@@ -18,7 +18,7 @@ struct BlobStats {
     uint64_t tick = 0;
     // counts for the latest tick
     uint32_t fired = 0;
-    uint32_t surprise = 0; // sensor neurons whose prediction was wrong
+    uint32_t surprise = 0; // attached sensor neurons whose prediction was wrong, this tick
     uint32_t grown = 0, pruned = 0, strengthened = 0, weakened = 0;
 };
 
@@ -31,6 +31,7 @@ struct Blob {
 
     // spikes[h] is one spike map: tile_count + 1 words, the last word always zero.
     // spikes[now] is the latest tick; older maps are at (now - age) & (HISTORY - 1).
+    // the 16 maps sit in one block, spike_stride words apart (spikes[0] owns the block).
     uint64_t* spikes[HISTORY] = {};
     int now = 0;
     uint64_t* recent = nullptr; // OR of the last genome.recent_ticks maps, tile_count + 1
@@ -47,12 +48,17 @@ struct Blob {
     uint64_t* predicted = nullptr; // what the sensor neurons would have done by themselves
 
     // wiring. local_tile[tile * 9 + k] is the source tile of local slot k (tile_count means
-    // the zero word). far_tile[neuron * 2 + k] likewise; far_delay is in ticks (2..15).
+    // the zero word). far_tile[neuron * 2 + k] likewise for far slot k (slot 9 + k).
+    // slot_delay[blob_weight_index(neuron, slot)] is that slot's delay in ticks (1..15): a
+    // tick reads spikes[(now + 1 - delay) & 15] for it, so delay 1 is the previous tick.
+    // local delays are drawn at birth; far delays grow with distance (2..15).
     uint32_t* local_tile = nullptr;
     uint32_t* far_tile = nullptr;
-    uint8_t* far_delay = nullptr;
+    uint8_t* slot_delay = nullptr;
 
-    // weights: two bit planes per slot. w0[neuron * SLOTS + slot], same for w1.
+    // weights: two bit planes per slot, at w0[blob_weight_index(neuron, slot)], same for w1.
+    // slot-major inside a tile: ((tile * SLOTS + slot) * 64 + bit), so the 64 neurons of a
+    // tile sit side by side for each slot, which is what SIMD and GPUs want.
     // (w1, w0) = 00 none, 01 strength 1, 10 strength 4, 11 strength 5.
     uint64_t* w0 = nullptr;
     uint64_t* w1 = nullptr;
@@ -66,8 +72,8 @@ struct Blob {
     uint16_t* fan_in = nullptr; // connections this neuron has
 
     // per sector
-    uint32_t* tile_sector = nullptr;    // which sector a tile is in, per tile
-    int16_t* sector_bias = nullptr;     // added to thresholds in the sector
+    uint32_t* tile_sector = nullptr;     // which sector a tile is in, per tile
+    int16_t* sector_bias = nullptr;      // added to thresholds in the sector
     uint32_t* sector_activity = nullptr; // smoothed spikes per tick, x256
     uint32_t* sector_surprise = nullptr; // smoothed wrong predictions per tick, x256
 
@@ -75,6 +81,12 @@ struct Blob {
     int good_ticks = 0; // ticks left of the "that was good" signal
     int bad_ticks = 0;
     int surprise_high = 0; // 1 while surprise is above the genome's line
+
+    // added by the core after the first draft of this header
+    uint64_t* pacemaker = nullptr;     // fixed at birth, one word per tile (tile_count + 1)
+    uint32_t* sector_target = nullptr; // wanted sector_activity, same units (x256)
+    uint32_t surprise_level = 0;       // smoothed wrong predictions per 1,024 attached lines, x256
+    int spike_stride = 0;              // words from one spike map to the next
 
     uint64_t rng[4] = {};
     BlobStats stats;
@@ -117,9 +129,29 @@ inline void blob_sense(Blob& blob, int neuron, bool on) {
     }
 }
 
+// where one neuron's mask word for one slot lives in w0 and w1
+inline int64_t blob_weight_index(int neuron, int slot) {
+    return ((int64_t)(neuron / TILE_NEURONS) * SLOTS + slot) * TILE_NEURONS + neuron % TILE_NEURONS;
+}
+
+// unplug a sensor line: it stops firing and is no longer learned from
+inline void blob_detach(Blob& blob, int neuron) {
+    uint64_t bit = 1ull << (neuron % TILE_NEURONS);
+    blob.sense_attached[neuron / TILE_NEURONS] &= ~bit;
+    blob.sense_in[neuron / TILE_NEURONS] &= ~bit;
+}
+
+// unplug every sensor line
+inline void blob_detach_all(Blob& blob) {
+    for (int t = 0; t <= blob.tile_count; t++) {
+        blob.sense_attached[t] = 0;
+        blob.sense_in[t] = 0;
+    }
+}
+
 // strength of the connection in one slot from source bit `bit`: 0, 1, 4 or 5
 inline int blob_weight(const Blob& blob, int neuron, int slot, int bit) {
-    int low = (blob.w0[neuron * SLOTS + slot] >> bit) & 1;
-    int high = (blob.w1[neuron * SLOTS + slot] >> bit) & 1;
+    int low = (blob.w0[blob_weight_index(neuron, slot)] >> bit) & 1;
+    int high = (blob.w1[blob_weight_index(neuron, slot)] >> bit) & 1;
     return low + 4 * high;
 }
