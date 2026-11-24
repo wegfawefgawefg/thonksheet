@@ -2,7 +2,8 @@
 /build-*/
 /.cache/
 /captures/
-/out/
+/out/*
+!/out/scorecards/
 /imgui.ini
 *.swp
 /.claude/worktrees/

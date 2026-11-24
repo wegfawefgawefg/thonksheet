@@ -242,7 +242,7 @@ static bool life_phases(const RunFlags& flags, FILE* sum) {
 }
 
 // echo with 2, 4, 8, 16 cues, a life each. a k counts as held when its late score is at least
-// halfway from chance (1/k) to perfect.
+// halfway from chance (1/k) to perfect. the k=2 life's room and aliveness go in the summary.
 static bool life_capacity(const RunFlags& flags, FILE* sum) {
     const int ks[4] = {2, 4, 8, 16};
     double late[4][(int)Driver::count] = {};
@@ -257,7 +257,7 @@ static bool life_capacity(const RunFlags& flags, FILE* sum) {
         char prefix[16];
         std::snprintf(prefix, sizeof(prefix), "k%d_", ks[i]);
         std::string csv = stem + "-k" + std::to_string(ks[i]) + ".csv";
-        if (!life_plain(f, csv, sum, prefix, false, late[i])) {
+        if (!life_plain(f, csv, sum, prefix, i == 0, late[i])) {
             return false;
         }
     }
