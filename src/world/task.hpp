@@ -69,6 +69,10 @@ struct TaskSettings {
     int gap_short = 1, gap_long = 3; // gap: blank steps between the two blinks
     int place_size = 4;              // place: the sheet is size x size lines
     int place_hold = 3;              // place: places never rewarded; only these are scored
+    // cartpole reward: 0 sparse (good every 25 steps up, bad on a fall), 1 alive (good on
+    // every step up, bad on a fall), 2 lean (every step: good if the pole and cart ended
+    // nearer upright-and-centred than they began or are already there, bad if further)
+    int cart_reward = 0;
 };
 
 // fixed point for cartpole: 16 fractional bits

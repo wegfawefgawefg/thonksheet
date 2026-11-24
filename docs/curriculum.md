@@ -139,3 +139,13 @@ As built in `blobrun` (one life, the blob never reset, learning on throughout):
 Many blobs, each living a full life across unseen, shuffled tasks. Score is late minus
 early. Not started until one hand-set blob has visibly learned something in stages 1 to 3;
 with nothing learning there is nothing for a search to climb.
+
+## Notes on cartpole (2026-11-24)
+
+The first cartpole gave good only every 25 steps up and bad on a fall, which was a guess
+and a poor one. `--cart-reward` now chooses: `sparse` (that), `alive` (good on every step
+up, as in the classic task), or `lean` (every step: good if pole and cart ended nearer
+upright-and-centred than they began, bad if further). Numbers also had a flaw: lines lit
+from the left as the value rose, so "leaning left" was only an absence of activity.
+`--number-code place` lights the one line whose band holds the value. The scripts use
+`lean` and `place` for cartpole. `sparse` stays as the harder version for slow-credit ideas.

@@ -152,7 +152,19 @@ int cartpole_perfect_move(const Task& task) {
     return u > 0 ? 1 : 0;
 }
 
+// how far from upright and centred: the lean, plus the cart's offset counted about half as
+// much across its range (0.209 rad of lean against 2.4 m of track)
+constexpr int64_t CP_CENTRE_WEIGHT = fix(0.04);
+constexpr int64_t CP_HOME_BAND = fix(0.02); // about one degree with the cart at the middle
+
+static int64_t cartpole_off(const Task& task) {
+    int64_t lean = task.pole_a < 0 ? -task.pole_a : task.pole_a;
+    int64_t offset = task.cart_x < 0 ? -task.cart_x : task.cart_x;
+    return lean + fmul(CP_CENTRE_WEIGHT, offset);
+}
+
 int cartpole_step(Task& task, const TaskStepIn& in) {
+    int64_t before = cartpole_off(task);
     int64_t force = 0;
     if (in.move == 0) {
         force = -CP_FORCE;
@@ -186,6 +198,16 @@ int cartpole_step(Task& task, const TaskStepIn& in) {
         task.tally[1]++;
         cartpole_restart(task);
         return -1;
+    }
+    if (task.settings.cart_reward == 1) {
+        return 1;
+    }
+    if (task.settings.cart_reward == 2) {
+        int64_t after = cartpole_off(task);
+        if (after < CP_HOME_BAND || after < before) {
+            return 1;
+        }
+        return after > before ? -1 : 0;
     }
     return task.alive % CP_GOOD_EVERY == 0 ? 1 : 0;
 }
