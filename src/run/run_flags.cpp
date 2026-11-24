@@ -7,7 +7,7 @@
 static const char* usage =
     "usage: blobrun [flags]\n"
     "  --task NAME        echo, shuffled-echo, delayed-echo, go-no-go, beat, sequence,\n"
-    "                     catch, cartpole (default echo)\n"
+    "                     catch, cartpole, order, both-not-either, gap, place (default echo)\n"
     "  --seed N           blob seed (default 1)\n"
     "  --task-seed N      task seed (default: same as --seed)\n"
     "  --steps N          life length in task steps (default 20000)\n"
@@ -28,7 +28,31 @@ static const char* usage =
     "  --period N         beat: press every N steps (default 4)\n"
     "  --seq-lines N      sequence: lines (default 8)\n"
     "  --seq-length N     sequence: steps before it repeats (default 4)\n"
-    "  --catch-size W H   catch: sheet size (default 6 6)\n";
+    "  --catch-size W H   catch: sheet size (default 6 6)\n"
+    "  --cue-offset N     echo family: cues and buttons start at line N (default 0)\n"
+    "  --order-gap N      order: steps the first cue is on alone (default 1)\n"
+    "  --gap-short N      gap: blank steps between blinks, short (default 1)\n"
+    "  --gap-long N       gap: blank steps between blinks, long (default 3)\n"
+    "  --place-size N     place: the sheet is N x N (default 4)\n"
+    "  --place-hold N     place: places never rewarded, the scored ones (default 3)\n"
+    "  --distance N       plug: cue lines and motor lines N tiles apart (default: packed,\n"
+    "                     1 tile with the default genome)\n"
+    "life protocols (one at a time; without them, one task for the whole life):\n"
+    "  --retention TASK   --task for --steps, then TASK for --steps (its cues and buttons\n"
+    "                     after A's, cue offset + k), then --task again for --retest steps\n"
+    "  --idle N           --task for --steps, then N ticks unplugged, then --retest steps\n"
+    "  --retest N         steps of the retest (default steps / 4)\n"
+    "  --capacity         echo with 2, 4, 8, 16 cues, a life each; largest k above halfway\n"
+    "                     from chance (1/k) to perfect\n"
+    "  --reach            how many tiles a cue can be read from activity, no reward\n"
+    "  --reach-settle N   reach: ticks before measuring (default 30000)\n"
+    "  --reach-blocks N   reach: blocks of 20 ticks measured (default 4000)\n"
+    "  --speed            ticks per second at 8x8, 16x16, 32x32 tiles; bytes per neuron\n"
+    "  --speed-ms N       speed: time at each size (default 2000)\n"
+    "  --frozen-readout   only connections into motor neurons learn (genome learn_mode 1)\n"
+    "  --alive-ticks N    end of life: ticks counted for rate, silent, stuck (default 16384)\n"
+    "  --rhythm-ticks N   end of life: idle ticks recorded for the rhythm (default 16384)\n"
+    "Each life also writes <csv stem>-sum.csv: driver,key,value for every number printed.\n";
 
 static bool read_int(const char* text, int64_t& out) {
     char* end = nullptr;
@@ -56,6 +80,22 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.show_plug = true;
             continue;
         }
+        if (std::strcmp(flag, "--capacity") == 0) {
+            flags.protocol = Protocol::capacity;
+            continue;
+        }
+        if (std::strcmp(flag, "--reach") == 0) {
+            flags.protocol = Protocol::reach;
+            continue;
+        }
+        if (std::strcmp(flag, "--speed") == 0) {
+            flags.protocol = Protocol::speed;
+            continue;
+        }
+        if (std::strcmp(flag, "--frozen-readout") == 0) {
+            flags.frozen_readout = true;
+            continue;
+        }
         if (i + 1 >= argc) {
             std::fprintf(stderr, "blobrun: %s needs a value\n%s", flag, usage);
             return false;
@@ -69,6 +109,14 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
                 std::fprintf(stderr, "blobrun: no task '%s'\n%s", value, usage);
                 return false;
             }
+            continue;
+        }
+        if (std::strcmp(flag, "--retention") == 0) {
+            if (!task_from_name(value, flags.task_b)) {
+                std::fprintf(stderr, "blobrun: no task '%s'\n%s", value, usage);
+                return false;
+            }
+            flags.protocol = Protocol::retention;
             continue;
         }
         if (std::strcmp(flag, "--out") == 0) {
@@ -117,6 +165,35 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             }
             flags.task_settings.catch_w = (int)v;
             flags.task_settings.catch_h = (int)h;
+        } else if (std::strcmp(flag, "--cue-offset") == 0) {
+            flags.task_settings.cue_offset = (int)v;
+        } else if (std::strcmp(flag, "--order-gap") == 0) {
+            flags.task_settings.order_gap = (int)v;
+        } else if (std::strcmp(flag, "--gap-short") == 0) {
+            flags.task_settings.gap_short = (int)v;
+        } else if (std::strcmp(flag, "--gap-long") == 0) {
+            flags.task_settings.gap_long = (int)v;
+        } else if (std::strcmp(flag, "--place-size") == 0) {
+            flags.task_settings.place_size = (int)v;
+        } else if (std::strcmp(flag, "--place-hold") == 0) {
+            flags.task_settings.place_hold = (int)v;
+        } else if (std::strcmp(flag, "--distance") == 0) {
+            flags.plug.distance = (int)v;
+        } else if (std::strcmp(flag, "--idle") == 0) {
+            flags.idle_ticks = v;
+            flags.protocol = Protocol::idle;
+        } else if (std::strcmp(flag, "--retest") == 0) {
+            flags.retest = v;
+        } else if (std::strcmp(flag, "--reach-settle") == 0) {
+            flags.reach_settle = (int)v;
+        } else if (std::strcmp(flag, "--reach-blocks") == 0) {
+            flags.reach_blocks = (int)v;
+        } else if (std::strcmp(flag, "--speed-ms") == 0) {
+            flags.speed_ms = (int)v;
+        } else if (std::strcmp(flag, "--alive-ticks") == 0) {
+            flags.alive_ticks = (int)v;
+        } else if (std::strcmp(flag, "--rhythm-ticks") == 0) {
+            flags.rhythm_ticks = (int)v;
         } else {
             std::fprintf(stderr, "blobrun: unknown flag %s\n%s", flag, usage);
             return false;
@@ -132,6 +209,9 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
     }
     if (flags.task_seed == 0) {
         flags.task_seed = flags.seed;
+    }
+    if (flags.retest <= 0) {
+        flags.retest = flags.steps / 4 > flags.window ? flags.steps / 4 : flags.window;
     }
     return true;
 }

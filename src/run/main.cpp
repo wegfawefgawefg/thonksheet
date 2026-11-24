@@ -1,7 +1,10 @@
 // blobrun: one blob, one task, one long life. Score per window to csv, late minus early,
 // then the same task with learning off and with coin-flip motors. Without the core it runs
-// the stand-in only: coin flips and a scripted perfect player.
+// the stand-in only: coin flips and a scripted perfect player. The life protocols of the
+// suite (retention, idle, capacity, reach, speed) are in life_protocols.cpp.
 
+#include "run/drive.hpp"
+#include "run/life_protocols.hpp"
 #include "run/run_flags.hpp"
 #include "run/task_ticker.hpp"
 #include "world/plug.hpp"
@@ -9,26 +12,22 @@
 #include "world/standin.hpp"
 #include "world/task.hpp"
 
-#include <chrono>
 #include <cstdio>
-#include <filesystem>
-#include <vector>
+#include <string>
 
-// who drives the motor lines
-enum class Driver { blob, learn_off, coin, perfect, count };
-static const char* const driver_names[(int)Driver::count] = {"blob", "learn_off", "coin",
-                                                             "perfect"};
+// who drives the motor lines (drive.hpp)
+const char* const driver_names[(int)Driver::count] = {"blob", "learn_off", "coin", "perfect"};
 
 // the learning-off twin: same genome and seed, nothing changes its wiring
-static void genome_learning_off(Genome& g) {
+void genome_learning_off(Genome& g) {
     g.learning_on = 0;
 }
 
-static bool real_blob(Driver driver) {
+bool real_blob(Driver driver) {
     return driver == Driver::blob || driver == Driver::learn_off;
 }
 
-static Blob* birth(Driver driver, const Genome& genome, uint64_t seed) {
+Blob* birth(Driver driver, const Genome& genome, uint64_t seed) {
 #ifdef BLOB_HAS_CORE
     if (real_blob(driver)) {
         return blob_birth(genome, seed);
@@ -38,7 +37,7 @@ static Blob* birth(Driver driver, const Genome& genome, uint64_t seed) {
     return standin_birth(genome, seed);
 }
 
-static void death(Driver driver, Blob* blob) {
+void death(Driver driver, Blob* blob) {
 #ifdef BLOB_HAS_CORE
     if (real_blob(driver)) {
         blob_free(blob);
@@ -49,7 +48,7 @@ static void death(Driver driver, Blob* blob) {
     standin_free(blob);
 }
 
-static void tick(Driver driver, Blob& blob, const Plug& plug, int perfect_move) {
+void tick(Driver driver, Blob& blob, const Plug& plug, int perfect_move) {
 #ifdef BLOB_HAS_CORE
     if (real_blob(driver)) {
         blob_tick(blob);
@@ -60,7 +59,7 @@ static void tick(Driver driver, Blob& blob, const Plug& plug, int perfect_move) 
     standin_tick(blob, plug, play, perfect_move);
 }
 
-static void reward(Driver driver, Blob& blob, int valence) {
+void reward(Driver driver, Blob& blob, int valence) {
 #ifdef BLOB_HAS_CORE
     if (real_blob(driver)) {
         blob_reward(blob, valence);
@@ -71,79 +70,6 @@ static void reward(Driver driver, Blob& blob, int valence) {
     (void)valence;
 }
 
-// one whole life: the blob is born once and never reset; the task runs `steps` steps
-static bool run_life(Driver driver, const RunFlags& flags, std::vector<double>& scores) {
-    Genome genome = flags.genome;
-    if (driver == Driver::learn_off) {
-        genome_learning_off(genome);
-    }
-    Blob* blob = birth(driver, genome, flags.seed);
-    TaskTicker tt;
-    if (!ticker_start(tt, *blob, flags)) {
-        death(driver, blob);
-        return false;
-    }
-
-    // the blob ticks several times per step; the ticker senses, counts motor spikes, and
-    // has the answer on the step's last tick (then rest ticks, if any, before the next)
-    int64_t step = 0;
-    while (step < flags.steps) {
-        int perfect_move = ticker_before_tick(tt, *blob);
-        tick(driver, *blob, tt.plug, perfect_move);
-        if (!ticker_after_tick(tt, *blob)) {
-            continue;
-        }
-        if (tt.valence != 0) {
-            reward(driver, *blob, tt.valence);
-        }
-        step++;
-        if (step % flags.window == 0) {
-            scores.push_back(task_window_score(tt.task));
-        }
-    }
-    death(driver, blob);
-    return true;
-}
-
-static double mean(const std::vector<double>& v, size_t from, size_t to) {
-    double sum = 0.0;
-    for (size_t i = from; i < to; i++) {
-        sum += v[i];
-    }
-    return to > from ? sum / (double)(to - from) : 0.0;
-}
-
-static bool write_csv(const std::string& path, const RunFlags& flags, const bool* ran,
-                      const std::vector<double>* scores, size_t windows) {
-    std::filesystem::path p(path);
-    if (p.has_parent_path()) {
-        std::filesystem::create_directories(p.parent_path());
-    }
-    FILE* f = std::fopen(path.c_str(), "w");
-    if (!f) {
-        std::fprintf(stderr, "blobrun: cannot write %s\n", path.c_str());
-        return false;
-    }
-    std::fprintf(f, "window,end_step");
-    for (int d = 0; d < (int)Driver::count; d++) {
-        if (ran[d]) {
-            std::fprintf(f, ",%s", driver_names[d]);
-        }
-    }
-    std::fprintf(f, "\n");
-    for (size_t w = 0; w < windows; w++) {
-        std::fprintf(f, "%zu,%lld", w, (long long)((w + 1) * flags.window));
-        for (int d = 0; d < (int)Driver::count; d++) {
-            if (ran[d]) {
-                std::fprintf(f, ",%.6f", scores[d][w]);
-            }
-        }
-        std::fprintf(f, "\n");
-    }
-    std::fclose(f);
-    return true;
-}
-
 int main(int argc, char** argv) {
     RunFlags flags;
     apply_genome_args(argc, argv, flags.genome);
@@ -151,26 +77,29 @@ int main(int argc, char** argv) {
         return 1;
     }
     if (flags.out.empty()) {
-        flags.out = std::string("out/") + task_name(flags.task) + "-s" +
-                    std::to_string(flags.seed) + ".csv";
+        // protocols other than one plain life are named before the task
+        const char* const protocol_names[] = {"", "retention-", "idle-", "capacity-", "", ""};
+        std::string what = protocol_names[(int)flags.protocol];
+        what += task_name(flags.task);
+        what = flags.protocol == Protocol::reach ? "reach" : what;
+        what = flags.protocol == Protocol::speed ? "speed" : what;
+        flags.out = "out/" + what + "-s" + std::to_string(flags.seed) + ".csv";
     }
-
-    // which lives to run: the blob and its learning-off twin need the core
-    bool want[(int)Driver::count] = {};
-#ifdef BLOB_HAS_CORE
-    want[(int)Driver::blob] = true;
-    want[(int)Driver::learn_off] = flags.baselines;
-#else
+    if (flags.frozen_readout) {
+        genome_readout_only(flags.genome);
+    }
+#ifndef BLOB_HAS_CORE
     std::printf("no core linked: running the stand-in only (coin flips, perfect player)\n");
 #endif
-    want[(int)Driver::coin] = flags.baselines || !want[(int)Driver::blob];
-    want[(int)Driver::perfect] = true;
 
-    std::printf("task %s  seed %llu  task seed %llu  steps %lld  ticks/step %d  window %d\n",
-                task_name(flags.task), (unsigned long long)flags.seed,
-                (unsigned long long)flags.task_seed, (long long)flags.steps,
-                flags.plug.ticks_per_step, flags.window);
-    if (flags.show_plug) {
+    bool has_task = flags.protocol != Protocol::reach && flags.protocol != Protocol::speed;
+    if (has_task) {
+        std::printf("task %s  seed %llu  task seed %llu  steps %lld  ticks/step %d  window %d\n",
+                    task_name(flags.task), (unsigned long long)flags.seed,
+                    (unsigned long long)flags.task_seed, (long long)flags.steps,
+                    flags.plug.ticks_per_step, flags.window);
+    }
+    if (flags.show_plug && has_task) {
         // the layout depends only on the genome and task shape, so a stand-in shows it
         Blob* shell = standin_birth(flags.genome, flags.seed);
         Task task;
@@ -182,46 +111,5 @@ int main(int argc, char** argv) {
         standin_free(shell);
     }
 
-    std::vector<double> scores[(int)Driver::count];
-    bool ran[(int)Driver::count] = {};
-    for (int d = 0; d < (int)Driver::count; d++) {
-        if (!want[d]) {
-            continue;
-        }
-        auto start = std::chrono::steady_clock::now();
-        if (!run_life((Driver)d, flags, scores[d])) {
-            return 1;
-        }
-        double secs =
-            std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
-        ran[d] = true;
-        if (real_blob((Driver)d)) {
-            double ticks = (double)flags.steps * flags.plug.ticks_per_step;
-            std::printf("%-9s life took %.1f s, %.0f ticks/s\n", driver_names[d], secs,
-                        ticks / secs);
-        }
-    }
-
-    size_t windows = (size_t)(flags.steps / flags.window);
-    if (!write_csv(flags.out, flags, ran, scores, windows)) {
-        return 1;
-    }
-
-    // early = first `edge` windows, late = last `edge` windows
-    size_t edge = flags.edge > 0 ? (size_t)flags.edge : windows / 10;
-    edge = edge < 1 ? 1 : edge;
-    edge = edge > windows ? windows : edge;
-    std::printf("%zu windows of %d steps, early/late = %zu windows each\n", windows, flags.window,
-                edge);
-    std::printf("%-10s %10s %10s %12s\n", "", "early", "late", "late-early");
-    for (int d = 0; d < (int)Driver::count; d++) {
-        if (!ran[d]) {
-            continue;
-        }
-        double early = mean(scores[d], 0, edge);
-        double late = mean(scores[d], windows - edge, windows);
-        std::printf("%-10s %10.4f %10.4f %+12.4f\n", driver_names[d], early, late, late - early);
-    }
-    std::printf("csv: %s\n", flags.out.c_str());
-    return 0;
+    return protocol_run(flags);
 }
