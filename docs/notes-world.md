@@ -162,8 +162,9 @@ nice -n 19 ./build/blobrun --speed                                   ticks/s, by
 ```
 
 - `--frozen-readout` sets the genome's `learn_mode` to 1 by name (readout: only connections
-  into motor neurons learn). It is on main since the rival learning modes landed; an engine
-  without that field makes blobrun exit with "unknown genome field".
+  into motor neurons learn). It is on main since the rival learning modes landed. With `--table`
+  or `--engine minimal` blobrun refuses it (they have no readout mode), and the suite then
+  shows the frozen-sheet rows as n/a.
 - `--reach` uses the same driver calls as a life, so it measures whatever engine blobrun
   drives; `--seed 1` prints exactly what `blobprobe carry --seed 1` does.
 - `--speed` ticks one blob per size (8x8, 16x16, 32x32 tiles) with random sensor input and
@@ -203,7 +204,9 @@ standard life is `scripts/task.sh`'s: 20 ticks a step, 3x3 groups, 40,000 steps,
 groups (24 number lines do not fit at 3x3) and the place number code, run twice: with
 the lean reward (the main row) and the sparse one (slow credit), retention and idle use windows of 200 so the
 first retest window is short. Everything after the name is appended to every call, so it
-overrides the row's own flags. Runs and logs go to `out/suite/<name>/`; the scorecard to
+overrides the row's own flags. For `--table` the suite reads the `table` and `table_off`
+drivers in place of `blob` and `learn_off`. Engines without weight planes (table, minimal)
+show the room rows as n/a. Runs and logs go to `out/suite/<name>/`; the scorecard to
 `out/scorecards/<name>.csv` (committed; the rest of `out/` is not). Speed is measured last,
 alone among the suite's runs, but other agents may be running: the scorecard says so.
 
