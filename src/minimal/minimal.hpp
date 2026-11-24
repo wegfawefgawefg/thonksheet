@@ -33,16 +33,17 @@ struct MinimalGenome {
     int inhibit_gain = 4; // an inhibitory spike counts this many excitatory ones
     int threshold_min = 1, threshold_max = 4; // drawn at birth
     int threshold_cap = 255;
-    int up_shift = 4;      // on firing, raise own threshold with this chance
-    int down_shift = 9;    // every tick, lower own threshold with this chance
-    int noise_shift = 9;   // spontaneous spike chance per neuron per tick
-    int credit_ticks = 20; // a noise spike this recent is graded by a reward (1..30)
-    int learn_shift = 0;   // chance a graded neuron makes one swap, at the largest surprise
-    int avg_shift = 5;     // reward average follows over about 2^this rewards
-    int grade_mode = 0;    // 0 noise spikes only, 1 every recent spike (the ablation)
-    int drop_mode = 0;     // what a gain costs: 0 a random connection, 1 least recently useful
-    int cowire_on = 1;     // wiring by co-activity
-    int cowire_shift = 6;  // on firing, chance to swap one connection for a just-active source
+    int up_shift = 4;           // on firing, raise own threshold with this chance
+    int down_shift = 9;         // every tick, lower own threshold with this chance
+    int noise_shift = 9;        // spontaneous spike chance per neuron per tick
+    int credit_ticks = 20;      // a noise spike this recent is graded by a reward (1..30)
+    int learn_shift = 0;        // chance a graded neuron makes one swap, at the largest surprise
+    int avg_shift = 5;          // reward average follows over about 2^this rewards
+    int grade_mode = 0;         // 0 noise spikes only, 1 every recent spike (the ablation)
+    int drop_mode = 0;          // what a gain costs: 0 a random connection, 1 least recently useful
+    int cowire_on = 1;          // wiring by co-activity
+    int cowire_shift = 6;       // on firing, chance to swap one connection for a just-active source
+    int cowire_needs_input = 0; // 1: co-activity wiring only while a sensor line is attached
 };
 
 struct MinimalStats {

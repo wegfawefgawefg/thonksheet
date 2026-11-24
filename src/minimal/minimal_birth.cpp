@@ -204,6 +204,7 @@ static const MinimalField fields[] = {
     {"drop_mode", &MinimalGenome::drop_mode},
     {"cowire_on", &MinimalGenome::cowire_on},
     {"cowire_shift", &MinimalGenome::cowire_shift},
+    {"cowire_needs_input", &MinimalGenome::cowire_needs_input},
 };
 
 void apply_minimal_args(int argc, char** argv, MinimalGenome& mg) {

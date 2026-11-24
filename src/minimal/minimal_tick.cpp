@@ -66,6 +66,15 @@ static void cowire(MinimalBlob& m, const uint64_t* prev, const uint64_t* fired) 
     }
 }
 
+// any sensor line attached: the world is plugged in
+static bool plugged_in(const Blob& blob) {
+    uint64_t any = 0;
+    for (int t = 0; t < blob.tile_count; t++) {
+        any |= blob.sense_attached[t];
+    }
+    return any != 0;
+}
+
 void minimal_tick(Blob& blob) {
     MinimalBlob& m = minimal_of(blob);
     const MinimalGenome& mg = m.mg;
@@ -90,7 +99,7 @@ void minimal_tick(Blob& blob) {
     m.now = next;
 
     regulate(m, out);
-    if (mg.learning_on && mg.cowire_on) {
+    if (mg.learning_on && mg.cowire_on && (!mg.cowire_needs_input || plugged_in(blob))) {
         cowire(m, prev, out);
     }
     if (mg.learning_on && m.used) {
