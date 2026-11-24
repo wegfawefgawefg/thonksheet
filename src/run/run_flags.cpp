@@ -56,6 +56,15 @@ static const char* usage =
     "  --frozen-readout   only connections into motor neurons learn (genome learn_mode 1)\n"
     "  --alive-ticks N    end of life: ticks counted for rate, silent, stuck (default 16384)\n"
     "  --rhythm-ticks N   end of life: idle ticks recorded for the rhythm (default 16384)\n"
+    "babbling and balance (ideas 60, 61; all off by default):\n"
+    "  --babble N         urge one random button for a whole step, N steps in 1024\n"
+    "  --babble-fade N    1: scale that by the recent share of bad answers\n"
+    "  --babble-fire N    chance per 256 an urged cell is urged on a tick (default 64)\n"
+    "  --balance N        1: drop the commoner of good and bad until they arrive equally\n"
+    "  --balance-shift N  running rates forget at 2^-N per step (default 6)\n"
+    "  --signal-report N  1: report signal counts even with both off\n"
+    "  with any of these on, the summary gets the signal counts and the late score without\n"
+    "  babbled steps, and <csv stem>-clean.csv the window scores without them\n"
     "Each life also writes <csv stem>-sum.csv: driver,key,value for every number printed.\n";
 
 static bool read_int(const char* text, int64_t& out) {
@@ -231,6 +240,18 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.alive_ticks = (int)v;
         } else if (std::strcmp(flag, "--rhythm-ticks") == 0) {
             flags.rhythm_ticks = (int)v;
+        } else if (std::strcmp(flag, "--babble") == 0) {
+            flags.babble.chance = (int)v;
+        } else if (std::strcmp(flag, "--babble-fade") == 0) {
+            flags.babble.fade = (int)v;
+        } else if (std::strcmp(flag, "--babble-fire") == 0) {
+            flags.babble.fire = (int)v;
+        } else if (std::strcmp(flag, "--balance") == 0) {
+            flags.babble.balance = (int)v;
+        } else if (std::strcmp(flag, "--balance-shift") == 0) {
+            flags.babble.memory_shift = (int)v;
+        } else if (std::strcmp(flag, "--signal-report") == 0) {
+            flags.babble.report = (int)v;
         } else {
             std::fprintf(stderr, "blobrun: unknown flag %s\n%s", flag, usage);
             return false;
@@ -242,6 +263,13 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
     }
     if (flags.steps < flags.window) {
         std::fprintf(stderr, "blobrun: --steps is shorter than one window\n");
+        return false;
+    }
+    BabbleSettings& bs = flags.babble;
+    if (bs.chance < 0 || bs.chance > 1024 || bs.fire < 0 || bs.fire > 256 || bs.memory_shift < 1 ||
+        bs.memory_shift > 14) {
+        std::fprintf(stderr, "blobrun: --babble 0..1024, --babble-fire 0..256, "
+                             "--balance-shift 1..14\n");
         return false;
     }
     if (flags.task_seed == 0) {

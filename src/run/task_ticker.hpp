@@ -2,6 +2,7 @@
 
 #include "run/run_flags.hpp"
 #include "world/plug.hpp"
+#include "world/plug_babble.hpp"
 #include "world/task.hpp"
 
 #include <cstdint>
@@ -34,7 +35,9 @@ struct TaskTicker {
     int cue = 0;         // task.cue while it was sensed
     int right_move = -1; // what the perfect player would have done
     int move = -1;       // what the blob did (-1 no move)
-    int valence = 0;
+    int valence = 0;     // as the blob gets it (balance may have dropped it)
+
+    Babble babble; // ideas 60 and 61; does nothing when off
 };
 
 // a fresh task on a blob that is already born. false if the plug does not fit.

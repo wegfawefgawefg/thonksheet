@@ -180,7 +180,8 @@ void tick_fire(Blob& blob, uint64_t* out) {
         // sensors fire as the world says; their own guess is kept as the prediction
         uint64_t sensor = blob.sensor[t];
         blob.predicted[t] = would & sensor;
-        uint64_t noise = g.noise_on ? sparse_word(blob.rng, noise_shift) : 0;
+        // an urged cell (idea 60) fires like a noise spike: on top of its inputs, if rested
+        uint64_t noise = (g.noise_on ? sparse_word(blob.rng, noise_shift) : 0) | blob.urge[t];
         uint64_t inner = (would | noise | blob.pacemaker[t]) & rested & ~sensor;
         uint64_t fired = inner | (blob.sense_in[t] & sensor);
         out[t] = fired;

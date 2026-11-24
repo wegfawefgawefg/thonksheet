@@ -2,6 +2,7 @@
 
 #include "blob/genome.hpp"
 #include "world/plug.hpp"
+#include "world/plug_babble.hpp"
 #include "world/task.hpp"
 
 #include <cstdint>
@@ -45,6 +46,8 @@ struct RunFlags {
     int reach_settle = 30000;         // reach: ticks before measuring
     int reach_blocks = 4000;          // reach: blocks of 20 ticks measured
     int speed_ms = 2000;              // speed: time spent at each size
+
+    BabbleSettings babble; // ideas 60 and 61: babbling and balanced good/bad, off by default
 };
 
 // false after printing a message (or the usage) to stderr
