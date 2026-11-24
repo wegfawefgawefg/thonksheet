@@ -28,14 +28,14 @@ constexpr int MIN_HISTORY = 32; // spike and noise maps kept, a power of two
 // plain integers; a "shift" is a chance of 2^-shift. "--m.name value" overrides one.
 struct MinimalGenome {
     int learning_on = 1;  // 0: no wiring change at all (regulation and noise still run)
-    int budget = 24;      // connections per neuron, set at birth
+    int budget = 48;      // connections per neuron, set at birth
     int budget_on = 1;    // 0: gains and losses are not paired, fan-in drifts
     int inhibit_gain = 4; // an inhibitory spike counts this many excitatory ones
     int threshold_min = 1, threshold_max = 4; // drawn at birth
     int threshold_cap = 255;
     int up_shift = 4;      // on firing, raise own threshold with this chance
     int down_shift = 9;    // every tick, lower own threshold with this chance
-    int noise_shift = 8;   // spontaneous spike chance per neuron per tick
+    int noise_shift = 9;   // spontaneous spike chance per neuron per tick
     int credit_ticks = 20; // a noise spike this recent is graded by a reward (1..30)
     int learn_shift = 0;   // chance a graded neuron makes one swap, at the largest surprise
     int avg_shift = 5;     // reward average follows over about 2^this rewards
