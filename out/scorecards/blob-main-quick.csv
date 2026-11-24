@@ -1,0 +1,67 @@
+property,test,mean,spread,learn_off,chance,seeds,setting
+about,name,,,,,,blob-main-quick
+about,flags,,,,,,
+about,life,,,,,,--ticks 20 --sensor-side 3 --motor-side 3 --steps 4000 --window 200
+about,seeds,,,,,,5 6
+about,date,,,,,,2026-11-24
+about,commit,,,,,,7ce8bc7
+about,wall,,,,,,"2 min, 2 runs at a time"
+about,speed,,,,,,"single core under nice -n 19, CPU clock capped at about 4.6 GHz, other agents' runs on the machine: not comparable with quiet runs"
+about,frozen readout,,,,,,yes
+learns at all,echo k=2,0.79625,0.167938,0.52875,0.4725,2,--capacity --steps 4000 --window 200
+learns at all,echo k=4,0.225,0.19799,0.1675,0.2325,2,--capacity --steps 4000 --window 200
+learns at all,echo k=8,0.17,0.0565685,0.1075,0.12125,2,--capacity --steps 4000 --window 200
+learns at all,shuffled echo k=2,0.36125,0.426032,0.4825,0.46,2,--task shuffled-echo --steps 4000 --window 200
+a sense of time,"delayed echo k=2, 2 steps",0.48,0.0848528,0.465,0.515,2,--task delayed-echo --delay 2 --steps 4000 --window 200
+a sense of time,"beat, every 4 steps",0.538334,0.0518543,0.518334,0.481666,2,--task beat --period 4 --steps 4000 --window 200
+a sense of time,"sequence, 8 lines x 4 (prediction)",0.456372,0.0488837,0.570052,0.497379,2,--task sequence --steps 4000 --window 200
+a sense of time,"sequence, surprise falling (late - early)",-0.036875,0.0163518,0.0211631,-0.00168403,2,--task sequence --steps 4000 --window 200
+acting in a world,catch 4x4,0.236827,0.00535704,0.255653,0.222072,2,--task catch --catch-size 4 4 --steps 4000 --window 200
+acting in a world,"cartpole, lean reward (steps per fall)",12.6237,1.67697,20.5344,26.0912,2,--task cartpole --sensor-side 2 --cart-reward lean --number-code place --steps 4000 --window 200
+acting in a world,"cartpole, sparse reward (steps per fall)",24.7917,14.4368,17.8391,26.0912,2,--task cartpole --sensor-side 2 --cart-reward sparse --number-code place --steps 4000 --window 200
+reach,cue readable how far (tiles),5,0,3,,2,--reach --reach-settle 4000 --reach-blocks 400
+reach,cue readable at 1 tiles,17.7934,0.968666,12.2386,,2,--reach --reach-settle 4000 --reach-blocks 400
+reach,cue readable at 2 tiles,3.1626,0.259593,2.35128,,2,--reach --reach-settle 4000 --reach-blocks 400
+reach,cue readable at 3 tiles,1.02026,0.0715818,0.574174,,2,--reach --reach-settle 4000 --reach-blocks 400
+reach,cue readable at 4 tiles,0.736591,0.43962,0.24553,,2,--reach --reach-settle 4000 --reach-blocks 400
+reach,cue readable at 5 tiles,0.474508,0.193997,0.220058,,2,--reach --reach-settle 4000 --reach-blocks 400
+reach,cue readable at 6 tiles,0.19013,0.0512631,0.0757077,,2,--reach --reach-settle 4000 --reach-blocks 400
+reach,cue readable at 7 tiles,0.17095,0.172698,0.0139875,,2,--reach --reach-settle 4000 --reach-blocks 400
+reach,"echo k=2, cue and button 1 tiles apart",0.79625,0.167938,0.52875,0.4725,2,--task echo --distance 1 --steps 4000 --window 200
+reach,"echo k=2, cue and button 2 tiles apart",0.60625,0.0654074,0.385,0.425,2,--task echo --distance 2 --steps 4000 --window 200
+reach,"echo k=2, cue and button 3 tiles apart",0.52625,0.0406586,0.52375,0.425,2,--task echo --distance 3 --steps 4000 --window 200
+reach,"echo k=2, cue and button 5 tiles apart",0.485,0.0106066,0.43,0.45875,2,--task echo --distance 5 --steps 4000 --window 200
+features nobody designed in,"control: echo k=2 (frozen sheet, readout learns)",0.92625,0.00176777,0.52875,0.4725,2,--task echo --frozen-readout --steps 4000 --window 200
+features nobody designed in,"order: which of two cues came on first (frozen sheet, readout learns)",0.445,0.0494975,0.4,0.515,2,--task order --frozen-readout --steps 4000 --window 200
+features nobody designed in,"both-not-either: exactly one of two cues (frozen sheet, readout learns)",0.41,0.0848528,0.4275,0.4775,2,--task both-not-either --frozen-readout --steps 4000 --window 200
+features nobody designed in,"gap: short or long gap between two blinks (frozen sheet, readout learns)",0.395276,0.0529383,0.440285,0.551694,2,--task gap --frozen-readout --steps 4000 --window 200
+features nobody designed in,"place: shape at a place never rewarded (frozen sheet, readout learns)",0.448356,0.0240579,0.397964,0.494115,2,--task place --frozen-readout --steps 4000 --window 200
+features nobody designed in,order: which of two cues came on first (whole blob learns),0.475,0.00707107,0.4,0.515,2,--task order --steps 4000 --window 200
+features nobody designed in,both-not-either: exactly one of two cues (whole blob learns),0.45,0.0565685,0.4275,0.4775,2,--task both-not-either --steps 4000 --window 200
+features nobody designed in,gap: short or long gap between two blinks (whole blob learns),0.463458,0.000630739,0.440285,0.551694,2,--task gap --steps 4000 --window 200
+features nobody designed in,place: shape at a place never rewarded (whole blob learns),0.526921,0.103885,0.397964,0.494115,2,--task place --steps 4000 --window 200
+"keeps learning, keeps what it had",echo A at the end of learning it,0.79625,0.167938,0.52875,0.4725,2,--task echo --retention echo --steps 4000 --window 200 --retest 1000
+"keeps learning, keeps what it had",echo B (2 new cues and buttons) at its end,0.09625,0.0972272,0.1225,0.23125,2,--task echo --retention echo --steps 4000 --window 200 --retest 1000
+"keeps learning, keeps what it had","echo A retested after B, first window",0.85,0.0989949,0.5975,0.4975,2,--task echo --retention echo --steps 4000 --window 200 --retest 1000
+"keeps learning, keeps what it had","echo A retested after B, end",0.8975,0.10253,0.555,0.43,2,--task echo --retention echo --steps 4000 --window 200 --retest 1000
+"keeps learning, keeps what it had",capacity: largest k held (2..16),1,1.41421,0,0,2,--capacity --steps 4000 --window 200
+"keeps learning, keeps what it had",echo k=16,0.0425,0.0106066,0.075,0.05,2,--capacity --steps 4000 --window 200
+does not wreck itself idle,echo before unplugging,0.79625,0.167938,0.52875,0.4725,2,--task echo --idle 40000 --steps 4000 --window 200 --retest 1000
+does not wreck itself idle,"echo after unplugged, first window",0.7,0.226274,0.615,0.4975,2,--task echo --idle 40000 --steps 4000 --window 200 --retest 1000
+does not wreck itself idle,"echo after unplugged, end",0.7775,0.10253,0.525,0.475,2,--task echo --idle 40000 --steps 4000 --window 200 --retest 1000
+room,"connections per neuron, end of echo k=2 life",92.8684,0.53825,63.0973,,2,--capacity --steps 4000 --window 200
+room,"share of connections at strength 1, end of echo k=2 life",0.0858858,0.0249443,0.761208,,2,--capacity --steps 4000 --window 200
+room,"share of connections at strength 4, end of echo k=2 life",0.138949,0.00755685,0.238791,,2,--capacity --steps 4000 --window 200
+room,"share of connections at strength 5 (top), end of echo k=2 life",0.775166,0.0325015,0,,2,--capacity --steps 4000 --window 200
+room,"share of neurons at the connection cap, end of echo k=2 life",0.777832,0.0718152,0.0163574,,2,--capacity --steps 4000 --window 200
+room,"share of neurons with threshold at cap, end of echo k=2 life",0.145752,0.024859,0.00378418,,2,--capacity --steps 4000 --window 200
+stays alive,"firing rate over target, end of echo k=2 life",1.52746,0.260597,1.03693,,2,--capacity --steps 4000 --window 200
+stays alive,"share of silent neurons, end of echo k=2 life",0.000130208,0.000184143,0,,2,--capacity --steps 4000 --window 200
+stays alive,"share of stuck neurons, end of echo k=2 life",0.00065104,0.00092071,0,,2,--capacity --steps 4000 --window 200
+stays alive,"rhythm period (ticks, 0 none), end of echo k=2 life",61,4.24264,25,,2,--capacity --steps 4000 --window 200
+stays alive,"rhythm strength, end of echo k=2 life",0.506275,0.0864099,0.607619,,2,--capacity --steps 4000 --window 200
+fits the machine,ticks/s in the echo k=2 life,42437.6,1404.38,62845.2,,2,--capacity --steps 4000 --window 200
+fits the machine,"ticks/s at 8x8 tiles, random input",51995.3,,,,1,--speed
+fits the machine,"ticks/s at 16x16 tiles, random input",13132.6,,,,1,--speed
+fits the machine,"ticks/s at 32x32 tiles, random input",3385.74,,,,1,--speed
+fits the machine,bytes per neuron (32x32 tiles),210.125,,,,1,--speed

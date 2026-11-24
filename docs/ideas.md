@@ -157,7 +157,10 @@ Status words: idea, building, tried (with result), kept, dropped.
     feature the input does not hand over (which of two cues came first; two cues both on
     but not either alone; the same shape in a new place; a gap of N ticks). Count how many
     of these a frozen sheet already supports, at birth and after a reward-free life, and how
-    that grows with sheet size. *idea*
+    that grows with sheet size. *tried: the features are there. An ideal reader gets order (3.4),
+    exclusive-or (1.7) and gap (1.5) from the tile next to the input at birth; the suite's
+    frozen readout scores chance on the same tasks. Delays triple the time features. So
+    richness holds and reading is the wall. docs/results-2026-11-24-features.md*
 50. **The minimal engine.** [ours] A fresh, tiny engine with three things only: a neuron is
     a popcount over a mask against a threshold; a synapse changes by chance on an outcome,
     graded only where the spike was noise, under a per-neuron budget; each neuron keeps its
@@ -194,3 +197,9 @@ Status words: idea, building, tried (with result), kept, dropped.
     noise-graded rule ends at 0.00 on most seeds, and with its sign reversed it scores 1.00
     on shuffled echo on every seed. Find the cause, and try the reversed sign in the other
     two engines. *building*
+58. **A readout that can read what is there.** [ours] On a frozen sheet, find the local,
+    online rule at the motor cells that gets closest to the ideal reader on which-at-a-
+    distance, order, exclusive-or and gap. Candidates: an error rule (on bad, the button
+    that fired loses its active inputs and the other gains them); a budget on the readout;
+    more motor cells per button, spread through the sheet so some sit where the feature is;
+    pooling cells. *building*

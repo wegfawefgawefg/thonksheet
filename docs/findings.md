@@ -38,7 +38,21 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
    twenty-one-mechanism one on Echo. Delays and far links cannot be judged yet: no task
    that needs them is learned by anything.
 
+8. **The sheet is already rich; reading it is the hard part.** [likely] With nothing
+   learned and no reward, order, exclusive-or and gap length can all be read from the
+   neurons a tile or two from the input by an ideal reader (1.3 to 3.4, where 1.0 is easy).
+   The same features score at chance when a frozen sheet's readout has to learn them. This
+   is the owner's richness thesis, half confirmed: the features are there; selection is
+   what we cannot yet do.
+9. **Delays give a sense of time.** [likely] They do nothing measurable on Echo. On
+   time features they are most of the story: gap length reads 0.43 with all delays at 1 and
+   4.0 with delays of 4 to 8 ticks; order goes 1.5 to 5.4.
+
 ## Walls
+
+- **Reading.** An ideal reader gets the answer to order, exclusive-or and gap from the tile
+  next to the input; our readout rule gets chance. This is probably the same wall as reach
+  (the cue is readable at three tiles and unlearnable at two).
 
 - **Reach.** Learning works across one tile, sometimes two (table neurons), not three. The
   cue's identity is still readable at three or four tiles, so past one tile the failure is

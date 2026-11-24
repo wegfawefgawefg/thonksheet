@@ -61,6 +61,10 @@ inner neurons measurably better for a task than unsupervised wiring already make
     bigger sheet. (55%) If this holds, the owner's thesis (richness turns learning into
     selection) is carrying real weight; if a frozen sheet fails these however large it is,
     the missing piece is credit reaching the inside.
+    - *Scored 2026-11-24: 9 looks right. 10 is wrong as written: a frozen sheet with our
+      readout scores chance on all four feature tasks. But an ideal reader finds order,
+      exclusive-or and gap in the tile next to the input at birth. The richness is there;
+      the readout is what fails. The size half is untested.*
 
 ## 2026-11-24, before lose-shift and slow credit
 
@@ -86,4 +90,11 @@ inner neurons measurably better for a task than unsupervised wiring already make
     once fixed the rule will be ordinary: no better than the default. (60%) If instead the
     reversed rule keeps beating the default on shuffled echo in a second engine, it is a
     real finding about what noise spikes mean in a sheet with inhibition.
+
+## 2026-11-24, before the readout work
+
+16. **A plain error rule at the motor cells learns order and exclusive-or on a frozen
+    sheet** to above 0.75, with the motor cells within a tile of the cue. (55%)
+17. **Spreading a button's motor cells through the sheet matters more than the rule.**
+    (45%)
 
