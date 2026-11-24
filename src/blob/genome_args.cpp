@@ -90,6 +90,7 @@ static const GenomeField fields[] = {
     {"readout_good", &Genome::readout_good},
     {"readout_new", &Genome::readout_new},
     {"readout_budget", &Genome::readout_budget},
+    {"readout_far", &Genome::readout_far},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

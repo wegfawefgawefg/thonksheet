@@ -63,6 +63,19 @@ static bool add_idle(Blob& blob, int n, const uint64_t* trace) {
     return false;
 }
 
+// pooling: give a motor cell both far slots, drawn as at birth (an empty one stays empty
+// only if no tile fits)
+static void open_far_slots(Blob& blob, int n) {
+    for (int k = 0; k < FAR_SLOTS; k++) {
+        uint32_t* far = &blob.far_tile[n * FAR_SLOTS + k];
+        if (*far != (uint32_t)blob.tile_count) {
+            continue;
+        }
+        draw_far_tile(blob, n / TILE_NEURONS, far,
+                      &blob.slot_delay[blob_weight_index(n, LOCAL_SLOTS + k)]);
+    }
+}
+
 // move one motor cell's active inputs: gain (+1) or lose (-1). returns levels moved
 static uint32_t move_inputs(Blob& blob, int n, int sign, const uint64_t* trace, int ages) {
     const Genome& g = blob.genome;
@@ -139,6 +152,13 @@ void learn_readout(Blob& blob, int valence) {
             marked ? blob.motor_acted[t] & blob.motor_attached[t] : blob.motor[t] & trace[t];
         uint64_t other =
             marked ? blob.motor_attached[t] & ~blob.motor_acted[t] : blob.motor[t] & ~trace[t];
+        if (g.readout_far && marked) {
+            uint64_t cells = blob.motor_attached[t];
+            while (cells) {
+                open_far_slots(blob, t * TILE_NEURONS + __builtin_ctzll(cells));
+                cells &= cells - 1;
+            }
+        }
         while (pressed) {
             int n = t * TILE_NEURONS + __builtin_ctzll(pressed);
             pressed &= pressed - 1;

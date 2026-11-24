@@ -35,7 +35,7 @@ LEARNING_ONLY = {
     "far_redraw_on", "learn_mode", "flip_count", "flip_scope", "flip_window_ticks",
     "flip_average_shift", "noise_learn_shift", "noise_trace_ticks", "reward_average_shift",
     "readout_shift", "readout_trace_ticks", "readout_counts", "readout_know_button",
-    "readout_good", "readout_new", "readout_budget",
+    "readout_good", "readout_new", "readout_budget", "readout_far",
 }
 
 

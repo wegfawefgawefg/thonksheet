@@ -105,6 +105,8 @@ struct Genome {
     int readout_new = 1;          // 1: gaining may wire a source in that was not connected
     int readout_budget = 0;       // 1: a motor cell keeps its count of connections; a new
                                   // one costs an idle one, a lost one is replaced by an idle one
+    int readout_far = 0;          // 1: a marked motor cell with an empty far slot gets one drawn,
+                                  // so it hears two more tiles than its 9 local ones
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

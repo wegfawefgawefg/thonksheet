@@ -7,7 +7,7 @@
 // checkerboard, cell (lx, ly) to button (lx + ly) % buttons, so every tile holds cells of
 // every button and no place favours one. only cells at least as far from the cues as the
 // packed motor lines are used (so --distance still sets the nearest a motor cell gets).
-// each button then keeps N of its cells: the nearest N to the cues, or with
+// each button then keeps N of its cells (all it has, if fewer): the nearest N to the cues, or with
 // --motor-spread-even 1, N spaced evenly through its list from nearest to farthest.
 // nothing here knows the task's answer: it is the same layout for every cue.
 
@@ -69,10 +69,14 @@ bool plug_spread_motors(Plug& plug, const Blob& blob) {
             }
         }
     }
+    // more than the region holds means all of them (every button gets the same count)
     int want = s.motor_spread;
+    for (int line = 0; line < lines; line++) {
+        want = count[line] < want ? count[line] : want;
+    }
     int used = 0;
     for (int line = 0; line < lines; line++) {
-        if (count[line] < want || used + want > PLUG_MAX_SPREAD) {
+        if (want < 1 || used + want > PLUG_MAX_SPREAD) {
             std::fprintf(stderr, "plug: %d motor cells per button do not fit (%d there)\n", want,
                          count[line]);
             return false;
