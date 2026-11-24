@@ -20,6 +20,19 @@ in its own dated doc.
 9. Stage 2 tasks, then stage 3 (catch, cartpole, snake first).
 10. Tick speed: hand-written AVX-512 path, then many blobs across cores.
 
+## Asked for, queued behind the gate
+
+- **Layers inside a tile.** Split the 64 bit positions into input, middle and output groups;
+  birth and growth rules depend on the sender's and receiver's group. A constant mask, no
+  cost per tick. Strength is a genome number, zero meaning today's flat tile, so it can be
+  measured. Owner: "layers would be good i think, would force feature locality. adds
+  sparseness for sure. reduces propagation bandwidth i think."
+- **Scale.** 4,096 neurons is far too few for anything past the first reflex tasks; it is
+  the size for checking the learning rule fast. Next: the tick across all cores (it is a
+  stencil), then sheets of 100,000 to 1,000,000 neurons, then the GPU.
+- **Fine locality inside a tile**, as a birth and growth preference by cell distance, also a
+  genome number.
+
 ## Later
 
 11. Blobs past 16,000 neurons; check the cache behaviour holds.

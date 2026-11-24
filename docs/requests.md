@@ -68,3 +68,5 @@ A request that becomes work also gets a line in `docs/plan.md`.
   Mans In My House is the reference for structure, renderer and libraries. Never foolswud.
 - "would motor neurons also be scattered around?" -> yes: motor cells are a lattice through an
   output area, like the sensors (`motor_stride`).
+- "layers would be good i think" and "our neuron count is VERY LOW ... are we really running
+  just one sheet?" -> both queued in `docs/plan.md` right behind the first learning gate.
