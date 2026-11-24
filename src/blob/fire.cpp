@@ -19,10 +19,10 @@ constexpr int POTENTIAL_MAX = 16000;
 // (AVX-512 VPOPCNTQ on this machine).
 static inline void add_slot_shared(int32_t* __restrict drive, uint64_t e, uint64_t i,
                                    const uint64_t* __restrict a0, const uint64_t* __restrict a1,
-                                   int gain, int bt, int bonus) {
+                                   int gain, int bt, int bonus, int sl) {
     for (int b = 0; b < TILE_NEURONS; b++) {
-        int excite = __builtin_popcountll(e & a0[b]) + 4 * __builtin_popcountll(e & a1[b]);
-        int inhibit = __builtin_popcountll(i & a0[b]) + 4 * __builtin_popcountll(i & a1[b]);
+        int excite = __builtin_popcountll(e & a0[b]) + (__builtin_popcountll(e & a1[b]) << sl);
+        int inhibit = __builtin_popcountll(i & a0[b]) + (__builtin_popcountll(i & a1[b]) << sl);
         drive[b] += excite - gain * inhibit + (excite >= bt ? bonus : 0);
     }
 }
@@ -30,11 +30,12 @@ static inline void add_slot_shared(int32_t* __restrict drive, uint64_t e, uint64
 // the same, when each neuron read its own word s[b] (its own delay) from one source tile
 static inline void add_slot_own(int32_t* __restrict drive, const uint64_t* __restrict s,
                                 uint64_t inh, const uint64_t* __restrict a0,
-                                const uint64_t* __restrict a1, int gain, int bt, int bonus) {
+                                const uint64_t* __restrict a1, int gain, int bt, int bonus,
+                                int sl) {
     for (int b = 0; b < TILE_NEURONS; b++) {
         uint64_t e = s[b] & ~inh, i = s[b] & inh;
-        int excite = __builtin_popcountll(e & a0[b]) + 4 * __builtin_popcountll(e & a1[b]);
-        int inhibit = __builtin_popcountll(i & a0[b]) + 4 * __builtin_popcountll(i & a1[b]);
+        int excite = __builtin_popcountll(e & a0[b]) + (__builtin_popcountll(e & a1[b]) << sl);
+        int inhibit = __builtin_popcountll(i & a0[b]) + (__builtin_popcountll(i & a1[b]) << sl);
         drive[b] += excite - gain * inhibit + (excite >= bt ? bonus : 0);
     }
 }
@@ -42,9 +43,10 @@ static inline void add_slot_own(int32_t* __restrict drive, const uint64_t* __res
 // far slots: each neuron reads its own source word, excitatory senders only
 static inline void add_far_slot(int32_t* __restrict drive, const uint64_t* __restrict s,
                                 const uint64_t* __restrict a0, const uint64_t* __restrict a1,
-                                int bt, int bonus) {
+                                int bt, int bonus, int sl) {
     for (int b = 0; b < TILE_NEURONS; b++) {
-        int excite = __builtin_popcountll(s[b] & a0[b]) + 4 * __builtin_popcountll(s[b] & a1[b]);
+        int excite =
+            __builtin_popcountll(s[b] & a0[b]) + (__builtin_popcountll(s[b] & a1[b]) << sl);
         drive[b] += excite + (excite >= bt ? bonus : 0);
     }
 }
@@ -102,6 +104,7 @@ void tick_fire(Blob& blob, uint64_t* out) {
     const uint64_t* inh = blob.inhibitory;
     const int gain = g.inhibit_gain, bt = g.branch_threshold, bonus = g.branch_bonus;
     const int noise_shift = g.noise_shift;
+    const int sl = g.strong_log;
     // every local delay the same: one word per slot for the whole tile
     const bool shared = g.local_delay_min == g.local_delay_max;
 
@@ -129,7 +132,7 @@ void tick_fire(Blob& blob, uint64_t* out) {
             const uint64_t* a1 = tile_w1 + k * TILE_NEURONS;
             if (shared) {
                 uint64_t s = ring[offset[g.local_delay_min] + src];
-                add_slot_shared(drive, s & ~inh[src], s & inh[src], a0, a1, gain, bt, bonus);
+                add_slot_shared(drive, s & ~inh[src], s & inh[src], a0, a1, gain, bt, bonus, sl);
                 continue;
             }
             // each neuron picks its own age of this source tile
@@ -139,7 +142,7 @@ void tick_fire(Blob& blob, uint64_t* out) {
             }
             pick_by_delay(words, column, tile_delay + k * TILE_NEURONS, g.local_delay_min,
                           g.local_delay_max);
-            add_slot_own(drive, words, inh[src], a0, a1, gain, bt, bonus);
+            add_slot_own(drive, words, inh[src], a0, a1, gain, bt, bonus, sl);
         }
         // the 2 far slots: each neuron its own tile and delay
         for (int k = 0; k < FAR_SLOTS; k++) {
@@ -150,7 +153,7 @@ void tick_fire(Blob& blob, uint64_t* out) {
                 words[b] = ring[offset[delay[b]] + far[b * FAR_SLOTS]];
             }
             add_far_slot(drive, words, tile_w0 + slot * TILE_NEURONS, tile_w1 + slot * TILE_NEURONS,
-                         bt, bonus);
+                         bt, bonus, sl);
         }
 
         // leak, add, compare
@@ -174,7 +177,7 @@ void tick_fire(Blob& blob, uint64_t* out) {
         // sensors fire as the world says; their own guess is kept as the prediction
         uint64_t sensor = blob.sensor[t];
         blob.predicted[t] = would & sensor;
-        uint64_t noise = sparse_word(blob.rng, noise_shift);
+        uint64_t noise = g.noise_on ? sparse_word(blob.rng, noise_shift) : 0;
         uint64_t inner = (would | noise | blob.pacemaker[t]) & rested & ~sensor;
         uint64_t fired = inner | (blob.sense_in[t] & sensor);
         out[t] = fired;

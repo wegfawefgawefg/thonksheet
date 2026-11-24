@@ -17,6 +17,9 @@ static void regulate_one_sector(Blob& blob, int sector, int spikes, int wrong) {
     blob.sector_surprise[sector] = (uint32_t)(sur < 0 ? 0 : sur);
 
     // a dead band of an eighth of the target either side, then one step
+    if (!g.sector_reg_on) {
+        return;
+    }
     int target = (int)blob.sector_target[sector];
     int band = target / 8;
     int bias = blob.sector_bias[sector];
@@ -93,5 +96,7 @@ static void regulate_thresholds(Blob& blob) {
 
 void tick_regulate(Blob& blob) {
     regulate_sectors(blob);
-    regulate_thresholds(blob);
+    if (blob.genome.threshold_reg_on) {
+        regulate_thresholds(blob);
+    }
 }

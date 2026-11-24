@@ -75,11 +75,15 @@ void learn_wiring(Blob& blob, int boost) {
     int prune_shift = boosted(g.prune_shift, boost);
     int redraw_shift = boosted(g.far_redraw_shift, boost);
     uint32_t grown = 0, pruned = 0;
+    uint64_t grow_mask = g.grow_on ? ~0ull : 0;
+    uint64_t prune_mask = g.prune_on ? ~0ull : 0;
+    uint64_t redraw_mask = g.far_redraw_on ? ~0ull : 0;
 
     for (int t = 0; t < blob.tile_count; t++) {
-        uint64_t grow = fired[t] & sparse_word(blob.rng, grow_shift);
-        uint64_t prune = fired[t] & sparse_word(blob.rng, prune_shift);
-        uint64_t redraw = sparse_word(blob.rng, redraw_shift);
+        // a switched-off part still draws its word, so the others see the same chances
+        uint64_t grow = fired[t] & sparse_word(blob.rng, grow_shift) & grow_mask;
+        uint64_t prune = fired[t] & sparse_word(blob.rng, prune_shift) & prune_mask;
+        uint64_t redraw = sparse_word(blob.rng, redraw_shift) & redraw_mask;
         while (grow) {
             int n = t * TILE_NEURONS + __builtin_ctzll(grow);
             grow &= grow - 1;

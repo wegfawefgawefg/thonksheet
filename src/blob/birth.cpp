@@ -55,6 +55,7 @@ static void sanitize_genome(Genome& g) {
     g.reward_ticks = clamp_int(g.reward_ticks, 1, 1000);
     g.sector_smooth_shift = clamp_int(g.sector_smooth_shift, 0, 12);
     g.threshold_cap = clamp_int(g.threshold_cap, g.threshold_max, 30000);
+    g.strong_log = clamp_int(g.strong_log, 0, 4);
 }
 
 int count_fan_in(const Blob& blob, int neuron) {

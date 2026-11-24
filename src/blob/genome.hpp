@@ -63,6 +63,36 @@ struct Genome {
     int far_redraw_shift = 14; // per tick, chance an empty far slot is redrawn
     int surprise_boost = 1;    // shifts taken off the chances while surprise is high
     int surprise_high_per_1024 = 80;
+
+    // switches for ablation runs. 1 is the design; 0 takes that one mechanism out and
+    // changes nothing else. (other mechanisms switch off through their own numbers:
+    // pacemakers_per_1024 0, far_percent 0, inhibitory_percent 0, branch_bonus 0,
+    // surprise_boost 0, local_delay_min = max = 1, cooldown_min = max = 0.)
+    int sector_reg_on = 1;    // sector bias moves toward the target (0: bias stays 0)
+    int threshold_reg_on = 1; // per-neuron threshold up on firing, down by chance
+    int noise_on = 1;         // spontaneous firing
+    int predict_on = 1;       // sensor prediction learning
+    int good_on = 1;          // the good broadcast strengthens co-active pairs
+    int bad_on = 1;           // the bad broadcast weakens them
+    int grow_on = 1;
+    int prune_on = 1;
+    int far_redraw_on = 1;
+    int strong_log = 2; // a w1 bit counts 2^this: 2 gives strengths 0,1,4,5; 1 gives 0,1,2,3
+
+    // learning mode, for the rivals the brain-style rule has to beat (docs/plan.md).
+    // 0 the design. 1 readout: only connections into motor neurons learn (good/bad, growth,
+    // pruning); nothing else changes. 2 random flips: flip a few weight bits, keep them if the
+    // reward over the next window beat the running average, else undo; nothing else learns.
+    // 3 noise is the experiment: good/bad grades only neurons whose recent spike was noise,
+    // in place of the good/bad rule. 4 the same, alongside the good/bad rule.
+    int learn_mode = 0;
+    int flip_count = 4;           // mode 2: bits flipped per trial
+    int flip_scope = 0;           // mode 2: 0 anywhere, 1 only connections into motor neurons
+    int flip_window_ticks = 1000; // mode 2: ticks one trial lives
+    int flip_average_shift = 3;   // mode 2: the reference is a running mean over ~2^this trials
+    int noise_learn_shift = 2;    // modes 3, 4: chance per eligible connection
+    int noise_trace_ticks = 16;   // modes 3, 4: how far back a noise spike counts (1..16)
+    int reward_average_shift = 5; // modes 3, 4: running mean of rewards over ~2^this events
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

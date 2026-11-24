@@ -26,11 +26,13 @@ void blob_tick(Blob& blob) {
 
     if (g.learning_on) {
         int boost = blob.surprise_high ? g.surprise_boost : 0;
-        learn_predict(blob, read_now, boost);
-        if (blob.good_ticks > 0) {
+        if (g.predict_on) {
+            learn_predict(blob, read_now, boost);
+        }
+        if (blob.good_ticks > 0 && g.good_on) {
             learn_reward(blob, +1, boost);
         }
-        if (blob.bad_ticks > 0) {
+        if (blob.bad_ticks > 0 && g.bad_on) {
             learn_reward(blob, -1, boost);
         }
         learn_wiring(blob, boost);
