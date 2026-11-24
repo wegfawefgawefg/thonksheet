@@ -69,3 +69,11 @@ inner neurons measurably better for a task than unsupervised wiring already make
     hundreds of ticks, at a lower chance, gets steps per fall above 25. (40%) It also lets
     something learn delayed echo. (45%)
 
+## 2026-11-24, before growing the minimal engine
+
+13. **One far slot gives the minimal engine reach.** Echo with cue and button 3 tiles apart
+    goes from 0.37 (no better than its twin) to above 0.55. (55%)
+14. **Delays let it learn delayed echo.** With slot delays of 1 to 8 ticks the minimal engine
+    beats its twin on delayed echo by more than 0.15. (35%) More likely delays alone are not
+    enough and it also needs credit that reaches back in time.
+

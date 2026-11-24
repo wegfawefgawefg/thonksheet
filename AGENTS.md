@@ -71,5 +71,8 @@ program or experiment, add or extend a script, and give him the script line in y
   core owner edits them.
 - Commit finished, verified chunks often, with focused messages. Do not push; there is no
   remote.
+- Keep helper scripts and raw outputs in your own worktree under `out/<your job>/` (git
+  ignores `out/`). The session scratchpad folder is shared by every agent: one agent's
+  `sweep.sh` there overwrote another's and wasted its runs.
 - No GitHub Actions, no CI.
 - Docs are blunt and plain: say the thing, give the number, skip the pitch.
