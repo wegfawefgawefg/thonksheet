@@ -123,8 +123,18 @@ Status words: idea, building, tried (with result), kept, dropped.
 ## Baselines and measurements
 
 41. **Frozen blob, learned readout.** [known] baseline. *building*
-42. **Carrying test.** How many tiles away can a cue still be read from activity. *running*
+42. **Carrying test.** How many tiles away can a cue still be read from activity. *tried:
+    cue identity is readable 3 tiles out at birth, 4 with growth and pruning on, 6 after a
+    long life or with many far links. Echo fails inside that range, so from 2 to 4 tiles the
+    problem is credit, not carrying. docs/results-2026-11-24-carry.md*
 43. **Capacity test.** How many cue-button pairs one blob holds: 2, 4, 8, 16. *idea*
 44. **Retention test.** Learn A, learn B, retest A. *idea*
 45. **Throughput numbers.** Synapse checks, real events, signal bits and stored bits in the
     speed test. *idea*
+46. **A reader as weak as the rule.** Repeat the carrying test with a readout that learns the
+    way the blob does, to see how far the real rule can read. *idea*
+47. **Many far links.** [plain] carry. Half the neurons send far instead of 15%. *tried in
+    the carrying test: reach 4 to 6 tiles; not yet tried on a task*
+48. **Pool before deciding.** [known] credit. A motor cell listens to many weak neurons
+    through one hop of relay cells that each sum a neighbourhood, so thinly spread
+    information gets gathered before the reward rule has to find it. *idea*
