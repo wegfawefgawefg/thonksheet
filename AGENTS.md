@@ -54,6 +54,14 @@ The owner uses this PC while agents work.
 - Do not use `pkill -f` or `pgrep -f` with text that is on your own command line.
 - Disk low or memory low: stop and report. Never delete things to make room.
 
+## Scripts
+
+The owner runs scripts, not binaries. Anything he might want to run gets a script in
+`scripts/` with a comment at the top saying what it does and showing example lines:
+`build.sh`, `view.sh`, `watch.sh`, `task.sh`, `bench.sh`, `rhythm.sh`. When you add a new
+program or experiment, add or extend a script, and give him the script line in your notes.
+`view.sh` and `watch.sh` open a window and refuse to run for agents.
+
 ## Working in the repo
 
 - Each area has one owner at a time: `src/blob/` and `src/bench/` (core), `src/view/` and
