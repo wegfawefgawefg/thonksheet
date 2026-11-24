@@ -184,6 +184,12 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "blobrun: no engine '%s' in this build\n", flags.engine.c_str());
         return 1;
     }
+    // the readout mode is the blob genome's learn_mode 1; other engines do not read it
+    if (flags.frozen_readout && (flags.table || use_minimal)) {
+        std::fprintf(stderr, "blobrun: --frozen-readout is the blob's learn_mode 1; this "
+                             "engine has no readout mode\n");
+        return 1;
+    }
 
 #ifndef BLOB_HAS_CORE
     std::printf("no core linked: running the stand-in only (coin flips, perfect player)\n");

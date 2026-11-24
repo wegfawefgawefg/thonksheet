@@ -203,8 +203,12 @@ def collect(rows, jobs, seeds, outdir):
         job_seeds = seeds[:1] if job == "speed" else seeds
         for seed in job_seeds:
             sums = read_sum(os.path.join(outdir, "%s-s%d-sum.csv" % (job, seed)))
+            # an engine with its own driver names (--table) stands in for the blob
+            names = {"blob": "blob", "learn_off": "learn_off", "coin": "coin"}
+            if "blob" not in sums and "table" in sums:
+                names.update(blob="table", learn_off="table_off")
             for driver in vals:
-                v = sums.get(driver, {}).get(key)
+                v = sums.get(names[driver], {}).get(key)
                 if v is not None and not (key in UNKNOWN_IF_NEGATIVE and v < 0):
                     vals[driver].append(v)
         b = vals["blob"]
