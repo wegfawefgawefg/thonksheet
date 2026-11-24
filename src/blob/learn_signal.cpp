@@ -50,14 +50,14 @@ void learn_predict(Blob& blob, int read_now, int boost) {
 // bad never takes a connection below strength 1: removing is pruning's job. (when bad could
 // remove, the up/down walk had an absorbing floor, and the busiest pairs, the cue paths,
 // were the first to be cut.)
-void learn_reward(Blob& blob, int valence, int boost) {
+void learn_reward(Blob& blob, int valence, int boost, bool motor_only) {
     const Genome& g = blob.genome;
     const uint64_t* recent = blob.recent;
     int shift = boosted(g.reward_shift, boost);
     uint32_t moved = 0;
 
     for (int t = 0; t < blob.tile_count; t++) {
-        uint64_t post = recent[t];
+        uint64_t post = recent[t] & (motor_only ? blob.motor[t] : ~0ull);
         while (post) {
             int b = __builtin_ctzll(post);
             post &= post - 1;

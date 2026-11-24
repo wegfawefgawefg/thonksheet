@@ -1,0 +1,9 @@
+# the brain-style rule against its rivals. rival settings were picked on seeds 1-4 (echo
+# k=2, scripts/variants/tune-rivals.txt and tune-flips.txt); report on other seeds.
+brain (default):
+brain reward_shift 2: --g.reward_shift 2
+readout: --g.learn_mode 1
+flips any 64/1000: --g.learn_mode 2 --g.flip_scope 0 --g.flip_count 64
+flips motor 64/1000: --g.learn_mode 2 --g.flip_scope 1 --g.flip_count 64
+noise instead s4: --g.learn_mode 3 --g.noise_learn_shift 4
+noise plus s2: --g.learn_mode 4 --g.noise_learn_shift 2

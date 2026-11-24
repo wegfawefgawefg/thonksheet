@@ -1,0 +1,20 @@
+# one mechanism out at a time. numbers in brackets are mechanism numbers in docs/design.md.
+baseline:
+no-cooldown (3): --g.cooldown_min 0 --g.cooldown_max 0
+no-inhibition (4): --g.inhibitory_percent 0
+no-far (6): --g.far_percent 0
+no-delays (7): --g.local_delay_min 1 --g.local_delay_max 1
+no-branch (8): --g.branch_bonus 0
+linear-weights (9): --g.strong_log 1
+uniform-neurons (11): --g.threshold_min 8 --g.threshold_max 8 --g.leak_shift_min 2 --g.leak_shift_max 2 --g.cooldown_min 2 --g.cooldown_max 2
+no-pacemakers (12): --g.pacemakers_per_1024 0
+no-noise (13): --g.noise_on 0
+no-sector-reg (14): --g.sector_reg_on 0
+no-threshold-reg (15): --g.threshold_reg_on 0
+no-predict (16): --g.predict_on 0
+no-good (17): --g.good_on 0
+no-bad (17): --g.bad_on 0
+no-surprise (18): --g.surprise_boost 0
+no-grow (19): --g.grow_on 0
+no-prune (20): --g.prune_on 0
+no-far-redraw (6): --g.far_redraw_on 0

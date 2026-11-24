@@ -20,7 +20,9 @@ Status words: idea, building, tried (with result), kept, dropped.
 ## Credit rules
 
 1. **Noise is the experiment.** [known rule; exact noise bit is ours] credit, room. Only
-   neurons whose spike was noise get graded, against a running average of reward. *building*
+   neurons whose spike was noise get graded, against a running average of reward. *tried:
+   loses. 0.81 on echo with 2 cues, 0.12 with 4, uneven across seeds; alongside good/bad it
+   changes nothing. docs/results-2026-11-24-ablations-and-rivals.md*
 2. **A budget per neuron.** [known] room. Every strengthening is paid for by a weakening
    elsewhere on the same neuron. *idea*
 3. **Causal credit.** [known family] credit. Grade only a source that fired exactly its
@@ -92,7 +94,8 @@ Status words: idea, building, tried (with result), kept, dropped.
 30. **Selection among tiles.** [new?] credit, carry. Copy the masks of tiles active before
     good outcomes over tiles that did poorly. *idea*
 31. **Random flips.** [known] baseline. Flip bits, keep them if the score went up.
-    *building*
+    *tried: slow. Into motor neurons 0.82 on echo; the only rule that improves cartpole
+    (20 steps per fall against 10.6) but still no better than coin flips.*
 32. **Twin tournament.** [known] baseline. Two blobs that differ by a few flips; the better
     one each window is copied over the other. *idea*
 33. **A bandit per sector.** [new?] credit. Each sector alternates between two small mask
@@ -122,7 +125,9 @@ Status words: idea, building, tried (with result), kept, dropped.
 
 ## Baselines and measurements
 
-41. **Frozen blob, learned readout.** [known] baseline. *building*
+41. **Frozen blob, learned readout.** [known] baseline. *tried: ties the full rule on
+    echo with 2 cues (0.914 against 0.940) and shuffled echo; stays at chance on 4 cues,
+    where the full rule reaches 0.33. So inner learning pays only once the task is harder.*
 42. **Carrying test.** How many tiles away can a cue still be read from activity. *tried:
     cue identity is readable 3 tiles out at birth, 4 with growth and pruning on, 6 after a
     long life or with many far links. Echo fails inside that range, so from 2 to 4 tiles the
@@ -152,3 +157,16 @@ Status words: idea, building, tried (with result), kept, dropped.
     engine? *building*
 51. **The suite.** One script scores any engine on every property in `docs/bench.md` and
     writes a scorecard; a second joins them into `docs/scoreboard.md`. *building*
+52. **Slow credit.** [known family] credit in time. A second "fired recently" bit that lasts
+    hundreds of ticks (maps ORed together and cleared on a slow schedule), graded at a lower
+    chance. Cartpole's reward comes every 25 steps and the rule only reaches back 6 ticks.
+    *queued*
+53. **Lose-shift.** [known behaviour, mechanism ours] credit. On bad, the motor cells that
+    just fired get harder to fire for a while, so a different answer gets tried. Aimed at the
+    lock seen in seed 3 and in crossed shuffled-echo lives, where the blob keeps pressing the
+    wrong button while punished. *building*
+54. **The ablation sweep.** Each mechanism off in turn, 8 seeds. *tried: needed are
+    inhibition, per-neuron threshold regulation, good, bad, growth, pruning. No measurable
+    effect from delays, branch bonus, varied neurons, noise, far redraw. The surprise boost
+    is on 92-99% of the time, so it is only a doubling of the learning chances.
+    docs/results-2026-11-24-ablations-and-rivals.md*

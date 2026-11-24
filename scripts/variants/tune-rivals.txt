@@ -1,0 +1,20 @@
+# rival settings, picked on seeds 1-4 only (echo k=2). the chosen ones go in rivals.txt.
+brain:
+brain reward_shift 2: --g.reward_shift 2
+brain reward_shift 6: --g.reward_shift 6
+readout: --g.learn_mode 1
+readout reward_shift 2: --g.learn_mode 1 --g.reward_shift 2
+readout reward_shift 6: --g.learn_mode 1 --g.reward_shift 6
+flips any 4/1000: --g.learn_mode 2 --g.flip_scope 0
+flips any 16/1000: --g.learn_mode 2 --g.flip_scope 0 --g.flip_count 16
+flips any 4/4000: --g.learn_mode 2 --g.flip_scope 0 --g.flip_window_ticks 4000
+flips motor 4/1000: --g.learn_mode 2 --g.flip_scope 1
+flips motor 16/1000: --g.learn_mode 2 --g.flip_scope 1 --g.flip_count 16
+flips motor 4/4000: --g.learn_mode 2 --g.flip_scope 1 --g.flip_window_ticks 4000
+noise only s2: --g.learn_mode 3
+noise only s0: --g.learn_mode 3 --g.noise_learn_shift 0
+noise only s4: --g.learn_mode 3 --g.noise_learn_shift 4
+noise only s2 noise8: --g.learn_mode 3 --g.noise_shift 8
+noise plus s2: --g.learn_mode 4
+noise plus s0: --g.learn_mode 4 --g.noise_learn_shift 0
+noise plus s2 noise8: --g.learn_mode 4 --g.noise_shift 8

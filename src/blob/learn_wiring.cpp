@@ -68,18 +68,23 @@ static void redraw_far(Blob& blob, int n) {
     }
 }
 
-void learn_wiring(Blob& blob, int boost) {
+void learn_wiring(Blob& blob, int boost, bool motor_only) {
     const Genome& g = blob.genome;
     const uint64_t* fired = blob.spikes[blob.now];
     int grow_shift = boosted(g.grow_shift, boost);
     int prune_shift = boosted(g.prune_shift, boost);
     int redraw_shift = boosted(g.far_redraw_shift, boost);
     uint32_t grown = 0, pruned = 0;
+    uint64_t grow_mask = g.grow_on ? ~0ull : 0;
+    uint64_t prune_mask = g.prune_on ? ~0ull : 0;
+    uint64_t redraw_mask = g.far_redraw_on ? ~0ull : 0;
 
     for (int t = 0; t < blob.tile_count; t++) {
-        uint64_t grow = fired[t] & sparse_word(blob.rng, grow_shift);
-        uint64_t prune = fired[t] & sparse_word(blob.rng, prune_shift);
-        uint64_t redraw = sparse_word(blob.rng, redraw_shift);
+        // a switched-off part still draws its word, so the others see the same chances
+        uint64_t only = motor_only ? blob.motor[t] : ~0ull;
+        uint64_t grow = fired[t] & sparse_word(blob.rng, grow_shift) & grow_mask & only;
+        uint64_t prune = fired[t] & sparse_word(blob.rng, prune_shift) & prune_mask & only;
+        uint64_t redraw = sparse_word(blob.rng, redraw_shift) & redraw_mask & only;
         while (grow) {
             int n = t * TILE_NEURONS + __builtin_ctzll(grow);
             grow &= grow - 1;
