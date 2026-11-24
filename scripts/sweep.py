@@ -34,6 +34,7 @@ LEARNING_ONLY = {
     "surprise_high_per_1024", "predict_on", "good_on", "bad_on", "grow_on", "prune_on",
     "far_redraw_on", "learn_mode", "flip_count", "flip_scope", "flip_window_ticks",
     "flip_average_shift", "noise_learn_shift", "noise_trace_ticks", "reward_average_shift",
+    "lose_shift_steps", "win_stay_steps", "lose_shift_fires", "bad_cut_on",
 }
 
 

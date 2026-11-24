@@ -140,8 +140,10 @@ static bool lay_motors(Plug& plug, const Blob& blob, const TaskShape& shape) {
             std::fprintf(stderr, "plug: motor lines do not fit the motor region\n");
             return false;
         }
-        gx = near_origin(shelf.grid_w, gx, 1, g.sensor_x + g.sensor_w / 2 > g.motor_x + g.motor_w / 2);
-        gy = near_origin(shelf.grid_h, gy, 1, g.sensor_y + g.sensor_h / 2 > g.motor_y + g.motor_h / 2);
+        gx = near_origin(shelf.grid_w, gx, 1,
+                         g.sensor_x + g.sensor_w / 2 > g.motor_x + g.motor_w / 2);
+        gy = near_origin(shelf.grid_h, gy, 1,
+                         g.sensor_y + g.sensor_h / 2 > g.motor_y + g.motor_h / 2);
         plug.motor_cell_x[line] = g.motor_x + gx * pitch;
         plug.motor_cell_y[line] = g.motor_y + gy * pitch;
         int* group = &plug.motor_neuron[line * PLUG_MAX_GROUP];
@@ -150,6 +152,105 @@ static bool lay_motors(Plug& plug, const Blob& blob, const TaskShape& shape) {
             std::fprintf(stderr, "plug: motor line %d lands off the motor neurons\n", line);
             return false;
         }
+    }
+    return true;
+}
+
+// --- distance ---
+// the regions face each other along one axis. the gap is counted in tile rows (or columns)
+// from the tile of the cue cell nearest the motors to the tile of the motor cell nearest
+// the cues. to widen it, the motor lines and then the sensor lines move away from each
+// other by whole tiles, so every group keeps its place inside its tile.
+
+struct Span {
+    int lo = 1 << 30, hi = -(1 << 30);
+};
+
+static void span_add(Span& span, int cell, int reach) {
+    span.lo = cell < span.lo ? cell : span.lo;
+    span.hi = cell + reach > span.hi ? cell + reach : span.hi;
+}
+
+static bool regroup(Plug& plug, const Blob& blob) {
+    const Genome& g = blob.genome;
+    for (int line = 0; line < plug.sensor_lines; line++) {
+        if (!fill_group(blob, blob.sensor, plug.sensor_cell_x[line], plug.sensor_cell_y[line],
+                        plug.settings.sensor_side, g.sensor_stride,
+                        &plug.sensor_neuron[line * PLUG_MAX_GROUP])) {
+            return false;
+        }
+    }
+    for (int line = 0; line < plug.motor_lines; line++) {
+        if (!fill_group(blob, blob.motor, plug.motor_cell_x[line], plug.motor_cell_y[line],
+                        plug.settings.motor_side, g.motor_stride,
+                        &plug.motor_neuron[line * PLUG_MAX_GROUP])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool move_apart(Plug& plug, const Blob& blob, int distance) {
+    const Genome& g = blob.genome;
+    int dx = (g.motor_x + g.motor_w / 2) - (g.sensor_x + g.sensor_w / 2);
+    int dy = (g.motor_y + g.motor_h / 2) - (g.sensor_y + g.sensor_h / 2);
+    bool along_y = (dy < 0 ? -dy : dy) >= (dx < 0 ? -dx : dx);
+    int dir = (along_y ? dy : dx) >= 0 ? 1 : -1;
+    int* sensor_cell = along_y ? plug.sensor_cell_y : plug.sensor_cell_x;
+    int* motor_cell = along_y ? plug.motor_cell_y : plug.motor_cell_x;
+    int sensor_reach = (plug.settings.sensor_side - 1) * g.sensor_stride;
+    int motor_reach = (plug.settings.motor_side - 1) * g.motor_stride;
+
+    // the cue lines are the task's own; a task with none (beat) uses good and bad
+    int first_cue = plug.sensor_lines > plug.first_single ? plug.first_single : 0;
+    Span cues, sensors, motors;
+    for (int line = 0; line < plug.sensor_lines; line++) {
+        span_add(sensors, sensor_cell[line], sensor_reach);
+        if (line >= first_cue) {
+            span_add(cues, sensor_cell[line], sensor_reach);
+        }
+    }
+    for (int line = 0; line < plug.motor_lines; line++) {
+        span_add(motors, motor_cell[line], motor_reach);
+    }
+    if (plug.motor_lines == 0) {
+        return true; // nothing to be apart from
+    }
+    int gap = dir > 0 ? motors.lo / 8 - cues.hi / 8 : cues.lo / 8 - motors.hi / 8;
+    int shift = distance - gap;
+    if (shift < 0) {
+        std::fprintf(stderr, "plug: cue and motor lines are already %d tiles apart, more than %d\n",
+                     gap, distance);
+        return false;
+    }
+    // whole tiles each side can still move away inside its own region
+    int sensor_lo = along_y ? g.sensor_y : g.sensor_x;
+    int sensor_hi = sensor_lo + (along_y ? g.sensor_h : g.sensor_w) - 1;
+    int motor_lo = along_y ? g.motor_y : g.motor_x;
+    int motor_hi = motor_lo + (along_y ? g.motor_h : g.motor_w) - 1;
+    int sensor_room = (dir > 0 ? sensors.lo - sensor_lo : sensor_hi - sensors.hi) / 8;
+    int motor_room = (dir > 0 ? motor_hi - motors.hi : motors.lo - motor_lo) / 8;
+    int motor_move = (shift + 1) / 2 < motor_room ? (shift + 1) / 2 : motor_room;
+    int sensor_move = shift - motor_move;
+    if (sensor_move > sensor_room) {
+        motor_move += sensor_move - sensor_room;
+        sensor_move = sensor_room;
+    }
+    if (motor_move > motor_room) {
+        std::fprintf(stderr, "plug: cue and motor lines do not fit %d tiles apart (at most %d)\n",
+                     distance, gap + sensor_room + motor_room);
+        return false;
+    }
+    for (int line = 0; line < plug.sensor_lines; line++) {
+        sensor_cell[line] -= dir * 8 * sensor_move;
+    }
+    for (int line = 0; line < plug.motor_lines; line++) {
+        motor_cell[line] += dir * 8 * motor_move;
+    }
+    if (!regroup(plug, blob)) {
+        std::fprintf(stderr, "plug: lines %d tiles apart land off the sensor/motor neurons\n",
+                     distance);
+        return false;
     }
     return true;
 }
@@ -164,6 +265,9 @@ bool plug_attach(Plug& plug, Blob& blob, const TaskShape& shape, const PlugSetti
         return false;
     }
     if (!lay_sensors(plug, blob, shape) || !lay_motors(plug, blob, shape)) {
+        return false;
+    }
+    if (settings.distance > 0 && !move_apart(plug, blob, settings.distance)) {
         return false;
     }
     // attach the lines the task uses; the rest of the sensor region stays unattached

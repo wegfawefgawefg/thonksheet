@@ -4,7 +4,8 @@
 
 // names as typed on the blobrun command line
 static const char* const task_names[(int)TaskKind::count] = {
-    "echo", "shuffled-echo", "delayed-echo", "go-no-go", "beat", "sequence", "catch", "cartpole",
+    "echo",  "shuffled-echo", "delayed-echo", "go-no-go",        "beat", "sequence",
+    "catch", "cartpole",      "order",        "both-not-either", "gap",  "place",
 };
 
 const char* task_name(TaskKind kind) {
@@ -43,6 +44,12 @@ void task_reset(Task& task, TaskKind kind, const TaskSettings& settings, uint64_
     case TaskKind::cartpole:
         cartpole_reset(task);
         break;
+    case TaskKind::order:
+    case TaskKind::both_not_either:
+    case TaskKind::gap:
+    case TaskKind::place:
+        feature_reset(task);
+        break;
     case TaskKind::count:
         break;
     }
@@ -62,6 +69,11 @@ TaskShape task_shape(const Task& task) {
         return catch_shape(task);
     case TaskKind::cartpole:
         return cartpole_shape(task);
+    case TaskKind::order:
+    case TaskKind::both_not_either:
+    case TaskKind::gap:
+    case TaskKind::place:
+        return feature_shape(task);
     case TaskKind::count:
         break;
     }
@@ -87,6 +99,12 @@ void task_sense(const Task& task, TaskSense& sense) {
     case TaskKind::cartpole:
         cartpole_sense(task, sense);
         break;
+    case TaskKind::order:
+    case TaskKind::both_not_either:
+    case TaskKind::gap:
+    case TaskKind::place:
+        feature_sense(task, sense);
+        break;
     case TaskKind::count:
         break;
     }
@@ -106,6 +124,11 @@ int task_perfect_move(const Task& task) {
         return catch_perfect_move(task);
     case TaskKind::cartpole:
         return cartpole_perfect_move(task);
+    case TaskKind::order:
+    case TaskKind::both_not_either:
+    case TaskKind::gap:
+    case TaskKind::place:
+        return feature_perfect_move(task);
     case TaskKind::count:
         break;
     }
@@ -131,6 +154,12 @@ int task_step(Task& task, const TaskStepIn& in) {
     case TaskKind::cartpole:
         valence = cartpole_step(task, in);
         break;
+    case TaskKind::order:
+    case TaskKind::both_not_either:
+    case TaskKind::gap:
+    case TaskKind::place:
+        valence = feature_step(task, in);
+        break;
     case TaskKind::count:
         break;
     }
@@ -152,6 +181,10 @@ double task_window_score(Task& task) {
     case TaskKind::go_no_go:
     case TaskKind::catch_dot:
     case TaskKind::sequence:
+    case TaskKind::order:
+    case TaskKind::both_not_either:
+    case TaskKind::gap:
+    case TaskKind::place:
         // right answers over chances to answer
         score = ratio(t[0], t[1]);
         break;

@@ -5,6 +5,7 @@
 // repeats. Probes may use floats; the blob itself does not.
 
 #include "blob/blob.hpp"
+#include "probe/rhythm_find.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -61,40 +62,15 @@ int probe_rhythm(int argc, char** argv) {
         }
     }
 
-    // mean, spread, and how alike the count is to itself `lag` ticks later
-    double mean = 0;
-    for (double f : fired) {
-        mean += f;
-    }
-    mean /= ticks;
-    double variance = 0;
-    for (double f : fired) {
-        variance += (f - mean) * (f - mean);
-    }
-    variance /= ticks;
-    std::vector<double> alike((size_t)max_lag + 2, 0.0);
-    for (int lag = 1; lag <= max_lag + 1; lag++) {
-        double sum = 0;
-        for (int t = 0; t + lag < ticks; t++) {
-            sum += (fired[(size_t)t] - mean) * (fired[(size_t)(t + lag)] - mean);
-        }
-        alike[(size_t)lag] = variance > 0 ? sum / ((ticks - lag) * variance) : 0;
-    }
-
-    // the period is the strongest lag that is a peak of its own
-    int period = 0;
-    double strength = 0;
-    for (int lag = 3; lag <= max_lag; lag++) {
-        double a = alike[(size_t)lag];
-        if (a > alike[(size_t)lag - 1] && a >= alike[(size_t)lag + 1] && a > strength) {
-            strength = a;
-            period = lag;
-        }
-    }
+    // mean, spread, and the lag at which the count best repeats
+    Rhythm rhythm = rhythm_find(fired, max_lag);
+    double mean = rhythm.mean, variance = rhythm.variance;
+    int period = rhythm.period;
+    double strength = rhythm.strength;
 
     double per_1024 = mean * 1024.0 / blob->neuron_count;
     double fano = mean > 0 ? variance / mean : 0;
-    if (strength < 0.05) {
+    if (strength < RHYTHM_NONE) {
         std::printf("%-28s neurons %6d  rate %5.1f per 1024  fano %6.1f  no rhythm (best %.2f)\n",
                     label, blob->neuron_count, per_1024, fano, strength);
     } else {

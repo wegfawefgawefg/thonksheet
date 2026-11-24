@@ -28,7 +28,9 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
 5. **Memory that is specific to the situation holds more.** [likely] Table neurons, where a
    neuron stores a separate answer for each pattern of its inputs, learn four cues (0.68)
    where both popcount engines manage 0.31 to 0.41, and reach one tile further. The cost
-   is no speed gain on a CPU.
+   is no speed gain on a CPU. In the suite they are also the only engine that learns a
+   second task after the first (two new cues and buttons: 0.96, against 0.13 and 0.11) and
+   still has the first afterwards (0.61 at once, 0.90 after a short retest).
 6. **The sheet makes its own variety.** [likely] Switching injected noise off changes
    nothing in the full engine; rules that grade only injected-noise spikes lose in two
    engines out of three.
@@ -38,7 +40,31 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
    twenty-one-mechanism one on Echo. Delays and far links cannot be judged yet: no task
    that needs them is learned by anything.
 
+8. **The sheet is already rich; reading it is the hard part.** [solid: four seeds, tight] With nothing
+   learned and no reward, order, exclusive-or and gap length can all be read from the
+   neurons a tile or two from the input by an ideal reader (1.3 to 3.4, where 1.0 is easy).
+   The same features score at chance when a frozen sheet's readout has to learn them. This
+   is the owner's richness thesis, half confirmed: the features are there; selection is
+   what we cannot yet do.
+9. **Delays give a sense of time.** [solid: four seeds, tight] They do nothing measurable on Echo. On
+   time features they are most of the story: gap length reads 0.43 with all delays at 1 and
+   4.0 with delays of 4 to 8 ticks; order goes 1.5 to 5.4.
+
+10. **Far links are what give reach.** [likely] The full engine learns a little with cue
+    and button three tiles apart (0.58); with its far links removed it does not (0.45).
+11. **More bits of evidence per thing learned helps.** [hint] Table neurons needed 4-bit
+    counters to learn four cues (2-bit gave 0.56 on two). The popcount engines, with one or
+    two bits per connection, hold less. Not yet tested head to head.
+
 ## Walls
+
+- **Reading a thin signal. This is the main wall.** [solid: four independent results] An
+  ideal reader gets order, exclusive-or and gap from the tile next to the input, and which
+  cue is on from three tiles away; our rules get chance. Giving the minimal engine far
+  slots puts the cue at the buttons three tiles away, and giving it delays keeps the cue's
+  trace alive through a gap, and in both cases the score does not move. The information
+  arrives, spread thinly over many neurons, and a rule that flips one-bit connections on
+  single rewards cannot add it up.
 
 - **Reach.** Learning works across one tile, sometimes two (table neurons), not three. The
   cue's identity is still readable at three or four tiles, so past one tile the failure is
@@ -46,7 +72,11 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
 - **Time.** Nothing learns delayed echo. Nothing connects a reward to anything older than
   a few ticks.
 - **Locking on.** A sheet settles on one answer and keeps giving it while punished: Echo
-  seed 3, crossed shuffled-echo lives, probably cartpole.
+  seed 3 and crossed shuffled-echo lives. The cause is the reward rule strengthening its
+  own answer: making that stronger (win-stay) deepens the lock (0.56 to 0.14), and making
+  the last answer harder to give (lose-shift) only trades stuck lives for unstable ones.
+  Crossed lives need a two-tile path, so this is the thin-signal wall again. Cartpole is
+  not a lock: the blob leans to one side (0.58 of presses) without being stuck.
 - **Acting in a world.** Nothing learns catch or cartpole. On cartpole learning makes the
   full engine worse than a coin.
 - **More than four things.** Eight cues: nothing above chance, in any engine.

@@ -157,7 +157,10 @@ Status words: idea, building, tried (with result), kept, dropped.
     feature the input does not hand over (which of two cues came first; two cues both on
     but not either alone; the same shape in a new place; a gap of N ticks). Count how many
     of these a frozen sheet already supports, at birth and after a reward-free life, and how
-    that grows with sheet size. *idea*
+    that grows with sheet size. *tried: the features are there. An ideal reader gets order (3.4),
+    exclusive-or (1.7) and gap (1.5) from the tile next to the input at birth; the suite's
+    frozen readout scores chance on the same tasks. Delays triple the time features. So
+    richness holds and reading is the wall. docs/results-2026-11-24-features.md*
 50. **The minimal engine.** [ours] A fresh, tiny engine with three things only: a neuron is
     a popcount over a mask against a threshold; a synapse changes by chance on an outcome,
     graded only where the spike was noise, under a per-neuron budget; each neuron keeps its
@@ -177,7 +180,11 @@ Status words: idea, building, tried (with result), kept, dropped.
 53. **Lose-shift.** [known behaviour, mechanism ours] credit. On bad, the motor cells that
     just fired get harder to fire for a while, so a different answer gets tried. Aimed at the
     lock seen in seed 3 and in crossed shuffled-echo lives, where the blob keeps pressing the
-    wrong button while punished. *building*
+    wrong button while punished. *tried: does not fix it. Crossed lives score 0.561 with it
+    and 0.559 without on fresh seeds. It lifts the worst lives and wrecks the ones that had
+    learned, and a learned blob wanders off after an unlucky bad. Its mirror, win-stay,
+    makes crossed lives lock far harder (0.135): the lock comes from the reward rule
+    strengthening its own answer. docs/results-2026-11-24-lose-shift.md*
 54. **The ablation sweep.** Each mechanism off in turn, 8 seeds. *tried: needed are
     inhibition, per-neuron threshold regulation, good, bad, growth, pruning. No measurable
     effect from delays, branch bonus, varied neurons, noise, far redraw. The surprise boost
@@ -186,11 +193,29 @@ Status words: idea, building, tried (with result), kept, dropped.
 55. **Grow the minimal engine one piece at a time.** [ours] The minimal engine is now the
     base. A mechanism from the full engine goes back in only if it earns its place on the
     test it is for: a far slot on reach, delays on the timing tasks, lose-shift on the lock,
-    slow credit on cartpole. *building: far slot, then delays*
+    slow credit on cartpole. *tried: neither far slots nor delays earned a place. Both do
+    their mechanical job: with far slots the cue is readable at the buttons 3 tiles away,
+    and with delays the cue's trace lasts through the gap of delayed echo. The score does
+    not move (0.37 at 3 tiles; 0.23 on delayed echo). Delays do help when the ask comes
+    right after the cue (+0.22) and cost Echo 0.20. The reward rule cannot use a thin,
+    spread-out signal. docs/results-2026-11-24-minimal-grow.md*
 56. **Wire by co-activity only while something is plugged in.** [ours] alive. Fixes the
     minimal engine forgetting everything when idle (0.95 to 0.33 becomes 0.95 to 0.96).
-    *tried, works; to become the default*
+    *tried, works; now the default*
 57. **Why does credit by noise learn the exact opposite?** [ours] In the table engine the
     noise-graded rule ends at 0.00 on most seeds, and with its sign reversed it scores 1.00
     on shuffled echo on every seed. Find the cause, and try the reversed sign in the other
     two engines. *building*
+58. **A readout that can read what is there.** [ours] On a frozen sheet, find the local,
+    online rule at the motor cells that gets closest to the ideal reader on which-at-a-
+    distance, order, exclusive-or and gap. Candidates: an error rule (on bad, the button
+    that fired loses its active inputs and the other gains them); a budget on the readout;
+    more motor cells per button, spread through the sheet so some sit where the feature is;
+    pooling cells. *building*
+59. **Evidence before commitment.** [known family, new on this sheet] credit. A connection
+    is one bit, so one lucky or unlucky reward flips it. Give each possible source a small
+    hidden counter (4 to 8 bits): good adds for sources that were active before the neuron
+    fired, bad subtracts; a connection exists while its counter is in the top of the
+    neuron's budget. Weak evidence then adds up over many tries before anything is wired.
+    Why: table neurons needed 4-bit counters to learn four cues (2-bit gave 0.56), and
+    every probe says the signal is present but thin. *building, in the minimal engine*
