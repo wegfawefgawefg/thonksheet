@@ -14,5 +14,13 @@ fi
 scripts/build.sh
 task="${1:-echo}"
 [ $# -gt 0 ] && shift
-exec ./build/blobview --task "$task" --ticks 20 --sensor-side 3 --motor-side 3 --window 50 \
-    --slow 400 "$@"
+# cartpole has 24 number lines, which need smaller line groups; it is run with the reward
+# that says "nearer upright and centred" and with each number as one lit line
+side=3
+extra=""
+if [ "$task" = cartpole ]; then
+    side=2
+    extra="--cart-reward lean --number-code place"
+fi
+exec ./build/blobview --task "$task" --ticks 20 --sensor-side "$side" --motor-side 3 --window 50 \
+    --slow 400 $extra "$@"
