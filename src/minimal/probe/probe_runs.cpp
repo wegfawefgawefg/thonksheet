@@ -92,7 +92,7 @@ int probe_life(ProbeArgs& args) {
 static std::vector<uint64_t> snapshot(const ProbeArgs& args, const Blob& blob) {
     if (args.engine == ProbeEngine::minimal) {
         const MinimalBlob& m = minimal_of(blob);
-        size_t words = (size_t)blob.neuron_count * MIN_SLOTS;
+        size_t words = (size_t)blob.neuron_count * m.slots;
         return std::vector<uint64_t>(m.mask, m.mask + words);
     }
     size_t words = (size_t)blob.neuron_count * SLOTS;

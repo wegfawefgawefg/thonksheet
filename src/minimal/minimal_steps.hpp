@@ -5,31 +5,55 @@
 #include <cstdint>
 
 // engine-only helpers, shared by the tick, the reward and birth.
+//
+// learning names a spike by its age (0 = the newest map). "the sources active just before
+// it" are, for slot k, the map `delay` ticks older than the spike, at the slot's source tile:
+// exactly what the neuron read when it fired.
 
-// what neuron n hears in slot k: the word of `map` at the slot's source tile
-inline uint64_t min_source(const MinimalBlob& m, const uint64_t* map, int n, int k) {
-    return map[m.local_tile[(n / TILE_NEURONS) * MIN_SLOTS + k]];
+// the mask (and delay) word of neuron n, slot k
+inline int64_t min_index(const MinimalBlob& m, int n, int k) {
+    return ((int64_t)(n / TILE_NEURONS) * m.slots + k) * TILE_NEURONS + n % TILE_NEURONS;
 }
 
-// the mask word of neuron n, slot k
-inline int64_t min_index(int n, int k) {
-    return ((int64_t)(n / TILE_NEURONS) * MIN_SLOTS + k) * TILE_NEURONS + n % TILE_NEURONS;
-}
-
-// sources slot k may ever hold: none off the sheet, never the neuron itself
-inline uint64_t min_allowed(const MinimalBlob& m, int n, int k) {
+// the tile slot k of neuron n reads (tile_count = none, the zero word)
+inline uint32_t min_source_tile(const MinimalBlob& m, int n, int k) {
     int t = n / TILE_NEURONS;
-    if (m.local_tile[t * MIN_SLOTS + k] == (uint32_t)m.shell.tile_count) {
+    if (k < MIN_SLOTS) {
+        return m.local_tile[t * MIN_SLOTS + k];
+    }
+    int far_slots = m.slots - MIN_SLOTS;
+    return m.far_tile[((int64_t)t * far_slots + (k - MIN_SLOTS)) * TILE_NEURONS + n % TILE_NEURONS];
+}
+
+// ticks back slot k of neuron n reads
+inline int min_delay(const MinimalBlob& m, int n, int k) {
+    return m.delay ? m.delay[min_index(m, n, k)] : 1;
+}
+
+// what slot k of neuron n heard when the neuron fired `age` ticks ago
+inline uint64_t min_heard(const MinimalBlob& m, int age, int n, int k) {
+    int index = (m.now - age - min_delay(m, n, k)) & (MIN_HISTORY - 1);
+    return m.spikes[(size_t)index * m.stride + min_source_tile(m, n, k)];
+}
+
+// sources slot k may ever hold: none off the sheet, never the neuron itself, and on a far
+// slot only excitatory senders
+inline uint64_t min_allowed(const MinimalBlob& m, int n, int k) {
+    uint32_t src = min_source_tile(m, n, k);
+    if (src == (uint32_t)m.shell.tile_count) {
         return 0;
+    }
+    if (k >= MIN_SLOTS) {
+        return ~m.shell.inhibitory[src];
     }
     return k == 4 ? ~(1ull << (n % TILE_NEURONS)) : ~0ull;
 }
 
-// connect n to one source that was active in `before` and is not yet wired; under the
-// budget, pay with one connection whose source was not active. true if it connected.
-bool min_gain_active(MinimalBlob& m, int n, const uint64_t* before);
-// disconnect n from one connected source that was active in `before`; under the budget,
-// take a random unwired source that was not active in its place.
-bool min_lose_active(MinimalBlob& m, int n, const uint64_t* before);
-// drop_mode 1: mark the connections that were active just before each neuron that fired
-void min_mark_used(MinimalBlob& m, const uint64_t* before, const uint64_t* fired);
+// connect n to one source it heard at its spike `age` ticks ago that is not yet wired;
+// under the budget, pay with one connection whose source was quiet then. true if it connected.
+bool min_gain_active(MinimalBlob& m, int n, int age);
+// disconnect n from one connected source it heard at that spike; under the budget, take a
+// random unwired source that was quiet then in its place.
+bool min_lose_active(MinimalBlob& m, int n, int age);
+// drop_mode 1: mark the connections heard by each neuron that fired on the newest tick
+void min_mark_used(MinimalBlob& m, const uint64_t* fired);

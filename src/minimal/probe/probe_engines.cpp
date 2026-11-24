@@ -233,6 +233,24 @@ void print_wiring(const ProbeArgs& args, const Blob& blob, const char* label) {
                     (unsigned long long)m.stats.gained, (unsigned long long)m.stats.lost,
                     (unsigned long long)m.stats.graded, (unsigned long long)m.stats.cowired,
                     m.reward_avg / 256.0);
+        if (m.slots > MIN_SLOTS) {
+            // far slots: how many neurons have one, and what share of connections sit there
+            int64_t far = 0, with = 0;
+            for (int n = 0; n < blob.neuron_count; n++) {
+                int t = n / TILE_NEURONS, far_slots = m.slots - MIN_SLOTS;
+                bool any = false;
+                for (int j = 0; j < far_slots; j++) {
+                    int64_t i = ((int64_t)t * m.slots + MIN_SLOTS + j) * TILE_NEURONS + n % 64;
+                    far += __builtin_popcountll(m.mask[i]);
+                    any |= m.far_tile[((int64_t)t * far_slots + j) * TILE_NEURONS + n % 64] !=
+                           (uint32_t)blob.tile_count;
+                }
+                with += any ? 1 : 0;
+            }
+            std::printf("\n  far: neurons with a far tile %.1f%%  connections in far slots %.1f%%",
+                        100.0 * (double)with / blob.neuron_count,
+                        100.0 * (double)far / (double)(connections ? connections : 1));
+        }
     }
     std::printf("\n  bytes per neuron %.1f\n", probe_bytes_per_neuron(args, blob));
 }
