@@ -8,10 +8,15 @@
 #include "layout.hpp"
 #include "view_frame.hpp"
 
+#include <algorithm>
+
 static const float WHITE[3] = {0.95f, 0.96f, 0.98f};
 static const float BLUE[3] = {0.290f, 0.639f, 1.000f};
 static const float VIOLET[3] = {0.690f, 0.549f, 1.000f};
 static const float GREY[3] = {0.80f, 0.82f, 0.86f};
+static const float GREEN[3] = {0.373f, 0.827f, 0.553f};
+static const float RED[3] = {1.0f, 0.35f, 0.35f};
+static const float PINK[3] = {1.000f, 0.420f, 0.604f};
 
 static float strength_alpha(int strength) {
     return strength >= 5 ? 1.0f : strength >= 4 ? 0.8f : 0.38f;
@@ -37,8 +42,43 @@ static void push(std::vector<Mark>& marks, float x0, float y0, float x1, float y
     marks.push_back(m);
 }
 
+// the task's lines: a ring round each group (good green, bad red, the task's own lines
+// white, motor lines pink), filled while a sensor line is on; the motor line that gave the
+// last answer filled green or red by how it went. Round the whole sheet, a frame in the
+// last answer's colour that fades over one step.
+static void task_marks(std::vector<Mark>& marks, const ViewFrame& f) {
+    const TaskView& t = f.task;
+    const TaskTry& last = t.tries[(t.tries_total + TASK_TRIES - 1) % TASK_TRIES];
+    const float* answer = last.valence > 0 ? GREEN : last.valence < 0 ? RED : GREY;
+    for (const TaskLine& l : t.lines) {
+        const float* rgb = l.kind == TASK_LINE_GOOD    ? GREEN
+                           : l.kind == TASK_LINE_BAD   ? RED
+                           : l.kind == TASK_LINE_MOTOR ? PINK
+                                                       : WHITE;
+        if (l.on && l.kind == TASK_LINE_MOTOR) {
+            push(marks, l.x0, l.y0, l.x1, l.y1, answer, 0.35f, 0, 0.0f);
+            push(marks, l.x0, l.y0, l.x1, l.y1, answer, 1.0f, 1, 3.0f);
+            continue;
+        }
+        if (l.on) {
+            push(marks, l.x0, l.y0, l.x1, l.y1, rgb, 0.22f, 0, 0.0f);
+        }
+        push(marks, l.x0, l.y0, l.x1, l.y1, rgb, l.on ? 1.0f : 0.55f, 1, l.on ? 2.5f : 1.5f);
+    }
+    const float age = static_cast<float>(f.tick - t.answer_tick);
+    const float span = static_cast<float>(std::max(1, t.ticks_per_step));
+    if (t.tries_total > 0 && last.valence != 0 && age < span) {
+        const float cw = static_cast<float>(f.tiles_w * 8);
+        const float ch = static_cast<float>(f.tiles_h * 8);
+        push(marks, 0.5f, 0.5f, cw - 0.5f, ch - 0.5f, answer, 0.9f * (1.0f - age / span), 1, 5.0f);
+    }
+}
+
 void build_marks(std::vector<Mark>& marks, const ViewFrame& f, const ViewSettings& v) {
     marks.clear();
+    if (f.task.on && v.task_marks) {
+        task_marks(marks, f);
+    }
     const Selected& s = f.selected;
     if (s.neuron < 0) {
         return;

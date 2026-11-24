@@ -99,6 +99,8 @@ void frame_copy(ViewFrame& to, const ViewFrame& from) {
     to.fan_in = from.fan_in;
     to.length = from.length;
     to.selected = from.selected;
+    to.task = from.task;
+    task_scores_copy(to.scores, from.scores);
 }
 
 bool tape_fired(const Tape& tape, int age, int neuron) {

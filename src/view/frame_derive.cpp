@@ -76,6 +76,57 @@ static void derive_lags(ViewFrame& f) {
     }
 }
 
+// the fired count per tick against itself `lag` ticks later, over the whole tape. A sheet
+// that pulses every P ticks peaks at P (and weaker at 2P, 3P). The period is the first
+// peak at least 0.6 of the highest one and above 0.15, so a harmonic is never taken for it.
+static void derive_rhythm(ViewFrame& f) {
+    const Tape& t = f.tape;
+    const int rows = rows_valid(t);
+    f.period = 0;
+    std::fill(f.fired_lag, f.fired_lag + LAG_MAX, 0.0f);
+    if (rows < 2 * LAG_MAX) {
+        return;
+    }
+    static std::vector<float> x; // viewer thread only
+    x.resize(rows);
+    float mean = 0;
+    for (int age = 0; age < rows; ++age) {
+        const uint64_t row = (t.ticks - 1 - age) % static_cast<uint64_t>(t.len);
+        x[age] = t.lines[row].v[LINE_FIRED];
+        mean += x[age];
+    }
+    mean /= static_cast<float>(rows);
+    float var = 0;
+    for (float& v : x) {
+        v -= mean;
+        var += v * v;
+    }
+    if (var <= 0) {
+        return;
+    }
+    for (int lag = 1; lag <= LAG_MAX; ++lag) {
+        float sum = 0;
+        for (int age = 0; age + lag < rows; ++age) {
+            sum += x[age] * x[age + lag];
+        }
+        // scaled for the shorter overlap, so long lags are not pulled toward 0
+        f.fired_lag[lag - 1] =
+            sum / var * static_cast<float>(rows) / static_cast<float>(rows - lag);
+    }
+    float top = 0;
+    for (int lag = 2; lag < LAG_MAX; ++lag) {
+        top = std::max(top, f.fired_lag[lag - 1]);
+    }
+    for (int lag = 2; lag < LAG_MAX; ++lag) {
+        const float r = f.fired_lag[lag - 1];
+        const bool peak = r >= f.fired_lag[lag - 2] && r >= f.fired_lag[lag];
+        if (peak && r > 0.15f && r >= 0.6f * top) {
+            f.period = lag;
+            break;
+        }
+    }
+}
+
 void frame_derive(ViewFrame& frame) {
     static std::vector<uint16_t> counts; // viewer thread only; kept to save the allocation
     if (frame.tape.len == 0 || frame.neuron_count == 0) {
@@ -83,4 +134,5 @@ void frame_derive(ViewFrame& frame) {
     }
     derive_rates(frame, counts);
     derive_lags(frame);
+    derive_rhythm(frame);
 }

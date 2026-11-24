@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 
 static const char* const usage =
     "blobview: watch a blob tick\n"
@@ -10,8 +11,12 @@ static const char* const usage =
     "  --real                 the core's blob (the default when built with it)\n"
     "  --tiles W H            sheet size in tiles (8x8 neurons each)\n"
     "  --seed N\n"
-    "  --capture out.png      no window: run --ticks N ticks, draw one frame to a PNG\n"
-    "  --ticks N              (default 2000)\n"
+    "  --capture out.png      no window: run --until N ticks, draw one frame to a PNG\n"
+    "  --until N              (default 2000)\n"
+    "  --task NAME [flags]    run a task through the world plug, with blobrun's task, plug\n"
+    "                         and window flags (blobrun --help); --ticks is ticks per step\n"
+    "  --no-twin              no learning-off twin for the score plot (coin flips still run)\n"
+    "  --g.NAME N             a genome number, as for blobrun\n"
     "  --size W H             window or capture size (default 1600 1000)\n"
     "  --select N | --select-cell X Y   a neuron picked at the start\n"
     "  --raster neurons|tiles a raster row per neuron or per tile (default: by size)\n"
@@ -29,11 +34,42 @@ static int scene_from_name(const char* name) {
     return -1;
 }
 
+// the flags blobview does not know go to blobrun's parser, so a task is set up exactly as
+// blobrun sets it up. Genome numbers (--g.NAME) apply with or without a task.
+static bool task_flags(CliOptions& o, int argc, char** argv, std::vector<char*>& run_args) {
+    apply_genome_args(argc, argv, o.run.genome);
+    if (!o.task) {
+        for (size_t i = 1; i < run_args.size(); ++i) {
+            const char* a = run_args[i];
+            if (std::strncmp(a, "--g.", 4) == 0) {
+                ++i; // its value
+            } else if (std::strcmp(a, "--seed") == 0) {
+                ++i;
+            } else if (std::strcmp(a, "--ticks") == 0) {
+                std::fprintf(stderr, "blobview: --ticks is ticks per task step (as in blobrun); "
+                                     "a capture runs --until N ticks\n");
+                return false;
+            } else {
+                std::fprintf(stderr, "blobview: unknown option %s (task flags need --task)\n%s", a,
+                             usage);
+                return false;
+            }
+        }
+        return true;
+    }
+    if (!run_flags_parse(static_cast<int>(run_args.size()), run_args.data(), o.run)) {
+        return false;
+    }
+    o.twin = o.twin && o.run.baselines;
+    return true;
+}
+
 bool parse_cli(CliOptions& o, int argc, char** argv) {
 #if BLOB_HAS_CORE
     o.fake = false;
 #endif
     int select_x = -1, select_y = -1;
+    std::vector<char*> run_args = {argv[0]};
     for (int i = 1; i < argc; ++i) {
         const char* a = argv[i];
         auto next = [&]() -> const char* {
@@ -54,11 +90,15 @@ bool parse_cli(CliOptions& o, int argc, char** argv) {
             o.tiles_w = std::atoi(next());
             o.tiles_h = std::atoi(next());
         } else if (std::strcmp(a, "--seed") == 0) {
+            run_args.push_back(argv[i]);
             o.seed = std::strtoull(next(), nullptr, 10);
+            run_args.push_back(argv[i]);
         } else if (std::strcmp(a, "--capture") == 0) {
             o.capture = next();
-        } else if (std::strcmp(a, "--ticks") == 0) {
-            o.ticks = std::atoi(next());
+        } else if (std::strcmp(a, "--until") == 0) {
+            o.until = std::atoll(next());
+        } else if (std::strcmp(a, "--no-twin") == 0) {
+            o.twin = false;
         } else if (std::strcmp(a, "--size") == 0) {
             o.width = std::atoi(next());
             o.height = std::atoi(next());
@@ -88,9 +128,13 @@ bool parse_cli(CliOptions& o, int argc, char** argv) {
             std::fputs(usage, stdout);
             std::exit(0);
         } else {
-            std::fprintf(stderr, "blobview: unknown option %s\n%s", a, usage);
-            return false;
+            // blobrun's flags and their values, in order, for run_flags_parse below
+            o.task = o.task || std::strcmp(a, "--task") == 0;
+            run_args.push_back(argv[i]);
         }
+    }
+    if (!task_flags(o, argc, argv, run_args)) {
+        return false;
     }
     const SimSettings settings = sim_settings(o);
     if (select_x >= 0) {
@@ -105,6 +149,10 @@ SimSettings sim_settings(const CliOptions& o) {
     s.fake = o.fake;
     s.scene = o.scene;
     s.seed = o.seed;
+    s.task = o.task;
+    s.twin = o.twin;
+    s.run = o.run;
+    s.genome = o.run.genome;
     if (o.tiles_w > 0 && o.tiles_h > 0) {
         s.genome.tiles_w = o.tiles_w;
         s.genome.tiles_h = o.tiles_h;

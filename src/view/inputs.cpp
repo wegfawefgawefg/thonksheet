@@ -1,6 +1,7 @@
 // Keys and the mouse. Keys sit under the left hand; the mouse does the rest.
 //
 //   space  pause / run           E  one tick (pauses)        S  slow motion on / off
+//   W      one task step (pauses; with --task)
 //   A / D  slow motion slower / faster                        F  full speed, nothing drawn
 //   T  tile lines   G  sector lines   R  raster rows: neurons / tiles   Z  reset zoom
 //   left click   pick a neuron (sheet or raster)    esc  drop the pick, else quit
@@ -85,6 +86,9 @@ static void key(State& s, SDL_Keycode k, SDL_Window* window) {
     } else if (k == SDLK_E) {
         set_mode(s, RUN_PAUSED);
         sh.steps += 1;
+    } else if (k == SDLK_W && s.sim.task.on) {
+        set_mode(s, RUN_PAUSED);
+        sh.task_steps += 1;
     } else if (k == SDLK_S) {
         set_mode(s, s.mode == RUN_SLOW ? RUN_FULL : RUN_SLOW);
     } else if (k == SDLK_F) {
@@ -128,7 +132,8 @@ void handle_event(State& s, const SDL_Event& e) {
     } else if (e.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
         s.resized = true;
     } else if (e.type == SDL_EVENT_KEY_DOWN && !imgui_want_capture_keyboard()) {
-        const bool repeats = e.key.key == SDLK_E || e.key.key == SDLK_A || e.key.key == SDLK_D;
+        const bool repeats = e.key.key == SDLK_E || e.key.key == SDLK_W || e.key.key == SDLK_A ||
+                             e.key.key == SDLK_D;
         if (!e.key.repeat || repeats) {
             key(s, e.key.key, SDL_GetWindowFromID(e.key.windowID));
         }
