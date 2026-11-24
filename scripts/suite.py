@@ -62,6 +62,9 @@ def jobs_for(life, readout):
         jobs["full-" + task] = (["--task", task] + plain, 1)
         if readout:
             jobs["readout-" + task] = (["--task", task, "--frozen-readout"] + plain, 1)
+    if readout:
+        # the control: a readout that can learn at all, where the input hands over the answer
+        jobs["readout-echo"] = (["--task", "echo", "--frozen-readout"] + plain, 1)
     return jobs
 
 
@@ -87,6 +90,8 @@ def rows_for():
     for d in (1, 2, 3, 5):
         rows.append(("reach", "echo k=2, cue and button %d tiles apart" % d, "distance%d" % d,
                      "late"))
+    rows.append(("features nobody designed in", "control: echo k=2 (frozen sheet, readout "
+                 "learns)", "readout-echo", "late"))
     for task, label in FEATURES:
         rows.append(("features nobody designed in", label + " (frozen sheet, readout learns)",
                      "readout-" + task, "late"))
