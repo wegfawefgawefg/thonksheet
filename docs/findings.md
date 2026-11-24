@@ -32,8 +32,8 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
    second task after the first (two new cues and buttons: 0.96, against 0.13 and 0.11) and
    still has the first afterwards (0.61 at once, 0.90 after a short retest).
 6. **The sheet makes its own variety.** [likely] Switching injected noise off changes
-   nothing in the full engine; rules that grade only injected-noise spikes lose in two
-   engines out of three.
+   nothing in the full engine. Grading only injected-noise spikes learns Echo in the minimal
+   engine (0.90 when built correctly) but nothing in the table engine.
 7. **Most of what we first built does nothing on reflex tasks.** [solid] Delays, the
    dendrite-branch bonus, varied neurons, far-link redraw and injected noise can each be
    removed with no measurable change, and a four-mechanism engine beats the
@@ -56,6 +56,17 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
     counters to learn four cues (2-bit gave 0.56 on two). The popcount engines, with one or
     two bits per connection, hold less. Not yet tested head to head.
 
+12. **One neuron's experiment almost never changes the answer.** [likely] In the table
+    engine only 1 graded noise flip in 2,500 changed which button won. Those that did all
+    moved their counters the right way, and grading only them reaches 1.00 on the seeds
+    where a single flip can matter. So credit from single-neuron noise is correct but far
+    too rare; an experiment has to be the size of a decision.
+13. **A rule that grades against its own average must count everything it averaged over.**
+    [solid] Grading only the neurons noise flipped is half of the textbook rule. The
+    missing half (the unflipped neurons, the other way) is thousands of times larger than
+    the real signal, so the rule as first built learned the exact opposite (0.00 on six
+    seeds of eight; 1.00 with its sign reversed). This was a slip, not a principle.
+
 ## Walls
 
 - **Reading a thin signal. This is the main wall.** [solid: four independent results] An
@@ -77,14 +88,8 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
   the last answer harder to give (lose-shift) only trades stuck lives for unstable ones.
   Crossed lives need a two-tile path, so this is the thin-signal wall again. Cartpole is
   not a lock: the blob leans to one side (0.58 of presses) without being stuck.
+  Any rule graded against its own average also freezes once every reward equals the
+  average: an all-wrong life stops moving.
 - **Acting in a world.** Nothing learns catch or cartpole. On cartpole learning makes the
   full engine worse than a coin.
 - **More than four things.** Eight cues: nothing above chance, in any engine.
-
-## Puzzles
-
-- **Credit by noise learns exactly the wrong answer.** In the table engine it ends at 0.00
-  on six seeds of eight, and with its sign reversed it scores 1.00 on shuffled echo on
-  eight of eight, the best shuffled result of any rule. The full engine's noise rule also
-  had lives at 0.01 to 0.07. A learner that is exactly wrong has found the signal; we do
-  not know why the sign is backwards.
