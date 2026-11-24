@@ -9,14 +9,18 @@
 // nothing (0). Each task keeps its own score per window of steps.
 
 enum class TaskKind {
-    echo,          // one of k cues is on; press the matching button
-    shuffled_echo, // the same, with the cue-to-button match drawn per life
-    delayed_echo,  // cue, a few blank steps, then an ask line; answer the cue
-    go_no_go,      // press on the go cue, hold still on the no-go cue
-    beat,          // press every `period` steps, no cue
-    sequence,      // a repeating pattern on the lines, no reward; score is prediction
-    catch_dot,     // move a paddle under a falling dot
-    cartpole,      // balance a pole on a cart
+    echo,            // one of k cues is on; press the matching button
+    shuffled_echo,   // the same, with the cue-to-button match drawn per life
+    delayed_echo,    // cue, a few blank steps, then an ask line; answer the cue
+    go_no_go,        // press on the go cue, hold still on the no-go cue
+    beat,            // press every `period` steps, no cue
+    sequence,        // a repeating pattern on the lines, no reward; score is prediction
+    catch_dot,       // move a paddle under a falling dot
+    cartpole,        // balance a pole on a cart
+    order,           // two cues come on one after the other; answer which came first
+    both_not_either, // two cues; one button when exactly one is on, the other otherwise
+    gap,             // one cue blinks twice; answer whether the gap was short or long
+    place,           // a small shape at one of several places; answer which shape
     count,
 };
 
@@ -25,6 +29,7 @@ constexpr int TASK_MAX_SHEET = 256;
 constexpr int TASK_MAX_NUMBERS = 4;
 constexpr int TASK_MAX_MOTORS = 16;
 constexpr int TASK_MAX_PATTERN = 64;
+constexpr int TASK_MAX_TRIAL = 16; // steps in one trial of a feature task
 
 // what a task needs plugged in
 struct TaskShape {
@@ -59,6 +64,11 @@ struct TaskSettings {
     int seq_lines = 8;
     int seq_length = 4; // steps before the sequence repeats
     int catch_w = 6, catch_h = 6;
+    int cue_offset = 0; // echo family: cues and buttons start at this line; lines before stay off
+    int order_gap = 1;  // order: steps the first cue is on alone before the second joins it
+    int gap_short = 1, gap_long = 3; // gap: blank steps between the two blinks
+    int place_size = 4;              // place: the sheet is size x size lines
+    int place_hold = 3;              // place: places never rewarded; only these are scored
 };
 
 // fixed point for cartpole: 16 fractional bits
@@ -85,6 +95,14 @@ struct Task {
     int64_t cart_x = 0, cart_v = 0, pole_a = 0, pole_w = 0;
     int64_t alive = 0; // steps since the last fall
 
+    // feature tasks: one trial is a short script, the singles on at each of its steps; the
+    // last step is the one answered
+    int trial_len = 0;
+    uint32_t trial_lines[TASK_MAX_TRIAL] = {};
+    int shape = 0, place = 0; // place: which shape, where (index into the places)
+    uint64_t held_out = 0;    // place: one bit per place never rewarded
+    bool scored = true;       // place: this trial is on a held-out place
+
     // window score, meaning depends on the kind (see task_window_score)
     int64_t tally[4] = {};
 };
@@ -103,7 +121,8 @@ int task_step(Task& task, const TaskStepIn& in);
 // score over the steps since the last call, then start a new window
 double task_window_score(Task& task);
 
-// per-kind halves, in task_reflex.cpp, task_sequence.cpp and task_control.cpp
+// per-kind halves, in task_reflex.cpp, task_sequence.cpp, task_control.cpp and
+// task_feature.cpp
 void reflex_reset(Task& task);
 TaskShape reflex_shape(const Task& task);
 void reflex_sense(const Task& task, TaskSense& sense);
@@ -126,3 +145,9 @@ TaskShape cartpole_shape(const Task& task);
 void cartpole_sense(const Task& task, TaskSense& sense);
 int cartpole_perfect_move(const Task& task);
 int cartpole_step(Task& task, const TaskStepIn& in);
+
+void feature_reset(Task& task);
+TaskShape feature_shape(const Task& task);
+void feature_sense(const Task& task, TaskSense& sense);
+int feature_perfect_move(const Task& task);
+int feature_step(Task& task, const TaskStepIn& in);

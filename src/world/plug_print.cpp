@@ -1,7 +1,8 @@
 #include "world/plug_print.hpp"
 
 // one character per cell of the sensor and motor regions:
-// G good, B bad, s on/off line, # bitmap, n number line, 0-9a-z motor line, . unattached
+// G good, B bad, s on/off line, # bitmap, n number line, 0-9a-z motor line, . unattached.
+// a line's cells sit every stride-th cell, as on the sheet
 
 static char motor_char(int line) {
     if (line < 10) {
@@ -47,7 +48,9 @@ void plug_print(const Plug& plug, const Blob& blob, FILE* f) {
             int x0 = plug.sensor_cell_x[line] - g.sensor_x;
             int y0 = plug.sensor_cell_y[line] - g.sensor_y;
             for (int k = 0; k < side * side; k++) {
-                cells[(y0 + k / side) * g.sensor_w + x0 + k % side] = sensor_char(plug, line);
+                int at = (y0 + k / side * g.sensor_stride) * g.sensor_w + x0 +
+                         k % side * g.sensor_stride;
+                cells[at] = sensor_char(plug, line);
             }
         }
         std::fprintf(f,
@@ -67,7 +70,9 @@ void plug_print(const Plug& plug, const Blob& blob, FILE* f) {
             int x0 = plug.motor_cell_x[line] - g.motor_x;
             int y0 = plug.motor_cell_y[line] - g.motor_y;
             for (int k = 0; k < side * side; k++) {
-                cells[(y0 + k / side) * g.motor_w + x0 + k % side] = motor_char(line);
+                int at =
+                    (y0 + k / side * g.motor_stride) * g.motor_w + x0 + k % side * g.motor_stride;
+                cells[at] = motor_char(line);
             }
         }
         std::fprintf(f, "motor region at (%d,%d), %dx%d cells, %d lines of %d neurons\n", g.motor_x,

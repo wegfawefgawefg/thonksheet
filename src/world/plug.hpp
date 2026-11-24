@@ -27,6 +27,8 @@ struct PlugSettings {
     int ticks_per_step = 8;    // blob ticks per task step
     int reward_line_ticks = 2; // ticks the good or bad line stays on after a reward
     int rest_ticks = 0;        // quiet ticks after a rewarded step (task lines off)
+    int distance = 0;          // tiles from the cue lines to the motor lines; 0 packs both from the
+                      // facing edges of their regions (1 tile apart with the default genome)
 };
 
 struct Plug {

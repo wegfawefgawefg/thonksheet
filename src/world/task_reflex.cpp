@@ -10,6 +10,13 @@ static int clamp_k(int k) {
     return k > TASK_MAX_MOTORS ? TASK_MAX_MOTORS : k;
 }
 
+// lines before the first cue line; only the echo family uses an offset
+static int cue_offset(const Task& task) {
+    bool echo_family = task.kind == TaskKind::echo || task.kind == TaskKind::shuffled_echo ||
+                       task.kind == TaskKind::delayed_echo;
+    return echo_family ? task.settings.cue_offset : 0;
+}
+
 static void draw_cue(Task& task) {
     int cues = task.kind == TaskKind::go_no_go ? 2 : task.settings.k;
     task.cue = world_random_below(task.random, cues);
@@ -24,8 +31,15 @@ void reflex_reset(Task& task) {
         task.settings.period = 2;
     }
     int k = task.settings.k;
+    // echo family: cues and buttons may start past some lines that stay off (a second task
+    // beside a first one, in the retention test)
+    int offset = cue_offset(task);
+    if (task.settings.cue_offset < 0 || offset + k + 1 > TASK_MAX_SINGLES) {
+        task.settings.cue_offset = 0;
+        offset = 0;
+    }
     for (int i = 0; i < k; i++) {
-        task.button_of[i] = i;
+        task.button_of[i] = offset + i;
     }
     // shuffled echo: which button answers which cue is drawn once per life
     if (task.kind == TaskKind::shuffled_echo) {
@@ -43,15 +57,16 @@ void reflex_reset(Task& task) {
 TaskShape reflex_shape(const Task& task) {
     TaskShape shape;
     int k = task.settings.k;
+    int offset = cue_offset(task);
     switch (task.kind) {
     case TaskKind::echo:
     case TaskKind::shuffled_echo:
-        shape.singles = k;
-        shape.motors = k;
+        shape.singles = offset + k;
+        shape.motors = offset + k;
         break;
     case TaskKind::delayed_echo:
-        shape.singles = k + 1; // the cues, then the ask line
-        shape.motors = k;
+        shape.singles = offset + k + 1; // the cues, then the ask line
+        shape.motors = offset + k;
         break;
     case TaskKind::go_no_go:
         shape.singles = 2; // go, no-go
@@ -68,17 +83,18 @@ TaskShape reflex_shape(const Task& task) {
 }
 
 void reflex_sense(const Task& task, TaskSense& sense) {
+    int offset = cue_offset(task);
     switch (task.kind) {
     case TaskKind::echo:
     case TaskKind::shuffled_echo:
     case TaskKind::go_no_go:
-        sense.singles[task.cue] = 1;
+        sense.singles[offset + task.cue] = 1;
         break;
     case TaskKind::delayed_echo:
         if (task.phase == 0) {
-            sense.singles[task.cue] = 1;
+            sense.singles[offset + task.cue] = 1;
         } else if (task.phase == task.settings.delay + 1) {
-            sense.singles[task.settings.k] = 1;
+            sense.singles[offset + task.settings.k] = 1;
         }
         break;
     default:
