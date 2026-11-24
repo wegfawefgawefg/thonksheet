@@ -28,6 +28,9 @@ static const char* usage =
     "  --period N         beat: press every N steps (default 4)\n"
     "  --seq-lines N      sequence: lines (default 8)\n"
     "  --seq-length N     sequence: steps before it repeats (default 4)\n"
+    "  --number-code C    how a number becomes lines: bar (default) or place (one line on)\n"
+    "  --cart-reward R    cartpole: sparse (default), alive, or lean (good when it ends a\n"
+    "                     step nearer upright and centred, bad when further)\n"
     "  --catch-size W H   catch: sheet size (default 6 6)\n";
 
 static bool read_int(const char* text, int64_t& out) {
@@ -63,6 +66,30 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
         const char* value = argv[++i];
         if (std::strncmp(flag, "--g.", 4) == 0) {
             continue; // a genome number, read by apply_genome_args
+        }
+        if (std::strcmp(flag, "--number-code") == 0) {
+            if (std::strcmp(value, "bar") == 0) {
+                flags.plug.number_code = 0;
+            } else if (std::strcmp(value, "place") == 0) {
+                flags.plug.number_code = 1;
+            } else {
+                std::fprintf(stderr, "blobrun: --number-code is bar or place\n");
+                return false;
+            }
+            continue;
+        }
+        if (std::strcmp(flag, "--cart-reward") == 0) {
+            if (std::strcmp(value, "sparse") == 0) {
+                flags.task_settings.cart_reward = 0;
+            } else if (std::strcmp(value, "alive") == 0) {
+                flags.task_settings.cart_reward = 1;
+            } else if (std::strcmp(value, "lean") == 0) {
+                flags.task_settings.cart_reward = 2;
+            } else {
+                std::fprintf(stderr, "blobrun: --cart-reward is sparse, alive or lean\n");
+                return false;
+            }
+            continue;
         }
         if (std::strcmp(flag, "--task") == 0) {
             if (!task_from_name(value, flags.task)) {

@@ -59,6 +59,10 @@ struct TaskSettings {
     int seq_lines = 8;
     int seq_length = 4; // steps before the sequence repeats
     int catch_w = 6, catch_h = 6;
+    // cartpole reward: 0 sparse (good every 25 steps up, bad on a fall), 1 alive (good on
+    // every step up, bad on a fall), 2 lean (every step: good if the pole and cart ended
+    // nearer upright-and-centred than they began or are already there, bad if further)
+    int cart_reward = 0;
 };
 
 // fixed point for cartpole: 16 fractional bits
