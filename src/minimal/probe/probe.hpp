@@ -56,3 +56,4 @@ int probe_alive(ProbeArgs& args);
 int probe_life(ProbeArgs& args);
 int probe_idle(ProbeArgs& args);
 int probe_speed(ProbeArgs& args);
+int probe_trace(ProbeArgs& args);

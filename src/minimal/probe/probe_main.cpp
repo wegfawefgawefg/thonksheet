@@ -3,6 +3,8 @@
 //   life   one long Echo (or any task) life, then the same plus the wiring at the end
 //   idle   teach a task, test frozen, unplug for a long stretch, test frozen again
 //   speed  ticks per second on one core at 4,096, 65,536 and 1,048,576 neurons
+//   trace  delayed echo: teach, freeze, then how readable the cue is tick by tick after it
+//          goes off (the whole sheet and the motor neurons)
 // --engine full|minimal picks the engine (default minimal). blobrun's task, plug, seed and
 // --g. flags all work; --m.name value sets a minimal genome number.
 
@@ -66,7 +68,8 @@ bool probe_args(int argc, char** argv, ProbeArgs& args) {
 
 int main(int argc, char** argv) {
     if (argc < 2) {
-        std::fputs("minimalprobe alive|life|idle|speed [--engine full|minimal] [flags]\n", stderr);
+        std::fputs("minimalprobe alive|life|idle|speed|trace [--engine full|minimal] [flags]\n",
+                   stderr);
         return 1;
     }
     ProbeArgs args;
@@ -87,6 +90,9 @@ int main(int argc, char** argv) {
     }
     if (std::strcmp(mode, "speed") == 0) {
         return probe_speed(args);
+    }
+    if (std::strcmp(mode, "trace") == 0) {
+        return probe_trace(args);
     }
     std::fprintf(stderr, "minimalprobe: no mode '%s'\n", mode);
     return 1;

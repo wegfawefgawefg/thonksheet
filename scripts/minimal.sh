@@ -12,10 +12,17 @@
 #   scripts/minimal.sh probe life --steps 200000            a long Echo life, then the wiring
 #   scripts/minimal.sh probe idle               teach Echo, unplug 2M ticks, retest
 #   scripts/minimal.sh probe speed              ticks/s at 4,096, 65,536, 1,048,576 neurons
+#   scripts/minimal.sh probe trace --task delayed-echo --delay 2 --test-steps 40000
+#                                               teach, freeze, then how readable the cue is
+#                                               tick by tick after it goes off
+#   scripts/minimal.sh seeds far5 5 12 --m.far_slots 1      far slots (off by default)
+#   scripts/minimal.sh seeds delayed 5 12 --m.delay_max 8   slot delays (off by default)
 #   (probe takes --engine full for the full engine measured the same way)
 #
-# Presets: echo2 echo4 echo8 shuffled delayed catch cartpole far1 far2 far3 (echo k=2 with
-# cue and button 1, 2, 3 tiles apart). Results land in out/minimal/<preset>[-tag]/.
+# Presets: echo2 echo4 echo8 shuffled delayed catch cartpole far1..far5 (echo k=2 with cue
+# and button 1..5 tiles apart), delayed0 delayed1 (the ask right after the cue step, or one
+# blank step between), beat2 beat4 (press every 2 or 4 steps, no cue).
+# Results land in out/minimal/<preset>[-tag]/.
 # Set TAG=name to keep runs with different extra flags apart.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -30,11 +37,19 @@ preset() {
     echo8) echo --task echo --k 8 ;;
     shuffled) echo --task shuffled-echo --k 2 ;;
     delayed) echo --task delayed-echo --k 2 --delay 2 ;;
+    delayed0) echo --task delayed-echo --k 2 --delay 0 ;;
+    delayed1) echo --task delayed-echo --k 2 --delay 1 ;;
+    beat2) echo --task beat --period 2 ;;
+    beat4) echo --task beat --period 4 ;;
     catch) echo --task catch --sensor-side 2 --catch-size 6 6 ;;
-    cartpole) echo --task cartpole --sensor-side 2 --steps 100000 ;;
+    cartpole) echo --task cartpole --cart-reward lean --number-code place \
+        --sensor-side 2 --steps 100000 ;;
+    cartsparse) echo --task cartpole --sensor-side 2 --steps 100000 ;; # the old reward and lines
     far1) echo --task echo --k 2 --g.motor_y 32 --g.motor_h 16 ;;
     far2) echo --task echo --k 2 --g.motor_y 40 --g.motor_h 16 ;;
     far3) echo --task echo --k 2 --g.motor_y 48 --g.motor_h 16 ;;
+    far4) echo --task echo --k 2 --g.sensor_y 10 --g.sensor_h 16 --g.motor_y 48 --g.motor_h 16 ;;
+    far5) echo --task echo --k 2 --g.sensor_y 2 --g.sensor_h 16 --g.motor_y 48 --g.motor_h 16 ;;
     *) echo "no preset $1" >&2; exit 1 ;;
     esac
 }

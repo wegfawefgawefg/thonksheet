@@ -31,7 +31,14 @@ static void sanitize(MinimalGenome& mg) {
     mg.threshold_min = clamp_int(mg.threshold_min, 1, 255);
     mg.threshold_max = clamp_int(mg.threshold_max, mg.threshold_min, 255);
     mg.threshold_cap = clamp_int(mg.threshold_cap, mg.threshold_max, 255);
-    mg.credit_ticks = clamp_int(mg.credit_ticks, 1, MIN_HISTORY - 2);
+    mg.far_slots = clamp_int(mg.far_slots, 0, MIN_FAR_MAX);
+    mg.far_percent = clamp_int(mg.far_percent, 0, 100);
+    mg.far_reach = clamp_int(mg.far_reach, 1, 64);
+    mg.delay_max = clamp_int(mg.delay_max, 1, MIN_DELAY_MAX);
+    mg.far_delay_per_tile = clamp_int(mg.far_delay_per_tile, 0, 16);
+    mg.delay_percent = clamp_int(mg.delay_percent, 0, 100);
+    // the oldest map learning reads is credit_ticks - 1 + delay_max ticks back
+    mg.credit_ticks = clamp_int(mg.credit_ticks, 1, MIN_HISTORY - 1 - mg.delay_max);
     mg.avg_shift = clamp_int(mg.avg_shift, 0, 16);
 }
 
@@ -79,7 +86,68 @@ static void set_local_tiles(MinimalBlob& m) {
     }
 }
 
-// every non-sensor neuron gets `budget` random local sources. no structure.
+// a far tile for a neuron in `tile`: distance mostly 2..reach+1 with a long tail (as the full
+// engine draws it), a point on the square ring at that distance. false if it fell off the
+// sheet 8 times running; the slot then stays empty.
+static bool draw_far(MinimalBlob& m, int tile, uint32_t& far, int& distance) {
+    const Blob& b = m.shell;
+    int tx = tile % b.tiles_w, ty = tile / b.tiles_w;
+    int reach = m.mg.far_reach;
+    int longest = b.tiles_w > b.tiles_h ? b.tiles_w : b.tiles_h;
+    for (int attempt = 0; attempt < 8; attempt++) {
+        int d = 2 + (int)rng_below(m.rng, (uint32_t)reach);
+        while ((rng_next(m.rng) & 3) == 0 && d < longest) {
+            d += 1 + (int)rng_below(m.rng, (uint32_t)reach);
+        }
+        int side = (int)rng_below(m.rng, 4);
+        int p = (int)rng_below(m.rng, (uint32_t)(2 * d)) - d;
+        int dx = side == 0 ? p : (side == 1 ? d : (side == 2 ? -p : -d));
+        int dy = side == 0 ? -d : (side == 1 ? p : (side == 2 ? d : -p));
+        int x = tx + dx, y = ty + dy;
+        if (x < 0 || y < 0 || x >= b.tiles_w || y >= b.tiles_h) {
+            continue;
+        }
+        far = (uint32_t)(y * b.tiles_w + x);
+        distance = d;
+        return true;
+    }
+    return false;
+}
+
+// far tiles and slot delays. local delays: the smaller of two draws in 1..delay_max, so short
+// ones are common; a far slot's delay is its distance x far_delay_per_tile (at least 1).
+static void set_far_and_delays(MinimalBlob& m) {
+    const Blob& b = m.shell;
+    const MinimalGenome& mg = m.mg;
+    const int far_slots = m.slots - MIN_SLOTS;
+    for (int n = 0; n < b.neuron_count; n++) {
+        int t = n / TILE_NEURONS;
+        bool sensor = (b.sensor[t] >> (n % TILE_NEURONS)) & 1;
+        if (m.delay) {
+            for (int k = 0; k < MIN_SLOTS; k++) {
+                int d1 = 1 + (int)rng_below(m.rng, (uint32_t)mg.delay_max);
+                int d2 = 1 + (int)rng_below(m.rng, (uint32_t)mg.delay_max);
+                bool drawn = (int)rng_below(m.rng, 100) < mg.delay_percent;
+                m.delay[min_index(m, n, k)] = (uint8_t)(drawn ? (d1 < d2 ? d1 : d2) : 1);
+            }
+        }
+        for (int j = 0; j < far_slots; j++) {
+            uint32_t& far =
+                m.far_tile[((int64_t)t * far_slots + j) * TILE_NEURONS + n % TILE_NEURONS];
+            far = (uint32_t)b.tile_count;
+            int distance = 1;
+            if (!sensor && (int)rng_below(m.rng, 100) < mg.far_percent) {
+                draw_far(m, t, far, distance);
+            }
+            if (m.delay) {
+                m.delay[min_index(m, n, MIN_SLOTS + j)] =
+                    (uint8_t)clamp_int(distance * mg.far_delay_per_tile, 1, mg.delay_max);
+            }
+        }
+    }
+}
+
+// every non-sensor neuron gets `budget` random sources over its slots. no structure.
 static void wire(MinimalBlob& m) {
     const Blob& b = m.shell;
     for (int n = 0; n < b.neuron_count; n++) {
@@ -88,9 +156,9 @@ static void wire(MinimalBlob& m) {
         }
         int have = 0;
         for (int tries = 0; have < m.mg.budget && tries < 100000; tries++) {
-            int k = (int)rng_below(m.rng, MIN_SLOTS);
+            int k = (int)rng_below(m.rng, (uint32_t)m.slots);
             uint64_t bit = 1ull << rng_below(m.rng, 64);
-            uint64_t& word = m.mask[min_index(n, k)];
+            uint64_t& word = m.mask[min_index(m, n, k)];
             if ((min_allowed(m, n, k) & bit) && !(word & bit)) {
                 word |= bit;
                 have++;
@@ -131,15 +199,24 @@ Blob* minimal_birth(const Genome& genome, const MinimalGenome& mg, uint64_t seed
     m->stride = (b.tile_count + 1 + 7) & ~7;
     m->spikes = (uint64_t*)alloc_lines(sizeof(uint64_t) * m->stride * MIN_HISTORY);
     m->noise = (uint64_t*)alloc_lines(sizeof(uint64_t) * m->stride * MIN_HISTORY);
+    m->slots = MIN_SLOTS + m->mg.far_slots;
+    size_t slots = (size_t)m->slots;
     m->local_tile = (uint32_t*)alloc_lines(sizeof(uint32_t) * b.tile_count * MIN_SLOTS);
-    m->mask = (uint64_t*)alloc_lines(sizeof(uint64_t) * n * MIN_SLOTS);
+    if (m->mg.far_slots > 0) {
+        m->far_tile = (uint32_t*)alloc_lines(sizeof(uint32_t) * n * (size_t)m->mg.far_slots);
+    }
+    m->mask = (uint64_t*)alloc_lines(sizeof(uint64_t) * n * slots);
+    if (m->mg.delay_max > 1) {
+        m->delay = (uint8_t*)alloc_lines(n * slots);
+    }
     if (m->mg.drop_mode == 1) {
-        m->used = (uint64_t*)alloc_lines(sizeof(uint64_t) * n * MIN_SLOTS);
+        m->used = (uint64_t*)alloc_lines(sizeof(uint64_t) * n * slots);
     }
     m->threshold = (uint8_t*)alloc_lines(n);
 
     set_kinds(*m);
     set_local_tiles(*m);
+    set_far_and_delays(*m);
     wire(*m);
     return &b;
 }
@@ -155,7 +232,7 @@ void minimal_free(Blob* blob) {
     void* arrays[] = {blob->recent,   blob->inhibitory,     blob->sensor,    blob->motor,
                       blob->sense_in, blob->sense_attached, blob->predicted, m->spikes,
                       m->noise,       m->local_tile,        m->mask,         m->used,
-                      m->threshold};
+                      m->threshold,   m->far_tile,          m->delay};
     for (void* p : arrays) {
         std::free(p);
     }
@@ -164,8 +241,8 @@ void minimal_free(Blob* blob) {
 
 int minimal_fan_in(const MinimalBlob& m, int n) {
     int count = 0;
-    for (int k = 0; k < MIN_SLOTS; k++) {
-        count += __builtin_popcountll(m.mask[min_index(n, k)]);
+    for (int k = 0; k < m.slots; k++) {
+        count += __builtin_popcountll(m.mask[min_index(m, n, k)]);
     }
     return count;
 }
@@ -174,8 +251,10 @@ size_t minimal_bytes(const MinimalBlob& m) {
     size_t n = (size_t)m.shell.neuron_count;
     size_t bytes = 2 * sizeof(uint64_t) * (size_t)m.stride * MIN_HISTORY;
     bytes += sizeof(uint32_t) * (size_t)m.shell.tile_count * MIN_SLOTS;
-    bytes += sizeof(uint64_t) * n * MIN_SLOTS * (m.used ? 2 : 1);
-    bytes += n; // thresholds
+    bytes += sizeof(uint64_t) * n * (size_t)m.slots * (m.used ? 2 : 1);
+    bytes += sizeof(uint32_t) * n * (size_t)(m.slots - MIN_SLOTS); // far tiles
+    bytes += m.delay ? n * (size_t)m.slots : 0;                    // delays
+    bytes += n;                                                    // thresholds
     // the per-tile words the engine reads from the shell: sensor, inhibitory, sense_in
     bytes += 3 * sizeof(uint64_t) * (size_t)(m.shell.tile_count + 1);
     return bytes;
@@ -205,6 +284,12 @@ static const MinimalField fields[] = {
     {"cowire_on", &MinimalGenome::cowire_on},
     {"cowire_shift", &MinimalGenome::cowire_shift},
     {"cowire_needs_input", &MinimalGenome::cowire_needs_input},
+    {"far_slots", &MinimalGenome::far_slots},
+    {"far_percent", &MinimalGenome::far_percent},
+    {"far_reach", &MinimalGenome::far_reach},
+    {"delay_max", &MinimalGenome::delay_max},
+    {"far_delay_per_tile", &MinimalGenome::far_delay_per_tile},
+    {"delay_percent", &MinimalGenome::delay_percent},
 };
 
 void apply_minimal_args(int argc, char** argv, MinimalGenome& mg) {
