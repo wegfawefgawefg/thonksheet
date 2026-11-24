@@ -73,3 +73,9 @@ A request that becomes work also gets a line in `docs/plan.md`.
 - "is this even worth trying. we still havent run anything yet ... maybe theres a simpler more
   elegant design" -> freeze the design, run Echo, cut by ablation, add rivals. He agreed:
   "dumb rival sounds kinda cool", "simpler design okay".
+- The general goal, confirmed ("this is correct yes"): find out what makes general learning
+  possible in a brain-like machine and build the smallest efficient version; the sheet and
+  Echo are a vehicle. Written at the top of `docs/bench.md`.
+- The method: "we should be perhaps running more bots, giving them each less of this full
+  machine. you ideate some things. they implement. they run a suite of tests. you analyze,
+  see if anything comes of it, and keep exploring other experiments." -> `docs/bench.md`.
