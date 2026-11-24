@@ -20,9 +20,14 @@ Status words: idea, building, tried (with result), kept, dropped.
 ## Credit rules
 
 1. **Noise is the experiment.** [known rule; exact noise bit is ours] credit, room. Only
-   neurons whose spike was noise get graded, against a running average of reward. *building*
+   neurons whose spike was noise get graded, against a running average of reward. *tried:
+   loses. 0.81 on echo with 2 cues, 0.12 with 4, uneven across seeds; alongside good/bad it
+   changes nothing. docs/results-2026-11-24-ablations-and-rivals.md*
 2. **A budget per neuron.** [known] room. Every strengthening is paid for by a weakening
-   elsewhere on the same neuron. *idea*
+   elsewhere on the same neuron. *tried in the minimal engine: it is the piece that carries
+   the result. Without it Echo drops 0.17 to 0.23 and the sheet saturates; with it every
+   neuron holds exactly its 48 connections after 4M ticks. Not yet ported to the full
+   engine. docs/results-2026-11-24-minimal-engine.md*
 3. **Causal credit.** [known family] credit. Grade only a source that fired exactly its
    slot's delay before the target fired. *idea*
 4. **Reward minus expectation.** [known] credit, room. Keep the current rule but act only on
@@ -92,7 +97,8 @@ Status words: idea, building, tried (with result), kept, dropped.
 30. **Selection among tiles.** [new?] credit, carry. Copy the masks of tiles active before
     good outcomes over tiles that did poorly. *idea*
 31. **Random flips.** [known] baseline. Flip bits, keep them if the score went up.
-    *building*
+    *tried: slow. Into motor neurons 0.82 on echo; the only rule that improves cartpole
+    (20 steps per fall against 10.6) but still no better than coin flips.*
 32. **Twin tournament.** [known] baseline. Two blobs that differ by a few flips; the better
     one each window is copied over the other. *idea*
 33. **A bandit per sector.** [new?] credit. Each sector alternates between two small mask
@@ -122,9 +128,60 @@ Status words: idea, building, tried (with result), kept, dropped.
 
 ## Baselines and measurements
 
-41. **Frozen blob, learned readout.** [known] baseline. *building*
-42. **Carrying test.** How many tiles away can a cue still be read from activity. *running*
+41. **Frozen blob, learned readout.** [known] baseline. *tried: ties the full rule on
+    echo with 2 cues (0.914 against 0.940) and shuffled echo; stays at chance on 4 cues,
+    where the full rule reaches 0.33. So inner learning pays only once the task is harder.*
+42. **Carrying test.** How many tiles away can a cue still be read from activity. *tried:
+    cue identity is readable 3 tiles out at birth, 4 with growth and pruning on, 6 after a
+    long life or with many far links. Echo fails inside that range, so from 2 to 4 tiles the
+    problem is credit, not carrying. docs/results-2026-11-24-carry.md*
 43. **Capacity test.** How many cue-button pairs one blob holds: 2, 4, 8, 16. *idea*
 44. **Retention test.** Learn A, learn B, retest A. *idea*
 45. **Throughput numbers.** Synapse checks, real events, signal bits and stored bits in the
     speed test. *idea*
+46. **A reader as weak as the rule.** Repeat the carrying test with a readout that learns the
+    way the blob does, to see how far the real rule can read. *idea*
+47. **Many far links.** [plain] carry. Half the neurons send far instead of 15%. *tried in
+    the carrying test: reach 4 to 6 tiles; not yet tried on a task*
+48. **Pool before deciding.** [known] credit. A motor cell listens to many weak neurons
+    through one hop of relay cells that each sum a neighbourhood, so thinly spread
+    information gets gathered before the reward rule has to find it. *idea*
+49. **Richness test.** [ours] The owner's thesis: a sheet rich enough in features (in time,
+    shape and place) turns learning into selection, so deep credit is not needed. Test it
+    directly: freeze the sheet, learn only the readout, on tasks whose answer needs a
+    feature the input does not hand over (which of two cues came first; two cues both on
+    but not either alone; the same shape in a new place; a gap of N ticks). Count how many
+    of these a frozen sheet already supports, at birth and after a reward-free life, and how
+    that grows with sheet size. *idea*
+50. **The minimal engine.** [ours] A fresh, tiny engine with three things only: a neuron is
+    a popcount over a mask against a threshold; a synapse changes by chance on an outcome,
+    graded only where the spike was noise, under a per-neuron budget; each neuron keeps its
+    own firing rate. Plus wiring by co-activity, switchable. Does it match the 21-mechanism
+    engine? *tried: on Echo it beats it. 2 cues 0.94 against 0.87, 4 cues 0.41 against
+    0.31, shuffled 0.87 against 0.76, with half the code, 40% of the memory and about 4x
+    the speed, and it does not saturate or pulse. It loses on reach (nothing past one
+    tile; the full engine gets 0.58 at 3 tiles), has no memory past one tick, and forgets
+    everything when idle unless co-activity wiring is switched off without input.
+    docs/results-2026-11-24-minimal-engine.md*
+51. **The suite.** One script scores any engine on every property in `docs/bench.md` and
+    writes a scorecard; a second joins them into `docs/scoreboard.md`. *building*
+52. **Slow credit.** [known family] credit in time. A second "fired recently" bit that lasts
+    hundreds of ticks (maps ORed together and cleared on a slow schedule), graded at a lower
+    chance. Cartpole's reward comes every 25 steps and the rule only reaches back 6 ticks.
+    *queued*
+53. **Lose-shift.** [known behaviour, mechanism ours] credit. On bad, the motor cells that
+    just fired get harder to fire for a while, so a different answer gets tried. Aimed at the
+    lock seen in seed 3 and in crossed shuffled-echo lives, where the blob keeps pressing the
+    wrong button while punished. *building*
+54. **The ablation sweep.** Each mechanism off in turn, 8 seeds. *tried: needed are
+    inhibition, per-neuron threshold regulation, good, bad, growth, pruning. No measurable
+    effect from delays, branch bonus, varied neurons, noise, far redraw. The surprise boost
+    is on 92-99% of the time, so it is only a doubling of the learning chances.
+    docs/results-2026-11-24-ablations-and-rivals.md*
+55. **Grow the minimal engine one piece at a time.** [ours] The minimal engine is now the
+    base. A mechanism from the full engine goes back in only if it earns its place on the
+    test it is for: a far slot on reach, delays on the timing tasks, lose-shift on the lock,
+    slow credit on cartpole. *building: far slot, then delays*
+56. **Wire by co-activity only while something is plugged in.** [ours] alive. Fixes the
+    minimal engine forgetting everything when idle (0.95 to 0.33 becomes 0.95 to 0.96).
+    *tried, works; to become the default*

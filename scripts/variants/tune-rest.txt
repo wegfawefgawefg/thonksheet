@@ -1,0 +1,5 @@
+# quiet ticks after each reward, so good/bad acts on this step's activity and not on the
+# next step's cue. picked on seeds 1-4.
+brain:
+brain rest 6: --rest-ticks 6
+readout rest 6: --g.learn_mode 1 --rest-ticks 6

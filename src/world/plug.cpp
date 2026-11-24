@@ -212,7 +212,15 @@ void plug_set_lines(Plug& plug, const TaskSense& sense) {
         int64_t span = (int64_t)shape.number_hi[i] - lo;
         for (int k = 0; k < n; k++) {
             int64_t threshold = lo + span * (2 * k + 1) / (2 * n);
-            plug.line_on[plug.first_number + i * n + k] = sense.numbers[i] >= threshold;
+            bool on = sense.numbers[i] >= threshold;
+            if (plug.settings.number_code == 1) {
+                // place code: the one band the value sits in. band k runs between the bar
+                // thresholds k - 1 and k, with the ends open
+                int64_t above = lo + span * (2 * k + 3) / (2 * n);
+                bool below_next = k == n - 1 || sense.numbers[i] < above;
+                on = (k == 0 || on) && below_next;
+            }
+            plug.line_on[plug.first_number + i * n + k] = on;
         }
     }
 }

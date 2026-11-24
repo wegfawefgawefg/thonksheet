@@ -22,6 +22,7 @@ struct RunFlags {
     bool show_plug = false; // print where the lines sit, then run
     bool table = false;     // run the table sheet (idea 26) in place of the blob
     std::string out;        // csv path; empty means out/<task>-s<seed>.csv
+    std::string engine = "blob"; // blob (the full engine) or minimal
 };
 
 // false after printing a message (or the usage) to stderr

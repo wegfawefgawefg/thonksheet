@@ -17,11 +17,19 @@ void tick_regulate(Blob& blob);
 // sensor prediction learning. `read_now` is the ring index the fire step read from.
 void learn_predict(Blob& blob, int read_now, int boost);
 
-// good and bad broadcast on recently co-active pairs
-void learn_reward(Blob& blob, int valence, int boost);
+// good and bad broadcast on recently co-active pairs. motor_only: only connections into
+// motor neurons move (learn mode 1, the readout rival).
+void learn_reward(Blob& blob, int valence, int boost, bool motor_only);
 
 // growth toward recent neighbours, pruning of idle weak links, far slot redraw
-void learn_wiring(Blob& blob, int boost);
+void learn_wiring(Blob& blob, int boost, bool motor_only);
+
+// learn mode 2: random weight-bit flips kept when the reward over a window beat the average
+void learn_flips(Blob& blob);
+
+// learn modes 3, 4: a reward graded against the running mean moves the recently active
+// inputs of neurons whose recent spike was noise
+void learn_noise(Blob& blob, int valence);
 
 // connections a neuron has, over all slots
 int count_fan_in(const Blob& blob, int neuron);

@@ -22,6 +22,20 @@ struct BlobStats {
     uint32_t grown = 0, pruned = 0, strengthened = 0, weakened = 0;
 };
 
+// learn mode 2: the bits flipped for the live trial, so they can be flipped back
+constexpr int FLIP_MAX = 64;
+struct FlipTrial {
+    int count = 0;               // bits flipped in the live trial
+    int64_t word[FLIP_MAX] = {}; // blob_weight_index of each
+    uint8_t bit[FLIP_MAX] = {};
+    uint8_t plane[FLIP_MAX] = {}; // 0 is w0, 1 is w1
+    int ticks_left = 0;
+    int32_t score = 0;     // sum of rewards since the trial started
+    int32_t reference = 0; // running mean of trial scores, x256
+    int started = 0;       // 0 until the first window has been measured
+    uint32_t kept = 0, undone = 0;
+};
+
 struct Blob {
     Genome genome;
     int tiles_w = 0, tiles_h = 0;
@@ -87,6 +101,16 @@ struct Blob {
     uint32_t* sector_target = nullptr; // wanted sector_activity, same units (x256)
     uint32_t surprise_level = 0;       // smoothed wrong predictions per 1,024 attached lines, x256
     int spike_stride = 0;              // words from one spike map to the next
+
+    // rival learning modes (genome.learn_mode, docs/plan.md). unused in mode 0.
+    // noise_ring: like the spike ring (same index), bits for spikes that came from noise
+    // alone. noise_trace, active_trace: scratch maps, tile_count + 1 words each.
+    uint64_t* noise_ring = nullptr;
+    uint64_t* noise_trace = nullptr;
+    uint64_t* active_trace = nullptr;
+    int32_t reward_average = 0; // running mean of rewards, x256 (modes 3, 4)
+    int pending_valence = 0;    // a reward not yet used by the noise rule
+    FlipTrial flips;            // mode 2
 
     uint64_t rng[4] = {};
     BlobStats stats;

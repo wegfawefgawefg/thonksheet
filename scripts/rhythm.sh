@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 scripts/build.sh
-p() { nice -n 19 ./build/blobprobe "$@"; }
+p() { nice -n 19 ./build/blobprobe rhythm "$@"; }
 echo "== with random input"
 p --label "baseline"
 p --label "idle (no input)" --input 0

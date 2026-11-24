@@ -12,14 +12,8 @@
 #include <cstring>
 #include <vector>
 
-static int int_arg(int argc, char** argv, const char* name, int fallback) {
-    for (int i = 1; i + 1 < argc; i++) {
-        if (std::strcmp(argv[i], name) == 0) {
-            return std::atoi(argv[i + 1]);
-        }
-    }
-    return fallback;
-}
+int int_arg(int argc, char** argv, const char* name, int fallback);
+const char* text_arg(int argc, char** argv, const char* name, const char* fallback);
 
 static uint64_t probe_random(uint64_t& state) {
     state ^= state << 13;
@@ -37,7 +31,7 @@ static void random_input(Blob& blob, uint64_t& state) {
     }
 }
 
-int main(int argc, char** argv) {
+int probe_rhythm(int argc, char** argv) {
     Genome genome;
     apply_genome_args(argc, argv, genome);
     int tiles = int_arg(argc, argv, "--tiles", 0);
@@ -50,12 +44,7 @@ int main(int argc, char** argv) {
     int ticks = int_arg(argc, argv, "--ticks", 65536);
     int max_lag = int_arg(argc, argv, "--max-lag", 300);
     uint64_t seed = (uint64_t)int_arg(argc, argv, "--seed", 1);
-    const char* label = "run";
-    for (int i = 1; i + 1 < argc; i++) {
-        if (std::strcmp(argv[i], "--label") == 0) {
-            label = argv[i + 1];
-        }
-    }
+    const char* label = text_arg(argc, argv, "--label", "run");
 
     Blob* blob = blob_birth(genome, seed);
     uint64_t state = 0x9E3779B97F4A7C15ull ^ seed;
