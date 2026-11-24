@@ -17,6 +17,7 @@ static const char* usage =
     "  --out PATH         csv path (default out/<task>-s<seed>.csv)\n"
     "  --no-baselines     skip the learning-off and coin-flip runs\n"
     "  --show-plug        print where each line sits on the sheet\n"
+    "  --engine NAME      blob (default) or minimal; --m.name value sets a minimal number\n"
     "plug:\n"
     "  --sensor-side N    a sensor line drives N x N neurons (default 2)\n"
     "  --motor-side N     a motor line is read from N x N neurons (default 2)\n"
@@ -64,8 +65,12 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             return false;
         }
         const char* value = argv[++i];
-        if (std::strncmp(flag, "--g.", 4) == 0) {
-            continue; // a genome number, read by apply_genome_args
+        if (std::strncmp(flag, "--g.", 4) == 0 || std::strncmp(flag, "--m.", 4) == 0) {
+            continue; // a genome number, read by apply_genome_args / apply_minimal_args
+        }
+        if (std::strcmp(flag, "--engine") == 0) {
+            flags.engine = value;
+            continue;
         }
         if (std::strcmp(flag, "--number-code") == 0) {
             if (std::strcmp(value, "bar") == 0) {
