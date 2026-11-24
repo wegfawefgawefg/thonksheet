@@ -93,6 +93,12 @@ struct Genome {
     int noise_learn_shift = 2;    // modes 3, 4: chance per eligible connection
     int noise_trace_ticks = 16;   // modes 3, 4: how far back a noise spike counts (1..16)
     int reward_average_shift = 5; // modes 3, 4: running mean of rewards over ~2^this events
+
+    // lose-shift and neighbours (idea 53, learn_lose_shift.cpp). 0 is off and changes nothing.
+    int lose_shift_steps = 0; // on bad, threshold steps added to motor cells that just fired
+    int win_stay_steps = 0;   // on good, threshold steps taken off them
+    int lose_shift_fires = 1; // "just fired": at least this many spikes (1..3) in the last 16 ticks
+    int bad_cut_on = 0; // bad may remove strength-1 links, only into recently fired motor cells
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

@@ -1,0 +1,3 @@
+# idea 53: crossed shuffled-echo lives over a long life
+baseline:
+lose-shift: --g.lose_shift_steps 16 --g.lose_shift_fires 2

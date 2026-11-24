@@ -1,0 +1,12 @@
+# idea 53, settings picked on tuning seeds only: echo k=2 seeds 1-4, shuffled echo k=2
+# seeds 1-4 (straight) and 6, 7, 25, 26 (crossed). threshold steps on bad (ls), on good (ws),
+# "just fired" = at least f spikes in the last 16 ticks, bad cut into motor cells.
+baseline:
+ls2: --g.lose_shift_steps 2
+ls4: --g.lose_shift_steps 4
+ls8: --g.lose_shift_steps 8
+ls4 f2: --g.lose_shift_steps 4 --g.lose_shift_fires 2
+ls8 f2: --g.lose_shift_steps 8 --g.lose_shift_fires 2
+ws1: --g.win_stay_steps 1
+ws2: --g.win_stay_steps 2
+cut: --g.bad_cut_on 1
