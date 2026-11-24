@@ -31,6 +31,9 @@ void learn_flips(Blob& blob);
 // inputs of neurons whose recent spike was noise
 void learn_noise(Blob& blob, int valence);
 
+// learn modes 5, 6: the error rule at the motor cells, on the reward just broadcast
+void learn_readout(Blob& blob, int valence);
+
 // connections a neuron has, over all slots
 int count_fan_in(const Blob& blob, int neuron);
 

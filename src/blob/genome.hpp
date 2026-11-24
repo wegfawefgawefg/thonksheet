@@ -93,6 +93,18 @@ struct Genome {
     int noise_learn_shift = 2;    // modes 3, 4: chance per eligible connection
     int noise_trace_ticks = 16;   // modes 3, 4: how far back a noise spike counts (1..16)
     int reward_average_shift = 5; // modes 3, 4: running mean of rewards over ~2^this events
+
+    // learn mode 5: an error rule at the motor cells, nothing else learns (idea 58,
+    // learn_readout.cpp). 6: the same at the motor cells, and the design rule everywhere.
+    int readout_shift = 6;        // chance per eligible input per update
+    int readout_trace_ticks = 15; // the ticks before the reward that count as "active" (1..15)
+    int readout_counts = 1;       // 1: one chance per tick a source fired; 0: one if it fired at all
+    int readout_know_button = 1;  // 1: the world marks the pressed button's motor cells. 0: a
+                                  // motor cell only knows whether it fired itself
+    int readout_good = 0;         // 1: on good the pressed button gains and the others lose
+    int readout_new = 1;          // 1: gaining may wire a source in that was not connected
+    int readout_budget = 0;       // 1: a motor cell keeps its count of connections; a new
+                                  // one costs an idle one, a lost one is replaced by an idle one
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

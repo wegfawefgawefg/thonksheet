@@ -20,6 +20,7 @@ constexpr int PLUG_MAX_SIDE = 4;
 constexpr int PLUG_MAX_GROUP = PLUG_MAX_SIDE * PLUG_MAX_SIDE;
 constexpr int PLUG_GOOD_LINE = 0;
 constexpr int PLUG_BAD_LINE = 1;
+constexpr int PLUG_MAX_SPREAD = 1024; // motor cells over all buttons with --motor-spread
 
 struct PlugSettings {
     int sensor_side = 2;       // a sensor line drives side x side neurons
@@ -33,6 +34,11 @@ struct PlugSettings {
     // how a number becomes lines: 0 bar (lines light from the left as the value rises, so a
     // low value is only an absence), 1 place (only the line whose band holds the value)
     int number_code = 0;
+    // idea 58: N motor cells per button, spread over the motor region (plug_spread.cpp);
+    // 0 is one side x side group per button. even: spread from nearest to farthest rather
+    // than the nearest N
+    int motor_spread = 0;
+    int motor_spread_even = 0;
 };
 
 struct Plug {
@@ -58,6 +64,10 @@ struct Plug {
 
     // ticks left on the good and bad lines
     int good_left = 0, bad_left = 0;
+
+    // --motor-spread: line L's cells are spread_neuron[spread_first[L] .. spread_first[L + 1])
+    int spread_first[PLUG_MAX_MOTOR_LINES + 1] = {};
+    int spread_neuron[PLUG_MAX_SPREAD] = {};
 };
 
 // lay the task's lines onto the blob and attach them. false (with a message on stderr) if
@@ -65,6 +75,16 @@ struct Plug {
 bool plug_attach(Plug& plug, Blob& blob, const TaskShape& shape, const PlugSettings& settings);
 // take the lines back out: the blob stops learning from them
 void plug_detach(Plug& plug, Blob& blob);
+
+// --motor-spread: deal the motor lattice out to the buttons (plug_spread.cpp)
+bool plug_spread_motors(Plug& plug, const Blob& blob);
+// the motor cells line `line` is read from, spread or one group; returns how many
+int plug_motor_cells(const Plug& plug, int line, const int** cells);
+
+// the buttons' motor cells marked on the blob (on) or cleared, and the pressed button's
+// cells after a step (move -1: none). only learn modes 5 and 6 read them (idea 58).
+void plug_mark_motors(const Plug& plug, Blob& blob, bool on);
+void plug_mark_acted(const Plug& plug, Blob& blob, int move);
 
 // task values to line bits, once per step
 void plug_set_lines(Plug& plug, const TaskSense& sense);

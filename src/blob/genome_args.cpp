@@ -83,6 +83,13 @@ static const GenomeField fields[] = {
     {"noise_learn_shift", &Genome::noise_learn_shift},
     {"noise_trace_ticks", &Genome::noise_trace_ticks},
     {"reward_average_shift", &Genome::reward_average_shift},
+    {"readout_shift", &Genome::readout_shift},
+    {"readout_trace_ticks", &Genome::readout_trace_ticks},
+    {"readout_counts", &Genome::readout_counts},
+    {"readout_know_button", &Genome::readout_know_button},
+    {"readout_good", &Genome::readout_good},
+    {"readout_new", &Genome::readout_new},
+    {"readout_budget", &Genome::readout_budget},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

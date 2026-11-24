@@ -4,7 +4,8 @@
 // feature probe). Then a plain linear reader is fitted to those counts and scored on held-
 // out trials: share right, the task's own units. blobrun's task, plug, seed and --g. flags
 // all work. Own flags: --trials N (scored steps kept, default 4000), --settle N (ticks run
-// before keeping any, default 30000), --learning 0|1, --label text.
+// before keeping any, default 30000), --learning 0|1, --label text, --read-from N and
+// --read-to N (count only those ticks of a step, from 0).
 
 #include "blob/blob.hpp"
 #include "probe/linear_fit.hpp"
@@ -19,17 +20,19 @@
 int int_arg(int argc, char** argv, const char* name, int fallback);
 const char* text_arg(int argc, char** argv, const char* name, const char* fallback);
 
-static const char* const linear_only[] = {"--trials", "--settle", "--learning", "--label"};
+static const char* const linear_only[] = {"--trials", "--settle",    "--learning",
+                                          "--label",  "--read-from", "--read-to"};
 
 // the tile of the first cell of a motor line, and of the first cue line
 static void plug_tiles(const Plug& plug, const Blob& blob, int& cue_tile,
                        std::vector<int>& motor_tiles) {
     int first = plug.sensor_lines > plug.first_single ? plug.first_single : 0;
     cue_tile = plug.sensor_neuron[first * PLUG_MAX_GROUP] / TILE_NEURONS;
-    int group = plug_motor_group(plug);
     for (int line = 0; line < plug.motor_lines; line++) {
+        const int* cells = nullptr;
+        int group = plug_motor_cells(plug, line, &cells);
         for (int k = 0; k < group; k++) {
-            int t = plug.motor_neuron[line * PLUG_MAX_GROUP + k] / TILE_NEURONS;
+            int t = cells[k] / TILE_NEURONS;
             bool seen = false;
             for (int m : motor_tiles) {
                 seen = seen || m == t;
@@ -65,6 +68,9 @@ int probe_linear(int argc, char** argv) {
     int64_t settle = int_arg(argc, argv, "--settle", 30000);
     int learning = int_arg(argc, argv, "--learning", 0);
     const char* label = text_arg(argc, argv, "--label", "run");
+    // only these ticks of a step are counted (0 .. ticks per step)
+    int read_from = int_arg(argc, argv, "--read-from", 0);
+    int read_to = int_arg(argc, argv, "--read-to", 1 << 30);
     if (!learning) {
         flags.genome.learning_on = 0;
     }
@@ -94,10 +100,13 @@ int probe_linear(int argc, char** argv) {
         if (tt.tick_in_step == 0 && tt.rest_left == 0) {
             std::memset(count.data(), 0, count.size());
         }
+        bool resting = tt.rest_left > 0;
+        int in_step = tt.tick_in_step;
         ticker_before_tick(tt, *blob);
         blob_tick(*blob);
         ticks++;
-        for (int t = 0; t < blob->tile_count; t++) {
+        bool counted = !resting && in_step >= read_from && in_step < read_to;
+        for (int t = 0; counted && t < blob->tile_count; t++) {
             uint64_t spikes = blob->spikes[blob->now][t] & ~blob->sensor[t];
             while (spikes) {
                 uint8_t& c = count[(size_t)(t * TILE_NEURONS + __builtin_ctzll(spikes))];

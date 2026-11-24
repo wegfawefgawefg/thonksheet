@@ -84,9 +84,10 @@ void standin_tick(Blob& blob, const Plug& plug, StandinPlay play, int perfect_mo
         map[t] = sensed | motor;
     }
     if (play == StandinPlay::perfect && perfect_move >= 0 && perfect_move < plug.motor_lines) {
-        int group = plug_motor_group(plug);
+        const int* cells = nullptr;
+        int group = plug_motor_cells(plug, perfect_move, &cells);
         for (int k = 0; k < group; k++) {
-            int n = plug.motor_neuron[perfect_move * PLUG_MAX_GROUP + k];
+            int n = cells[k];
             map[n / TILE_NEURONS] |= 1ull << (n % TILE_NEURONS);
         }
     }

@@ -34,7 +34,15 @@ LEARNING_ONLY = {
     "surprise_high_per_1024", "predict_on", "good_on", "bad_on", "grow_on", "prune_on",
     "far_redraw_on", "learn_mode", "flip_count", "flip_scope", "flip_window_ticks",
     "flip_average_shift", "noise_learn_shift", "noise_trace_ticks", "reward_average_shift",
+    "readout_shift", "readout_trace_ticks", "readout_counts", "readout_know_button",
+    "readout_good", "readout_new", "readout_budget",
 }
+
+
+def set_out(path):
+    global OUT, CACHE
+    OUT = os.path.abspath(path)
+    CACHE = os.path.join(OUT, "cache.jsonl")
 
 
 def parse_seeds(text):
@@ -138,7 +146,9 @@ def main():
     ap.add_argument("--blobrun", default=os.path.join(ROOT, "build", "blobrun"))
     ap.add_argument("--no-twin", action="store_true")
     ap.add_argument("--table-only", action="store_true")
+    ap.add_argument("--out-dir", default=OUT, help="where runs and the cache go")
     opt = ap.parse_args(argv[:split])
+    set_out(opt.out_dir)
     task_args = argv[split + 1:]
     seeds = parse_seeds(opt.seeds)
     variants = read_variants(opt.variants)

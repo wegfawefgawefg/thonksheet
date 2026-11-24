@@ -41,6 +41,9 @@ static const char* usage =
     "  --place-hold N     place: places never rewarded, the scored ones (default 3)\n"
     "  --distance N       plug: cue lines and motor lines N tiles apart (default: packed,\n"
     "                     1 tile with the default genome)\n"
+    "  --motor-spread N   plug: N motor cells per button, dealt like a checkerboard over\n"
+    "                     the motor region, nearest the cues first (default 0: one group)\n"
+    "  --motor-spread-even 1  the N cells spread evenly from nearest to farthest instead\n"
     "life protocols (one at a time; without them, one task for the whole life):\n"
     "  --retention TASK   --task for --steps, then TASK for --steps (its cues and buttons\n"
     "                     after A's, cue offset + k), then --task again for --retest steps\n"
@@ -216,6 +219,10 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.task_settings.place_hold = (int)v;
         } else if (std::strcmp(flag, "--distance") == 0) {
             flags.plug.distance = (int)v;
+        } else if (std::strcmp(flag, "--motor-spread") == 0) {
+            flags.plug.motor_spread = (int)v;
+        } else if (std::strcmp(flag, "--motor-spread-even") == 0) {
+            flags.plug.motor_spread_even = (int)v;
         } else if (std::strcmp(flag, "--idle") == 0) {
             flags.idle_ticks = v;
             flags.protocol = Protocol::idle;

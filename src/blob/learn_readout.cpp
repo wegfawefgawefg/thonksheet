@@ -1,0 +1,155 @@
+#include "blob/blob.hpp"
+#include "blob/random_words.hpp"
+#include "blob/tick_steps.hpp"
+#include "blob/weight_levels.hpp"
+
+// learn modes 5 and 6 (idea 58): an error rule at the motor cells, the perceptron rule in
+// bits. on bad, the cells of the button that was pressed lose their recently active inputs
+// and the cells of the other buttons gain those same inputs; on good nothing moves (unless
+// readout_good). "active" is a source's spikes over the readout_trace_ticks ticks before the
+// reward, the end of the step that chose; with readout_counts each of those ticks is its own
+// chance, so a source that fired often moves more often. sign-aware: gaining strengthens
+// excitatory sources and weakens inhibitory ones, losing the reverse. every change is one
+// level, by chance, as elsewhere.
+//
+// which cells are "pressed" and "other": with readout_know_button the world marks them
+// (motor_attached, motor_acted: an efference copy of the action taken, one bit per cell).
+// without it a motor cell knows only itself: "pressed" is every motor cell that fired in the
+// window, "other" every motor cell that did not.
+
+// the spike map `age` ticks before the newest
+static const uint64_t* map_at(const Blob& blob, int age) {
+    return blob.spikes[(blob.now - age) & (HISTORY - 1)];
+}
+
+// remove one connection whose source was idle in the window (budget payment)
+static bool drop_idle(Blob& blob, int n, const uint64_t* trace) {
+    int start = (int)rng_below(blob.rng, SLOTS);
+    for (int j = 0; j < SLOTS; j++) {
+        int k = (start + j) % SLOTS;
+        int64_t w = blob_weight_index(n, k);
+        uint64_t idle = connected_bits(blob.w0[w], blob.w1[w]) & ~trace[slot_source(blob, n, k)];
+        if (!idle) {
+            continue;
+        }
+        uint64_t bit = 1ull << pick_bit(blob.rng, idle);
+        blob.w0[w] &= ~bit;
+        blob.w1[w] &= ~bit;
+        return true;
+    }
+    return false;
+}
+
+// wire in one weak connection from a source that was idle in the window (budget refill)
+static bool add_idle(Blob& blob, int n, const uint64_t* trace) {
+    uint64_t self = 1ull << (n % TILE_NEURONS);
+    int start = (int)rng_below(blob.rng, SLOTS);
+    for (int j = 0; j < SLOTS; j++) {
+        int k = (start + j) % SLOTS;
+        uint32_t src = slot_source(blob, n, k);
+        if (src == (uint32_t)blob.tile_count) {
+            continue;
+        }
+        int64_t w = blob_weight_index(n, k);
+        uint64_t free = ~connected_bits(blob.w0[w], blob.w1[w]) & ~trace[src];
+        free &= k == 4 ? ~self : ~0ull;
+        free &= k >= LOCAL_SLOTS ? ~blob.inhibitory[src] : ~0ull;
+        if (!free) {
+            continue;
+        }
+        blob.w0[w] |= 1ull << pick_bit(blob.rng, free);
+        return true;
+    }
+    return false;
+}
+
+// move one motor cell's active inputs: gain (+1) or lose (-1). returns levels moved
+static uint32_t move_inputs(Blob& blob, int n, int sign, const uint64_t* trace, int ages) {
+    const Genome& g = blob.genome;
+    int reps = g.readout_counts ? ages : 1;
+    uint64_t self = 1ull << (n % TILE_NEURONS);
+    uint32_t moved = 0;
+    int born = 0, gone = 0;
+    for (int k = 0; k < SLOTS; k++) {
+        uint32_t src = slot_source(blob, n, k);
+        if (src == (uint32_t)blob.tile_count) {
+            continue;
+        }
+        // far slots count every source as excitatory and never wire an inhibitory one
+        uint64_t kind = k < LOCAL_SLOTS ? blob.inhibitory[src] : 0;
+        uint64_t allowed = k == 4 ? ~self : ~0ull;
+        allowed &= k >= LOCAL_SLOTS ? ~blob.inhibitory[src] : ~0ull;
+        uint64_t& a0 = blob.w0[blob_weight_index(n, k)];
+        uint64_t& a1 = blob.w1[blob_weight_index(n, k)];
+        for (int r = 0; r < reps; r++) {
+            uint64_t active = g.readout_counts ? map_at(blob, 1 + r)[src] : trace[src];
+            uint64_t chance = active & allowed & sparse_word(blob.rng, g.readout_shift);
+            if (!chance) {
+                continue;
+            }
+            // excitatory sources go the way of the sign, inhibitory ones the other way
+            uint64_t up = sign > 0 ? chance & ~kind : chance & kind;
+            uint64_t down = sign > 0 ? chance & kind : chance & ~kind;
+            uint64_t had = connected_bits(a0, a1);
+            if (!g.readout_new) {
+                up &= had;
+            }
+            moved += __builtin_popcountll(level_up(a0, a1, up));
+            moved += __builtin_popcountll(level_down(a0, a1, down));
+            uint64_t now = connected_bits(a0, a1);
+            born += __builtin_popcountll(now & ~had);
+            gone += __builtin_popcountll(had & ~now);
+        }
+    }
+    // the budget: the count of connections stays where it was
+    if (g.readout_budget) {
+        for (; born > gone && drop_idle(blob, n, trace); born--) {
+        }
+        for (; gone > born && add_idle(blob, n, trace); gone--) {
+        }
+    }
+    blob.fan_in[n] = (uint16_t)count_fan_in(blob, n);
+    return moved;
+}
+
+void learn_readout(Blob& blob, int valence) {
+    const Genome& g = blob.genome;
+    if (valence == 0) {
+        return;
+    }
+    if (valence > 0 && !g.readout_good) {
+        return;
+    }
+    // what was active: the OR of the window's maps
+    int ages = g.readout_trace_ticks;
+    ages = ages < 1 ? 1 : (ages > HISTORY - 1 ? HISTORY - 1 : ages);
+    uint64_t* trace = blob.active_trace;
+    for (int t = 0; t <= blob.tile_count; t++) {
+        uint64_t r = 0;
+        for (int age = 1; age <= ages; age++) {
+            r |= map_at(blob, age)[t];
+        }
+        trace[t] = r;
+    }
+    bool marked = g.readout_know_button && blob.motor_attached && blob.motor_acted;
+    // pressed cells move with the valence, the other cells against it
+    uint32_t up = 0, down = 0;
+    for (int t = 0; t < blob.tile_count; t++) {
+        uint64_t pressed =
+            marked ? blob.motor_acted[t] & blob.motor_attached[t] : blob.motor[t] & trace[t];
+        uint64_t other =
+            marked ? blob.motor_attached[t] & ~blob.motor_acted[t] : blob.motor[t] & ~trace[t];
+        while (pressed) {
+            int n = t * TILE_NEURONS + __builtin_ctzll(pressed);
+            pressed &= pressed - 1;
+            (valence > 0 ? up : down) += move_inputs(blob, n, valence, trace, ages);
+        }
+        while (other) {
+            int n = t * TILE_NEURONS + __builtin_ctzll(other);
+            other &= other - 1;
+            (valence > 0 ? down : up) += move_inputs(blob, n, -valence, trace, ages);
+        }
+    }
+    blob.stats.strengthened += up;
+    blob.stats.weakened += down;
+}

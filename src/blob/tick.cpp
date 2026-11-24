@@ -12,6 +12,12 @@ static void tick_learn(Blob& blob, int read_now) {
         learn_flips(blob);
         return;
     }
+    if (mode == 5 || mode == 6) {
+        learn_readout(blob, blob.pending_valence);
+        if (mode == 5) {
+            return;
+        }
+    }
     // readout: no prediction learning, everything else only into motor neurons
     bool motor_only = mode == 1;
     if (g.predict_on && !motor_only) {

@@ -67,6 +67,16 @@ void plug_print(const Plug& plug, const Blob& blob, FILE* f) {
             cells[i] = '.';
         }
         for (int line = 0; line < plug.motor_lines; line++) {
+            const int* spread = nullptr;
+            int count = plug_motor_cells(plug, line, &spread);
+            for (int k = 0; plug.settings.motor_spread > 0 && k < count; k++) {
+                int x = blob_neuron_x(blob, spread[k]) - g.motor_x;
+                int y = blob_neuron_y(blob, spread[k]) - g.motor_y;
+                cells[y * g.motor_w + x] = motor_char(line);
+            }
+            if (plug.settings.motor_spread > 0) {
+                continue;
+            }
             int x0 = plug.motor_cell_x[line] - g.motor_x;
             int y0 = plug.motor_cell_y[line] - g.motor_y;
             for (int k = 0; k < side * side; k++) {

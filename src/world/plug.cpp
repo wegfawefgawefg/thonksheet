@@ -270,6 +270,11 @@ bool plug_attach(Plug& plug, Blob& blob, const TaskShape& shape, const PlugSetti
     if (settings.distance > 0 && !move_apart(plug, blob, settings.distance)) {
         return false;
     }
+    if (!plug_spread_motors(plug, blob)) {
+        return false;
+    }
+    // the buttons' cells, for a readout rule that is told which button it is (idea 58)
+    plug_mark_motors(plug, blob, true);
     // attach the lines the task uses; the rest of the sensor region stays unattached
     int group = plug_sensor_group(plug);
     for (int line = 0; line < plug.sensor_lines; line++) {
@@ -286,7 +291,31 @@ bool plug_attach(Plug& plug, Blob& blob, const TaskShape& shape, const PlugSetti
     return true;
 }
 
+void plug_mark_motors(const Plug& plug, Blob& blob, bool on) {
+    for (int line = 0; line < plug.motor_lines; line++) {
+        const int* cells = nullptr;
+        int count = plug_motor_cells(plug, line, &cells);
+        for (int k = 0; k < count; k++) {
+            blob_motor_attach(blob, cells[k], on);
+        }
+    }
+    blob_motor_acted(blob, -1);
+}
+
+void plug_mark_acted(const Plug& plug, Blob& blob, int move) {
+    blob_motor_acted(blob, -1);
+    if (move < 0 || move >= plug.motor_lines) {
+        return;
+    }
+    const int* cells = nullptr;
+    int count = plug_motor_cells(plug, move, &cells);
+    for (int k = 0; k < count; k++) {
+        blob_motor_acted(blob, cells[k]);
+    }
+}
+
 void plug_detach(Plug& plug, Blob& blob) {
+    plug_mark_motors(plug, blob, false);
     int group = plug_sensor_group(plug);
     for (int line = 0; line < plug.sensor_lines; line++) {
         if (!plug.attached[line]) {
@@ -353,9 +382,9 @@ void plug_write(Plug& plug, Blob& blob) {
 }
 
 void plug_count(Plug& plug, const Blob& blob) {
-    int group = plug_motor_group(plug);
     for (int line = 0; line < plug.motor_lines; line++) {
-        const int* neurons = &plug.motor_neuron[line * PLUG_MAX_GROUP];
+        const int* neurons = nullptr;
+        int group = plug_motor_cells(plug, line, &neurons);
         for (int k = 0; k < group; k++) {
             plug.motor_count[line] += blob_fired(blob, neurons[k]);
         }
