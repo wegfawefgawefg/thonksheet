@@ -54,3 +54,26 @@ repeating over seeds before anything is built on it.
 Whether to keep the rhythm. Brains have rhythms from the same kind of loop and may use them
 as a clock. Ours costs: the count of spikes per tick swings about 20 times more than
 independent firing would. Slower sector smoothing removes it and keeps the rate on target.
+
+## Does the pulse matter for learning?
+
+Echo with 2 cues, `scripts/task.sh echo --seed N --task-seed N`, late score, with the
+default smoothing (pulse present) and with `--g.sector_smooth_shift 6` (pulse gone):
+
+| seed | pulse present | pulse gone |
+| --- | --- | --- |
+| 1 | 0.89 | 0.91 |
+| 2 | 0.84 | 0.76 |
+| 3 | 0.72 (no better than learning off) | 0.97 |
+| 4 | 0.95 | 0.97 |
+| mean | 0.85 | 0.90 |
+
+Removing the pulse does not hurt Echo and may help; seed 3, the one that failed, now
+learns. Four seeds is too few to call it. The ablation sweep should include this setting.
+
+## Seen in the viewer, not yet explained
+
+After 600,000 ticks of Echo, 87% of all connections are at the top strength, nearly every
+neuron is at the cap of 96 connections, and many thresholds sit at their cap. The blob is
+learning by saturating. That leaves little room to learn a second thing. The capture is
+`captures/echo-tick600000.png`.
