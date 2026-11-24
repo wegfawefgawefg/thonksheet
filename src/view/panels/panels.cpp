@@ -151,7 +151,9 @@ static void health(State& s) {
 
 void draw_panels(State& s) {
     view_titles(s);
-    lines_panel(s);
+    if (s.mode != RUN_TURBO) {
+        lines_panel(s);
+    }
     const Rect& r = s.layout.side;
     ImGui::SetNextWindowPos(ImVec2(r.x, r.y));
     ImGui::SetNextWindowSize(ImVec2(r.w, r.h));

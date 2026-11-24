@@ -71,6 +71,7 @@ struct Link {
     uint8_t strength = 0; // 1, 4 or 5
     uint8_t far = 0;
     uint8_t inhibitory = 0;
+    uint8_t delay = 1; // ticks the spike takes to arrive (sources only)
 };
 
 enum Kind { KIND_EXCITATORY, KIND_INHIBITORY, KIND_SENSOR, KIND_MOTOR };

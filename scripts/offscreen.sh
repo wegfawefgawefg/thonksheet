@@ -10,6 +10,7 @@
 #     --after S         (default 6)
 #     --click "X Y"     a left click at X Y (window pixels) before the shot; repeatable
 #     --key K           a key (xdotool name, e.g. space, e, t) before the shot; repeatable
+#     --resize "W H"    resize the window before the shot; repeatable
 #     --seconds S       how long blobview may run (default 12); it is killed after
 #     --size WxH        the Xvfb screen and window (default 1600x1000)
 #
@@ -31,6 +32,7 @@ while [ $# -gt 0 ]; do
         --after) shift; after="$1" ;;
         --click) shift; actions="$actions|click $1" ;;
         --key) shift; actions="$actions|key $1" ;;
+        --resize) shift; actions="$actions|resize $1" ;;
         --seconds) shift; seconds="$1" ;;
         --size) shift; size="$1" ;;
         --) shift; break ;;
@@ -77,6 +79,7 @@ if [ -n "$shot" ] || [ -n "$actions" ]; then
     echo "$actions" | tr '|' '\n' | while read -r kind a b; do
         case "$kind" in
             click) xdotool mousemove "$a" "$b" click 1; sleep 0.5 ;;
+            resize) xdotool search --name thonksheet windowsize "$a" "$b"; sleep 1.5 ;;
             key) xdotool search --name thonksheet windowactivate --sync key "$a" 2>/dev/null ||
                      xdotool key "$a"; sleep 0.5 ;;
         esac

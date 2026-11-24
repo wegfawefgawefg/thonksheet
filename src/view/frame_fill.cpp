@@ -114,6 +114,12 @@ static void fill_histograms(ViewFrame& f, const Blob& b) {
     }
 }
 
+// the one place a slot's delay is read: far slots have far_delay, local slots one tick.
+// When blob.hpp has slot_delay[neuron * SLOTS + slot] this becomes that one line.
+static int slot_delay(const Blob& b, int neuron, int slot) {
+    return slot < LOCAL_SLOTS ? 1 : b.far_delay[neuron * FAR_SLOTS + slot - LOCAL_SLOTS];
+}
+
 static Link make_link(const Blob& b, int neuron, int strength, bool far) {
     Link l;
     l.x = static_cast<int16_t>(blob_neuron_x(b, neuron));
@@ -136,8 +142,10 @@ static void fill_links(Selected& s, const Blob& b, int n) {
         const uint64_t any = b.w0[n * SLOTS + k] | b.w1[n * SLOTS + k];
         for (uint64_t bits = any; bits != 0; bits &= bits - 1) {
             const int bit = std::countr_zero(bits);
-            s.sources.push_back(make_link(b, src * TILE_NEURONS + bit, blob_weight(b, n, k, bit),
-                                          k >= LOCAL_SLOTS));
+            Link l =
+                make_link(b, src * TILE_NEURONS + bit, blob_weight(b, n, k, bit), k >= LOCAL_SLOTS);
+            l.delay = static_cast<uint8_t>(slot_delay(b, n, k));
+            s.sources.push_back(l);
         }
     }
     // targets through local slots: neurons in tiles whose local slot k is this tile
@@ -196,7 +204,7 @@ static void fill_selected(Selected& s, const Blob& b, int n) {
     for (int k = 0; k < FAR_SLOTS; ++k) {
         const int t = static_cast<int>(b.far_tile[n * FAR_SLOTS + k]);
         s.far_tile[k] = t < b.tile_count ? t : -1;
-        s.far_delay[k] = b.far_delay[n * FAR_SLOTS + k];
+        s.far_delay[k] = slot_delay(b, n, LOCAL_SLOTS + k);
     }
     fill_links(s, b, n);
 }

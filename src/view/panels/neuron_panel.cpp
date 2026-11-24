@@ -47,6 +47,20 @@ void neuron_section(State& s) {
             ImGui::TextColored(DIM, "empty");
         }
     }
+    // sources by how many ticks their spikes take to arrive
+    int by_delay[16] = {};
+    for (const Link& l : n.sources) {
+        by_delay[std::min<int>(l.delay, 15)] += 1;
+    }
+    ImGui::Text("delays:");
+    for (int d = 0; d < 16; ++d) {
+        if (by_delay[d] > 0) {
+            ImGui::SameLine();
+            ImGui::Text("%d at %d", by_delay[d], d);
+        }
+    }
+    ImGui::SameLine();
+    ImGui::TextColored(DIM, "(sources, ticks)");
     const int shown = static_cast<int>(std::min<uint64_t>(f.tape.ticks, f.tape.len));
     ImGui::Text("fired %d times in the last %d ticks", f.selected_spikes, shown);
 
