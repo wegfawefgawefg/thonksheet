@@ -9,18 +9,36 @@ new predictions before starting an experiment, never after.
 1. **Most mechanisms do nothing measurable on Echo-level tasks.** Branch bonus, pacemakers,
    surprise boost, far links and prediction learning can each be switched off with no change
    in score. (75%)
+   - *Scored 2026-11-24: half right. No measurable effect: delays, branch bonus, varied
+     neurons, noise, far redraw. Small or mixed: far slots, pacemakers, prediction learning,
+     cooldown, sector regulation. Wrong on the surprise boost, which matters, though only
+     because it is on 92-99% of the time and so acts as a constant doubling of the
+     learning chances.*
 2. **What does matter:** inhibition and regulation (staying alive), growth and pruning, and
    the good/bad rule itself. (75%)
+   - *Scored: right. Inhibition, per-neuron threshold regulation, good, bad, growth and
+     pruning each cost 0.1 to 0.46 when removed. Sector regulation does not matter.*
 3. **A frozen blob with a learned readout matches or beats the full blob on Echo.** The
    inner learning is not yet helping the task. (65%)
+   - *Scored: right for 2 cues (0.914 against 0.940, a tie) and shuffled echo; wrong for 4
+     cues, where the readout stays at its twin's 0.16 and the full rule reaches 0.33. First
+     evidence that learning inside the sheet does something.*
 4. **Noise-is-the-experiment saturates less and does better on 4 cues, but learns slower**
    than the current rule, because far fewer events get graded. (55%)
+   - *Scored: wrong. It loses: 0.81 on 2 cues, 0.12 on 4 cues, and very uneven across
+     seeds. Alongside good/bad it changes nothing. Saturation was not measured.*
 5. **Random flips solve cartpole, slowly.** (60%) **Some online brain-style rule solves
    cartpole in this round.** (35%)
+   - *Scored: wrong on both so far. Flips are the only rule that improves on cartpole (19-20
+     steps per fall against 10.6 for the brain rule) but that is still no better than coin
+     flips (22-25). No rule learns to balance.*
 6. **Table neurons learn Echo faster and sharper than the popcount blob, and carry a cue
    worse** until their wiring is tuned. (50%)
 7. **Delays matter for the timing tasks** (beat, delayed echo) **and not for Echo.** (70%)
+   - *Scored: the Echo half is right (no effect). The timing half is untested: no rule
+     learns delayed echo at all (0.44 against 0.43).*
 8. **Removing the pulse helps a little and never hurts.** (60%)
+   - *Scored: unclear. Sector regulation off moves scores by -0.07, -0.08, +0.04.*
 
 ## The larger guess
 
@@ -41,3 +59,13 @@ inner neurons measurably better for a task than unsupervised wiring already make
     bigger sheet. (55%) If this holds, the owner's thesis (richness turns learning into
     selection) is carrying real weight; if a frozen sheet fails these however large it is,
     the missing piece is credit reaching the inside.
+
+## 2026-11-24, before lose-shift and slow credit
+
+11. **Lose-shift fixes the lock.** Making the motor cells that just earned a bad harder to
+    fire for a while lifts the crossed shuffled-echo lives from 0.51 to above 0.8 and stops
+    seed 3 locking onto one button. (55%)
+12. **A slow "fired recently" bit lets cartpole beat coin flips.** Credit that reaches back
+    hundreds of ticks, at a lower chance, gets steps per fall above 25. (40%) It also lets
+    something learn delayed echo. (45%)
+
