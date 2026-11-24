@@ -8,8 +8,10 @@
 //   |  sheet    +------------+ neuron  |
 //   |           | lines      | sectors |
 //   +-----------+------------+ histos  |
-//   | raster                 |         |
+//   | raster          | task |         |
 //   +------------------------+---------+
+//
+// The task panel is there only with --task; otherwise the raster takes the whole width.
 
 struct Rect {
     float x = 0, y = 0, w = 0, h = 0;
@@ -17,7 +19,7 @@ struct Rect {
 
 struct Layout {
     Rect sheet, recur, raster; // our pipelines
-    Rect lines, side;          // ImGui windows
+    Rect lines, side, task;    // ImGui windows
     float label = 18;          // room for a view's title above it
 };
 
@@ -35,6 +37,7 @@ struct ViewSettings {
     float raster_count = 0.0f; // rows shown; 0 shows them all
     int recur_ticks = 256;     // ticks across the recurrence square
     bool lines_long = false;   // lines over the long history instead of the tape
+    bool task_marks = true;    // the task's lines and their names on the sheet
 };
 
 // where cell (0, 0) lands and how many pixels a cell is
@@ -42,7 +45,7 @@ struct SheetPlace {
     float origin_x = 0, origin_y = 0, cell_px = 1;
 };
 
-Layout layout_for(float w, float h);
+Layout layout_for(float w, float h, bool task);
 bool rect_contains(const Rect& r, float x, float y);
 SheetPlace sheet_place(const Rect& r, int cells_w, int cells_h, const ViewSettings& v);
 // the neuron under a pixel, or -1

@@ -2,7 +2,8 @@
 // and draws. Keys and flags: docs/notes-viewer.md and `blobview --help`.
 //
 //   blobview                                the window (never run it on a display you are using)
-//   blobview --capture out.png --ticks 3000 no window at all: tick, draw one frame, save it
+//   blobview --capture out.png --until 3000 no window at all: tick, draw one frame, save it
+//   blobview --task echo --ticks 20         a task through the world plug, as blobrun runs it
 
 #include "imgui_layer.hpp"
 #include "renderer/device.hpp"
@@ -29,6 +30,27 @@ static void follow_clock(State& s) {
     }
 }
 
+// a capture's task scores on stdout, window by window, so a capture can be checked
+// against blobrun's csv
+static void print_task(const ViewFrame& f) {
+    const TaskView& t = f.task;
+    if (!t.on) {
+        return;
+    }
+    std::printf("blobview: %s, step %lld, %lld good, %lld bad\n", t.name,
+                static_cast<long long>(t.step), static_cast<long long>(t.good),
+                static_cast<long long>(t.bad));
+    const std::vector<float>* lists[3] = {&f.scores.blob, &f.scores.twin, &f.scores.coin};
+    const char* names[3] = {"blob", "learn_off", "coin"};
+    for (int i = 0; i < 3; ++i) {
+        std::printf("  %-9s", names[i]);
+        for (float v : *lists[i]) {
+            std::printf(" %.3f", v);
+        }
+        std::printf("\n");
+    }
+}
+
 static int fail(const char* why) {
     std::fprintf(stderr, "blobview: %s\n", why);
     return 1;
@@ -50,6 +72,7 @@ int main(int argc, char** argv) {
     state.sim.shared.selected = o.select;
     state.sim.shared.slow_tps = o.slow_tps;
     state.sim.shared.input_on = o.input;
+    state.learning = state.sim.settings.genome.learning_on != 0;
     set_mode(state, o.mode);
 
     // init window, renderer and input. A capture opens no window and never touches a display.
@@ -73,15 +96,15 @@ int main(int argc, char** argv) {
         !init_imgui_layer(window, renderer)) {
         return fail("no renderer");
     }
-    state.layout = layout_for(static_cast<float>(w), static_cast<float>(h));
+    state.layout = layout_for(static_cast<float>(w), static_cast<float>(h), o.task);
 
     // a capture's ticks run here, in order; otherwise the sim thread starts ticking
     if (capturing) {
-        for (int i = 0; i < o.ticks; ++i) {
-            sim_tick(state.sim);
-        }
+        const double secs = sim_run_capture(state.sim, o.until);
+        state.clock.ticks_per_second = secs > 0 ? static_cast<float>(o.until / secs) : 0.0f;
         sim_fill(state.sim, state.frame, o.select);
         frame_derive(state.frame);
+        print_task(state.frame);
     } else {
         sim_start(state.sim);
     }
@@ -96,7 +119,7 @@ int main(int argc, char** argv) {
         if (state.resized) {
             SDL_GetWindowSizeInPixels(window, &w, &h);
             renderer_resize(renderer, w, h);
-            state.layout = layout_for(static_cast<float>(w), static_cast<float>(h));
+            state.layout = layout_for(static_cast<float>(w), static_cast<float>(h), o.task);
             state.resized = false;
         }
 

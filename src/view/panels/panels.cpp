@@ -36,6 +36,7 @@ static void view_titles(State& s) {
                       std::min(shown, std::max(8, s.view.recur_ticks)));
         title(s.layout.recur, text);
     }
+    task_labels(s);
     if (s.mode == RUN_TURBO) {
         const Rect& r = s.layout.sheet;
         ImGui::GetBackgroundDrawList()->AddText(ImVec2(r.x + 20, r.y + 20),
@@ -79,6 +80,23 @@ static void controls(State& s) {
     if (ImGui::SliderInt("slow ticks/s", &tps, 1, 1000, "%d", ImGuiSliderFlags_Logarithmic)) {
         sh.slow_tps = tps;
     }
+    if (s.sim.task.on) {
+        // the task: a whole step, the sheet marks, and learning on or off for a new life
+        if (ImGui::Button("task step (W)")) {
+            set_mode(s, RUN_PAUSED);
+            sh.task_steps += 1;
+        }
+        ImGui::SameLine();
+        ImGui::Checkbox("task marks", &s.view.task_marks);
+        ImGui::SameLine();
+        ImGui::Checkbox("learning", &s.learning);
+        ImGui::SameLine();
+        if (ImGui::Button("restart")) {
+            sim_restart(s.sim, s.learning);
+        }
+        ImGui::SameLine();
+        ImGui::TextColored(DIM, "(a new life)");
+    }
     if (ImGui::Button("good")) {
         sh.reward = 1;
     }
@@ -88,7 +106,7 @@ static void controls(State& s) {
     }
     ImGui::SameLine();
     bool input = sh.input_on.load();
-    if (f.real && ImGui::Checkbox("random input", &input)) {
+    if (f.real && !s.sim.task.on && ImGui::Checkbox("random input", &input)) {
         sh.input_on = input;
     }
     ImGui::Checkbox("tiles (T)", &s.view.tile_lines);
@@ -106,6 +124,41 @@ static void controls(State& s) {
     if (ImGui::Combo("raster row (R)", &s.view.raster_rows, rows, 2)) {
         s.view.raster_first = s.view.raster_count = 0;
     }
+}
+
+// a curve over lags 1..64 scaled from lo to hi, with a tick every 8 lags, the zero line
+// when it is in range, and the period marked
+static void lag_plot(const char* name, const float* values, float lo, float hi, int period,
+                     const ImVec4& c) {
+    const ImVec2 at = ImGui::GetCursorScreenPos();
+    const ImVec2 size(ImGui::GetContentRegionAvail().x, 40);
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    dl->AddRectFilled(at, ImVec2(at.x + size.x, at.y + size.y), IM_COL32(22, 25, 33, 255));
+    const auto x_of = [&](int lag) { return at.x + size.x * (lag - 0.5f) / LAG_MAX; };
+    const auto y_of = [&](float v) {
+        return at.y + size.y * (1.0f - std::clamp((v - lo) / (hi - lo), 0.0f, 1.0f));
+    };
+    for (int lag = 8; lag <= LAG_MAX; lag += 8) {
+        dl->AddLine(ImVec2(x_of(lag), at.y), ImVec2(x_of(lag), at.y + 4),
+                    IM_COL32(90, 96, 110, 255));
+    }
+    if (lo < 0.0f && hi > 0.0f) {
+        dl->AddLine(ImVec2(at.x, y_of(0)), ImVec2(at.x + size.x, y_of(0)),
+                    IM_COL32(60, 66, 80, 255));
+    }
+    if (period > 0) {
+        for (int lag = period; lag <= LAG_MAX; lag += period) {
+            dl->AddLine(ImVec2(x_of(lag), at.y), ImVec2(x_of(lag), at.y + size.y),
+                        IM_COL32(242, 184, 75, lag == period ? 150 : 60));
+        }
+    }
+    const ImU32 line = ImGui::ColorConvertFloat4ToU32(c);
+    for (int lag = 2; lag <= LAG_MAX; ++lag) {
+        dl->AddLine(ImVec2(x_of(lag - 1), y_of(values[lag - 2])),
+                    ImVec2(x_of(lag), y_of(values[lag - 1])), line, 1.5f);
+    }
+    dl->AddText(ImVec2(at.x + 4, at.y + size.y - 15), IM_COL32(150, 156, 170, 255), name);
+    ImGui::Dummy(size);
 }
 
 // the alarms: dead, stuck, repeating. Red when out of a sane range.
@@ -143,16 +196,34 @@ static void health(State& s) {
     ImGui::TextColored(cyclic ? ALARM : GREEN, "repeat: lag %d overlaps %.2f", best, peak);
     ImGui::SameLine();
     ImGui::TextColored(DIM, "(chance %.3f, next tick %.2f)", chance, f.lag_similarity[0]);
-    ImGui::PushStyleColor(ImGuiCol_PlotLines, cyclic ? ALARM : DIM);
-    ImGui::PlotLines("##lags", f.lag_similarity, LAG_MAX, 0, "overlap by lag 1..64", 0.0f, 1.0f,
-                     ImVec2(-1, 34));
-    ImGui::PopStyleColor();
+
+    // the rhythm: the fired count against itself, and the spike overlap, by lag
+    const float strength = f.period > 0 ? f.fired_lag[f.period - 1] : 0.0f;
+    if (f.period > 0) {
+        ImGui::TextColored(strength > 0.5f ? AMBER : GREEN, "rhythm: pulses every %d ticks",
+                           f.period);
+        ImGui::SameLine();
+        ImGui::TextColored(DIM, "(fired count r %.2f at that lag)", strength);
+    } else {
+        ImGui::TextColored(GREEN, "rhythm: none clear");
+    }
+    lag_plot("fired count vs itself, lag 1..64 (-1..1)", f.fired_lag, -1.0f, 1.0f, f.period, AMBER);
+    float low = 1, high = 0;
+    for (float v : f.lag_similarity) {
+        low = std::min(low, v);
+        high = std::max(high, v);
+    }
+    char name[96];
+    std::snprintf(name, sizeof name, "spike overlap by lag (%.3f..%.3f)", low, high);
+    lag_plot(name, f.lag_similarity, low, std::max(high, low + 0.001f), f.period,
+             cyclic ? ALARM : DIM);
 }
 
 void draw_panels(State& s) {
     view_titles(s);
     if (s.mode != RUN_TURBO) {
         lines_panel(s);
+        task_panel(s);
     }
     const Rect& r = s.layout.side;
     ImGui::SetNextWindowPos(ImVec2(r.x, r.y));

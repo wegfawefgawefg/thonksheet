@@ -36,7 +36,11 @@ target_include_directories(imgui PUBLIC ${imgui_dir})
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)
 
 file(GLOB_RECURSE view_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/view/*.cpp)
-add_executable(blobview ${view_sources})
+# blobrun's flags and task stepping, shared so a task runs the same in both
+set(view_run_sources ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp
+    ${CMAKE_SOURCE_DIR}/src/run/task_ticker.cpp)
+add_executable(blobview ${view_sources} ${view_run_sources})
+target_link_libraries(blobview PRIVATE blobworld)
 target_include_directories(blobview PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/view)
 target_compile_options(blobview PRIVATE ${warnings} -O2 -march=native)
 target_link_libraries(blobview PRIVATE Threads::Threads Vulkan::Vulkan SDL3::SDL3 imgui)

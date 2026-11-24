@@ -17,9 +17,13 @@ struct CliOptions {
     FakeScene scene = FAKE_MIXED;
     int tiles_w = 0, tiles_h = 0; // 0: the genome's
     uint64_t seed = 1;
-    // capture: no window; run `ticks` ticks, draw one frame, save a png, quit
+    // capture: no window; run `until` ticks, draw one frame, save a png, quit
     std::string capture;
-    int ticks = 2000;
+    int64_t until = 2000;
+    // a task through the world plug, with blobrun's flags (src/run/run_flags.cpp)
+    bool task = false;
+    bool twin = true;
+    RunFlags run;
     int width = 1600, height = 1000;
     int select = -1; // neuron picked at the start
     bool validation = false;
@@ -58,6 +62,7 @@ struct State {
     int frames = 0;
     bool resized = false; // the window's pixel size changed
     bool running = true;
+    bool learning = true; // genome.learning_on for the next restart (task panel)
 };
 
 // cli.cpp
@@ -78,3 +83,5 @@ void lines_panel(State& s);
 void neuron_section(State& s);
 void sectors_section(State& s);
 void histograms_section(State& s);
+void task_panel(State& s);
+void task_labels(State& s);

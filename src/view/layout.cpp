@@ -6,14 +6,19 @@
 constexpr float PAD = 6.0f;
 constexpr float SIDE_W = 440.0f;
 
-Layout layout_for(float w, float h) {
+Layout layout_for(float w, float h, bool task) {
     Layout l;
     const float left_w = std::max(300.0f, w - SIDE_W);
     l.side = Rect{left_w, 0, w - left_w, h};
 
-    // the raster along the bottom of the left part
+    // the raster along the bottom of the left part; with a task, the task panel at its right
     const float raster_h = std::round(h * 0.28f);
-    l.raster = Rect{PAD, h - raster_h + l.label, left_w - 2 * PAD, raster_h - l.label - PAD};
+    const float task_w = task ? std::floor(std::max(360.0f, left_w * 0.4f)) : 0.0f;
+    l.raster =
+        Rect{PAD, h - raster_h + l.label, left_w - 2 * PAD - task_w, raster_h - l.label - PAD};
+    if (task) {
+        l.task = Rect{left_w - task_w - PAD, h - raster_h, task_w + PAD, raster_h};
+    }
 
     // the sheet: the biggest square in the top left
     const float top_h = h - raster_h;

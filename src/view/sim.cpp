@@ -6,7 +6,13 @@
 bool sim_birth(Sim& sim, const SimSettings& settings) {
     sim.settings = settings;
     sim.rng = settings.seed * 0x9e3779b97f4a7c15ull + 7;
+    sim.input_was_on = false;
+    sim.task.on = false;
     if (settings.fake) {
+        if (settings.task) {
+            std::fprintf(stderr, "blobview: --task runs the real blob, not --fake\n");
+            return false;
+        }
         sim.fake_blob = fake_blob_birth(settings.genome, settings.seed, settings.scene);
     } else {
 #if BLOB_HAS_CORE
@@ -16,11 +22,16 @@ bool sim_birth(Sim& sim, const SimSettings& settings) {
         return false;
 #endif
     }
+    if (settings.task && (!sim_task_start(sim) || !twin_birth(sim.twin, settings))) {
+        return false;
+    }
     tape_init(sim.tape, sim_blob(sim).tile_count);
+    sim.shared.ticks = 0;
     return true;
 }
 
 void sim_free(Sim& sim) {
+    twin_free(sim.twin);
     if (sim.fake_blob != nullptr) {
         fake_blob_free(sim.fake_blob);
         sim.fake_blob = nullptr;
@@ -37,25 +48,9 @@ const Blob& sim_blob(const Sim& sim) {
     return sim.fake_blob != nullptr ? sim.fake_blob->blob : *sim.blob;
 }
 
-#if BLOB_HAS_CORE
-// the world's side for a real blob: random bits on the sensor lines (1 in 8), or nothing
-// attached at all
-static void feed_real(Sim& sim) {
-    Blob& b = *sim.blob;
-    const bool on = sim.shared.input_on.load(std::memory_order_relaxed);
-    for (int t = 0; t < b.tile_count; ++t) {
-        uint64_t r = ~0ull;
-        for (int i = 0; i < 3; ++i) {
-            r &= fake_random(sim.rng);
-        }
-        b.sense_attached[t] = on ? b.sensor[t] : 0;
-        b.sense_in[t] = on ? r & b.sensor[t] : 0;
-    }
-}
-#endif
-
-void sim_tick(Sim& sim) {
+bool sim_tick(Sim& sim) {
     const int reward = sim.shared.reward.exchange(0);
+    bool answered = false;
     if (sim.fake_blob != nullptr) {
         if (reward != 0) {
             fake_blob_reward(*sim.fake_blob, reward);
@@ -66,12 +61,21 @@ void sim_tick(Sim& sim) {
         if (reward != 0) {
             blob_reward(*sim.blob, reward);
         }
-        feed_real(sim);
+        // the world's side: the task through the plug, or random bits, or nothing
+        if (sim.task.on) {
+            sim_task_before_tick(sim);
+        } else {
+            sim_random_input(sim, sim.shared.input_on.load(std::memory_order_relaxed));
+        }
         blob_tick(*sim.blob);
+        if (sim.task.on) {
+            answered = sim_task_after_tick(sim);
+        }
 #endif
     }
     tape_record(sim.tape, sim_blob(sim));
     sim.shared.ticks.store(sim.tape.ticks, std::memory_order_relaxed);
+    return answered;
 }
 
 void sim_fill(Sim& sim, ViewFrame& out, int selected) {
@@ -80,6 +84,7 @@ void sim_fill(Sim& sim, ViewFrame& out, int selected) {
     ++sim.fills;
     tape_copy_new(out.tape, sim.tape);
     frame_fill(out, sim_blob(sim), selected, heavy, sim.fake_blob == nullptr);
+    sim_task_fill(sim, out.task, out.scores);
 }
 
 static void sim_loop(Sim& sim) {
@@ -89,7 +94,7 @@ static void sim_loop(Sim& sim) {
     while (!sh.quit.load()) {
         // tick or not, by the mode
         const int mode = sh.mode.load();
-        bool tick = false;
+        bool tick = false, task_step = false;
         if (mode == RUN_FULL || mode == RUN_TURBO) {
             tick = true;
         } else if (mode == RUN_SLOW) {
@@ -105,9 +110,11 @@ static void sim_loop(Sim& sim) {
         } else if (sh.steps.load() > 0) {
             sh.steps.fetch_sub(1);
             tick = true;
+        } else if (sh.task_steps.load() > 0) {
+            tick = task_step = true; // ticks until the step's answer is in
         }
-        if (tick) {
-            sim_tick(sim);
+        if (tick && sim_tick(sim) && task_step) {
+            sh.task_steps.fetch_sub(1);
         }
 
         // a snapshot when the viewer asks for one
@@ -127,6 +134,9 @@ static void sim_loop(Sim& sim) {
 void sim_start(Sim& sim) {
     sim.shared.quit = false;
     sim.thread = std::thread(sim_loop, std::ref(sim));
+    if (sim.task.on) {
+        twin_start(sim.twin);
+    }
 }
 
 void sim_stop(Sim& sim) {
@@ -134,6 +144,7 @@ void sim_stop(Sim& sim) {
     if (sim.thread.joinable()) {
         sim.thread.join();
     }
+    twin_stop(sim.twin);
 }
 
 bool sim_take(Sim& sim, ViewFrame& to) {
@@ -149,4 +160,38 @@ bool sim_take(Sim& sim, ViewFrame& to) {
     }
     sh.want_frame = true;
     return took;
+}
+
+bool sim_restart(Sim& sim, bool learning_on) {
+    sim_stop(sim);
+    SimSettings settings = sim.settings;
+    settings.genome.learning_on = learning_on ? 1 : 0;
+    sim_free(sim);
+    sim.shared.steps = 0;
+    sim.shared.task_steps = 0;
+    if (!sim_birth(sim, settings)) {
+        return false;
+    }
+    sim_start(sim);
+    return true;
+}
+
+double sim_run_capture(Sim& sim, int64_t ticks) {
+    // the twin keeps up on its own thread, as in the window, and is waited for at the end
+    const auto start = std::chrono::steady_clock::now();
+    if (sim.task.on) {
+        twin_start(sim.twin);
+    }
+    for (int64_t i = 0; i < ticks; ++i) {
+        sim_tick(sim);
+    }
+    const double secs =
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+    if (sim.task.on) {
+        while (sim.twin.done.load() < sim.task.view.step) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
+        twin_stop(sim.twin);
+    }
+    return secs;
 }

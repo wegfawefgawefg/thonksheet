@@ -86,6 +86,52 @@ struct Selected {
     std::vector<Link> sources, targets;
 };
 
+// a task's line on the sheet: the cells of its group, what it is, whether it is on
+enum TaskLineKind { TASK_LINE_GOOD, TASK_LINE_BAD, TASK_LINE_SENSE, TASK_LINE_MOTOR };
+
+struct TaskLine {
+    int16_t x0 = 0, y0 = 0, x1 = 0, y1 = 0; // cells, x1 and y1 one past the group
+    uint8_t kind = TASK_LINE_SENSE;
+    uint8_t on = 0;      // sensor: firing this tick. motor: the last answer
+    int16_t count = 0;   // motor: spikes so far this step
+    char label[24] = {}; // empty for all but the first line of a bitmap or number
+};
+
+// one answered step: what would have been right and what the blob did (-1: hold still)
+struct TaskTry {
+    int8_t cue = 0, right = -1, move = -1, valence = 0;
+};
+
+constexpr int TASK_TRIES = 256; // answered steps kept
+
+struct TaskView {
+    bool on = false;
+    int life = 0; // counts restarts
+    char name[32] = {};
+    char settings[160] = {};
+    bool learning_on = true;
+    bool ratio_score = true; // score is a share (0..1); cartpole's is steps per fall
+    bool has_cue = false;    // echo family and go/no-go: a try answers a cue
+    int window = 0;          // steps per score window
+    int ticks_per_step = 0;
+    int tick_in_step = 0;
+    int64_t step = 0;
+    uint64_t answer_tick = 0; // blob tick of the last answer
+    int64_t good = 0, bad = 0;
+    std::vector<TaskLine> lines;
+    TaskTry tries[TASK_TRIES]; // a ring; the newest is (tries_total - 1) % TASK_TRIES
+    int64_t tries_total = 0;
+    bool twin = true; // the learning-off twin runs
+};
+
+// window scores over the whole life: the blob, its learning-off twin, coin flips. Kept
+// apart from TaskView because they only grow, so copies take just the new tail.
+struct TaskScores {
+    int life = 0; // the TaskView's life these belong to; a new one starts them over
+    std::vector<float> blob, twin, coin;
+};
+void task_scores_copy(TaskScores& to, const TaskScores& from);
+
 struct ViewFrame {
     // the shape, fixed at birth
     bool real = false; // from the core, not the fake
@@ -110,13 +156,20 @@ struct ViewFrame {
 
     Selected selected;
 
+    TaskView task; // the task plugged in, if any
+    TaskScores scores;
+
     // worked out by the viewer from the tape (frame_derive)
     Histogram rate;                     // spikes per neuron over the tape
     int silent = 0;                     // neurons that never fired on the tape
     int stuck = 0;                      // neurons firing on more than a quarter of the ticks
     float mean_rate = 0;                // spikes per neuron per tick
     float lag_similarity[LAG_MAX] = {}; // overlap of tick t with t - lag, lag 1..LAG_MAX
-    int selected_spikes = 0;            // the selected neuron's spikes on the tape
+    // the rhythm of the whole sheet: how the fired count per tick goes with itself `lag`
+    // ticks later (correlation, -1..1), and its period: the first clear peak, 0 if none
+    float fired_lag[LAG_MAX] = {};
+    int period = 0;
+    int selected_spikes = 0; // the selected neuron's spikes on the tape
 };
 
 // tape.cpp
