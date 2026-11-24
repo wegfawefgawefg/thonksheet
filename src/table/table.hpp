@@ -6,7 +6,7 @@
 
 // Idea 26, table neurons. A neuron reads K input bits, each from one other neuron's spike at
 // its own delay, and the K bits address its own table of 2^K tiny saturating counters. It
-// fires if the addressed counter is in its upper half (the counter's top bit), or by chance.
+// fires if the addressed counter is at or above its sector's bar, or by chance (noise).
 // This is the K-input lookup cell an FPGA is built from. No popcounts, no floats.
 //
 // It stands behind the same Blob struct the plug and the tasks use (as world/standin does):
@@ -19,11 +19,11 @@ constexpr int TABLE_ADDR_HISTORY = HISTORY; // addresses kept per neuron, like t
 
 // the numbers a table sheet is born from. the sheet size and the sensor and motor regions
 // come from the ordinary Genome, so the plug lays lines out exactly as for the blob.
-// a "shift" is a chance of 2^-shift.
+// a "shift" is a chance of 2^-shift. defaults are the setting chosen on seeds 1-4 of echo
+// k=2 and k=4 (docs/results-2026-11-24-table-neurons.md).
 struct TableGenome {
-    int inputs = 6;       // K: bits read per neuron, 1..8
-    int counter_bits = 2; // B: bits per table counter, 1, 2 or 4. fire = counter >= bar, the bar
-                          // starting at the middle (2^(B-1), so the top bit)
+    int inputs = 8;       // K: bits read per neuron, 1..8
+    int counter_bits = 4; // B: bits per table counter, 1, 2 or 4
     int reach = 8;        // local inputs come from cells at most this far away (each axis)
     int far_percent = 5;  // per input, chance in percent that it is far instead of local
     int far_reach_tiles = 3;
@@ -35,13 +35,14 @@ struct TableGenome {
     int noise_shift = 7; // output flipped (either way) with this chance per neuron per tick
 
     // keeping activity alive.
-    // rate_mode 0, per neuron: when the table says fire, the addressed counter steps down
-    // with chance 2^-rate_fire_shift; when it says quiet, up with 2^-rate_quiet_shift. the
-    // balance is a firing rate near 2^(rate_fire_shift - rate_quiet_shift).
     // rate_mode 1, per sector: a neuron fires when its counter is at or above its sector's
-    // bar. every 2^bar_period_shift ticks the bar moves one step toward the sector's target
-    // rate. tables are never touched. rate_mode 2 is both.
-    int rate_mode = 0;
+    // bar (starting at the middle, 2^(B-1)). every 2^bar_period_shift ticks the bar moves one
+    // step toward the sector's target rate. tables are never touched.
+    // rate_mode 0, per neuron: the bar stays at the middle; when the table says fire, the
+    // addressed counter steps down with chance 2^-rate_fire_shift, when it says quiet, up
+    // with 2^-rate_quiet_shift (balance near 2^(rate_fire_shift - rate_quiet_shift)).
+    // rate_mode 2 is both.
+    int rate_mode = 1;
     int sector_tiles = 2;
     int target_per_1024 = 32; // wanted spikes per 1,024 neurons per tick
     int bar_period_shift = 4;
@@ -53,16 +54,17 @@ struct TableGenome {
     int learning_on = 1;      // 0: no reward learning and no growth (regulation still runs)
     int learn_mode = 0;       // 0 plain: graded neurons' used counters move toward what they did
                               // on good, away on bad. 1 noise is the experiment: only neurons
-                              // whose output noise flipped are graded, against average reward
-    int grade = 0;            // mode 0, who is graded on a tick: 0 neurons that fired, 1 also
+                              // whose output noise flipped are graded, against average reward.
+                              // 2 the same as 1 with the sign turned over
+    int grade = 2;            // mode 0, who is graded on a tick: 0 neurons that fired, 1 also
                               // quiet ones with an input on, 2 every neuron, 3 every neuron on
                               // good but only the ones that fired on bad
     int baseline = 0;         // mode 0: 1 grades against the running average of reward
-    int reward_shift = 3;     // chance per graded neuron per tick
+    int reward_shift = 4;     // chance per graded neuron per tick
     int rise_extra_shift = 0; // a move toward fire needs this extra chance as well
-    int bad_rise_shift = 0;   // and on bad (a quiet neuron told to fire) this much more
+    int bad_rise_shift = 2;   // and on bad (a quiet neuron told to fire) this much more
     int recent_ticks = 16;    // ticks back from the reward that get graded, 1..16
-    int average_shift = 4;    // mode 1: reward average over about 2^this rewards
+    int average_shift = 4;    // modes 1, 2 and baseline: reward average over about 2^this
 
     // growth by co-activity: per tick a neuron is picked with this chance (0 = off); an input
     // that changed none of its recent answers is swapped for a recently active neighbour

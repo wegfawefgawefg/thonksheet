@@ -12,8 +12,11 @@
 //           that fired on bad (grade 3).
 //   mode 1: noise is the experiment. only neurons whose output noise flipped that tick are
 //           graded, and against the running average of reward, not its sign.
+//   mode 2: the same with the sign turned over: better than average moves a flipped
+//           neuron back toward its table's answer, worse moves it toward what noise did.
+//           (mode 1 settles on the wrong answer here; see the results doc.)
 // with baseline (always in mode 1) the direction is reward minus its running average, and
-// the chance shrinks by powers of two as that difference does.
+// the chance shrinks in proportion to that difference.
 void table_reward(Blob& blob, int valence) {
     TableBlob& tb = table_of(blob);
     const TableGenome& tg = tb.tg;
@@ -21,7 +24,7 @@ void table_reward(Blob& blob, int valence) {
         return;
     }
     Blob& b = tb.shell;
-    bool noise_mode = tg.learn_mode == 1;
+    bool noise_mode = tg.learn_mode == 1 || tg.learn_mode == 2;
     bool toward = valence > 0;
     int shift = tg.reward_shift;
     if (noise_mode || tg.baseline) {
@@ -31,10 +34,12 @@ void table_reward(Blob& blob, int valence) {
             return;
         }
         toward = delta > 0;
+        toward = tg.learn_mode == 2 ? !toward : toward;
+        // the whole event acts with chance |delta| / 256 (one draw per reward), so a neuron
+        // whose firing did not matter drifts by zero on average
         int32_t size = delta > 0 ? delta : -delta;
-        while (size < 256 && shift < 30) {
-            size <<= 1;
-            shift++;
+        if (size < 256 && (int32_t)(rng_next(tb.rng) & 255) >= size) {
+            return;
         }
     }
     bool bad_fired_only = tg.grade == 3 && !toward;
