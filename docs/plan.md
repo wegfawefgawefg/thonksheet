@@ -43,6 +43,9 @@ to earn its complexity:
    and looks up a 64-entry table of tiny counters. One lookup per tick, any function of its
    inputs, and it is the cell FPGAs are made of. Learning nudges the entry that was just used.
 
+*Ablations and rivals 1-3 run (2026-11-24): `docs/results-2026-11-24-ablations-and-rivals.md`.
+Table neurons not built.*
+
 ## The rule train (agreed 2026-11-24)
 
 The sheet, the tasks, the viewer and the sweep stay fixed. The learning rule is the part
@@ -56,7 +59,7 @@ Two separate problems, tested separately:
   saturating?
 
 Rules, in the order to try them:
-1. Noise is the experiment (known rule; exact noise bit is ours). Credit. *being built*
+1. Noise is the experiment (known rule; exact noise bit is ours). Credit. *run 2026-11-24: loses to good/bad, adds nothing beside it*
 2. A budget per neuron: every strengthening is paid for by a weakening elsewhere on the same
    neuron (known idea). Credit, aimed at saturation.
 3. Causal credit: only a source that fired exactly its slot's delay before the target fired

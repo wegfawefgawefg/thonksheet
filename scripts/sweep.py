@@ -69,7 +69,11 @@ def genome_pairs(args):
 
 def twin_args(args):
     pairs = {k: v for k, v in genome_pairs(args).items() if k not in LEARNING_ONLY}
+    # plug and task flags (not genome numbers) stay as they are
     out = []
+    for i in range(0, len(args) - 1, 2):
+        if not args[i].startswith("--g."):
+            out += [args[i], args[i + 1]]
     for k in sorted(pairs):
         out += ["--g." + k, pairs[k]]
     return out + ["--g.learning_on", "0"]

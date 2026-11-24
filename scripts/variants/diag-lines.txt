@@ -1,0 +1,5 @@
+# diagnosis, not tuning: do the good/bad sensor lines (which sit right above the motor
+# groups) make the straight cue-to-button match easier? --reward-ticks 0 keeps the lines
+# attached but never lights them; the good/bad broadcast inside the blob is unchanged.
+baseline:
+silent reward lines: --reward-ticks 0

@@ -199,6 +199,42 @@ Each one: what the brain does, then what we do.
 21. **Quiet phases.** Sleep: input cut, noise up, every weight has a small chance to lose a
     level, strong ones a smaller chance. Planned, not in the first build.
 
+### What the evidence says (2026-11-24)
+
+Each mechanism switched off alone, 8 fresh seeds, echo k=2, echo k=4, shuffled echo k=2
+(delayed echo learns under no setting, so it says nothing). Numbers are the change in late
+score with the mechanism off. Full tables: `docs/results-2026-11-24-ablations-and-rivals.md`.
+Nothing is cut from the code; that is the owner's call.
+
+| # | mechanism | verdict | off: echo k=2, k=4, shuffled |
+|---|---|---|---|
+| 1, 2, 5, 10 | spikes, leak, local wiring, chance | not switched off (they are the substrate) | |
+| 3 | cooldown | mixed | -0.12, +0.08, -0.08 |
+| 4 | inhibition | needed; off, the twin is at chance too | -0.46, -0.12, -0.22 |
+| 6 | far slots | small loss everywhere, never clear | -0.11, -0.07, -0.07 |
+| 6 | far redraw | no measurable difference | -0.03, +0.01, +0.08 |
+| 7 | local delays | no measurable difference | +0.00, -0.06, -0.07 |
+| 8 | branch bonus | no measurable difference | -0.05, -0.04, -0.09 |
+| 9 | lopsided weights (vs linear 0,1,2,3) | small help | -0.09, -0.08, -0.06 |
+| 11 | varied neurons | no measurable difference | -0.06, +0.01, +0.02 |
+| 12 | pacemakers | echo k=2 only | -0.12, -0.03, +0.02 |
+| 13 | noise | no measurable difference | -0.01, +0.01, -0.11 |
+| 14 | sector regulation | weak | -0.07, -0.08, +0.04 |
+| 15 | per-neuron regulation | needed | -0.32, -0.09, -0.20 |
+| 16 | prediction learning | echo k=2 only | -0.15, -0.06, +0.03 |
+| 17 | good | needed | -0.08, -0.13, -0.35 |
+| 17 | bad | needed | -0.36, -0.15, -0.26 |
+| 18 | surprise boost | acts as a constant 2x on every learning chance (the high line is crossed on 92-99% of echo ticks), not as surprise | -0.19, -0.10, -0.11 |
+| 19 | growth | needed | -0.34, -0.10, -0.15 |
+| 20 | pruning | needed | -0.34, -0.12, -0.17 |
+| 21 | sleep | not built | |
+
+Against the rivals: a frozen blob whose only learning is mechanism 17 (with growth and
+pruning) on connections into motor neurons ties the full blob on echo k=2 and shuffled echo,
+and learns nothing on echo k=4 (0.16 against the full blob's 0.33). Learning from noise
+spikes (REINFORCE at the synapse) loses to mechanism 17 and adds nothing beside it. Nothing
+learns cartpole or delayed echo. Paths of two tiles or more mostly fail for every rule.
+
 ## Running with no input
 
 The blob never stops, so it must not wreck itself when nothing is plugged in. An ordinary
