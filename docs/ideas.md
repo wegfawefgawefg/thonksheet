@@ -180,7 +180,11 @@ Status words: idea, building, tried (with result), kept, dropped.
 53. **Lose-shift.** [known behaviour, mechanism ours] credit. On bad, the motor cells that
     just fired get harder to fire for a while, so a different answer gets tried. Aimed at the
     lock seen in seed 3 and in crossed shuffled-echo lives, where the blob keeps pressing the
-    wrong button while punished. *building*
+    wrong button while punished. *tried: does not fix it. Crossed lives score 0.561 with it
+    and 0.559 without on fresh seeds. It lifts the worst lives and wrecks the ones that had
+    learned, and a learned blob wanders off after an unlucky bad. Its mirror, win-stay,
+    makes crossed lives lock far harder (0.135): the lock comes from the reward rule
+    strengthening its own answer. docs/results-2026-11-24-lose-shift.md*
 54. **The ablation sweep.** Each mechanism off in turn, 8 seeds. *tried: needed are
     inhibition, per-neuron threshold regulation, good, bad, growth, pruning. No measurable
     effect from delays, branch bonus, varied neurons, noise, far redraw. The surprise boost

@@ -70,7 +70,11 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
 - **Time.** Nothing learns delayed echo. Nothing connects a reward to anything older than
   a few ticks.
 - **Locking on.** A sheet settles on one answer and keeps giving it while punished: Echo
-  seed 3, crossed shuffled-echo lives, probably cartpole.
+  seed 3 and crossed shuffled-echo lives. The cause is the reward rule strengthening its
+  own answer: making that stronger (win-stay) deepens the lock (0.56 to 0.14), and making
+  the last answer harder to give (lose-shift) only trades stuck lives for unstable ones.
+  Crossed lives need a two-tile path, so this is the thin-signal wall again. Cartpole is
+  not a lock: the blob leans to one side (0.58 of presses) without being stuck.
 - **Acting in a world.** Nothing learns catch or cartpole. On cartpole learning makes the
   full engine worse than a coin.
 - **More than four things.** Eight cues: nothing above chance, in any engine.

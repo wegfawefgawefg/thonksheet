@@ -71,6 +71,8 @@ inner neurons measurably better for a task than unsupervised wiring already make
 11. **Lose-shift fixes the lock.** Making the motor cells that just earned a bad harder to
     fire for a while lifts the crossed shuffled-echo lives from 0.51 to above 0.8 and stops
     seed 3 locking onto one button. (55%)
+    - *Scored: wrong. 0.561 against 0.559. It fixed seed 3, a tuning seed, and nothing on
+      fresh ones.*
 12. **A slow "fired recently" bit lets cartpole beat coin flips.** Credit that reaches back
     hundreds of ticks, at a lower chance, gets steps per fall above 25. (40%) It also lets
     something learn delayed echo. (45%)
