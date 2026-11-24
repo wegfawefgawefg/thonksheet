@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
-
 #include "blob/genome.hpp"
+
+#include <cstdint>
 
 // The blob's whole state, as flat arrays. See docs/design.md for what each mechanism is.
 // This header is the contract between the core, the viewer and the tasks. Only the core
@@ -72,8 +72,8 @@ struct Blob {
     uint16_t* fan_in = nullptr; // connections this neuron has
 
     // per sector
-    uint32_t* tile_sector = nullptr;    // which sector a tile is in, per tile
-    int16_t* sector_bias = nullptr;     // added to thresholds in the sector
+    uint32_t* tile_sector = nullptr;     // which sector a tile is in, per tile
+    int16_t* sector_bias = nullptr;      // added to thresholds in the sector
     uint32_t* sector_activity = nullptr; // smoothed spikes per tick, x256
     uint32_t* sector_surprise = nullptr; // smoothed wrong predictions per tick, x256
 
@@ -85,8 +85,8 @@ struct Blob {
     // added by the core after the first draft of this header
     uint64_t* pacemaker = nullptr;     // fixed at birth, one word per tile (tile_count + 1)
     uint32_t* sector_target = nullptr; // wanted sector_activity, same units (x256)
-    uint32_t surprise_level = 0; // smoothed wrong predictions per 1,024 attached lines, x256
-    int spike_stride = 0;        // words from one spike map to the next
+    uint32_t surprise_level = 0;       // smoothed wrong predictions per 1,024 attached lines, x256
+    int spike_stride = 0;              // words from one spike map to the next
 
     uint64_t rng[4] = {};
     BlobStats stats;
@@ -131,8 +131,7 @@ inline void blob_sense(Blob& blob, int neuron, bool on) {
 
 // where one neuron's mask word for one slot lives in w0 and w1
 inline int64_t blob_weight_index(int neuron, int slot) {
-    return ((int64_t)(neuron / TILE_NEURONS) * SLOTS + slot) * TILE_NEURONS +
-           neuron % TILE_NEURONS;
+    return ((int64_t)(neuron / TILE_NEURONS) * SLOTS + slot) * TILE_NEURONS + neuron % TILE_NEURONS;
 }
 
 // unplug a sensor line: it stops firing and is no longer learned from

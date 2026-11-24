@@ -42,24 +42,25 @@ struct Genome {
     int noise_shift = 10; // spontaneous firing chance per neuron per tick
 
     // regulation
-    int sector_tiles = 2;             // a sector is this many tiles on a side
-    int sector_target_per_1024 = 40;  // wanted spikes per 1,024 neurons per tick
+    int sector_tiles = 2;            // a sector is this many tiles on a side
+    int sector_target_per_1024 = 32; // wanted spikes per 1,024 neurons per tick; keep it
+                                     // at the per-neuron balance, 1024 * 2^(up - down)
     int sector_bias_max = 16;
-    int threshold_up_shift = 4;    // on firing, raise own threshold with this chance
-    int threshold_down_shift = 9;  // every tick, lower own threshold with this chance
-    int threshold_cap = 64;        // regulation never raises a threshold past this
-    int sector_smooth_shift = 4;   // sector activity is smoothed over about 2^this ticks
+    int threshold_up_shift = 4;   // on firing, raise own threshold with this chance
+    int threshold_down_shift = 9; // every tick, lower own threshold with this chance
+    int threshold_cap = 64;       // regulation never raises a threshold past this
+    int sector_smooth_shift = 4;  // sector activity is smoothed over about 2^this ticks
 
     // learning (all changes are one weight level, taken by chance)
-    int learning_on = 1; // 0: no weight, wiring or far-redraw change at all (regulation runs)
-    int recent_ticks = 6;        // how long "fired recently" lasts (1..8)
-    int predict_shift = 3;       // sensor prediction: strengthen right, weaken wrong
-    int reward_shift = 4;        // good/bad broadcast acting on recently co-active pairs
-    int reward_ticks = 4;        // how long one good/bad event keeps acting
-    int grow_shift = 5;          // on firing, chance to grow one new connection
-    int prune_shift = 6;         // on firing, chance to weaken idle weak connections
-    int prune_bit_shift = 4;     // then each idle weak connection goes with this chance
-    int far_redraw_shift = 14;   // per tick, chance an empty far slot is redrawn
-    int surprise_boost = 1;      // shifts taken off the chances while surprise is high
+    int learning_on = 1;       // 0: no weight, wiring or far-redraw change at all (regulation runs)
+    int recent_ticks = 6;      // how long "fired recently" lasts (1..8)
+    int predict_shift = 3;     // sensor prediction: on a wrong guess, move the active sources
+    int reward_shift = 4;      // good/bad broadcast on recently co-active pairs (bad stops at 1)
+    int reward_ticks = 4;      // how long one good/bad event keeps acting
+    int grow_shift = 5;        // on firing, chance to grow one new connection
+    int prune_shift = 6;       // on firing, chance to weaken idle weak connections
+    int prune_bit_shift = 4;   // then each idle weak connection goes with this chance
+    int far_redraw_shift = 14; // per tick, chance an empty far slot is redrawn
+    int surprise_boost = 1;    // shifts taken off the chances while surprise is high
     int surprise_high_per_1024 = 80;
 };

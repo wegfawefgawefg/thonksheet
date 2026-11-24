@@ -1,8 +1,8 @@
-#include <cstdio>
-
 #include "bench/bench_modes.hpp"
 #include "blob/blob.hpp"
 #include "blob/random_words.hpp"
+
+#include <cstdio>
 
 // ticks per second at several sheet sizes, one core, learning off and on.
 // "on" also feeds random input to every sensor line and rewards every 50 ticks, so the

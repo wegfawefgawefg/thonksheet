@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
-
 #include "blob/blob.hpp"
+
+#include <cstdint>
 
 // the parts of one tick, in the order blob_tick runs them. core-only, not part of the
 // contract with the viewer and the tasks.

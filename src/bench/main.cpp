@@ -1,9 +1,9 @@
+#include "bench/bench_modes.hpp"
+
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
-#include "bench/bench_modes.hpp"
 
 // blobbench: tick speed, the stage 0 idle run, and the small learning check.
 //

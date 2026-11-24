@@ -158,7 +158,9 @@ Each one: what the brain does, then what we do.
     spikes (popcount of its words, smoothed) and moves a bias on its neurons' thresholds up
     or down toward its target. Sectors can have different targets: a busy sector has finer
     time resolution. In code: one step of bias per tick when the smoothed count is more
-    than an eighth off target. Sensor neurons do not count toward a sector's target.
+    than an eighth off target. Sensor neurons do not count toward a sector's target. The
+    target has to match the per-neuron balance below (1024 * 2^(up - down) per 1,024
+    neurons, 32 by default): with a different target one of the two pins at its limit.
 15. **Per-neuron regulation (slow).** A neuron that fires a lot gets harder to fire. No rate
     counter: when a neuron fires, raise its threshold with a small chance; every tick, lower
     it with a much smaller chance. The balance point is the target rate. Sensors and
@@ -179,6 +181,8 @@ Each one: what the brain does, then what we do.
     removing is pruning's job. When bad could remove, the up/down walk had a floor that
     swallowed connections, and the busiest pairs (the paths from a cue) were cut first;
     a run showed cue information near the sensors falling about 5x under learning.
+    Measured (`docs/notes-core.md`): with this rule a cue one or two tiles from a motor
+    group gets the right group learned; three or more tiles away it does not yet.
 18. **Surprise as a second broadcast.** High surprise raises the chance of change for a
     while. Later it can also count as mildly good, which is curiosity.
 19. **Growth with feature locality.** When a neuron fires, its candidates for a new
@@ -189,8 +193,8 @@ Each one: what the brain does, then what we do.
     lose a level by chance; at zero they are gone. In code: a firing neuron is picked with
     chance 2^-`prune_shift`, then each of its idle weak connections goes with chance
     2^-`prune_bit_shift`, so the loss rate grows with the number of idle weak connections
-    and balances growth instead of draining every neuron. Strong connections are exempt, so what was
-    learned is not overwritten by churn. A cap on connections per neuron stops runaway
+    and balances growth instead of draining every neuron. Strong connections are exempt, so
+    what was learned is not overwritten by churn. A cap on connections per neuron stops runaway
     growth.
 21. **Quiet phases.** Sleep: input cut, noise up, every weight has a small chance to lose a
     level, strong ones a smaller chance. Planned, not in the first build.

@@ -1,9 +1,9 @@
-#include <cstdio>
-#include <cstring>
-
 #include "bench/bench_modes.hpp"
 #include "blob/blob.hpp"
 #include "blob/random_words.hpp"
+
+#include <cstdio>
+#include <cstring>
 
 // stage 0: the blob left running. three phases of `--ticks` each: idle (nothing attached),
 // random input on every sensor line, and input that starts and stops (unplugged between).
@@ -11,10 +11,10 @@
 
 struct WindowCounts {
     int64_t ticks = 0;
-    int64_t fired = 0;          // non-sensor spikes
-    int64_t fired_sq = 0;       // sum of squared per-tick counts, for the fano factor
-    int64_t saturated_ticks = 0; // ticks with over a quarter of the free neurons firing
-    int64_t silent_ticks = 0;    // ticks with no free neuron firing
+    int64_t fired = 0;                 // non-sensor spikes
+    int64_t fired_sq = 0;              // sum of squared per-tick counts, for the fano factor
+    int64_t saturated_ticks = 0;       // ticks with over a quarter of the free neurons firing
+    int64_t silent_ticks = 0;          // ticks with no free neuron firing
     int64_t overlap_and[HISTORY] = {}; // spike map against the map `lag` ticks earlier
     int64_t overlap_or[HISTORY] = {};
     int64_t grown = 0, pruned = 0, strengthened = 0, weakened = 0, surprise = 0;
@@ -88,8 +88,8 @@ static void report_window(const Blob& blob, WindowCounts& w, const char* phase, 
         bias_lo = bias < bias_lo ? bias : bias_lo;
         bias_hi = bias > bias_hi ? bias : bias_hi;
         if (csv) {
-            std::fprintf(csv, "%s,%llu,%d,%d,%d\n", phase, (unsigned long long)blob.stats.tick,
-                         s, rate, blob.sector_bias[s]);
+            std::fprintf(csv, "%s,%llu,%d,%d,%d\n", phase, (unsigned long long)blob.stats.tick, s,
+                         rate, blob.sector_bias[s]);
         }
     }
     // the most repeated lag (2..15); lag 1 is listed apart since cooldown shapes it
@@ -115,8 +115,8 @@ static void report_window(const Blob& blob, WindowCounts& w, const char* phase, 
                 "%5.1f %5.2f %5.2f %6lld %6lld %7lld %7lld %6lld\n",
                 phase, (unsigned long long)blob.stats.tick,
                 (long long)(w.fired * 1024 / (w.ticks * free_count)), lo, hi, dead, fano,
-                (long long)w.saturated_ticks, (long long)w.silent_ticks, (long long)lag1,
-                best_lag, (long long)best, (double)thr / blob.neuron_count, bias_lo, bias_hi,
+                (long long)w.saturated_ticks, (long long)w.silent_ticks, (long long)lag1, best_lag,
+                (long long)best, (double)thr / blob.neuron_count, bias_lo, bias_hi,
                 (double)ones / blob.neuron_count, (double)fours / blob.neuron_count,
                 (double)fives / blob.neuron_count, (long long)w.grown, (long long)w.pruned,
                 (long long)w.strengthened, (long long)w.weakened, (long long)w.surprise);
@@ -164,13 +164,13 @@ int run_stage0(int argc, char** argv) {
         std::fprintf(csv, "phase,tick,sector,spikes_per_tick_per_1024,bias\n");
     }
 
-    std::printf("neurons %d, sectors %d, target %d spikes per tick per 1024\n",
-                blob->neuron_count, blob->sector_count, g.sector_target_per_1024);
+    std::printf("neurons %d, sectors %d, target %d spikes per tick per 1024\n", blob->neuron_count,
+                blob->sector_count, g.sector_target_per_1024);
     std::printf("%-7s %9s %5s %5s %5s %4s %6s %5s %5s %5s %3s %5s %6s %4s %4s %5s %5s %5s %6s "
                 "%6s %7s %7s %6s\n",
-                "phase", "tick", "rate", "seclo", "sechi", "dead", "fano", "satur", "silnt",
-                "lag1", "lag", "ovl", "thr", "bilo", "bihi", "w1", "w4", "w5", "grown", "pruned",
-                "strong", "weak", "surpr");
+                "phase", "tick", "rate", "seclo", "sechi", "dead", "fano", "satur", "silnt", "lag1",
+                "lag", "ovl", "thr", "bilo", "bihi", "w1", "w4", "w5", "grown", "pruned", "strong",
+                "weak", "surpr");
     const char* names[] = {"idle", "random", "onoff"};
     WindowCounts w;
     w.sector_spikes = new int64_t[blob->sector_count]();

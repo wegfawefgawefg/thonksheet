@@ -1,14 +1,14 @@
+#include "bench/bench_modes.hpp"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
-#include "bench/bench_modes.hpp"
 
 // "--g.name value" on the command line overrides one genome number, for tuning runs.
 
 struct GenomeField {
     const char* name;
-    int Genome::* field;
+    int Genome::*field;
 };
 
 static const GenomeField fields[] = {

@@ -149,8 +149,8 @@ void tick_fire(Blob& blob, uint64_t* out) {
             for (int b = 0; b < TILE_NEURONS; b++) {
                 words[b] = ring[offset[delay[b]] + far[b * FAR_SLOTS]];
             }
-            add_far_slot(drive, words, tile_w0 + slot * TILE_NEURONS,
-                         tile_w1 + slot * TILE_NEURONS, bt, bonus);
+            add_far_slot(drive, words, tile_w0 + slot * TILE_NEURONS, tile_w1 + slot * TILE_NEURONS,
+                         bt, bonus);
         }
 
         // leak, add, compare

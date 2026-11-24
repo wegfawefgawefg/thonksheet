@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
-
 #include "blob/genome.hpp"
+
+#include <cstdint>
 
 // the modes of blobbench. each takes the arguments after the mode name.
 int run_speed(int argc, char** argv);

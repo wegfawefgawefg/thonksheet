@@ -1,10 +1,10 @@
-#include <cstdlib>
-#include <cstring>
-
 #include "blob/blob.hpp"
 #include "blob/random_words.hpp"
 #include "blob/tick_steps.hpp"
 #include "blob/weight_levels.hpp"
+
+#include <cstdlib>
+#include <cstring>
 
 // building a blob from a genome and a seed, and freeing it.
 
@@ -107,8 +107,8 @@ static void set_kinds(Blob& blob) {
         int x = blob_neuron_x(blob, n), y = blob_neuron_y(blob, n);
         int t = n / TILE_NEURONS;
         uint64_t bit = 1ull << (n % TILE_NEURONS);
-        bool in_sensor_rect = x >= g.sensor_x && x < g.sensor_x + g.sensor_w &&
-                              y >= g.sensor_y && y < g.sensor_y + g.sensor_h;
+        bool in_sensor_rect = x >= g.sensor_x && x < g.sensor_x + g.sensor_w && y >= g.sensor_y &&
+                              y < g.sensor_y + g.sensor_h;
         bool is_sensor = in_sensor_rect && (x - g.sensor_x) % g.sensor_stride == 0 &&
                          (y - g.sensor_y) % g.sensor_stride == 0;
         bool in_motor_rect = x >= g.motor_x && x < g.motor_x + g.motor_w && y >= g.motor_y &&
@@ -125,8 +125,7 @@ static void set_kinds(Blob& blob) {
         if (inhib) {
             blob.inhibitory[t] |= bit;
         }
-        bool pace = !is_sensor && !inhib &&
-                    (int)rng_below(blob.rng, 1024) < g.pacemakers_per_1024;
+        bool pace = !is_sensor && !inhib && (int)rng_below(blob.rng, 1024) < g.pacemakers_per_1024;
         if (pace) {
             blob.pacemaker[t] |= bit;
         }
@@ -291,12 +290,12 @@ void blob_free(Blob* blob) {
     }
     std::free(blob->spikes[0]); // the whole ring
     void* arrays[] = {
-        blob->recent,          blob->inhibitory,    blob->sensor,          blob->motor,
-        blob->pacemaker,       blob->sense_in,      blob->sense_attached,  blob->predicted,
-        blob->local_tile,      blob->far_tile,      blob->slot_delay,       blob->w0,
-        blob->w1,              blob->potential,     blob->threshold,       blob->leak_shift,
-        blob->cooldown,        blob->cooldown_len,  blob->fan_in,          blob->tile_sector,
-        blob->sector_bias,     blob->sector_activity, blob->sector_surprise, blob->sector_target,
+        blob->recent,      blob->inhibitory,      blob->sensor,          blob->motor,
+        blob->pacemaker,   blob->sense_in,        blob->sense_attached,  blob->predicted,
+        blob->local_tile,  blob->far_tile,        blob->slot_delay,      blob->w0,
+        blob->w1,          blob->potential,       blob->threshold,       blob->leak_shift,
+        blob->cooldown,    blob->cooldown_len,    blob->fan_in,          blob->tile_sector,
+        blob->sector_bias, blob->sector_activity, blob->sector_surprise, blob->sector_target,
     };
     for (void* p : arrays) {
         std::free(p);

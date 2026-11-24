@@ -1,8 +1,8 @@
-#include <cstdio>
-
 #include "bench/bench_modes.hpp"
 #include "blob/blob.hpp"
 #include "blob/random_words.hpp"
+
+#include <cstdio>
 
 // the core's own small check that learning does something. one of K cues is held on a few
 // sensor lines; K groups of motor neurons; good when the group that matches the cue fires
@@ -52,10 +52,8 @@ static void setup_echo(const Blob& blob, EchoSetup& e, uint64_t seed) {
     rng_seed(rng, seed * 31337 + 5);
     uint64_t* taken = new uint64_t[blob.tile_count + 1]();
     for (int c = 0; c < e.cues; c++) {
-        pick_neurons(blob, blob.sensor, e.sensor_box, rng, e.lines_per_cue, e.cue_line[c],
-                     taken);
-        pick_neurons(blob, blob.motor, e.motor_box, rng, e.group_size, e.group_neuron[c],
-                     taken);
+        pick_neurons(blob, blob.sensor, e.sensor_box, rng, e.lines_per_cue, e.cue_line[c], taken);
+        pick_neurons(blob, blob.motor, e.motor_box, rng, e.group_size, e.group_neuron[c], taken);
         e.answer[c] = c;
     }
     // shuffle which group answers which cue
@@ -230,8 +228,7 @@ int run_learn_check(int argc, char** argv) {
                 }
                 spread.ticks[0] = spread.ticks[1] = 0;
             }
-            hits[learn][i / report] +=
-                run_trial(*blob, e, rng, &spikes[learn][i / report], spread);
+            hits[learn][i / report] += run_trial(*blob, e, rng, &spikes[learn][i / report], spread);
         }
         if (show_spread) {
             std::printf("learning %s, last window\n", learn ? "on" : "off");
