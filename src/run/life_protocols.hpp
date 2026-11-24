@@ -12,9 +12,6 @@
 
 int protocol_run(const RunFlags& flags);
 
-// which drivers run: the blob and its learning-off twin need the core
-void drivers_wanted(const RunFlags& flags, bool* want);
-
 // --frozen-readout: the genome's learn_mode 1, when the core has it (exits if not)
 void genome_readout_only(Genome& genome);
 

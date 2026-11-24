@@ -7,6 +7,7 @@
 #include "run/life_protocols.hpp"
 #include "run/run_flags.hpp"
 #include "run/task_ticker.hpp"
+#include "table/table.hpp"
 #include "world/plug.hpp"
 #include "world/plug_print.hpp"
 #include "world/standin.hpp"
@@ -14,9 +15,21 @@
 
 #include <cstdio>
 #include <string>
+#ifdef BLOB_HAS_MINIMAL
+#include "minimal/minimal.hpp"
+#endif
 
 // who drives the motor lines (drive.hpp)
-const char* const driver_names[(int)Driver::count] = {"blob", "learn_off", "coin", "perfect"};
+// table and table_off are idea 26 (src/table/), picked with --table
+const char* const driver_names[(int)Driver::count] = {"blob",    "learn_off", "coin",
+                                                      "perfect", "table",     "table_off"};
+
+// the table sheet's own numbers (--t.name value)
+static TableGenome table_genome;
+
+bool table_driver(Driver driver) {
+    return driver == Driver::table || driver == Driver::table_off;
+}
 
 // the learning-off twin: same genome and seed, nothing changes its wiring
 void genome_learning_off(Genome& g) {
@@ -27,7 +40,25 @@ bool real_blob(Driver driver) {
     return driver == Driver::blob || driver == Driver::learn_off;
 }
 
+// --engine minimal: src/minimal/ stands behind the same Blob shell
+#ifdef BLOB_HAS_MINIMAL
+static bool use_minimal = false;
+static MinimalGenome minimal_genome;
+#else
+static const bool use_minimal = false;
+#endif
+
 Blob* birth(Driver driver, const Genome& genome, uint64_t seed) {
+    if (table_driver(driver)) {
+        TableGenome tg = table_genome;
+        tg.learning_on = driver == Driver::table ? tg.learning_on : 0;
+        return table_birth(genome, tg, seed);
+    }
+#ifdef BLOB_HAS_MINIMAL
+    if (use_minimal && real_blob(driver)) {
+        return minimal_birth(genome, minimal_genome, seed);
+    }
+#endif
 #ifdef BLOB_HAS_CORE
     if (real_blob(driver)) {
         return blob_birth(genome, seed);
@@ -38,6 +69,16 @@ Blob* birth(Driver driver, const Genome& genome, uint64_t seed) {
 }
 
 void death(Driver driver, Blob* blob) {
+    if (table_driver(driver)) {
+        table_free(blob);
+        return;
+    }
+#ifdef BLOB_HAS_MINIMAL
+    if (use_minimal && real_blob(driver)) {
+        minimal_free(blob);
+        return;
+    }
+#endif
 #ifdef BLOB_HAS_CORE
     if (real_blob(driver)) {
         blob_free(blob);
@@ -49,6 +90,16 @@ void death(Driver driver, Blob* blob) {
 }
 
 void tick(Driver driver, Blob& blob, const Plug& plug, int perfect_move) {
+    if (table_driver(driver)) {
+        table_tick(blob);
+        return;
+    }
+#ifdef BLOB_HAS_MINIMAL
+    if (use_minimal && real_blob(driver)) {
+        minimal_tick(blob);
+        return;
+    }
+#endif
 #ifdef BLOB_HAS_CORE
     if (real_blob(driver)) {
         blob_tick(blob);
@@ -60,6 +111,16 @@ void tick(Driver driver, Blob& blob, const Plug& plug, int perfect_move) {
 }
 
 void reward(Driver driver, Blob& blob, int valence) {
+    if (table_driver(driver)) {
+        table_reward(blob, valence);
+        return;
+    }
+#ifdef BLOB_HAS_MINIMAL
+    if (use_minimal && real_blob(driver)) {
+        minimal_reward(blob, valence);
+        return;
+    }
+#endif
 #ifdef BLOB_HAS_CORE
     if (real_blob(driver)) {
         blob_reward(blob, valence);
@@ -70,9 +131,35 @@ void reward(Driver driver, Blob& blob, int valence) {
     (void)valence;
 }
 
+// which lives to run: the blob and its learning-off twin need the core (or another engine)
+void drivers_wanted(const RunFlags& flags, bool* want) {
+    for (int d = 0; d < (int)Driver::count; d++) {
+        want[d] = false;
+    }
+#ifdef BLOB_HAS_CORE
+    want[(int)Driver::blob] = true;
+    want[(int)Driver::learn_off] = flags.baselines;
+#endif
+    if (use_minimal) {
+        want[(int)Driver::blob] = true;
+        want[(int)Driver::learn_off] = flags.baselines;
+    }
+    want[(int)Driver::coin] = flags.baselines || !want[(int)Driver::blob];
+    want[(int)Driver::perfect] = true;
+    if (flags.table) {
+        // the table sheet stands in for the blob, with its own learning-off twin
+        want[(int)Driver::blob] = false;
+        want[(int)Driver::learn_off] = false;
+        want[(int)Driver::table] = true;
+        want[(int)Driver::table_off] = flags.baselines;
+        want[(int)Driver::coin] = flags.baselines;
+    }
+}
+
 int main(int argc, char** argv) {
     RunFlags flags;
     apply_genome_args(argc, argv, flags.genome);
+    table_genome_args(argc, argv, table_genome);
     if (!run_flags_parse(argc, argv, flags)) {
         return 1;
     }
@@ -88,6 +175,16 @@ int main(int argc, char** argv) {
     if (flags.frozen_readout) {
         genome_readout_only(flags.genome);
     }
+
+#ifdef BLOB_HAS_MINIMAL
+    use_minimal = flags.engine == "minimal";
+    apply_minimal_args(argc, argv, minimal_genome);
+#endif
+    if (flags.engine != "blob" && !use_minimal) {
+        std::fprintf(stderr, "blobrun: no engine '%s' in this build\n", flags.engine.c_str());
+        return 1;
+    }
+
 #ifndef BLOB_HAS_CORE
     std::printf("no core linked: running the stand-in only (coin flips, perfect player)\n");
 #endif

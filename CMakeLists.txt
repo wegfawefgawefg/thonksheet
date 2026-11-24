@@ -61,3 +61,39 @@ if(probe_sources AND TARGET blobcore)
     target_compile_options(blobprobe PRIVATE ${warnings} ${speed})
     target_link_libraries(blobprobe PRIVATE blobcore)
 endif()
+
+# blobtable: idea 26, table neurons, standing behind the same Blob struct (src/table/).
+# blobrun drives it with --table; tablebench measures its tick speed.
+file(GLOB table_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/table/*.cpp)
+if(table_sources AND TARGET blobcore)
+    add_library(blobtable STATIC ${table_sources})
+    target_include_directories(blobtable PUBLIC src)
+    target_compile_options(blobtable PRIVATE ${warnings} ${speed})
+    if(TARGET blobrun)
+        target_link_libraries(blobrun PRIVATE blobtable)
+    endif()
+    add_executable(tablebench ${CMAKE_SOURCE_DIR}/src/table/bench/tablebench.cpp)
+    target_compile_options(tablebench PRIVATE ${warnings} ${speed})
+    target_link_libraries(tablebench PRIVATE blobtable blobcore)
+endif()
+
+# blobminimal: the minimal engine (popcount neurons, one bit per source, noise-graded credit
+# under a budget), and minimalprobe for its long-life, idle and speed measurements
+file(GLOB minimal_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/minimal/*.cpp)
+if(minimal_sources)
+    add_library(blobminimal STATIC ${minimal_sources})
+    target_include_directories(blobminimal PUBLIC src)
+    target_compile_options(blobminimal PRIVATE ${warnings} ${speed})
+    if(TARGET blobrun)
+        target_link_libraries(blobrun PRIVATE blobminimal)
+        target_compile_definitions(blobrun PRIVATE BLOB_HAS_MINIMAL=1)
+    endif()
+    file(GLOB minimal_probe_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/minimal/probe/*.cpp)
+    if(minimal_probe_sources AND TARGET blobcore AND TARGET blobworld)
+        add_executable(minimalprobe ${minimal_probe_sources}
+                       ${CMAKE_SOURCE_DIR}/src/run/task_ticker.cpp
+                       ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp)
+        target_compile_options(minimalprobe PRIVATE ${warnings} ${speed})
+        target_link_libraries(minimalprobe PRIVATE blobminimal blobworld blobcore)
+    endif()
+endif()

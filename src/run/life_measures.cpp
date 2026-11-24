@@ -60,10 +60,10 @@ int protocol_reach(const RunFlags& flags) {
     bool ran[(int)Driver::count] = {};
     std::printf("%-10s distance in tiles, 0 to 7; reach = farthest at %.1f or more\n", "",
                 CARRY_LOST);
-    for (int d = 0; d <= (int)Driver::learn_off; d++) {
-        bool want[(int)Driver::count];
-        drivers_wanted(flags, want);
-        if (!want[d] || !real_blob((Driver)d)) {
+    bool want[(int)Driver::count];
+    drivers_wanted(flags, want);
+    for (int d = 0; d < (int)Driver::count; d++) {
+        if (!want[d] || !engine_driver((Driver)d)) {
             continue;
         }
         int reach = 0;
@@ -78,8 +78,8 @@ int protocol_reach(const RunFlags& flags) {
         std::fprintf(sum, "%s,reach,%d\n", driver_names[d], reach);
     }
     std::fclose(sum);
-    if (!ran[(int)Driver::blob]) {
-        std::printf("reach needs a real blob; nothing ran\n");
+    if (!ran[(int)Driver::blob] && !ran[(int)Driver::table]) {
+        std::printf("reach needs an engine; nothing ran\n");
         return 0;
     }
     FILE* f = std::fopen(flags.out.c_str(), "w");
@@ -122,8 +122,9 @@ static uint64_t speed_random(uint64_t& state) {
 int protocol_speed(const RunFlags& flags) {
     bool want[(int)Driver::count];
     drivers_wanted(flags, want);
-    if (!want[(int)Driver::blob]) {
-        std::printf("speed needs a real blob; nothing ran\n");
+    Driver driver = want[(int)Driver::table] ? Driver::table : Driver::blob;
+    if (!want[(int)driver]) {
+        std::printf("speed needs an engine; nothing ran\n");
         return 0;
     }
     FILE* sum = summary_open(flags.out);
@@ -137,7 +138,7 @@ int protocol_speed(const RunFlags& flags) {
         genome.tiles_w = size;
         genome.tiles_h = size;
         double before = heap_bytes();
-        Blob* blob = birth(Driver::blob, genome, flags.seed);
+        Blob* blob = birth(driver, genome, flags.seed);
         double bytes = (heap_bytes() - before) / blob->neuron_count;
         uint64_t state = 0x9E3779B97F4A7C15ull ^ flags.seed;
         int64_t ticks = 0;
@@ -150,7 +151,7 @@ int protocol_speed(const RunFlags& flags) {
                     blob->sense_attached[t] = blob->sensor[t];
                     blob->sense_in[t] = blob->sensor[t] & on;
                 }
-                tick(Driver::blob, *blob, no_plug, -1);
+                tick(driver, *blob, no_plug, -1);
                 ticks++;
             }
             seconds =
@@ -160,9 +161,10 @@ int protocol_speed(const RunFlags& flags) {
         std::printf("%2dx%-2d tiles %7d neurons  %9.0f ticks/s  %8.3g neuron updates/s  %6.0f "
                     "bytes/neuron\n",
                     size, size, blob->neuron_count, per_s, per_s * blob->neuron_count, bytes);
-        std::fprintf(sum, "blob,ticks_per_s_%dx%d,%.6g\n", size, size, per_s);
-        std::fprintf(sum, "blob,bytes_per_neuron_%dx%d,%.6g\n", size, size, bytes);
-        death(Driver::blob, blob);
+        const char* name = driver_names[(int)driver];
+        std::fprintf(sum, "%s,ticks_per_s_%dx%d,%.6g\n", name, size, size, per_s);
+        std::fprintf(sum, "%s,bytes_per_neuron_%dx%d,%.6g\n", name, size, size, bytes);
+        death(driver, blob);
     }
     std::fclose(sum);
     return 0;

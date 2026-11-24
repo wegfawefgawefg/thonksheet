@@ -23,14 +23,16 @@ struct RunFlags {
     TaskSettings task_settings;
     PlugSettings plug;
     Genome genome;
-    uint64_t seed = 1;      // the blob's seed
-    uint64_t task_seed = 0; // the task's own seed; 0 means "same as seed"
-    int64_t steps = 20000;  // life length in task steps
-    int window = 200;       // task steps per score window
-    int edge = 0;           // windows averaged at each end; 0 means a tenth of them
-    bool baselines = true;  // also run learning-off and coin flips
-    bool show_plug = false; // print where the lines sit, then run
-    std::string out;        // csv path; empty means out/<task>-s<seed>.csv
+    uint64_t seed = 1;           // the blob's seed
+    uint64_t task_seed = 0;      // the task's own seed; 0 means "same as seed"
+    int64_t steps = 20000;       // life length in task steps
+    int window = 200;            // task steps per score window
+    int edge = 0;                // windows averaged at each end; 0 means a tenth of them
+    bool baselines = true;       // also run learning-off and coin flips
+    bool show_plug = false;      // print where the lines sit, then run
+    bool table = false;          // run the table sheet (idea 26) in place of the blob
+    std::string out;             // csv path; empty means out/<task>-s<seed>.csv
+    std::string engine = "blob"; // blob (the full engine) or minimal
 
     // life protocols (see Protocol)
     Protocol protocol = Protocol::life;

@@ -34,6 +34,8 @@ new predictions before starting an experiment, never after.
      flips (22-25). No rule learns to balance.*
 6. **Table neurons learn Echo faster and sharper than the popcount blob, and carry a cue
    worse** until their wiring is tuned. (50%)
+   - *Scored: half right. Sharper, yes: 0.68 on four cues against 0.31. Carrying worse,
+     no: they learn with cue and button two rows apart (0.80) where the blob does not.*
 7. **Delays matter for the timing tasks** (beat, delayed echo) **and not for Echo.** (70%)
    - *Scored: the Echo half is right (no effect). The timing half is untested: no rule
      learns delayed echo at all (0.44 against 0.43).*
@@ -68,4 +70,20 @@ inner neurons measurably better for a task than unsupervised wiring already make
 12. **A slow "fired recently" bit lets cartpole beat coin flips.** Credit that reaches back
     hundreds of ticks, at a lower chance, gets steps per fall above 25. (40%) It also lets
     something learn delayed echo. (45%)
+
+## 2026-11-24, before growing the minimal engine
+
+13. **One far slot gives the minimal engine reach.** Echo with cue and button 3 tiles apart
+    goes from 0.37 (no better than its twin) to above 0.55. (55%)
+14. **Delays let it learn delayed echo.** With slot delays of 1 to 8 ticks the minimal engine
+    beats its twin on delayed echo by more than 0.15. (35%) More likely delays alone are not
+    enough and it also needs credit that reaches back in time.
+
+## 2026-11-24, before chasing the reversed sign
+
+15. **The reversed sign is a bookkeeping slip, not a principle.** The cause will turn out to
+    be which neurons count as "flipped by noise" or which way a quiet neuron is graded, and
+    once fixed the rule will be ordinary: no better than the default. (60%) If instead the
+    reversed rule keeps beating the default on shuffled echo in a second engine, it is a
+    real finding about what noise spikes mean in a sheet with inhibition.
 

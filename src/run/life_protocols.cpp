@@ -5,18 +5,6 @@
 #include <cstring>
 #include <filesystem>
 
-void drivers_wanted(const RunFlags& flags, bool* want) {
-    for (int d = 0; d < (int)Driver::count; d++) {
-        want[d] = false;
-    }
-#ifdef BLOB_HAS_CORE
-    want[(int)Driver::blob] = true;
-    want[(int)Driver::learn_off] = flags.baselines;
-#endif
-    want[(int)Driver::coin] = flags.baselines || !want[(int)Driver::blob];
-    want[(int)Driver::perfect] = true;
-}
-
 void genome_readout_only(Genome& genome) {
     // through the genome's own names, so this builds whether or not the core has the field
     char program[] = "blobrun", name[] = "--g.learn_mode", value[] = "1";
@@ -117,7 +105,7 @@ static bool run_lives(const RunFlags& flags, const LifePhase* phases, int count,
             return false;
         }
         ran[d] = true;
-        if (real_blob((Driver)d)) {
+        if (engine_driver((Driver)d)) {
             const LifeResult& r = results[d];
             std::printf("%-9s life took %.1f s, %.0f ticks/s\n", driver_names[d], r.seconds,
                         (double)r.ticks / r.seconds);

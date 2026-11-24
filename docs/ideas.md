@@ -24,7 +24,10 @@ Status words: idea, building, tried (with result), kept, dropped.
    loses. 0.81 on echo with 2 cues, 0.12 with 4, uneven across seeds; alongside good/bad it
    changes nothing. docs/results-2026-11-24-ablations-and-rivals.md*
 2. **A budget per neuron.** [known] room. Every strengthening is paid for by a weakening
-   elsewhere on the same neuron. *idea*
+   elsewhere on the same neuron. *tried in the minimal engine: it is the piece that carries
+   the result. Without it Echo drops 0.17 to 0.23 and the sheet saturates; with it every
+   neuron holds exactly its 48 connections after 4M ticks. Not yet ported to the full
+   engine. docs/results-2026-11-24-minimal-engine.md*
 3. **Causal credit.** [known family] credit. Grade only a source that fired exactly its
    slot's delay before the target fired. *idea*
 4. **Reward minus expectation.** [known] credit, room. Keep the current rule but act only on
@@ -82,7 +85,12 @@ Status words: idea, building, tried (with result), kept, dropped.
 ## Different neurons
 
 26. **Table neurons.** [old idea, new on this sheet] speed, credit. A neuron reads 6 bits
-    and looks up a 64-entry table of tiny counters. *building*
+    and looks up a 64-entry table of tiny counters. *tried: works, and holds more. Echo
+    0.90 with 2 cues, 0.68 with 4 (the popcount engines get 0.31 to 0.41), 0.80 with cue
+    and button two tile rows apart (the others fail there). Needed 8 inputs and 4-bit
+    counters for four cues; the 6-input cell gets 0.93 and 0.53. No faster on a CPU core.
+    Fails where the others fail: 8 cues, delayed echo, catch, cartpole.
+    docs/results-2026-11-24-table-neurons.md*
 27. **All-of neurons.** [known] credit. Fire only if every chosen input is on. *idea*
 28. **Context gate.** [known in biology] carry, room. Input on the far slots decides whether
     local input is allowed to fire the neuron. *idea*
@@ -154,7 +162,12 @@ Status words: idea, building, tried (with result), kept, dropped.
     a popcount over a mask against a threshold; a synapse changes by chance on an outcome,
     graded only where the spike was noise, under a per-neuron budget; each neuron keeps its
     own firing rate. Plus wiring by co-activity, switchable. Does it match the 21-mechanism
-    engine? *building*
+    engine? *tried: on Echo it beats it. 2 cues 0.94 against 0.87, 4 cues 0.41 against
+    0.31, shuffled 0.87 against 0.76, with half the code, 40% of the memory and about 4x
+    the speed, and it does not saturate or pulse. It loses on reach (nothing past one
+    tile; the full engine gets 0.58 at 3 tiles), has no memory past one tick, and forgets
+    everything when idle unless co-activity wiring is switched off without input.
+    docs/results-2026-11-24-minimal-engine.md*
 51. **The suite.** One script scores any engine on every property in `docs/bench.md` and
     writes a scorecard; a second joins them into `docs/scoreboard.md`. *building*
 52. **Slow credit.** [known family] credit in time. A second "fired recently" bit that lasts
@@ -170,3 +183,14 @@ Status words: idea, building, tried (with result), kept, dropped.
     effect from delays, branch bonus, varied neurons, noise, far redraw. The surprise boost
     is on 92-99% of the time, so it is only a doubling of the learning chances.
     docs/results-2026-11-24-ablations-and-rivals.md*
+55. **Grow the minimal engine one piece at a time.** [ours] The minimal engine is now the
+    base. A mechanism from the full engine goes back in only if it earns its place on the
+    test it is for: a far slot on reach, delays on the timing tasks, lose-shift on the lock,
+    slow credit on cartpole. *building: far slot, then delays*
+56. **Wire by co-activity only while something is plugged in.** [ours] alive. Fixes the
+    minimal engine forgetting everything when idle (0.95 to 0.33 becomes 0.95 to 0.96).
+    *tried, works; to become the default*
+57. **Why does credit by noise learn the exact opposite?** [ours] In the table engine the
+    noise-graded rule ends at 0.00 on most seeds, and with its sign reversed it scores 1.00
+    on shuffled echo on every seed. Find the cause, and try the reversed sign in the other
+    two engines. *building*

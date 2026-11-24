@@ -27,7 +27,7 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
     TaskTicker& tt = ticker;
     tt = TaskTicker{};
     bool plugged = false;
-    bool measure = real_blob(driver);
+    bool measure = engine_driver(driver);
     AliveCount alive;
     auto start = std::chrono::steady_clock::now();
 
