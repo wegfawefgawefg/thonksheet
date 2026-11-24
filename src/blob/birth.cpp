@@ -46,6 +46,7 @@ static void sanitize_genome(Genome& g) {
     g.pacemaker_period_max = clamp_int(g.pacemaker_period_max, g.pacemaker_period_min, 256);
     g.far_reach_tiles = clamp_int(g.far_reach_tiles, 1, 64);
     g.sensor_stride = clamp_int(g.sensor_stride, 1, 1 << 20);
+    g.motor_stride = clamp_int(g.motor_stride, 1, 1 << 20);
     g.local_delay_min = clamp_int(g.local_delay_min, 1, HISTORY - 1);
     g.local_delay_max = clamp_int(g.local_delay_max, g.local_delay_min, HISTORY - 1);
     g.fan_in_max = clamp_int(g.fan_in_max, 1, SLOTS * TILE_NEURONS);
@@ -110,8 +111,10 @@ static void set_kinds(Blob& blob) {
                               y >= g.sensor_y && y < g.sensor_y + g.sensor_h;
         bool is_sensor = in_sensor_rect && (x - g.sensor_x) % g.sensor_stride == 0 &&
                          (y - g.sensor_y) % g.sensor_stride == 0;
-        bool is_motor = x >= g.motor_x && x < g.motor_x + g.motor_w && y >= g.motor_y &&
-                        y < g.motor_y + g.motor_h;
+        bool in_motor_rect = x >= g.motor_x && x < g.motor_x + g.motor_w && y >= g.motor_y &&
+                             y < g.motor_y + g.motor_h;
+        bool is_motor = in_motor_rect && (x - g.motor_x) % g.motor_stride == 0 &&
+                        (y - g.motor_y) % g.motor_stride == 0;
         if (is_sensor) {
             blob.sensor[t] |= bit;
         }

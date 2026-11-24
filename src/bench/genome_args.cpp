@@ -41,6 +41,7 @@ static const GenomeField fields[] = {
     {"motor_y", &Genome::motor_y},
     {"motor_w", &Genome::motor_w},
     {"motor_h", &Genome::motor_h},
+    {"motor_stride", &Genome::motor_stride},
     {"fan_in_max", &Genome::fan_in_max},
     {"inhibit_gain", &Genome::inhibit_gain},
     {"branch_threshold", &Genome::branch_threshold},

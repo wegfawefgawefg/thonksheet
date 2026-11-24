@@ -67,13 +67,68 @@ static void set_cue(Blob& blob, const EchoSetup& e, int cue) {
     }
 }
 
+// how well each tile tells cue 0 from cue 1: spikes per neuron during each cue's windows
+struct CueSpread {
+    int64_t* spikes[2] = {};
+    int64_t ticks[2] = {};
+};
+
+static void count_spread(const Blob& blob, CueSpread& spread, int cue) {
+    if (!spread.spikes[0] || cue > 1) {
+        return;
+    }
+    const uint64_t* now = blob.spikes[blob.now];
+    for (int t = 0; t < blob.tile_count; t++) {
+        uint64_t w = now[t];
+        while (w) {
+            spread.spikes[cue][t * TILE_NEURONS + __builtin_ctzll(w)]++;
+            w &= w - 1;
+        }
+    }
+    spread.ticks[cue]++;
+}
+
+// per tile: mean over its neurons of |rate under cue 0 - rate under cue 1|, spikes per
+// 1,000 ticks. S marks a tile with cue lines, M one with motor group neurons.
+static void print_spread(const Blob& blob, const EchoSetup& e, const CueSpread& spread) {
+    std::printf("cue 0 vs cue 1, |rate difference| per tile (spikes per 1000 ticks):\n");
+    for (int ty = 0; ty < blob.tiles_h; ty++) {
+        for (int tx = 0; tx < blob.tiles_w; tx++) {
+            int t = ty * blob.tiles_w + tx;
+            int64_t sum = 0;
+            for (int b = 0; b < TILE_NEURONS; b++) {
+                int n = t * TILE_NEURONS + b;
+                if ((blob.sensor[t] >> b) & 1) {
+                    continue;
+                }
+                int64_t r0 = spread.spikes[0][n] * 1000 / (spread.ticks[0] ? spread.ticks[0] : 1);
+                int64_t r1 = spread.spikes[1][n] * 1000 / (spread.ticks[1] ? spread.ticks[1] : 1);
+                sum += r0 > r1 ? r0 - r1 : r1 - r0;
+            }
+            char mark = ' ';
+            for (int c = 0; c < e.cues; c++) {
+                for (int l = 0; l < e.lines_per_cue; l++) {
+                    mark = e.cue_line[c][l] / TILE_NEURONS == t ? 'S' : mark;
+                }
+                for (int m = 0; m < e.group_size; m++) {
+                    mark = e.group_neuron[c][m] / TILE_NEURONS == t ? 'M' : mark;
+                }
+            }
+            std::printf("%5lld%c", (long long)(sum / TILE_NEURONS), mark);
+        }
+        std::printf("\n");
+    }
+}
+
 // one trial: returns 1 when the right group fired most
-static int run_trial(Blob& blob, const EchoSetup& e, uint64_t* rng, int64_t* motor_spikes) {
+static int run_trial(Blob& blob, const EchoSetup& e, uint64_t* rng, int64_t* motor_spikes,
+                     CueSpread& spread) {
     int cue = (int)rng_below(rng, (uint32_t)e.cues);
     int counts[MAX_CUES] = {};
     set_cue(blob, e, cue);
     for (int i = 0; i < e.window; i++) {
         blob_tick(blob);
+        count_spread(blob, spread, cue);
         for (int g = 0; g < e.cues; g++) {
             for (int m = 0; m < e.group_size; m++) {
                 counts[g] += blob_fired(blob, e.group_neuron[g][m]) ? 1 : 0;
@@ -103,12 +158,13 @@ static int run_trial(Blob& blob, const EchoSetup& e, uint64_t* rng, int64_t* mot
 }
 
 int run_learn_check(int argc, char** argv) {
-    int tiles = (int)arg_int(argc, argv, "--tiles", 4);
+    int tiles = (int)arg_int(argc, argv, "--tiles", 8);
     int64_t trials = arg_int(argc, argv, "--trials", 20000);
     int64_t report = arg_int(argc, argv, "--report", 2000);
     uint64_t seed = (uint64_t)arg_int(argc, argv, "--seed", 1);
     int learn_only = (int)arg_int(argc, argv, "--learn", -1); // -1 runs both
-    int layout = (int)arg_int(argc, argv, "--layout", 1);
+    int layout = (int)arg_int(argc, argv, "--layout", 0);
+    int show_spread = (int)arg_int(argc, argv, "--spread", 0);
     EchoSetup e;
     e.cues = (int)arg_int(argc, argv, "--cues", 2);
     e.lines_per_cue = (int)arg_int(argc, argv, "--lines", 8);
@@ -142,8 +198,27 @@ int run_learn_check(int argc, char** argv) {
         setup_echo(*blob, e, seed);
         uint64_t rng[4];
         rng_seed(rng, seed * 104729 + 3);
+        CueSpread spread;
+        if (show_spread) {
+            spread.spikes[0] = new int64_t[blob->neuron_count]();
+            spread.spikes[1] = new int64_t[blob->neuron_count]();
+        }
         for (int64_t i = 0; i < windows * report; i++) {
-            hits[learn][i / report] += run_trial(*blob, e, rng, &spikes[learn][i / report]);
+            // the spread is measured over the last window only
+            if (show_spread && i == (windows - 1) * report) {
+                for (int n = 0; n < blob->neuron_count; n++) {
+                    spread.spikes[0][n] = spread.spikes[1][n] = 0;
+                }
+                spread.ticks[0] = spread.ticks[1] = 0;
+            }
+            hits[learn][i / report] +=
+                run_trial(*blob, e, rng, &spikes[learn][i / report], spread);
+        }
+        if (show_spread) {
+            std::printf("learning %s, last window\n", learn ? "on" : "off");
+            print_spread(*blob, e, spread);
+            delete[] spread.spikes[0];
+            delete[] spread.spikes[1];
         }
         blob_free(blob);
     }

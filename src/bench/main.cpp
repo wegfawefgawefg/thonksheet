@@ -32,7 +32,7 @@ Genome genome_for_sheet(int tiles) {
     // the genome's input lattice and motor area, shrunk to fit small sheets
     int cells = tiles * 8;
     int sensor_side = cells / 2 < g.sensor_w ? cells / 2 : g.sensor_w;
-    int motor_side = cells / 4 < g.motor_w ? cells / 4 : g.motor_w;
+    int motor_side = cells / 2 < g.motor_w ? cells / 2 : g.motor_w;
     int motor_at = cells - motor_side < g.motor_x ? cells - motor_side : g.motor_x;
     g.sensor_w = g.sensor_h = sensor_side;
     g.motor_x = g.motor_y = motor_at;

@@ -47,6 +47,9 @@ void learn_predict(Blob& blob, int read_now, int boost) {
 
 // good (+1) or bad (-1): every connection whose source and target both fired recently moves
 // one level, by chance. nothing per synapse is stored; "recent" is the OR of the last maps.
+// bad never takes a connection below strength 1: removing is pruning's job. (when bad could
+// remove, the up/down walk had an absorbing floor, and the busiest pairs, the cue paths,
+// were the first to be cut.)
 void learn_reward(Blob& blob, int valence, int boost) {
     const Genome& g = blob.genome;
     const uint64_t* recent = blob.recent;
@@ -71,11 +74,8 @@ void learn_reward(Blob& blob, int valence, int boost) {
                 if (valence > 0) {
                     moved += __builtin_popcountll(level_up(a0, a1, chance));
                 } else {
-                    moved += __builtin_popcountll(level_down(a0, a1, chance));
+                    moved += __builtin_popcountll(level_down(a0, a1, chance & a1));
                 }
-            }
-            if (valence < 0) {
-                blob.fan_in[n] = (uint16_t)count_fan_in(blob, n);
             }
         }
     }

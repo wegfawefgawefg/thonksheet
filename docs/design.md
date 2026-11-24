@@ -29,12 +29,33 @@ hardware runs best, even when that form is a strange version of the biology.
 
 A tile is only a storage unit. Listening areas overlap everywhere; there are no walls.
 
+## Where input lands
+
+Sensor neurons are not a solid block at the edge of the sheet. A solid block is only heard
+along its border, and its inner cells are heard by nobody but other sensor cells, which the
+world overrides. (The owner spotted this in the first diagram.) In a brain, input comes up
+from below and lands all across an area, in among the local circuit.
+
+So sensor cells are a lattice spread through an input area: every `sensor_stride`-th cell
+both ways (2 by default, which is 16 of a tile's 64). Every sensor cell is surrounded by
+ordinary neurons that hear it, and an image keeps its geometry: pixel (px, py) is sensor
+cell (px, py) of the lattice. Nothing in the memory layout changes; it is only which bits
+of the sensor mask are set.
+
+Motor cells are scattered the same way through an output area (`motor_stride`). A motor
+neuron is an ordinary neuron, so a solid block of them would not be unheard, but its inner
+cells would mostly hear other motor cells and be driven by each other. Scattered, each one
+is driven by the ordinary neurons around it, as output cells are in motor cortex. The
+output area touches the input area, so the shortest path from sensing to acting is a few
+ticks. Whether the two areas should overlap (a one-tick reflex arc) is left to the genome.
+
 ## Who a neuron listens to
 
 Every neuron has exactly 11 **slots**. A slot is one source tile.
 
-- Slots 0 to 8 are local: the neuron's own tile and the 8 around it, read from the previous
-  tick. That is 576 possible sources.
+- Slots 0 to 8 are local: the neuron's own tile and the 8 around it. That is 576 possible
+  sources. Each local slot has its own delay, drawn per neuron at birth from a short spread
+  (1 to 4 ticks by default), so one neuron hears different neighbours at different ages.
 - Slots 9 and 10 are far: a tile drawn at birth from a distance distribution with a long
   tail. Most neurons draw none (the slot's masks stay empty). Only excitatory neurons send
   far. A far slot is read from an older spike map: the delay in ticks grows with the
@@ -46,7 +67,13 @@ per possible source: the code `(w1, w0)` counts 0, 1, 2, 3 and stands for streng
 weak synapses and a few strong ones.
 
 Whether a connection excites or inhibits belongs to the sender, as in the brain. One fixed
-word per tile says which of its neurons are inhibitory (about 20%).
+word per tile says which of its neurons are inhibitory (25% by default, see below).
+
+In memory the masks are slot-major inside a tile: word `((tile * 11 + slot) * 64 + bit)`
+(`blob_weight_index`). For one slot the 64 neurons of a tile sit side by side, so the hot
+loop runs across neurons with the source word broadcast, which is what AVX-512 and GPUs
+want. Each slot's delay (`slot_delay`) uses the same index. The 16 spike maps sit in one
+block, so a delay is an offset into it.
 
 ## One tick
 
@@ -69,10 +96,17 @@ potential = potential - (potential >> leak_shift) + drive
 would_fire = potential >= threshold + sector_bias  and  cooldown == 0
 ```
 
-- A sensor neuron fires exactly when the world says so. Its `would_fire` is kept as its
-  prediction.
-- Any other neuron fires if `would_fire`, or by chance (noise).
+- A sensor neuron fires exactly when the world says so, never from noise or by itself.
+  Its prediction is `potential >= threshold + sector_bias`, without the cooldown term (a
+  held line would otherwise never be predicted).
+- A pacemaker fires whenever its cooldown is zero, whatever its potential.
+- Any other neuron fires if `would_fire`, or by chance (noise), and only when rested.
 - On firing: potential resets, cooldown starts. Otherwise the cooldown counts down.
+
+The local slots read the map their delay picks. When the genome's local delays are all
+equal, one word per slot serves the whole tile; otherwise each neuron builds its own word
+with one vector select pass per delay value. That costs about 2x in tick speed (measured,
+see `docs/notes-core.md`).
 
 The new spike map goes into the ring. Then regulation and learning run.
 
@@ -93,10 +127,14 @@ Each one: what the brain does, then what we do.
    memory layout: neighbours in space are neighbours in memory.
 6. **Long fibers.** A minority of neurons reach far. Two far slots per neuron, drawn from a
    distribution, overproduced, pruned by use, redrawn slowly.
-7. **Delays.** Signals take time to arrive, which lets a brain sense order and distance. Far
-   slots read an older spike map; older by more the farther the source. Local stays at one
-   tick. (A second set of local masks reading two or three ticks back is the next step if
-   local order detection turns out weak.)
+7. **Delays.** Signals take time to arrive, which lets a brain sense order and distance.
+   Everything in the world is some pattern in time, so every slot has a delay, not only the
+   far ones: one small number per neuron per slot, saying which map of the ring to read.
+   Local delays are drawn short and mixed; far delays grow with distance. A neuron that
+   hears tile A two ticks late and tile B one tick late fires for "A then B". No extra
+   masks; the cost is reading 9 words from the ring per neuron instead of per tile, and the
+   ring is in L1. A genome with every delay at 1 is still valid, so whether delays matter is
+   something we measure, not guess.
 8. **Dendrite branches.** Inputs that land together on one branch count for more. A slot is
    a branch: sources from one tile are physically close to each other. If a slot's excitation
    passes a small threshold it gets a bonus. No extra popcounts.
@@ -107,26 +145,40 @@ Each one: what the brain does, then what we do.
 11. **Varied neurons.** Threshold, leak, cooldown length and wiring density are drawn per
     neuron from spreads. Identical neurons behave identically, which is useless.
 12. **Pacemakers.** A neuron born with threshold zero and cooldown k fires every k+1 ticks.
-    A few of these give the blob clocks of mixed periods and a floor under its activity. No
-    extra mechanism; it falls out of the spread.
+    A few of these give the blob clocks of mixed periods and a floor under its activity.
+    In code they are a bit word per tile: a pacemaker fires whenever rested, ignores the
+    sector bias, keeps its threshold (no per-neuron regulation), and draws its period from
+    its own range (4 to 16 ticks), because the ordinary cooldown spread would make 2-tick
+    clocks firing at 50%.
 13. **Noise.** Neurons fire spontaneously now and then. One sparse random word per tile per
-    tick. This is the exploration.
+    tick. This is the exploration. For chances below 2^-6 a sparse word is one draw that
+    gates the word with chance 2^-(shift-6) and then sets one random bit: the expected rate
+    is exact, at most one bit per word is set, and it costs one draw instead of `shift`.
 14. **Sector regulation (fast).** Inhibition and gain are local. Each sector counts its own
     spikes (popcount of its words, smoothed) and moves a bias on its neurons' thresholds up
     or down toward its target. Sectors can have different targets: a busy sector has finer
-    time resolution.
+    time resolution. In code: one step of bias per tick when the smoothed count is more
+    than an eighth off target. Sensor neurons do not count toward a sector's target.
 15. **Per-neuron regulation (slow).** A neuron that fires a lot gets harder to fire. No rate
     counter: when a neuron fires, raise its threshold with a small chance; every tick, lower
-    it with a much smaller chance. The balance point is the target rate.
+    it with a much smaller chance. The balance point is the target rate. Sensors and
+    pacemakers are exempt.
 16. **Predicting your own input.** Sensor neurons also get input from inside the blob. Each
     tick `would_fire` is the blob's guess and the world's bit is the truth. Connections that
     guessed right get stronger, ones that guessed wrong get weaker. This needs no reward and
-    never stops. `popcount(predicted ^ actual)` per sector is **surprise**.
+    never stops. `popcount(predicted ^ actual)` per sector is **surprise**. In code it acts
+    only on wrong guesses, on attached lines: a miss moves the active excitatory sources of
+    that sensor up a level and the active inhibitory ones down; a false alarm does the
+    opposite. Only existing connections move (growth makes new ones). Right guesses change
+    nothing, so a line the blob already predicts cannot saturate its inputs.
 17. **Good and bad.** Reward is not a number handed in. Good and bad are ordinary sensor
     lines that are also wired to a broadcast: for a few ticks after one fires, connections
     between neurons that were both recently active move up (good) or down (bad), by chance.
     Nothing is stored per synapse for this. Each neuron already has a "fired recently" bit
-    (the OR of the last few spike maps).
+    (the OR of the last few spike maps). Bad never takes a connection below strength 1:
+    removing is pruning's job. When bad could remove, the up/down walk had a floor that
+    swallowed connections, and the busiest pairs (the paths from a cue) were cut first;
+    a run showed cue information near the sensors falling about 5x under learning.
 18. **Surprise as a second broadcast.** High surprise raises the chance of change for a
     while. Later it can also count as mildly good, which is curiosity.
 19. **Growth with feature locality.** When a neuron fires, its candidates for a new
@@ -134,7 +186,10 @@ Each one: what the brain does, then what we do.
     are not yet wired in, and are nearby. One is picked and starts at strength 1. Wiring
     follows correlated activity with no coordinate maths.
 20. **Pruning.** When a neuron fires, weak connections from sources that were not active
-    lose a level by chance; at zero they are gone. Strong connections are exempt, so what was
+    lose a level by chance; at zero they are gone. In code: a firing neuron is picked with
+    chance 2^-`prune_shift`, then each of its idle weak connections goes with chance
+    2^-`prune_bit_shift`, so the loss rate grows with the number of idle weak connections
+    and balances growth instead of draining every neuron. Strong connections are exempt, so what was
     learned is not overwritten by churn. A cap on connections per neuron stops runaway
     growth.
 21. **Quiet phases.** Sleep: input cut, noise up, every weight has a small chance to lose a
@@ -151,7 +206,8 @@ idle safely. This is an open design problem; the starting rules are:
 - **Silence is not evidence.** Prediction learning only runs on sensor lines a task has
   attached. An unplugged line being quiet must not teach the blob that the world is empty.
 - **Change needs a reason.** Strengthening is gated by good, bad or surprise. With no input
-  there is none of the three, so nothing is strengthened on noise alone.
+  there is none of the three, so nothing is strengthened on noise alone. (Growth still adds
+  new connections at strength 1 while idle; it is churn, not strengthening.)
 - **Churn only touches the weak.** Growth and pruning keep going at a low rate, but strong
   connections are exempt, so idling can only tidy weak wiring.
 - **Idle is the quiet phase.** No attached input for a while puts the blob in its sleep
@@ -168,7 +224,8 @@ end up doing. We look for them in the viewer; we do not build them.
 Everything above has numbers: spreads, chances (as shifts), targets, the far distance
 distribution, sector size, sensor and motor regions. Those numbers are the `Genome`, about 50
 to 200 integers. `blob_birth(genome, seed)` builds a blob from it. The blob is large; the
-genome is small. Later a search over genomes, scored on how much a blob improves during its
+genome is small. `learning_on = 0` freezes every weight, the wiring and the far slots while
+regulation keeps running: the learning-off baseline. Later a search over genomes, scored on how much a blob improves during its
 life on tasks it has not seen, looks for a blob that learns in general.
 
 ## Why this shape suits the machine

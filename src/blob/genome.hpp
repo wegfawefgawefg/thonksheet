@@ -8,15 +8,16 @@ struct Genome {
     int tiles_w = 8;
     int tiles_h = 8;
 
-    // sensor and motor regions, in cells. sensor neurons are all excitatory. inside the
-    // sensor rect only every sensor_stride-th cell both ways is a sensor (a lattice), so
-    // every sensor cell sits among ordinary neurons that hear it.
+    // sensor and motor regions, in cells. inside each rect only every stride-th cell both
+    // ways is a sensor (or motor) neuron, a lattice, so each sits among ordinary neurons.
+    // sensor neurons are all excitatory; motor neurons are ordinary in every other way.
     int sensor_x = 0, sensor_y = 0, sensor_w = 32, sensor_h = 32;
     int sensor_stride = 2;
-    int motor_x = 40, motor_y = 40, motor_w = 16, motor_h = 16;
+    int motor_x = 32, motor_y = 32, motor_w = 32, motor_h = 32;
+    int motor_stride = 2;
 
     // kinds and spreads (each neuron draws its own value inside the range)
-    int inhibitory_percent = 20;
+    int inhibitory_percent = 25;
     int threshold_min = 4, threshold_max = 12;
     int leak_shift_min = 1, leak_shift_max = 4;
     int cooldown_min = 1, cooldown_max = 4;
@@ -35,7 +36,7 @@ struct Genome {
     int fan_in_max = 96;         // cap on connections per neuron
 
     // integration
-    int inhibit_gain = 2;
+    int inhibit_gain = 5;
     int branch_threshold = 3; // excitation in one slot that earns the bonus
     int branch_bonus = 2;
     int noise_shift = 10; // spontaneous firing chance per neuron per tick
@@ -53,7 +54,7 @@ struct Genome {
     int learning_on = 1; // 0: no weight, wiring or far-redraw change at all (regulation runs)
     int recent_ticks = 6;        // how long "fired recently" lasts (1..8)
     int predict_shift = 3;       // sensor prediction: strengthen right, weaken wrong
-    int reward_shift = 2;        // good/bad broadcast acting on recently co-active pairs
+    int reward_shift = 4;        // good/bad broadcast acting on recently co-active pairs
     int reward_ticks = 4;        // how long one good/bad event keeps acting
     int grow_shift = 5;          // on firing, chance to grow one new connection
     int prune_shift = 6;         // on firing, chance to weaken idle weak connections
