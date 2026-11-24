@@ -189,10 +189,15 @@ Status words: idea, building, tried (with result), kept, dropped.
 55. **Grow the minimal engine one piece at a time.** [ours] The minimal engine is now the
     base. A mechanism from the full engine goes back in only if it earns its place on the
     test it is for: a far slot on reach, delays on the timing tasks, lose-shift on the lock,
-    slow credit on cartpole. *building: far slot, then delays*
+    slow credit on cartpole. *tried: neither far slots nor delays earned a place. Both do
+    their mechanical job: with far slots the cue is readable at the buttons 3 tiles away,
+    and with delays the cue's trace lasts through the gap of delayed echo. The score does
+    not move (0.37 at 3 tiles; 0.23 on delayed echo). Delays do help when the ask comes
+    right after the cue (+0.22) and cost Echo 0.20. The reward rule cannot use a thin,
+    spread-out signal. docs/results-2026-11-24-minimal-grow.md*
 56. **Wire by co-activity only while something is plugged in.** [ours] alive. Fixes the
     minimal engine forgetting everything when idle (0.95 to 0.33 becomes 0.95 to 0.96).
-    *tried, works; to become the default*
+    *tried, works; now the default*
 57. **Why does credit by noise learn the exact opposite?** [ours] In the table engine the
     noise-graded rule ends at 0.00 on most seeds, and with its sign reversed it scores 1.00
     on shuffled echo on every seed. Find the cause, and try the reversed sign in the other
@@ -203,3 +208,10 @@ Status words: idea, building, tried (with result), kept, dropped.
     that fired loses its active inputs and the other gains them); a budget on the readout;
     more motor cells per button, spread through the sheet so some sit where the feature is;
     pooling cells. *building*
+59. **Evidence before commitment.** [known family, new on this sheet] credit. A connection
+    is one bit, so one lucky or unlucky reward flips it. Give each possible source a small
+    hidden counter (4 to 8 bits): good adds for sources that were active before the neuron
+    fired, bad subtracts; a connection exists while its counter is in the top of the
+    neuron's budget. Weak evidence then adds up over many tries before anything is wired.
+    Why: table neurons needed 4-bit counters to learn four cues (2-bit gave 0.56), and
+    every probe says the signal is present but thin. *building, in the minimal engine*

@@ -48,11 +48,21 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
    time features they are most of the story: gap length reads 0.43 with all delays at 1 and
    4.0 with delays of 4 to 8 ticks; order goes 1.5 to 5.4.
 
+10. **Far links are what give reach.** [likely] The full engine learns a little with cue
+    and button three tiles apart (0.58); with its far links removed it does not (0.45).
+11. **More bits of evidence per thing learned helps.** [hint] Table neurons needed 4-bit
+    counters to learn four cues (2-bit gave 0.56 on two). The popcount engines, with one or
+    two bits per connection, hold less. Not yet tested head to head.
+
 ## Walls
 
-- **Reading.** An ideal reader gets the answer to order, exclusive-or and gap from the tile
-  next to the input; our readout rule gets chance. This is probably the same wall as reach
-  (the cue is readable at three tiles and unlearnable at two).
+- **Reading a thin signal. This is the main wall.** [solid: four independent results] An
+  ideal reader gets order, exclusive-or and gap from the tile next to the input, and which
+  cue is on from three tiles away; our rules get chance. Giving the minimal engine far
+  slots puts the cue at the buttons three tiles away, and giving it delays keeps the cue's
+  trace alive through a gap, and in both cases the score does not move. The information
+  arrives, spread thinly over many neurons, and a rule that flips one-bit connections on
+  single rewards cannot add it up.
 
 - **Reach.** Learning works across one tile, sometimes two (table neurons), not three. The
   cue's identity is still readable at three or four tiles, so past one tile the failure is

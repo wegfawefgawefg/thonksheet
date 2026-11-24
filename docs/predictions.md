@@ -82,6 +82,11 @@ inner neurons measurably better for a task than unsupervised wiring already make
 14. **Delays let it learn delayed echo.** With slot delays of 1 to 8 ticks the minimal engine
     beats its twin on delayed echo by more than 0.15. (35%) More likely delays alone are not
     enough and it also needs credit that reaches back in time.
+    - *Scored: 13 wrong (0.372 with a far slot against 0.370 without). 14 wrong on delayed
+      echo as the suite defines it (0.23), right only when the ask follows the cue at once
+      (0.63 against 0.37). The guess that delays alone would not be enough was right, but
+      for a different reason than I gave: the trace is inside the credit window, and the
+      rule still cannot use it.*
 
 ## 2026-11-24, before chasing the reversed sign
 
@@ -97,4 +102,12 @@ inner neurons measurably better for a task than unsupervised wiring already make
     sheet** to above 0.75, with the motor cells within a tile of the cue. (55%)
 17. **Spreading a button's motor cells through the sheet matters more than the rule.**
     (45%)
+
+## 2026-11-24, before evidence counters
+
+18. **Hidden evidence counters give the minimal engine reach.** With far slots on, Echo at 3
+    tiles goes from 0.37 to above 0.6. (50%)
+19. **They also raise how much it holds:** echo with 4 cues from 0.41 to above 0.6, and
+    something above chance at 8 cues. (45%)
+20. **They let it use the delay trace:** delayed echo above 0.6 with delays on. (35%)
 
