@@ -66,3 +66,5 @@ A request that becomes work also gets a line in `docs/plan.md`.
 - The viewer was first modelled on foolswud. Owner: "foolswud is a tiny little thing. i would
   really rather we had focused on mans in my house something i put tons of work into" ->
   Mans In My House is the reference for structure, renderer and libraries. Never foolswud.
+- "would motor neurons also be scattered around?" -> yes: motor cells are a lattice through an
+  output area, like the sensors (`motor_stride`).

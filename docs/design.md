@@ -40,8 +40,14 @@ So sensor cells are a lattice spread through an input area: every `sensor_stride
 both ways (2 by default, which is 16 of a tile's 64). Every sensor cell is surrounded by
 ordinary neurons that hear it, and an image keeps its geometry: pixel (px, py) is sensor
 cell (px, py) of the lattice. Nothing in the memory layout changes; it is only which bits
-of the sensor mask are set. The motor area sits a tile or two from the input area, so the
-shortest path from sensing to acting is a few ticks.
+of the sensor mask are set.
+
+Motor cells are scattered the same way through an output area (`motor_stride`). A motor
+neuron is an ordinary neuron, so a solid block of them would not be unheard, but its inner
+cells would mostly hear other motor cells and be driven by each other. Scattered, each one
+is driven by the ordinary neurons around it, as output cells are in motor cortex. The
+output area touches the input area, so the shortest path from sensing to acting is a few
+ticks. Whether the two areas should overlap (a one-tick reflex arc) is left to the genome.
 
 ## Who a neuron listens to
 
