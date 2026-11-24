@@ -7,7 +7,7 @@
 #   scripts/table.sh seeds echo 5 12 --k 4 --t.inputs 6
 #   ENGINE=blob scripts/table.sh seeds echo 5 12     the same with the popcount blob
 #   scripts/table.sh ladder                   experiment 1: echo k=2,4,8, shuffled, delayed,
-#                                             catch, cartpole on seeds 5-12, both engines
+#                                             catch, cartpole (two rewards), seeds 5-12, both engines
 #   scripts/table.sh distance                 experiment 2: cue and buttons 1,2,3,5 tiles apart
 #   scripts/table.sh capacity                 experiment 3: echo k = 2, 4, 8, 16
 #   scripts/table.sh saturate                 experiment 4: counters and firing rates at the
@@ -90,6 +90,8 @@ ladder)
     both delayed delayed-echo
     both catch catch --sensor-side 2 --motor-side 2
     both cartpole cartpole --sensor-side 2 --motor-side 2
+    both cartpole_lean cartpole --sensor-side 2 --motor-side 2 --cart-reward lean \
+        --number-code place
     ;;
 distance)
     for d in 1 2 3 5; do
