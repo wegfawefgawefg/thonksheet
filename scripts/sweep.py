@@ -36,6 +36,7 @@ LEARNING_ONLY = {
     "flip_average_shift", "noise_learn_shift", "noise_trace_ticks", "reward_average_shift",
     "readout_shift", "readout_trace_ticks", "readout_counts", "readout_know_button",
     "readout_good", "readout_new", "readout_budget", "readout_far",
+    "readout_center", "readout_evidence", "readout_evidence_bits", "readout_evidence_strong",
 }
 
 

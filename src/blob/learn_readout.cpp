@@ -12,6 +12,10 @@
 // excitatory sources and weakens inhibitory ones, losing the reverse. every change is one
 // level, by chance, as elsewhere.
 //
+// readout_center: the ridge reader centres its inputs, and so does this. a source moves by
+// (its spikes this window) - (its spikes in the last rewarded window), tick by tick, which
+// is zero on average, so the activity every trial shares no longer swamps the update.
+//
 // which cells are "pressed" and "other": with readout_know_button the world marks them
 // (motor_attached, motor_acted: an efference copy of the action taken, one bit per cell).
 // without it a motor cell knows only itself: "pressed" is every motor cell that fired in the
@@ -80,6 +84,9 @@ static void open_far_slots(Blob& blob, int n) {
 static uint32_t move_inputs(Blob& blob, int n, int sign, const uint64_t* trace, int ages) {
     const Genome& g = blob.genome;
     int reps = g.readout_counts ? ages : 1;
+    bool center = g.readout_center && g.readout_counts && blob.readout_last;
+    int64_t stride = (int64_t)blob.tile_count + 1;
+    bool evidence = g.readout_evidence != 0;
     uint64_t self = 1ull << (n % TILE_NEURONS);
     uint32_t moved = 0;
     int born = 0, gone = 0;
@@ -96,13 +103,25 @@ static uint32_t move_inputs(Blob& blob, int n, int sign, const uint64_t* trace, 
         uint64_t& a1 = blob.w1[blob_weight_index(n, k)];
         for (int r = 0; r < reps; r++) {
             uint64_t active = g.readout_counts ? map_at(blob, 1 + r)[src] : trace[src];
-            uint64_t chance = active & allowed & sparse_word(blob.rng, g.readout_shift);
+            // centred: against the same tick of the last rewarded window. a source that fired
+            // now and not then moves with the sign, one that fired then and not now against
+            // it, one that did the same both times not at all
+            uint64_t last = center ? blob.readout_last[(int64_t)r * stride + src] : 0;
+            uint64_t chance = (active ^ last) & allowed & sparse_word(blob.rng, g.readout_shift);
             if (!chance) {
                 continue;
             }
+            uint64_t with = chance & active, against = chance & last;
             // excitatory sources go the way of the sign, inhibitory ones the other way
-            uint64_t up = sign > 0 ? chance & ~kind : chance & kind;
-            uint64_t down = sign > 0 ? chance & kind : chance & ~kind;
+            uint64_t more = (with & ~kind) | (against & kind);
+            uint64_t less = (with & kind) | (against & ~kind);
+            uint64_t up = sign > 0 ? more : less;
+            uint64_t down = sign > 0 ? less : more;
+            if (evidence) {
+                evidence_add(blob, n, k, up, down);
+                moved += __builtin_popcountll(up | down);
+                continue;
+            }
             uint64_t had = connected_bits(a0, a1);
             if (!g.readout_new) {
                 up &= had;
@@ -113,6 +132,10 @@ static uint32_t move_inputs(Blob& blob, int n, int sign, const uint64_t* trace, 
             born += __builtin_popcountll(now & ~had);
             gone += __builtin_popcountll(had & ~now);
         }
+    }
+    if (evidence) {
+        evidence_rewire(blob, n);
+        return moved;
     }
     // the budget: the count of connections stays where it was
     if (g.readout_budget) {
@@ -125,12 +148,27 @@ static uint32_t move_inputs(Blob& blob, int n, int sign, const uint64_t* trace, 
     return moved;
 }
 
+// keep this window's maps as the next update's reference (readout_center)
+static void keep_window(Blob& blob, int ages) {
+    int64_t stride = (int64_t)blob.tile_count + 1;
+    for (int r = 0; r < ages; r++) {
+        const uint64_t* map = map_at(blob, 1 + r);
+        for (int64_t t = 0; t < stride; t++) {
+            blob.readout_last[(int64_t)r * stride + t] = map[t];
+        }
+    }
+}
+
 void learn_readout(Blob& blob, int valence) {
     const Genome& g = blob.genome;
     if (valence == 0) {
         return;
     }
     if (valence > 0 && !g.readout_good) {
+        if (g.readout_center && blob.readout_last) {
+            int ages = g.readout_trace_ticks;
+            keep_window(blob, ages < 1 ? 1 : (ages > HISTORY - 1 ? HISTORY - 1 : ages));
+        }
         return;
     }
     // what was active: the OR of the window's maps
@@ -169,6 +207,9 @@ void learn_readout(Blob& blob, int valence) {
             other &= other - 1;
             (valence > 0 ? down : up) += move_inputs(blob, n, -valence, trace, ages);
         }
+    }
+    if (g.readout_center && blob.readout_last) {
+        keep_window(blob, ages);
     }
     blob.stats.strengthened += up;
     blob.stats.weakened += down;

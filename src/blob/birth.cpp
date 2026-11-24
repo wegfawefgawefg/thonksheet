@@ -269,6 +269,7 @@ Blob* blob_birth(const Genome& genome, uint64_t seed) {
     blob->active_trace = (uint64_t*)alloc_lines(map_bytes);
     blob->motor_attached = (uint64_t*)alloc_lines(map_bytes);
     blob->motor_acted = (uint64_t*)alloc_lines(map_bytes);
+    blob->readout_last = (uint64_t*)alloc_lines(map_bytes * HISTORY);
     blob->inhibitory = (uint64_t*)alloc_lines(map_bytes);
     blob->sensor = (uint64_t*)alloc_lines(map_bytes);
     blob->motor = (uint64_t*)alloc_lines(map_bytes);
@@ -308,7 +309,8 @@ void blob_free(Blob* blob) {
         blob->cooldown,    blob->cooldown_len,    blob->fan_in,          blob->tile_sector,
         blob->sector_bias, blob->sector_activity, blob->sector_surprise, blob->sector_target,
         blob->noise_ring,  blob->noise_trace,     blob->active_trace,
-        blob->motor_attached, blob->motor_acted,
+        blob->motor_attached, blob->motor_acted, blob->readout_last,
+        blob->readout_row,    blob->readout_evidence, blob->readout_keep,
     };
     for (void* p : arrays) {
         std::free(p);

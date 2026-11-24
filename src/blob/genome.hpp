@@ -105,6 +105,12 @@ struct Genome {
     int readout_new = 1;          // 1: gaining may wire a source in that was not connected
     int readout_budget = 0;       // 1: a motor cell keeps its count of connections; a new
                                   // one costs an idle one, a lost one is replaced by an idle one
+    int readout_center = 0;       // 1: a source moves by its spikes now less those in the last
+                                  // rewarded window (needs readout_counts)
+    int readout_evidence = 0;        // 1: the rule moves hidden counters per source; a cell
+                                     // wires the top of its budget (learn_evidence.cpp)
+    int readout_evidence_bits = 6;   // counter size, signed (2..8)
+    int readout_evidence_strong = 1; // wired sources at strength 4 (0: at 1)
     int readout_far = 0;          // 1: a marked motor cell with an empty far slot gets one drawn,
                                   // so it hears two more tiles than its 9 local ones
 };

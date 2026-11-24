@@ -33,6 +33,9 @@ void learn_noise(Blob& blob, int valence);
 
 // learn modes 5, 6: the error rule at the motor cells, on the reward just broadcast
 void learn_readout(Blob& blob, int valence);
+// readout_evidence: hidden counters per motor-cell source (learn_evidence.cpp)
+void evidence_add(Blob& blob, int n, int slot, uint64_t up, uint64_t down);
+void evidence_rewire(Blob& blob, int n);
 
 // connections a neuron has, over all slots
 int count_fan_in(const Blob& blob, int neuron);

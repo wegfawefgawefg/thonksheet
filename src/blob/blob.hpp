@@ -120,6 +120,13 @@ struct Blob {
     // that do not have them; tile_count + 1 words each.
     uint64_t* motor_attached = nullptr;
     uint64_t* motor_acted = nullptr;
+    // readout_center: the maps of the last rewarded window, HISTORY x (tile_count + 1)
+    uint64_t* readout_last = nullptr;
+    // readout_evidence: per motor cell (row by neuron, -1 if not motor) a signed counter per
+    // possible source, SLOTS x 64, and the count of connections it keeps. made on first use
+    int32_t* readout_row = nullptr;
+    int8_t* readout_evidence = nullptr;
+    uint16_t* readout_keep = nullptr;
 };
 
 // birth and death
