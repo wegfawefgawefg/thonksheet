@@ -36,6 +36,7 @@ static void sanitize(MinimalGenome& mg) {
     mg.far_reach = clamp_int(mg.far_reach, 1, 64);
     mg.delay_max = clamp_int(mg.delay_max, 1, MIN_DELAY_MAX);
     mg.far_delay_per_tile = clamp_int(mg.far_delay_per_tile, 0, 16);
+    mg.delay_percent = clamp_int(mg.delay_percent, 0, 100);
     // the oldest map learning reads is credit_ticks - 1 + delay_max ticks back
     mg.credit_ticks = clamp_int(mg.credit_ticks, 1, MIN_HISTORY - 1 - mg.delay_max);
     mg.avg_shift = clamp_int(mg.avg_shift, 0, 16);
@@ -126,7 +127,8 @@ static void set_far_and_delays(MinimalBlob& m) {
             for (int k = 0; k < MIN_SLOTS; k++) {
                 int d1 = 1 + (int)rng_below(m.rng, (uint32_t)mg.delay_max);
                 int d2 = 1 + (int)rng_below(m.rng, (uint32_t)mg.delay_max);
-                m.delay[min_index(m, n, k)] = (uint8_t)(d1 < d2 ? d1 : d2);
+                bool drawn = (int)rng_below(m.rng, 100) < mg.delay_percent;
+                m.delay[min_index(m, n, k)] = (uint8_t)(drawn ? (d1 < d2 ? d1 : d2) : 1);
             }
         }
         for (int j = 0; j < far_slots; j++) {
@@ -287,6 +289,7 @@ static const MinimalField fields[] = {
     {"far_reach", &MinimalGenome::far_reach},
     {"delay_max", &MinimalGenome::delay_max},
     {"far_delay_per_tile", &MinimalGenome::far_delay_per_tile},
+    {"delay_percent", &MinimalGenome::delay_percent},
 };
 
 void apply_minimal_args(int argc, char** argv, MinimalGenome& mg) {

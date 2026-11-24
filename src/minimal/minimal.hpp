@@ -58,6 +58,7 @@ struct MinimalGenome {
     int far_reach = 3;          // typical far distance in tiles (2 and up, long tail)
     int delay_max = 1;          // slot delays drawn in 1..this; 1 is the one-tick reading
     int far_delay_per_tile = 1; // far slot delay: distance x this, capped at delay_max
+    int delay_percent = 100;    // share of local slots that draw a delay (the rest read 1 back)
 };
 
 struct MinimalStats {
