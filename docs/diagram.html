@@ -45,7 +45,7 @@ svg .halo { paint-order: stroke; stroke: var(--panel); stroke-width: 5px; stroke
 .cell { opacity: .3; }
 .cell.lit { opacity: 1; }
 .k-exc { fill: var(--exc); } .k-inh { fill: var(--inh); } .k-sen { fill: var(--sen); } .k-mot { fill: var(--mot); }
-.l-exc { stroke: var(--exc); } .l-inh { stroke: var(--inh); } .l-far { stroke: var(--far); }
+.l-exc { stroke: var(--exc); } .l-inh { stroke: var(--inh); } .l-far { stroke: var(--far); } .l-sen { stroke: var(--sen); }
 .t-exc { fill: var(--exc); } .t-inh { fill: var(--inh); } .t-far { fill: var(--far); }
 .legend { display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; font-size: .9rem; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: .45rem; }
@@ -76,7 +76,7 @@ ul { margin: 0; padding-left: 1.2rem; max-width: 70ch; display: flex; flex-direc
 
 <header>
   <h1>Blob Anatomy</h1>
-  <p>A brain made of bits that never stops ticking. This page shows what is in it, which brain mechanism each part stands for, and why each part is shaped the way an ordinary computer likes. Written 2026-11-24, before the first build.</p>
+  <p>Thonksheet is a brain made of bits that never stops ticking. This page shows what is in it, which brain mechanism each part stands for, and why each part is shaped the way an ordinary computer likes. Written 2026-11-24, before the first build.</p>
 </header>
 
 <section>
@@ -94,7 +94,7 @@ ul { margin: 0; padding-left: 1.2rem; max-width: 70ch; display: flex; flex-direc
       <span><i class="bar" style="border-top-width:3px;border-color:var(--exc)"></i>strong connection (4 or 5)</span>
       <span><i class="bar" style="border-top-width:2px;border-top-style:dashed;border-color:var(--far)"></i>far link</span>
     </div>
-    <figcaption>Every neuron has the same 11 slots: 9 local tiles and 2 far tiles. Bright cells fired this tick. A line's color is the sender's kind, because whether a signal excites or inhibits belongs to the sender. A far link is read from an older tick, later by one tick per tile of distance, which is how the blob can sense order and distance. Tiles are only storage: the listening areas of neighbouring neurons overlap, so there are no walls.</figcaption>
+    <figcaption>Every neuron has the same 11 slots: 9 local tiles and 2 far tiles. Bright cells fired this tick. A line's color is the sender's kind, because whether a signal excites or inhibits belongs to the sender. Sensor cells are spread through the input area, every second cell, so each one sits among ordinary neurons that hear it; a solid block of sensors would only be heard along its edge. Every connection has its own delay: 1 to 4 ticks nearby, and one more tick per tile of distance for far links. That is how the blob can sense order and distance. Tiles are only storage: the listening areas of neighbouring neurons overlap, so there are no walls.</figcaption>
   </figure>
 </section>
 
@@ -106,7 +106,7 @@ ul { margin: 0; padding-left: 1.2rem; max-width: 70ch; display: flex; flex-direc
     </div>
     <figcaption id="slotcalc">One slot is one source tile.</figcaption>
   </figure>
-  <pre><span class="c">// per slot: s = the source tile's spike word, inh = its inhibitory word</span>
+  <pre><span class="c">// per slot: s = the source tile's spike word as it was "delay" ticks ago, inh = its inhibitory word</span>
 e = s &amp; ~inh                         i = s &amp; inh
 excite  = popcount(e &amp; w0) + 4 * popcount(e &amp; w1)
 inhibit = popcount(i &amp; w0) + 4 * popcount(i &amp; w1)
@@ -177,7 +177,7 @@ would_fire = potential &gt;= threshold + sector_bias &amp;&amp; cooldown == 0</p
         <text x="489" y="141" text-anchor="middle" font-size="11" class="halo">next tick, nonstop: no episodes, no reset</text>
         <g id="ring"></g>
         <text x="296" y="212" font-size="10.5" class="mut">the ring: the last 16 spike maps (8 KB for 4,096 neurons)</text>
-        <text x="296" y="172" font-size="10.5" class="t-exc">local slots read 1 tick back</text>
+        <text x="296" y="172" font-size="10.5" class="t-exc">local slots read 1 to 4 ticks back</text>
         <text x="684" y="172" font-size="10.5" text-anchor="end" class="t-far">far slots read 2 to 15 ticks back</text>
       </svg>
     </div>
@@ -219,12 +219,13 @@ on firing, by chance:   weaken  conn &amp; weak &amp; ~recent &amp; chance   <sp
         <tr><td>Cooldown</td><td>A neuron cannot fire again at once.</td><td>A small counter, its length differs per neuron.</td><td>1 byte</td></tr>
         <tr><td>Excite or inhibit</td><td>A neuron is one or the other, for all its outputs.</td><td>One fixed bit per neuron. Inhibitory may target inhibitory, which opens a path.</td><td>one word per tile, two ANDs per slot</td></tr>
         <tr><td>Dendrite branches</td><td>Inputs landing together on one branch count for more.</td><td>A slot is a branch. Past a small threshold its excitation gets a bonus.</td><td>one compare per slot, no extra popcounts</td></tr>
-        <tr><td>Delays</td><td>Signals take time, which gives order and distance.</td><td>Far slots read an older spike map, older with distance.</td><td>a ring of 16 maps</td></tr>
+        <tr><td>Delays</td><td>Signals take time, which gives order and distance.</td><td>Every slot has its own delay: short and mixed nearby, longer with distance.</td><td>one small number per slot; reads come from a ring of 16 maps in L1</td></tr>
         <tr><td>Noise</td><td>Neurons fire spontaneously.</td><td>A sparse random word per tile. This is the exploration.</td><td>a few ANDs of random words</td></tr>
         <tr><td>Pacemakers</td><td>Cells that tick by themselves.</td><td>Threshold 0 and cooldown k fires every k+1 ticks.</td><td>nothing; it falls out of the spread</td></tr>
 
         <tr class="group"><td colspan="4">Wiring</td></tr>
         <tr><td>Local wiring</td><td>Most connections are short.</td><td>9 local slots: own tile and the 8 around it.</td><td>neighbours in space are neighbours in memory</td></tr>
+        <tr><td>Input lands everywhere</td><td>Input comes up from below and lands all across an area.</td><td>Sensor cells are a lattice through the input area, every second cell.</td><td>only which mask bits are set</td></tr>
         <tr><td>Long fibers</td><td>A minority of neurons reach far.</td><td>2 far slots, drawn from a distance distribution, pruned by use, redrawn slowly.</td><td>one small tile number per slot</td></tr>
         <tr><td>Lopsided weights</td><td>Few sizes; many weak, a few strong.</td><td>Two bit planes: strengths 0, 1, 4, 5.</td><td>2 bits per possible source</td></tr>
         <tr><td>Varied neurons</td><td>No two are alike.</td><td>Threshold, leak, cooldown and density are drawn per neuron.</td><td>free at run time</td></tr>
@@ -304,46 +305,48 @@ on firing, by chance:   weaken  conn &amp; weak &amp; ~recent &amp; chance   <sp
   function key(tx, ty, cx, cy) { return tx + ',' + ty + ',' + cx + ',' + cy; }
   var gCells = el(svg, 'g', {});
   for (var ty = 0; ty < TH; ty++) for (var tx = 0; tx < TW; tx++) for (var cy = 0; cy < 8; cy++) for (var cx = 0; cx < 8; cx++) {
-    var kind = tx < 2 ? 'sen' : (tx === 7 && ty >= 2) ? 'mot' : (rand() < 0.2 ? 'inh' : 'exc');
+    var kind = (tx < 4 && cx % 2 === 0 && cy % 2 === 0) ? 'sen' : (tx === 7 && ty >= 2) ? 'mot' : (rand() < 0.2 ? 'inh' : 'exc');
     var lit = rand() < 0.045;
     var r = el(gCells, 'rect', { x: X0 + tx * P + cx * C, y: Y0 + ty * P + cy * C, width: 9.5, height: 9.5, rx: 1.5, 'class': 'cell k-' + kind + (lit ? ' lit' : '') });
     kinds[key(tx, ty, cx, cy)] = kind; cells[key(tx, ty, cx, cy)] = r;
   }
   // a sector, a tile, the listening area
   el(svg, 'rect', { x: X0 + 6 * P - 2, y: Y0 - 2, width: 2 * P, height: 2 * P, fill: 'none', stroke: 'currentColor', 'stroke-opacity': .55, 'stroke-dasharray': '5 4' });
-  el(svg, 'rect', { x: X0 + 2 * P - 2, y: Y0 + 3 * P - 2, width: P, height: P, fill: 'none', stroke: 'currentColor', 'stroke-opacity': .55 });
-  el(svg, 'rect', { x: X0 + 3 * P - 2, y: Y0 - 2, width: 3 * P, height: 3 * P, fill: 'none', stroke: 'currentColor', 'stroke-width': 1.6 });
+  el(svg, 'rect', { x: X0 + 4 * P - 2, y: Y0 + 3 * P - 2, width: P, height: P, fill: 'none', stroke: 'currentColor', 'stroke-opacity': .55 });
+  el(svg, 'rect', { x: X0 - 4, y: Y0 - 4, width: 4 * P, height: 4 * P, fill: 'none', 'class': 'l-sen', 'stroke-dasharray': '2 4' });
+  el(svg, 'rect', { x: X0 + 1 * P - 2, y: Y0 - 2, width: 3 * P, height: 3 * P, fill: 'none', stroke: 'currentColor', 'stroke-width': 1.6 });
   // connections into one neuron
-  var f = [4, 1, 3, 4], fc = center(4, 1, 3, 4);
+  var f = [2, 1, 3, 4], fc = center(2, 1, 3, 4);
   var gLines = el(svg, 'g', { fill: 'none', 'stroke-linecap': 'round' });
   var picked = 0, guard = 0;
   while (picked < 17 && guard++ < 500) {
-    var sx = 3 + Math.floor(rand() * 3), sy = Math.floor(rand() * 3), ax = Math.floor(rand() * 8), ay = Math.floor(rand() * 8);
+    var sx = 1 + Math.floor(rand() * 3), sy = Math.floor(rand() * 3), ax = Math.floor(rand() * 8), ay = Math.floor(rand() * 8);
     if (sx === f[0] && sy === f[1] && Math.abs(ax - f[2]) < 2 && Math.abs(ay - f[3]) < 2) continue;
     var k = key(sx, sy, ax, ay), c = center(sx, sy, ax, ay), strong = rand() < 0.3;
     el(gLines, 'line', { x1: c[0], y1: c[1], x2: fc[0], y2: fc[1], 'class': 'l-' + kinds[k], 'stroke-width': strong ? 2.6 : 0.9, 'stroke-opacity': strong ? .95 : .75 });
     cells[k].setAttribute('class', 'cell lit k-' + kinds[k]);
     picked++;
   }
-  var fars = [[0, 3, 5, 2, '4 ticks late'], [7, 0, 2, 5, '3 ticks late']];
+  var fars = [[6, 3, 3, 5, '4 ticks late'], [5, 0, 5, 3, '3 ticks late']];
   fars.forEach(function (s) {
+    kinds[key(s[0], s[1], s[2], s[3])] = 'exc';
     var c = center(s[0], s[1], s[2], s[3]);
     el(gLines, 'line', { x1: c[0], y1: c[1], x2: fc[0], y2: fc[1], 'class': 'l-far', 'stroke-width': 1.8, 'stroke-dasharray': '6 4' });
     cells[key(s[0], s[1], s[2], s[3])].setAttribute('class', 'cell lit k-' + kinds[key(s[0], s[1], s[2], s[3])]);
     el(svg, 'circle', { cx: c[0], cy: c[1], r: 6.5, fill: 'none', 'class': 'l-far', 'stroke-width': 1.6 });
-    el(svg, 'text', { x: (c[0] + fc[0]) / 2, y: (c[1] + fc[1]) / 2 + (s[0] === 0 ? 20 : -12), 'text-anchor': 'middle', 'font-size': 11.5, 'class': 't-far halo' }, 'far link, ' + s[4]);
+    el(svg, 'text', { x: (c[0] + fc[0]) / 2, y: (c[1] + fc[1]) / 2 + (s[1] === 3 ? 20 : -12), 'text-anchor': 'middle', 'font-size': 11.5, 'class': 't-far halo' }, 'far link, ' + s[4]);
   });
-  cells[key(4, 1, 3, 4)].setAttribute('class', 'cell lit k-exc');
+  cells[key(2, 1, 3, 4)].setAttribute('class', 'cell lit k-exc');
   el(svg, 'circle', { cx: fc[0], cy: fc[1], r: 8, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 });
   // labels
   function label(x, y, a, b, anchor) {
     el(svg, 'text', { x: x, y: y, 'font-size': 12.5, 'font-weight': 600, 'text-anchor': anchor || 'start' }, a);
     el(svg, 'text', { x: x, y: y + 16, 'font-size': 11.5, 'class': 'mut', 'text-anchor': anchor || 'start' }, b);
   }
-  label(X0, Y0 - 34, 'sensor sheet', 'the world writes these bits');
-  label(X0 + 3 * P, Y0 - 34, 'one neuron listens to', 'its own tile and the 8 around it');
+  label(X0 + 1 * P, Y0 - 34, 'one neuron listens to', 'its own tile and the 8 around it');
   label(X0 + 6 * P, Y0 - 34, 'one sector', 'its own activity target');
-  label(X0 + 2 * P, Y0 + 4 * P + 12, 'one tile = 64 neurons', '= one 64-bit word of spikes');
+  label(X0, Y0 + 4 * P + 12, 'input area', 'every 2nd cell is a sensor; the world writes them');
+  label(X0 + 4 * P, Y0 + 4 * P + 12, 'one tile = 64 neurons', '= one 64-bit spike word');
   label(X0 + 8 * P - 4, Y0 + 4 * P + 12, 'motor neurons', 'the world reads these bits', 'end');
 
   // figure 2: one slot as words
