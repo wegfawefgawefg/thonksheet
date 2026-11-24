@@ -20,6 +20,7 @@ struct RunFlags {
     int edge = 0;           // windows averaged at each end; 0 means a tenth of them
     bool baselines = true;  // also run learning-off and coin flips
     bool show_plug = false; // print where the lines sit, then run
+    bool table = false;     // run the table sheet (idea 26) in place of the blob
     std::string out;        // csv path; empty means out/<task>-s<seed>.csv
 };
 

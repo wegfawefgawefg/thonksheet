@@ -61,3 +61,18 @@ if(probe_sources AND TARGET blobcore)
     target_compile_options(blobprobe PRIVATE ${warnings} ${speed})
     target_link_libraries(blobprobe PRIVATE blobcore)
 endif()
+
+# blobtable: idea 26, table neurons, standing behind the same Blob struct (src/table/).
+# blobrun drives it with --table; tablebench measures its tick speed.
+file(GLOB table_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/table/*.cpp)
+if(table_sources AND TARGET blobcore)
+    add_library(blobtable STATIC ${table_sources})
+    target_include_directories(blobtable PUBLIC src)
+    target_compile_options(blobtable PRIVATE ${warnings} ${speed})
+    if(TARGET blobrun)
+        target_link_libraries(blobrun PRIVATE blobtable)
+    endif()
+    add_executable(tablebench ${CMAKE_SOURCE_DIR}/src/table/bench/tablebench.cpp)
+    target_compile_options(tablebench PRIVATE ${warnings} ${speed})
+    target_link_libraries(tablebench PRIVATE blobtable blobcore)
+endif()

@@ -4,6 +4,7 @@
 
 #include "run/run_flags.hpp"
 #include "run/task_ticker.hpp"
+#include "table/table.hpp"
 #include "world/plug.hpp"
 #include "world/plug_print.hpp"
 #include "world/standin.hpp"
@@ -15,9 +16,17 @@
 #include <vector>
 
 // who drives the motor lines
-enum class Driver { blob, learn_off, coin, perfect, count };
-static const char* const driver_names[(int)Driver::count] = {"blob", "learn_off", "coin",
-                                                             "perfect"};
+// table and table_off are idea 26 (src/table/), picked with --table
+enum class Driver { blob, learn_off, coin, perfect, table, table_off, count };
+static const char* const driver_names[(int)Driver::count] = {"blob",    "learn_off", "coin",
+                                                             "perfect", "table",     "table_off"};
+
+// the table sheet's own numbers (--t.name value)
+static TableGenome table_genome;
+
+static bool table_driver(Driver driver) {
+    return driver == Driver::table || driver == Driver::table_off;
+}
 
 // the learning-off twin: same genome and seed, nothing changes its wiring
 static void genome_learning_off(Genome& g) {
@@ -29,6 +38,11 @@ static bool real_blob(Driver driver) {
 }
 
 static Blob* birth(Driver driver, const Genome& genome, uint64_t seed) {
+    if (table_driver(driver)) {
+        TableGenome tg = table_genome;
+        tg.learning_on = driver == Driver::table ? tg.learning_on : 0;
+        return table_birth(genome, tg, seed);
+    }
 #ifdef BLOB_HAS_CORE
     if (real_blob(driver)) {
         return blob_birth(genome, seed);
@@ -39,6 +53,10 @@ static Blob* birth(Driver driver, const Genome& genome, uint64_t seed) {
 }
 
 static void death(Driver driver, Blob* blob) {
+    if (table_driver(driver)) {
+        table_free(blob);
+        return;
+    }
 #ifdef BLOB_HAS_CORE
     if (real_blob(driver)) {
         blob_free(blob);
@@ -50,6 +68,10 @@ static void death(Driver driver, Blob* blob) {
 }
 
 static void tick(Driver driver, Blob& blob, const Plug& plug, int perfect_move) {
+    if (table_driver(driver)) {
+        table_tick(blob);
+        return;
+    }
 #ifdef BLOB_HAS_CORE
     if (real_blob(driver)) {
         blob_tick(blob);
@@ -61,6 +83,10 @@ static void tick(Driver driver, Blob& blob, const Plug& plug, int perfect_move) 
 }
 
 static void reward(Driver driver, Blob& blob, int valence) {
+    if (table_driver(driver)) {
+        table_reward(blob, valence);
+        return;
+    }
 #ifdef BLOB_HAS_CORE
     if (real_blob(driver)) {
         blob_reward(blob, valence);
@@ -147,6 +173,7 @@ static bool write_csv(const std::string& path, const RunFlags& flags, const bool
 int main(int argc, char** argv) {
     RunFlags flags;
     apply_genome_args(argc, argv, flags.genome);
+    table_genome_args(argc, argv, table_genome);
     if (!run_flags_parse(argc, argv, flags)) {
         return 1;
     }
@@ -165,6 +192,14 @@ int main(int argc, char** argv) {
 #endif
     want[(int)Driver::coin] = flags.baselines || !want[(int)Driver::blob];
     want[(int)Driver::perfect] = true;
+    if (flags.table) {
+        // the table sheet stands in for the blob, with its own learning-off twin
+        want[(int)Driver::blob] = false;
+        want[(int)Driver::learn_off] = false;
+        want[(int)Driver::table] = true;
+        want[(int)Driver::table_off] = flags.baselines;
+        want[(int)Driver::coin] = flags.baselines;
+    }
 
     std::printf("task %s  seed %llu  task seed %llu  steps %lld  ticks/step %d  window %d\n",
                 task_name(flags.task), (unsigned long long)flags.seed,
@@ -195,7 +230,7 @@ int main(int argc, char** argv) {
         double secs =
             std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
         ran[d] = true;
-        if (real_blob((Driver)d)) {
+        if (real_blob((Driver)d) || table_driver((Driver)d)) {
             double ticks = (double)flags.steps * flags.plug.ticks_per_step;
             std::printf("%-9s life took %.1f s, %.0f ticks/s\n", driver_names[d], secs,
                         ticks / secs);

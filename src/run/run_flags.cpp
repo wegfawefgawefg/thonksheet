@@ -17,6 +17,8 @@ static const char* usage =
     "  --out PATH         csv path (default out/<task>-s<seed>.csv)\n"
     "  --no-baselines     skip the learning-off and coin-flip runs\n"
     "  --show-plug        print where each line sits on the sheet\n"
+    "  --table            run the table sheet (src/table/) and its learning-off twin in\n"
+    "                     place of the blob; --t.name value sets its numbers\n"
     "plug:\n"
     "  --sensor-side N    a sensor line drives N x N neurons (default 2)\n"
     "  --motor-side N     a motor line is read from N x N neurons (default 2)\n"
@@ -56,13 +58,17 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.show_plug = true;
             continue;
         }
+        if (std::strcmp(flag, "--table") == 0) {
+            flags.table = true;
+            continue;
+        }
         if (i + 1 >= argc) {
             std::fprintf(stderr, "blobrun: %s needs a value\n%s", flag, usage);
             return false;
         }
         const char* value = argv[++i];
-        if (std::strncmp(flag, "--g.", 4) == 0) {
-            continue; // a genome number, read by apply_genome_args
+        if (std::strncmp(flag, "--g.", 4) == 0 || std::strncmp(flag, "--t.", 4) == 0) {
+            continue; // a genome number, read by apply_genome_args or table_genome_args
         }
         if (std::strcmp(flag, "--task") == 0) {
             if (!task_from_name(value, flags.task)) {
