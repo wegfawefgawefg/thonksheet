@@ -1,4 +1,4 @@
-# popcortex (working name)
+# thonksheet
 
 A brain made of bits that never stops ticking. Binary spiking neurons on a tiled sheet, wired
 locally, learning without backprop, built to suit an ordinary CPU and GPU. Private.

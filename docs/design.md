@@ -29,12 +29,27 @@ hardware runs best, even when that form is a strange version of the biology.
 
 A tile is only a storage unit. Listening areas overlap everywhere; there are no walls.
 
+## Where input lands
+
+Sensor neurons are not a solid block at the edge of the sheet. A solid block is only heard
+along its border, and its inner cells are heard by nobody but other sensor cells, which the
+world overrides. (The owner spotted this in the first diagram.) In a brain, input comes up
+from below and lands all across an area, in among the local circuit.
+
+So sensor cells are a lattice spread through an input area: every `sensor_stride`-th cell
+both ways (2 by default, which is 16 of a tile's 64). Every sensor cell is surrounded by
+ordinary neurons that hear it, and an image keeps its geometry: pixel (px, py) is sensor
+cell (px, py) of the lattice. Nothing in the memory layout changes; it is only which bits
+of the sensor mask are set. The motor area sits a tile or two from the input area, so the
+shortest path from sensing to acting is a few ticks.
+
 ## Who a neuron listens to
 
 Every neuron has exactly 11 **slots**. A slot is one source tile.
 
-- Slots 0 to 8 are local: the neuron's own tile and the 8 around it, read from the previous
-  tick. That is 576 possible sources.
+- Slots 0 to 8 are local: the neuron's own tile and the 8 around it. That is 576 possible
+  sources. Each local slot has its own delay, drawn per neuron at birth from a short spread
+  (1 to 4 ticks by default), so one neuron hears different neighbours at different ages.
 - Slots 9 and 10 are far: a tile drawn at birth from a distance distribution with a long
   tail. Most neurons draw none (the slot's masks stay empty). Only excitatory neurons send
   far. A far slot is read from an older spike map: the delay in ticks grows with the
@@ -93,10 +108,14 @@ Each one: what the brain does, then what we do.
    memory layout: neighbours in space are neighbours in memory.
 6. **Long fibers.** A minority of neurons reach far. Two far slots per neuron, drawn from a
    distribution, overproduced, pruned by use, redrawn slowly.
-7. **Delays.** Signals take time to arrive, which lets a brain sense order and distance. Far
-   slots read an older spike map; older by more the farther the source. Local stays at one
-   tick. (A second set of local masks reading two or three ticks back is the next step if
-   local order detection turns out weak.)
+7. **Delays.** Signals take time to arrive, which lets a brain sense order and distance.
+   Everything in the world is some pattern in time, so every slot has a delay, not only the
+   far ones: one small number per neuron per slot, saying which map of the ring to read.
+   Local delays are drawn short and mixed; far delays grow with distance. A neuron that
+   hears tile A two ticks late and tile B one tick late fires for "A then B". No extra
+   masks; the cost is reading 9 words from the ring per neuron instead of per tile, and the
+   ring is in L1. A genome with every delay at 1 is still valid, so whether delays matter is
+   something we measure, not guess.
 8. **Dendrite branches.** Inputs that land together on one branch count for more. A slot is
    a branch: sources from one tile are physically close to each other. If a slot's excitation
    passes a small threshold it gets a bonus. No extra popcounts.

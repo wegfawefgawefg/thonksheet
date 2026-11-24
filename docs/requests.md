@@ -56,4 +56,10 @@ A request that becomes work also gets a line in `docs/plan.md`.
   input" -> "Running with no input" in the design; idle check in the plan.
 - Wants a full diagram: neurons and connections color coded, the mechanism list, and how
   each is made ideal for the machine -> `docs/diagram.html`.
-- "ganglion is too common" as a name. Name still open.
+- "ganglion is too common" as a name. Then: "lets call it thonksheet". Named.
+- On the first diagram: "the sensor sheet looks like its barely connected to the other
+  internal tiles ... im wondering about bandwidth per time" -> sensor cells are now a
+  lattice spread through an input area ("Where input lands" in the design).
+- "regarding the delays. i dont know if delay ends up being extremely important ...
+  everything in the world is some form of time pattern" -> every slot has a delay, and a
+  genome with all delays at 1 stays valid so it can be measured.

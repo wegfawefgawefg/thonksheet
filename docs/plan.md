@@ -33,6 +33,5 @@ in its own dated doc.
 
 - Does one good/bad broadcast plus prediction give purposeful play at all? Unknown. The
   gate above is how we find out.
-- Is far-slot delay enough, or do local connections need mixed delays too?
+- Do delays matter? Every slot has one now; compare against a genome with all delays at 1.
 - What should idle do beyond staying safe: replay what, downscale how fast?
-- The name. `popcortex` is a working name.

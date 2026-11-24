@@ -1,9 +1,9 @@
-# popcortex (working name)
+# thonksheet
 
 A free-running brain made of bits. One blob of binary spiking neurons ticks nonstop, wires
 itself, and learns without backprop. The world only writes bits onto sensor neurons and reads
-bits off motor neurons. Code calls the thing a `Blob`; the repo name may change, so keep the
-name out of identifiers.
+bits off motor neurons. Code calls the thing a `Blob`; keep the project name out of
+identifiers.
 
 Read `docs/design.md` before touching `src/blob/`. It lists every mechanism and how each one
 is laid out for the machine. `docs/plan.md` is the work queue. `docs/requests.md` records what
