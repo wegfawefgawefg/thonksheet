@@ -1,0 +1,6 @@
+# idea 53, third tuning round (same tuning seeds): round 2 says larger steps help, so go past 16
+baseline:
+ls16 f2: --g.lose_shift_steps 16 --g.lose_shift_fires 2
+ls24 f2: --g.lose_shift_steps 24 --g.lose_shift_fires 2
+ls32 f2: --g.lose_shift_steps 32 --g.lose_shift_fires 2
+ls32 f3: --g.lose_shift_steps 32 --g.lose_shift_fires 3
