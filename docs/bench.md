@@ -23,7 +23,9 @@ vehicle. An idea is judged by whether it moves toward that, not by one task scor
 
 ## The suite
 
-One script runs everything and writes one scorecard: `scripts/suite.sh <engine> [variant]`.
+One script runs everything and writes one scorecard: `scripts/suite.sh <name> [blobrun
+flags and --g.name value ...]`, into `out/scorecards/<name>.csv`; `--quick` is a smoke
+check on 2 seeds. How each row is run: `docs/notes-world.md`, "The suite".
 Fixed seeds: 1 to 4 are for choosing settings, 5 to 12 are for reporting. Every number is
 shown beside the same engine with learning off and beside coin flips.
 
@@ -43,7 +45,8 @@ What it measures, in the owner's words where he gave them:
 | fits the machine | ticks per second on one core at three sizes; bytes per neuron |
 
 The scorecard is one row per test with mean and spread over the report seeds. All
-scorecards are collected in `docs/scoreboard.md`, one column per engine or variant.
+scorecards are collected in `docs/scoreboard.md` (`scripts/scoreboard.sh`), one column per
+engine or variant.
 
 ## Engines
 
