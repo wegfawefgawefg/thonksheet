@@ -70,3 +70,6 @@ A request that becomes work also gets a line in `docs/plan.md`.
   output area, like the sensors (`motor_stride`).
 - "layers would be good i think" and "our neuron count is VERY LOW ... are we really running
   just one sheet?" -> both queued in `docs/plan.md` right behind the first learning gate.
+- "is this even worth trying. we still havent run anything yet ... maybe theres a simpler more
+  elegant design" -> freeze the design, run Echo, cut by ablation, add rivals. He agreed:
+  "dumb rival sounds kinda cool", "simpler design okay".

@@ -20,6 +20,28 @@ in its own dated doc.
 9. Stage 2 tasks, then stage 3 (catch, cartpole, snake first).
 10. Tick speed: hand-written AVX-512 path, then many blobs across cores.
 
+## Agreed 2026-11-24: freeze, run, cut, and rivals
+
+Nothing has run yet and the design has 21 mechanisms, which is the too-many-variables
+problem. So: no new mechanisms until something has learned; run Echo; then switch each
+mechanism off in turn and delete what makes no difference. The elegant core to aim for is
+three things: a neuron is a popcount over a mask against a threshold; a synapse is a tiny
+counter moved by chance on an outcome; something keeps activity alive.
+
+Rivals, all on the same tasks through the same plug. The brain-style rule has to beat them
+to earn its complexity:
+
+1. **Frozen blob, learned readout.** No learning inside; only the motor neurons' input masks
+   learn. If the full blob cannot beat this, the inner learning is not helping.
+2. **Random flips.** Flip a few mask bits, live a while, keep the flips if reward went up,
+   undo them if not.
+3. **Noise is the experiment.** The blob knows which spikes were noise. Only those neurons
+   get graded: reward above its running average strengthens their recently active inputs,
+   below weakens them. This is the owner's original snake method at the synapse.
+4. **Table neurons.** A different substrate, small and separate: a neuron reads 6 input bits
+   and looks up a 64-entry table of tiny counters. One lookup per tick, any function of its
+   inputs, and it is the cell FPGAs are made of. Learning nudges the entry that was just used.
+
 ## Asked for, queued behind the gate
 
 - **Layers inside a tile.** Split the 64 bit positions into input, middle and output groups;
