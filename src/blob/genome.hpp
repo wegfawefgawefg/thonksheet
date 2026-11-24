@@ -111,6 +111,7 @@ struct Genome {
                                      // wires the top of its budget (learn_evidence.cpp)
     int readout_evidence_bits = 6;   // counter size, signed (2..8)
     int readout_evidence_strong = 1; // wired sources at strength 4 (0: at 1)
+    int readout_balance = 0;         // 1: the other buttons move less, by their number
     int readout_far = 0;          // 1: a marked motor cell with an empty far slot gets one drawn,
                                   // so it hears two more tiles than its 9 local ones
 };

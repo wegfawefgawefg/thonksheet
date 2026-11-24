@@ -81,7 +81,8 @@ static void open_far_slots(Blob& blob, int n) {
 }
 
 // move one motor cell's active inputs: gain (+1) or lose (-1). returns levels moved
-static uint32_t move_inputs(Blob& blob, int n, int sign, const uint64_t* trace, int ages) {
+static uint32_t move_inputs(Blob& blob, int n, int sign, const uint64_t* trace, int ages,
+                            int shift) {
     const Genome& g = blob.genome;
     int reps = g.readout_counts ? ages : 1;
     bool center = g.readout_center && g.readout_counts && blob.readout_last;
@@ -107,7 +108,7 @@ static uint32_t move_inputs(Blob& blob, int n, int sign, const uint64_t* trace, 
             // now and not then moves with the sign, one that fired then and not now against
             // it, one that did the same both times not at all
             uint64_t last = center ? blob.readout_last[(int64_t)r * stride + src] : 0;
-            uint64_t chance = (active ^ last) & allowed & sparse_word(blob.rng, g.readout_shift);
+            uint64_t chance = (active ^ last) & allowed & sparse_word(blob.rng, shift);
             if (!chance) {
                 continue;
             }
@@ -183,6 +184,21 @@ void learn_readout(Blob& blob, int valence) {
         trace[t] = r;
     }
     bool marked = g.readout_know_button && blob.motor_attached && blob.motor_acted;
+    // readout_balance: the other buttons' cells move less, by their number over the
+    // pressed button's (rounded up to a power of two), so with k buttons the gains do not
+    // outweigh the losses k - 1 to 1. no change with two buttons
+    int other_shift = g.readout_shift;
+    if (g.readout_balance && marked) {
+        int64_t pressed_cells = 0, other_cells = 0;
+        for (int t = 0; t < blob.tile_count; t++) {
+            uint64_t acted = blob.motor_acted[t] & blob.motor_attached[t];
+            pressed_cells += __builtin_popcountll(acted);
+            other_cells += __builtin_popcountll(blob.motor_attached[t] & ~acted);
+        }
+        for (int e = 0; pressed_cells > 0 && (pressed_cells << e) < other_cells; e++) {
+            other_shift++;
+        }
+    }
     // pressed cells move with the valence, the other cells against it
     uint32_t up = 0, down = 0;
     for (int t = 0; t < blob.tile_count; t++) {
@@ -200,12 +216,13 @@ void learn_readout(Blob& blob, int valence) {
         while (pressed) {
             int n = t * TILE_NEURONS + __builtin_ctzll(pressed);
             pressed &= pressed - 1;
-            (valence > 0 ? up : down) += move_inputs(blob, n, valence, trace, ages);
+            (valence > 0 ? up : down) +=
+                move_inputs(blob, n, valence, trace, ages, g.readout_shift);
         }
         while (other) {
             int n = t * TILE_NEURONS + __builtin_ctzll(other);
             other &= other - 1;
-            (valence > 0 ? down : up) += move_inputs(blob, n, -valence, trace, ages);
+            (valence > 0 ? down : up) += move_inputs(blob, n, -valence, trace, ages, other_shift);
         }
     }
     if (g.readout_center && blob.readout_last) {

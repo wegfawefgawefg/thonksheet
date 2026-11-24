@@ -1,0 +1,12 @@
+# idea 58 (docs/results-2026-11-24-readout.md): rules at the motor cells on a frozen sheet.
+# learn_mode 1 is today's readout, 5 the error rule. the first line is the baseline.
+# readout_balance 1 (the other buttons move less, by their number) changes nothing at two
+# buttons and fixes echo k=4.
+readout (today): --g.learn_mode 1
+error rule: --g.learn_mode 5 --g.readout_balance 1
+error rule, cell knows only itself: --g.learn_mode 5 --g.readout_know_button 0 --g.readout_balance 1
+error rule, budget: --g.learn_mode 5 --g.readout_budget 1 --g.readout_balance 1
+evidence counters: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1
+readout (today), spread 128: --g.learn_mode 1 --motor-spread 128
+error rule, spread 128: --g.learn_mode 5 --motor-spread 128 --g.readout_balance 1
+evidence counters, spread 128: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --motor-spread 128 --g.readout_balance 1

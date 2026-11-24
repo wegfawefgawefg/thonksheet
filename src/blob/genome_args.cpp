@@ -92,6 +92,7 @@ static const GenomeField fields[] = {
     {"readout_budget", &Genome::readout_budget},
     {"readout_far", &Genome::readout_far},
     {"readout_center", &Genome::readout_center},
+    {"readout_balance", &Genome::readout_balance},
     {"readout_evidence", &Genome::readout_evidence},
     {"readout_evidence_bits", &Genome::readout_evidence_bits},
     {"readout_evidence_strong", &Genome::readout_evidence_strong},
