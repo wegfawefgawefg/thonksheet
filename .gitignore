@@ -1,0 +1,9 @@
+/build/
+/build-*/
+/.cache/
+/captures/
+/out/
+/imgui.ini
+*.swp
+/.claude/worktrees/
+compile_commands.json
