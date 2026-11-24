@@ -18,6 +18,7 @@ static void tick_learn(Blob& blob, int read_now) {
         learn_predict(blob, read_now, boost);
     }
     if (mode != 3) {
+        learn_lose_shift(blob, boost);
         if (blob.good_ticks > 0 && g.good_on) {
             learn_reward(blob, +1, boost, motor_only);
         }

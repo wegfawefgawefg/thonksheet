@@ -31,6 +31,9 @@ void learn_flips(Blob& blob);
 // inputs of neurons whose recent spike was noise
 void learn_noise(Blob& blob, int valence);
 
+// lose-shift, win-stay and bad cut on motor cells (idea 53); does nothing while all are off
+void learn_lose_shift(Blob& blob, int boost);
+
 // connections a neuron has, over all slots
 int count_fan_in(const Blob& blob, int neuron);
 
