@@ -45,6 +45,9 @@ static void sanitize_genome(Genome& g) {
     g.pacemaker_period_min = clamp_int(g.pacemaker_period_min, 1, 256);
     g.pacemaker_period_max = clamp_int(g.pacemaker_period_max, g.pacemaker_period_min, 256);
     g.far_reach_tiles = clamp_int(g.far_reach_tiles, 1, 64);
+    g.sensor_stride = clamp_int(g.sensor_stride, 1, 1 << 20);
+    g.local_delay_min = clamp_int(g.local_delay_min, 1, HISTORY - 1);
+    g.local_delay_max = clamp_int(g.local_delay_max, g.local_delay_min, HISTORY - 1);
     g.fan_in_max = clamp_int(g.fan_in_max, 1, SLOTS * TILE_NEURONS);
     g.sector_tiles = clamp_int(g.sector_tiles, 1, 4096);
     g.recent_ticks = clamp_int(g.recent_ticks, 1, 8);
@@ -103,8 +106,10 @@ static void set_kinds(Blob& blob) {
         int x = blob_neuron_x(blob, n), y = blob_neuron_y(blob, n);
         int t = n / TILE_NEURONS;
         uint64_t bit = 1ull << (n % TILE_NEURONS);
-        bool is_sensor = x >= g.sensor_x && x < g.sensor_x + g.sensor_w && y >= g.sensor_y &&
-                         y < g.sensor_y + g.sensor_h;
+        bool in_sensor_rect = x >= g.sensor_x && x < g.sensor_x + g.sensor_w &&
+                              y >= g.sensor_y && y < g.sensor_y + g.sensor_h;
+        bool is_sensor = in_sensor_rect && (x - g.sensor_x) % g.sensor_stride == 0 &&
+                         (y - g.sensor_y) % g.sensor_stride == 0;
         bool is_motor = x >= g.motor_x && x < g.motor_x + g.motor_w && y >= g.motor_y &&
                         y < g.motor_y + g.motor_h;
         if (is_sensor) {
@@ -171,8 +176,11 @@ static void wire(Blob& blob) {
     for (int n = 0; n < blob.neuron_count; n++) {
         int t = n / TILE_NEURONS;
         uint64_t self = 1ull << (n % TILE_NEURONS);
-        // local slots
+        // local slots: a delay each (the smaller of two draws, so short ones are common)
         for (int k = 0; k < LOCAL_SLOTS; k++) {
+            int d1 = draw_between(blob.rng, g.local_delay_min, g.local_delay_max);
+            int d2 = draw_between(blob.rng, g.local_delay_min, g.local_delay_max);
+            blob.slot_delay[blob_weight_index(n, k)] = (uint8_t)(d1 < d2 ? d1 : d2);
             if (blob.local_tile[t * LOCAL_SLOTS + k] == (uint32_t)blob.tile_count) {
                 continue;
             }
@@ -188,12 +196,13 @@ static void wire(Blob& blob) {
         bool excitatory = !((blob.inhibitory[t] >> (n % TILE_NEURONS)) & 1);
         for (int k = 0; k < FAR_SLOTS; k++) {
             int f = n * FAR_SLOTS + k;
+            uint8_t* delay = &blob.slot_delay[blob_weight_index(n, LOCAL_SLOTS + k)];
             blob.far_tile[f] = (uint32_t)blob.tile_count;
-            blob.far_delay[f] = 2;
+            *delay = 2;
             if (!excitatory || (int)rng_below(blob.rng, 100) >= g.far_percent) {
                 continue;
             }
-            if (!draw_far_tile(blob, t, &blob.far_tile[f], &blob.far_delay[f])) {
+            if (!draw_far_tile(blob, t, &blob.far_tile[f], delay)) {
                 continue;
             }
             uint64_t senders = ~blob.inhibitory[blob.far_tile[f]];
@@ -240,8 +249,11 @@ Blob* blob_birth(const Genome& genome, uint64_t seed) {
     size_t map_bytes = sizeof(uint64_t) * (blob->tile_count + 1);
     size_t n = (size_t)blob->neuron_count;
 
+    // the ring is one block so a delay is just an offset; maps start on cache lines
+    blob->spike_stride = (blob->tile_count + 1 + 7) & ~7;
+    uint64_t* ring = (uint64_t*)alloc_lines(sizeof(uint64_t) * blob->spike_stride * HISTORY);
     for (int h = 0; h < HISTORY; h++) {
-        blob->spikes[h] = (uint64_t*)alloc_lines(map_bytes);
+        blob->spikes[h] = ring + (size_t)h * blob->spike_stride;
     }
     blob->recent = (uint64_t*)alloc_lines(map_bytes);
     blob->inhibitory = (uint64_t*)alloc_lines(map_bytes);
@@ -253,7 +265,7 @@ Blob* blob_birth(const Genome& genome, uint64_t seed) {
     blob->predicted = (uint64_t*)alloc_lines(map_bytes);
     blob->local_tile = (uint32_t*)alloc_lines(sizeof(uint32_t) * blob->tile_count * LOCAL_SLOTS);
     blob->far_tile = (uint32_t*)alloc_lines(sizeof(uint32_t) * n * FAR_SLOTS);
-    blob->far_delay = (uint8_t*)alloc_lines(n * FAR_SLOTS);
+    blob->slot_delay = (uint8_t*)alloc_lines(n * SLOTS);
     blob->w0 = (uint64_t*)alloc_lines(sizeof(uint64_t) * n * SLOTS);
     blob->w1 = (uint64_t*)alloc_lines(sizeof(uint64_t) * n * SLOTS);
     blob->potential = (int16_t*)alloc_lines(sizeof(int16_t) * n);
@@ -274,13 +286,11 @@ void blob_free(Blob* blob) {
     if (!blob) {
         return;
     }
-    for (int h = 0; h < HISTORY; h++) {
-        std::free(blob->spikes[h]);
-    }
+    std::free(blob->spikes[0]); // the whole ring
     void* arrays[] = {
         blob->recent,          blob->inhibitory,    blob->sensor,          blob->motor,
         blob->pacemaker,       blob->sense_in,      blob->sense_attached,  blob->predicted,
-        blob->local_tile,      blob->far_tile,      blob->far_delay,       blob->w0,
+        blob->local_tile,      blob->far_tile,      blob->slot_delay,       blob->w0,
         blob->w1,              blob->potential,     blob->threshold,       blob->leak_shift,
         blob->cooldown,        blob->cooldown_len,  blob->fan_in,          blob->tile_sector,
         blob->sector_bias,     blob->sector_activity, blob->sector_surprise, blob->sector_target,

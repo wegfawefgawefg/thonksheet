@@ -137,7 +137,7 @@ int run_learn_check(int argc, char** argv) {
         if (learn_only >= 0 && learn != learn_only) {
             continue;
         }
-        g.learn = learn;
+        g.learning_on = learn;
         Blob* blob = blob_birth(g, seed);
         setup_echo(*blob, e, seed);
         uint64_t rng[4];

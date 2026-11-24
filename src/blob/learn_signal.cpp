@@ -10,7 +10,6 @@
 // guessed right are left alone, so a held line cannot saturate its inputs.
 void learn_predict(Blob& blob, int read_now, int boost) {
     const Genome& g = blob.genome;
-    const uint64_t* read = blob.spikes[read_now];
     const uint64_t* inh = blob.inhibitory;
     int shift = boosted(g.predict_shift, boost);
     uint32_t up_count = 0, down_count = 0;
@@ -29,17 +28,8 @@ void learn_predict(Blob& blob, int read_now, int boost) {
             int n = t * TILE_NEURONS + b;
             bool was_miss = (miss >> b) & 1;
             for (int k = 0; k < SLOTS; k++) {
-                uint64_t s = 0, kind = 0;
-                if (k < LOCAL_SLOTS) {
-                    uint32_t src = blob.local_tile[t * LOCAL_SLOTS + k];
-                    s = read[src];
-                    kind = inh[src];
-                } else {
-                    int f = n * FAR_SLOTS + (k - LOCAL_SLOTS);
-                    int age = blob.far_delay[f] - 1;
-                    s = blob.spikes[(read_now - age) & (HISTORY - 1)][blob.far_tile[f]];
-                    kind = inh[blob.far_tile[f]];
-                }
+                uint64_t s = slot_read(blob, read_now, n, k);
+                uint64_t kind = inh[slot_source(blob, n, k)];
                 uint64_t chance = s & sparse_word(blob.rng, shift);
                 uint64_t& a0 = blob.w0[blob_weight_index(n, k)];
                 uint64_t& a1 = blob.w1[blob_weight_index(n, k)];
@@ -70,8 +60,7 @@ void learn_reward(Blob& blob, int valence, int boost) {
             post &= post - 1;
             int n = t * TILE_NEURONS + b;
             for (int k = 0; k < SLOTS; k++) {
-                uint32_t src = k < LOCAL_SLOTS ? blob.local_tile[t * LOCAL_SLOTS + k]
-                                               : blob.far_tile[n * FAR_SLOTS + k - LOCAL_SLOTS];
+                uint32_t src = slot_source(blob, n, k);
                 uint64_t& a0 = blob.w0[blob_weight_index(n, k)];
                 uint64_t& a1 = blob.w1[blob_weight_index(n, k)];
                 uint64_t pairs = recent[src] & connected_bits(a0, a1);

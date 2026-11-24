@@ -8,9 +8,12 @@ struct Genome {
     int tiles_w = 8;
     int tiles_h = 8;
 
-    // sensor and motor regions, in cells. sensor neurons are all excitatory.
-    int sensor_x = 0, sensor_y = 0, sensor_w = 16, sensor_h = 16;
-    int motor_x = 48, motor_y = 48, motor_w = 16, motor_h = 16;
+    // sensor and motor regions, in cells. sensor neurons are all excitatory. inside the
+    // sensor rect only every sensor_stride-th cell both ways is a sensor (a lattice), so
+    // every sensor cell sits among ordinary neurons that hear it.
+    int sensor_x = 0, sensor_y = 0, sensor_w = 32, sensor_h = 32;
+    int sensor_stride = 2;
+    int motor_x = 40, motor_y = 40, motor_w = 16, motor_h = 16;
 
     // kinds and spreads (each neuron draws its own value inside the range)
     int inhibitory_percent = 20;
@@ -26,6 +29,8 @@ struct Genome {
     int far_percent = 15;        // share of excitatory neurons that get a far slot
     int far_reach_tiles = 3;     // typical far distance; the draw has a long tail
     int far_delay_per_tile = 1;  // ticks of delay per tile of distance (2..15 total)
+    int local_delay_min = 1;     // local slot delays, drawn per neuron per slot, skewed short.
+    int local_delay_max = 4;     // min = max = 1 is the old one-tick local reading
     int far_connect_shift = 2;   // each excitatory bit of a far tile is wired with this chance
     int fan_in_max = 96;         // cap on connections per neuron
 
@@ -45,7 +50,7 @@ struct Genome {
     int sector_smooth_shift = 4;   // sector activity is smoothed over about 2^this ticks
 
     // learning (all changes are one weight level, taken by chance)
-    int learn = 1;               // 0 freezes every weight: the learning-off baseline
+    int learning_on = 1; // 0: no weight, wiring or far-redraw change at all (regulation runs)
     int recent_ticks = 6;        // how long "fired recently" lasts (1..8)
     int predict_shift = 3;       // sensor prediction: strengthen right, weaken wrong
     int reward_shift = 2;        // good/bad broadcast acting on recently co-active pairs

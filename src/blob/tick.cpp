@@ -24,7 +24,7 @@ void blob_tick(Blob& blob) {
 
     tick_regulate(blob);
 
-    if (g.learn) {
+    if (g.learning_on) {
         int boost = blob.surprise_high ? g.surprise_boost : 0;
         learn_predict(blob, read_now, boost);
         if (blob.good_ticks > 0) {

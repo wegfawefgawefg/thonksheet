@@ -29,11 +29,14 @@ Genome genome_for_sheet(int tiles) {
     Genome g;
     g.tiles_w = tiles;
     g.tiles_h = tiles;
+    // the genome's input lattice and motor area, shrunk to fit small sheets
     int cells = tiles * 8;
-    // sensor in the top-left corner, motor in the bottom-right, each at most 16x16
-    int side = cells / 4 < 16 ? cells / 4 : 16;
-    g.sensor_x = 0, g.sensor_y = 0, g.sensor_w = side, g.sensor_h = side;
-    g.motor_x = cells - side, g.motor_y = cells - side, g.motor_w = side, g.motor_h = side;
+    int sensor_side = cells / 2 < g.sensor_w ? cells / 2 : g.sensor_w;
+    int motor_side = cells / 4 < g.motor_w ? cells / 4 : g.motor_w;
+    int motor_at = cells - motor_side < g.motor_x ? cells - motor_side : g.motor_x;
+    g.sensor_w = g.sensor_h = sensor_side;
+    g.motor_x = g.motor_y = motor_at;
+    g.motor_w = g.motor_h = motor_side;
     return g;
 }
 

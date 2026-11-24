@@ -6,15 +6,6 @@
 // churn that needs no reason: growth toward recently active neighbours, pruning of idle
 // weak connections, and redrawing empty far slots. strong connections are never touched.
 
-// the source tile of a slot (tile_count when there is none)
-static inline uint32_t slot_source(const Blob& blob, int n, int k) {
-    int t = n / TILE_NEURONS;
-    if (k < LOCAL_SLOTS) {
-        return blob.local_tile[t * LOCAL_SLOTS + k];
-    }
-    return blob.far_tile[n * FAR_SLOTS + k - LOCAL_SLOTS];
-}
-
 // one new weak connection from a recently active source that is not yet wired in
 static bool grow_one(Blob& blob, int n) {
     if (blob.fan_in[n] >= blob.genome.fan_in_max) {
@@ -73,7 +64,7 @@ static void redraw_far(Blob& blob, int n) {
         if (connected_bits(blob.w0[w], blob.w1[w])) {
             continue;
         }
-        draw_far_tile(blob, t, &blob.far_tile[f], &blob.far_delay[f]);
+        draw_far_tile(blob, t, &blob.far_tile[f], &blob.slot_delay[w]);
     }
 }
 

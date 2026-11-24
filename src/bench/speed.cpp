@@ -18,9 +18,10 @@ static void feed_random(Blob& blob, uint64_t* rng) {
     }
 }
 
-static double ticks_per_second(int tiles, bool learn, double seconds) {
+static double ticks_per_second(int tiles, bool learn, double seconds, int argc, char** argv) {
     Genome g = genome_for_sheet(tiles);
-    g.learn = learn ? 1 : 0;
+    apply_genome_args(argc, argv, g);
+    g.learning_on = learn ? 1 : 0;
     Blob* blob = blob_birth(g, 1);
     uint64_t rng[4];
     rng_seed(rng, 99);
@@ -65,7 +66,7 @@ int run_speed(int argc, char** argv) {
             if (only_learn >= 0 && learn != only_learn) {
                 continue;
             }
-            double tps = ticks_per_second(tiles, learn, seconds);
+            double tps = ticks_per_second(tiles, learn, seconds, argc, argv);
             int neurons = tiles * tiles * 64;
             std::printf("%8d %6s %14.0f %18.3e\n", neurons, learn ? "on" : "off", tps,
                         tps * neurons);
