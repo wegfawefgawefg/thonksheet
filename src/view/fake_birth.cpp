@@ -96,7 +96,9 @@ static void place_kinds(FakeBlob& f) {
         } else if (static_cast<int>(fake_random(f.rng) % 100) < g.inhibitory_percent) {
             b.inhibitory[t] |= bit;
         }
-        if (in_rect(x, y, g.motor_x, g.motor_y, g.motor_w, g.motor_h)) {
+        // motor cells: a lattice through the motor rect the same way, among ordinary neurons
+        const bool motor_lattice = (x - g.motor_x) % 2 == 0 && (y - g.motor_y) % 2 == 0;
+        if (in_rect(x, y, g.motor_x, g.motor_y, g.motor_w, g.motor_h) && motor_lattice) {
             b.motor[t] |= bit;
         }
     }
