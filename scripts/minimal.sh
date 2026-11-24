@@ -17,12 +17,17 @@
 #                                               tick by tick after it goes off
 #   scripts/minimal.sh seeds far5 5 12 --m.far_slots 1      far slots (off by default)
 #   scripts/minimal.sh seeds delayed 5 12 --m.delay_max 8   slot delays (off by default)
+#   scripts/minimal.sh seeds far3 5 12 --m.ev_on 1 --m.far_slots 2 --m.far_percent 100
+#                                               evidence counters on the motor neurons (2:
+#                                               every neuron), off by default; --m.ev_bits 4..8
+#                                               (docs/results-2026-11-24-evidence.md)
 #   (probe takes --engine full for the full engine measured the same way)
 #
-# Presets: echo2 echo4 echo8 shuffled delayed catch cartpole far1..far5 (echo k=2 with cue
-# and button 1..5 tiles apart), delayed0 delayed1 (the ask right after the cue step, or one
-# blank step between), beat2 beat4 (press every 2 or 4 steps, no cue).
-# Results land in out/minimal/<preset>[-tag]/.
+# Presets: echo2 echo4 echo8 echo16 shuffled delayed catch cartpole far1..far5 (echo k=2 with
+# cue and button 1..5 tiles apart), delayed0 delayed1 (the ask right after the cue step, or one
+# blank step between), beat2 beat4 (press every 2 or 4 steps, no cue), order both gap (the
+# feature tasks, cue and buttons one tile apart).
+# Results land in out/minimal/<preset>[-tag]/ (OUTDIR=dir to put them elsewhere).
 # Set TAG=name to keep runs with different extra flags apart.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -35,6 +40,10 @@ preset() {
     echo2) echo --task echo --k 2 ;;
     echo4) echo --task echo --k 4 ;;
     echo8) echo --task echo --k 8 ;;
+    echo16) echo --task echo --k 16 ;;
+    order) echo --task order ;;
+    both) echo --task both-not-either ;;
+    gap) echo --task gap ;;
     shuffled) echo --task shuffled-echo --k 2 ;;
     delayed) echo --task delayed-echo --k 2 --delay 2 ;;
     delayed0) echo --task delayed-echo --k 2 --delay 0 ;;
@@ -77,7 +86,7 @@ task)
 seeds)
     name="$1" from="$2" to="$3"
     shift 3
-    dir="out/minimal/$name${TAG:+-$TAG}"
+    dir="${OUTDIR:-out/minimal}/$name${TAG:+-$TAG}"
     mkdir -p "$dir"
     read -r -a flags <<< "$(preset "$name")"
     seq "$from" "$to" | xargs -P 2 -I{} sh -c \

@@ -1,3 +1,4 @@
+#include "minimal/minimal_steps.hpp"
 #include "minimal/probe/probe.hpp"
 
 #include <algorithm>
@@ -250,6 +251,14 @@ void print_wiring(const ProbeArgs& args, const Blob& blob, const char* label) {
             std::printf("\n  far: neurons with a far tile %.1f%%  connections in far slots %.1f%%",
                         100.0 * (double)with / blob.neuron_count,
                         100.0 * (double)far / (double)(connections ? connections : 1));
+        }
+        if (m.ev_planes) {
+            double low = 0, high = 0;
+            min_evidence_ends(m, low, high);
+            std::printf("\n  evidence: %d counter neurons, %d bits, counters at the bottom %.1f%% "
+                        "at the top %.1f%%, updates %llu",
+                        m.ev_rows, m.mg.ev_bits, 100.0 * low, 100.0 * high,
+                        (unsigned long long)m.stats.ev_moved);
         }
     }
     std::printf("\n  bytes per neuron %.1f\n", probe_bytes_per_neuron(args, blob));

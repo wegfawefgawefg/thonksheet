@@ -22,6 +22,8 @@
 //    excitatory senders only, inside the same budget.
 //  - delays: each slot reads the map 1..delay_max ticks back, one small number per neuron
 //    per slot; far slots read later the further away they are.
+//  - evidence counters: a small hidden counter per possible source, moved on reward; the
+//    mask is read off them, so weak evidence adds up before anything is wired.
 //
 // It stands behind the same Blob shell the plug and tasks use, as world/standin does: the
 // shell holds sense_in, the sensor/motor/inhibitory masks and a copy of the latest spike map.
@@ -59,6 +61,20 @@ struct MinimalGenome {
     int delay_max = 1;          // slot delays drawn in 1..this; 1 is the one-tick reading
     int far_delay_per_tile = 1; // far slot delay: distance x this, capped at delay_max
     int delay_percent = 100;    // share of local slots that draw a delay (the rest read 1 back)
+    // evidence counters (docs/results-2026-11-24-evidence.md): a hidden counter per possible
+    // source; rewards move counters, the mask is read off them. 0 off, 1 motor neurons, 2 all
+    int ev_on = 0;
+    int ev_bits = 4;        // counter width, 2..8, offset binary (2^(bits-1) is zero)
+    int ev_init = 2;        // a source wired at birth starts this far above zero
+    int ev_read = 0;        // mask from counters: 0 the top `budget`, 1 a moving line, 2 above 0
+    int ev_spikes = 0;      // graded: 0 latest spike if noise, 1 latest spike, 2 every spike
+    int ev_fired_min = 1;   // spikes in the window that count a neuron as fired (1..8)
+    int ev_quiet = 1;       // quiet through the window moves the other way: 0 no, 1 no spike,
+                            // 2 fewer than ev_fired_min
+    int ev_quiet_shift = 0; // extra chance shift for that mirror
+    int ev_shift = 0;       // extra chance shift for counter updates
+    int ev_inh = 0;         // 1: an inhibitory source's counter moves the other way
+    int ev_cowire = 1;      // co-activity on a counter neuron: 0 swaps the mask, 1 bumps a counter
 };
 
 struct MinimalStats {
@@ -66,6 +82,7 @@ struct MinimalStats {
     uint64_t graded = 0;           // neuron grades from rewards
     uint64_t cowired = 0;          // swaps from co-activity
     uint64_t noise_spikes = 0;     // this tick
+    uint64_t ev_moved = 0;         // evidence: neuron counter updates
 };
 
 struct MinimalBlob {
@@ -95,6 +112,15 @@ struct MinimalBlob {
     // that neuron's last sweep (a clock approximation of least recently useful)
     uint64_t* used = nullptr;
     uint8_t* threshold = nullptr;
+
+    // evidence counters, null when ev_on is 0. ev_tiles[t]: which neurons of tile t have them.
+    // ev_row[n]: neuron n's row, -1 for none. ev_planes[(row * slots + k) * bits + i]: bit i of
+    // the counters of slot k's 64 sources (bitsliced). ev_line[row]: read 1's line.
+    uint64_t* ev_tiles = nullptr;
+    int32_t* ev_row = nullptr;
+    uint64_t* ev_planes = nullptr;
+    uint8_t* ev_line = nullptr;
+    int ev_rows = 0;
 
     int32_t reward_avg = 0; // running average of reward, x256
     uint64_t rng[4] = {};
