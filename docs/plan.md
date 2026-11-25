@@ -48,6 +48,8 @@ Running (four), as of 2026-11-25 afternoon:
   finishes the runs and the write-up, then sends its errors down idea 159's wires).
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
 - Queued item 2d (idea 163): what stops the one-hop error on real data.
+- Queued item 2a: the competitive-learning follow-ups (rate-matched and churn controls,
+  held-out calculation columns on 8 seeds, a cheap read-off, the time suite).
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
 153, 154), both merged; their slots went to items B and C. The calculation battery
 (ideas 133, 134; docs/results-2026-11-25-calculation.md), merged; its slot went to
@@ -97,7 +99,7 @@ Queued, in order:
    and on the held-out columns. Every item below is scored with it.
 2. *(done, passes: 0.952 against 0.926 born and 0.939 shuffled, 8 seeds; idea 158)* Competitive learning with local inhibition, no reward: units that win on an input
    move toward it (in bits: gain the input's bits, lose others, under a budget).
-2a. Follow-ups to item 2, in this order, as one job after 2b and 2c are placed: a
+2a. *(running; docs/results-2026-11-25-compete2.md when done)* Follow-ups to item 2, in this order, as one job after 2b and 2c are placed: a
    rate-matched control (half the margin is not yet separated from a doubled firing
    rate); a cheap read-off (the rule costs 1.9 times per tick); the rule in the time suite
    (half of each cell's inputs become pixels: does delayed echo or order pay?); a
