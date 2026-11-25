@@ -8,6 +8,7 @@
 #   scripts/reference.sh suite                    mlp-fixed and gru-fixed scorecards
 #   scripts/reference.sh told                     the labelled extra: told the right button
 #   scripts/reference.sh compare                  reference against the home-grown engines
+#   scripts/reference.sh hold                     the gru on delayed echo, delay 4 to 16
 # The suites run 2 lives at a time under nice, like scripts/suite.sh.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -53,8 +54,27 @@ told)
 compare)
     exec python3 scripts/reference_compare.py "$@"
     ;;
+hold)
+    # the gru's wall: delayed echo past its 8-step backprop window, seeds 5-8
+    scripts/build.sh --target blobrun
+    mkdir -p out/nn/hold
+    for d in 4 6 7 10 16; do
+        for s in 5 6 7 8; do
+            echo "$d $s"
+        done
+    done | xargs -P 2 -n 2 sh -c 'nice -n 19 ./build/blobrun --engine gru --task delayed-echo \
+        --delay $0 '"$life"' --seed $1 --task-seed $1 --alive-ticks 0 --rhythm-ticks 0 \
+        --out out/nn/hold/d$0-s$1.csv > out/nn/hold/d$0-s$1.txt 2>&1'
+    for d in 4 6 7 10 16; do
+        printf "delay %2d  late, seeds 5-8:" "$d"
+        for s in 5 6 7 8; do
+            awk '$1 == "blob" && $2 ~ /^[0-9]/ { printf " %.2f", $3 }' "out/nn/hold/d$d-s$s.txt"
+        done
+        echo
+    done
+    ;;
 *)
-    sed -n '2,11p' "$0"
+    sed -n '2,12p' "$0"
     exit 1
     ;;
 esac
