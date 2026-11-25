@@ -13,13 +13,17 @@
 #   scripts/critic.sh track cartpole --seed 5 --oracle 1   a diagnostic, not a candidate: the
 #                                                actor told whether each press was the
 #                                                scripted player's, with no critic noise
-#   scripts/critic.sh tables                     the report tables (scripts/critic_tables.sh)
+#   scripts/critic.sh tables                     the report (scripts/ladder.py, seeds 5-12)
+#   scripts/critic.sh tables --seeds 1-4         the same on the tuning seeds
 # Watch it (opens a window, so for the owner, not agents):
-#   scripts/watch.sh cartpole --motor-spread 128 --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.critic_on 1 --g.readout_good 1
+#   scripts/watch.sh cartpole --motor-spread 128 --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 5 --g.readout_balance 1 --g.critic_on 1 --g.readout_good 1
 set -euo pipefail
 cd "$(dirname "$0")/.."
 READOUT="--g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1"
-CRITIC="$READOUT --g.critic_on 1 --g.readout_good 1"
+# the one setting: the readout taught by the surprise, good half on, the actor at half the
+# readout's chance (readout_shift 5; it only moves the actor, since under a critic the raw
+# valence never reaches the readout)
+CRITIC="--g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 5 --g.readout_balance 1 --g.critic_on 1 --g.readout_good 1"
 what="${1:-life}"
 [ $# -gt 0 ] && shift
 task="${1:-cartpole}"
@@ -55,8 +59,15 @@ track)
     python3 scripts/critic_track.py "out/critic/track-$name.csv" "out/critic/track-$name-off.csv"
     ;;
 tables)
+    # the report: every world of scripts/ladder.py, seeds 5-12, the critic beside the readout
+    # alone, the GRU and the memory engine (each call also runs the twin, coin and scripted
+    # player); then the 400,000-step lives where the critic still rises
     scripts/build.sh
-    exec scripts/critic_tables.sh "$@"
+    R=critic,readout,gru,memory
+    python3 scripts/ladder.py run --rules $R --jobs "${JOBS:-2}" "$@"
+    python3 scripts/ladder.py run --life 400k --rules critic,gru,memory --jobs "${JOBS:-2}" \
+        --worlds cartpole,cartpole-alive,cartpole-sparse,catch "$@"
+    exec python3 scripts/ladder.py table --rules $R "$@"
     ;;
 *)
     sed -n '2,15p' "$0"

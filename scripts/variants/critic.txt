@@ -1,5 +1,6 @@
 # The actor-critic report (docs/results-2026-11-25-critic.md). First line: the readout alone.
 readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1
-critic: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.critic_on 1 --g.readout_good 1
+critic: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 5 --g.readout_balance 1 --g.critic_on 1 --g.readout_good 1
+critic-shift4: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.critic_on 1 --g.readout_good 1
 critic-reinforce: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.critic_on 1 --g.actor_form 1
 critic-rich2: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.critic_on 1 --g.readout_good 1 --g.inhibitory_percent 34 --g.inhibit_gain 3 --g.threshold_min 6 --g.threshold_max 14 --g.cooldown_max 8 --g.local_connect_shift 2 --g.strong_shift 1 --g.far_percent 36 --g.far_reach_tiles 2 --g.local_delay_min 3 --g.local_delay_max 11 --g.branch_threshold 6 --g.branch_bonus 5 --g.noise_shift 9 --g.sector_target_per_1024 25 --g.sector_smooth_shift 6 --g.pacemakers_per_1024 11 --g.fan_in_max 103
