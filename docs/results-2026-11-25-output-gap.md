@@ -157,8 +157,8 @@ Read down a column; each line adds one handicap to one above it:
   = how far over a threshold that follows the drive); the real cell fires tick by tick with
   a leak, a branch bonus and delays. Something in the real cell or the live sheet helps the
   gated rules and not the plain one. Not found. Candidates: the copy's vote is a smooth
-  function of counts, so 30% of its goods count as close against 42% in the engine (the
-  gate then learns from fewer, easier goods); the real cell responds to spikes that come
+  function of counts, so 31% of its goods count as close (34% with the runner-up rule)
+  against 42% in the engine (the gate then learns from fewer, easier goods); the real cell responds to spikes that come
   together within a few ticks, which counts do not see; motor cells' own spikes feed back
   into the sheet. The ordering of the rules is the same in copy and engine (plain < gate <
   runner-up, and only the runner-up rule keeps rising).
@@ -255,15 +255,6 @@ test accuracy, seeds 5-12:
 (every sheet has `--g.tile_winners 4`; competition is `--g.compete_on 1 --g.compete_shift 5`;
 top quarter strong is `--g.readout_evidence_strong 2`.)
 
-**A weighted vote on top (idea 147).** `readout_evidence_strong 2` wires the top quarter of
-each motor cell's connections (by counter) at strength 4 and the rest at 1, so a cell's
-vote weighs its best evidence four times. With the runner-up rule and gate: 0.837, 0.854,
-0.863, above the runner-up rule alone on every one of the 8 seeds at 20,000 (0.832 to 0.842
-against 0.818 to 0.827) and at 120,000 (0.856 to 0.868 against 0.847 to 0.856), and quicker
-early (0.795 at 5,000, level with the gate alone). Free per tick: the w1 plane is read
-already. `scripts/outgap.sh online rivalstrong --g.readout_good 2 --g.margin_percent 20
---g.margin_win 2 --g.readout_evidence_strong 2` (run on stevejobs; byte-identical there).
-
 - Every seed is above the gate at 60,000 and 120,000 (runner-up 0.847 to 0.856 at 120,000;
   gate 0.731 to 0.774), and above plain everywhere past 1,000 digits.
 - **No drift**: still rising at 120,000 on both sheets; no button goes quiet on any seed
@@ -279,8 +270,17 @@ already. `scripts/outgap.sh online rivalstrong --g.readout_good 2 --g.margin_per
 - **The lived sheet still does not help the output.** With competition on from the first
   digit the fixed output reads 0.844, a hair under the born sheet's 0.852; a fresh linear
   reader gets 0.952 from such a sheet and 0.926 from the born one. On the frozen lived sheet
-  it reads 0.818, 0.837, 0.845 (born 0.822, 0.845, 0.852). The ladder below says where the
+  it reads 0.818, 0.837, 0.845 (born 0.822, 0.845, 0.852). The ladder (above) says where the
   lead is lost.
+
+**A weighted vote on top (idea 147).** `readout_evidence_strong 2` wires the top quarter of
+each motor cell's connections (by counter) at strength 4 and the rest at 1, so a cell's
+vote weighs its best evidence four times. With the runner-up rule and gate: 0.837, 0.854,
+0.863, above the runner-up rule alone on every one of the 8 seeds at 20,000 (0.832 to 0.842
+against 0.818 to 0.827) and at 120,000 (0.856 to 0.868 against 0.847 to 0.856), and quicker
+early (0.795 at 5,000, level with the gate alone). Free per tick: the w1 plane is read
+already. `scripts/outgap.sh online rivalstrong --g.readout_good 2 --g.margin_percent 20
+--g.margin_win 2 --g.readout_evidence_strong 2` (run on stevejobs; byte-identical there).
 
 What else was tried in the engine, seed 5, 2,000 test digits (the gate alone on that seed,
 all 10,000 test digits: 0.801, 0.785, 0.747 at 20,000, 60,000, 120,000; runner-up + gate:
@@ -298,13 +298,14 @@ all 10,000 test digits: 0.801, 0.785, 0.747 at 20,000, 60,000, 120,000; runner-u
 | runner-up + gate + centred steps (`--g.readout_center 1`) | 0.788 | 0.824 | 0.841 | worse |
 | the same on the frozen lived sheet, against it without centring | 0.796 / 0.819 | 0.846 / 0.834 | 0.850 / 0.851 | no help |
 
-The rungs this leaves: under the runner-up rule the engine (0.822 at 20,000) is 0.04 under
-the integer perceptron told the answer (rung 3, 0.863) and 0.10 under the offline reader.
-At 120,000 it is 0.025 under rung 3 (0.877). The rest is online learning with integer
-steps (rungs 1 to 3, 0.06) and the 0.04 between a free reader and the motor cells' vote
-(4r 0.868 against 7 0.822). The sign rung (no evidence against) is not fixed: opponent
-cells cost in the engine, and I do not know why the copy says 0.18 and the engine does not
-pay it; the inhibitory sources the engine wires may already carry most of it.
+The rungs this leaves: under the runner-up rule the engine (0.822 at 20,000; 0.837 with the
+weighted vote) is 0.04 (0.027) under the integer perceptron told the answer (rung 3, 0.864)
+and 0.10 (0.09) under the offline reader. At 120,000 it is 0.028 (0.017) under rung 3
+(0.880). The rest is online learning with integer steps (rungs 1 to 3, 0.06) and the 0.05
+between a free reader and the motor cells' vote (4r 0.869 against 7 0.822). The sign rung
+(no evidence against) is not fixed: opponent cells cost in the engine, and I do not know
+why the copy says 0.17 and the engine does not pay it; the inhibitory sources the engine
+wires may already carry most of it.
 
 ## Toy rows
 
@@ -369,8 +370,8 @@ same life before and after the merge (seed 5, 0.5930 and 0.7535 at 1,000 and 5,0
 
 ## Unfinished
 
-- **Why the real motor cell beats my copy under the gate** (0.811 against 0.720; 0.822
-  against 0.756 with the runner-up rule), while they agree on the plain rule. Candidates
+- **Why the real motor cell beats my copy under the gate** (0.811 against 0.721; 0.822
+  against 0.754 with the runner-up rule), while they agree on the plain rule. Candidates
   named above; none tested. Until then rung 6 is trustworthy for the plain rule and only
   for the ordering of rules under the gate.
 - **The sign rung is not fixed.** Opponent cells cost in the engine (one seed, three forms).
@@ -382,7 +383,7 @@ same life before and after the merge (seed 5, 0.5930 and 0.7535 at 1,000 and 5,0
   born one; a reader that scales each source by its own spread is the float readers' one
   advantage not yet tried in bits.
 - The runner-up rule has been run to 120,000 digits only; the drift it removes could come
-  back later. The top-quarter-strong form (idea 147) is one seed.
+  back later.
 - **Exclusive-or** pays 0.09 for the gate. Not addressed.
 - The copy's rung 5v/6 stand-in for threshold regulation (mean plus z spreads over 128
   digits) is mine, not the engine's; it is why 5v helps the plain rule, and it may be part of
@@ -415,8 +416,8 @@ same life before and after the merge (seed 5, 0.5930 and 0.7535 at 1,000 and 5,0
   of the runner-up rule, MNIST +0.015 at 20,000 and +0.011 at 120,000 on every seed (0.837,
   0.863); 16 cues 0.605 to 0.723; exclusive-or 0.793 to 0.725. A trade, not a free gain.
 - Idea 161: the ladder is the answer to "where the 0.2 goes" (this doc). Two rungs are not
-  closed: the sign (a linear reader with no weight below zero loses 0.18 under the gate;
-  opponent cells did not get it back in the engine), and the 0.04 between a free reader and
+  closed: the sign (a linear reader with no weight below zero loses 0.17 under the gate;
+  opponent cells did not get it back in the engine), and the 0.05 between a free reader and
   the motor cells' vote under the gate.
 - Principle 41 and the compete result: the output still does not use the lived sheet's lead
   (competition on from the first digit, fixed output: 0.844 against 0.852 born). The next
@@ -459,6 +460,9 @@ scripts/outgap.sh online livedrival --life 60000 --life-freeze 1 --g.compete_on 
 scripts/outgap.sh toys working
 scripts/outgap.sh toys gate --g.readout_good 1 --g.margin_percent 20 --g.margin_win 2
 scripts/outgap.sh toys rival --g.readout_good 2 --g.margin_percent 20 --g.margin_win 2
+scripts/outgap.sh online rivalstrong --g.readout_good 2 --g.margin_percent 20 --g.margin_win 2 --g.readout_evidence_strong 2
+scripts/outgap.sh online competerivalstrong --g.compete_on 1 --g.compete_shift 5 --g.readout_good 2 --g.margin_percent 20 --g.margin_win 2 --g.readout_evidence_strong 2
+scripts/outgap.sh toys rivalstrong --g.readout_good 2 --g.margin_percent 20 --g.margin_win 2 --g.readout_evidence_strong 2
 scripts/outgap.sh table                                        every finished run
 python3 scripts/outgap_table.py out/output-gap --doc           the ladder table above
 python3 scripts/outgap_quiet.py out/output-gap/online-gate     buttons gone quiet, per seed
