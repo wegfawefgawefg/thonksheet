@@ -44,11 +44,11 @@ are ordered by the one question above. An item is struck when done, with where t
 is.
 
 Running (four), as of 2026-11-25 night:
-- Inside learning: feedback tags from the chosen action, and the barely-correct margin
-  rule.
-- The vvm route (a state that is the address of its next operation).
+- Item B below (idea 155) and item C below (the critic).
 - The calculation battery, with answers that are patterns and held-out inputs.
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
+Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
+153, 154), both merged. Their slots went to items B and C.
 Also running unattended, not agents: the search on stevejobs (minimal, table); the
 memory, GRU and MLP reference suites on stevejobs (`thonk-ref`), on the integrated code
 with the fixed cartpole.
@@ -70,10 +70,11 @@ so they come first):
   tiring neurons (or time and hold cells), winners in the tile, the critic. Does it hold
   together on the whole map, and does the replay runaway stop under it? Scored with the
   references beside it.
-- B. Reverse replay made safe: zero-sum steps per neuron or a threshold that rises with
+- B. *(running, as idea 155)* One inner rule from tags and reverse replay; then the
+  inside-learning test on MNIST and held-out rows. (Was: reverse replay made safe: zero-sum steps per neuron or a threshold that rises with
   gain; the unsigned half separated from the signed half; the inside-learning test on
-  MNIST (0.924 and 0.943 to beat) and on held-out rows.
-- C. The critic on report seeds and long lives, on the fixed cartpole, with the wide
+  MNIST (0.924 and 0.943 to beat) and on held-out rows.)
+- C. *(running)* The critic on report seeds and long lives, on the fixed cartpole, with the wide
   critic.
 - D. Integration check: after the merges, re-run the suite for the readout, the GRU and
   the memory engine, so the scoreboard is on the fixed cartpole and has the new rows.

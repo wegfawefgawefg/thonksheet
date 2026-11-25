@@ -558,7 +558,7 @@ would be cool if we can arbitrarily learn calculations."
      learn by local rules: evidence on which operation helped from which state, and new
      operations written in one go. Aimed at holding, at multi-step calculation, at acting.
      The owner: "i suspect it can actually work. but idk how. its a whole other route to a
-     general learner i think." *building*
+     general learner i think." *done (`blobrun --engine vm`, `scripts/vm.sh`, src/vm/), and it converges. His original, run unchanged: the nearest-op lookup sits on one op forever whatever the input; his refractory lockout of 4 or 8 ticks gives loops of exactly 5 or 9 ops (his "loop 7-15"); the op added each tick is as big as the state, there is no "do nothing" op, and the input barely affects which op is picked. The bit version: the input is written into the state every tick, an operation only sets or clears a few bits and leaves the rest, entries are found by nearness, and a new input makes its own detector with no reward. One setting, seeds 5-12: delayed echo 1.00 across 20 silent steps (GRU 0.49, best sheet 0.55), 16 cues 1.00, a second task with the first kept, hold with distractors on the cue lines 0.97 (memory 0.63, GRU 0.50), computed carry 0.88, parity of 3 and 4 lines 0.85 and 0.75 (GRU 0.68 and 0.52), majority on never-rewarded patterns 0.78 (memory 0.45), 3% input noise 0.94 (memory 0.50). It fails: any sense of elapsed time (gap 0.48, beat 0.42), credit one step back (chain 0.00), several items in order (copy of 6 0.27, brackets at a coin), 32 cues, a shape in a new place (0.21), catch and cartpole. docs/results-2026-11-25-vm-route.md*
 136. **Seeing battery.** The owner: "shape identification. square. triangle. lines. dot.
      object tracking." Name the shape (dot, line, square, triangle, cross, ring) wherever
      it is and whatever its size; which way a line points; how many things there are; where
@@ -642,4 +642,35 @@ co-activity runs ties the held units together and loses their order.
      read small sets of raw input bits (an n-tuple memory; the table neurons are close to
      this) keep nearness. Give the memory such an address and score it on MNIST and on the
      held-out rows. *queued: small*
-
+153. **Tags from the chosen action.** [AGREL, AuGMEnT, BrainProp, in bits] After the answer,
+     the chosen button's cells mark the inner neurons that fed them, minus those that fed
+     the other buttons; the verdict then moves only marked neurons' evidence counters,
+     under fixed counts of excitatory, inhibitory and strong connections. *done
+     (`--g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4`, `scripts/tags.sh`). Seeds 5-12:
+     exclusive-or 0.88 to 0.996, eight cues 0.84 to 0.95, echo at 5 tiles 0.59 to 0.78;
+     order and gap unchanged; echo at 2 tiles worse (0.79). A fresh output on the lived
+     sheet reads exclusive-or at 0.998 against 0.855 as born, and eight cues at 0.97
+     against 0.81: the inside learned, for the task it was rewarded on, with no transfer.
+     Unlike reverse replay it does not run hot: rate 33 against a target of 32 after
+     160,000 steps, because each neuron keeps its counts. The contrast between buttons is
+     what makes it work; feedback from the chosen button alone hurts. Same mechanism as
+     idea 62 in another form. On MNIST it adds nothing. docs/results-2026-11-25-tags-and-margin.md*
+154. **Learn on good only when the vote was close.** [Brader, Senn and Fusi 2007] *done
+     (`--g.readout_evidence 2 --g.readout_good 1 --g.margin_percent 20 --g.margin_win 2`).
+     Sixteen cues 0.31 to 0.60 (pairs held 8 to 16), order 0.70 to 0.78, eight cues learned
+     in 2,000 steps instead of 17,000, MNIST 0.71 to 0.81, and no locked lives; costs
+     exclusive-or (0.80) and reach. It does not stop the slow decline on long lives (MNIST
+     0.81 to 0.70 by 180,000 digits; buttons die). Baldassi's deepening form gained little
+     and wrecked order. Same doc as 153*
+155. **One inner rule from the two that work.** Reverse replay's spike-exact credit and
+     growable reach, with the tags' contrast between buttons, their threshold, no learning
+     by inhibitory neurons and fixed counts per neuron. Scored on the rows where each one
+     alone loses (order, echo at 2 tiles, long lives), on MNIST's ceiling, and on held-out
+     rows. *building*
+156. **The vm's four walls.** Time (give the state a clock: a counter field in the address,
+     or the time cells of idea 131 as input); credit one step back (the critic's surprise
+     as the verdict); several items in order (marks that do not halve each other: a slot
+     per position); a learned gate on what to keep. *queued*
+157. **Why the output declines on a long life.** With the gate, buttons die one by one. A
+     floor per button, or balancing the good half by how often each button is right.
+     Replaces idea 146. *queued*
