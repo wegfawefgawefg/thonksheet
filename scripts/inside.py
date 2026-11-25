@@ -29,9 +29,9 @@ def mnist_cmd(kind, seed, opt, flags, out):
     cmd = ["nice", "-n", "19", MNIST, "ceiling"] + SHEET + READER + [
         "--fit", str(opt["fit"]), "--seed", str(seed)]
     if kind != "born":
-        cmd += ["--pretrain", str(opt["life"])]
+        cmd += ["--life", str(opt["life"])]
     if kind == "shuffled":
-        cmd += ["--pretrain-shuffle", "1"]
+        cmd += ["--life-shuffle", "1"]
     return cmd + opt.get("mnist_extra", []) + flags, out
 
 
@@ -160,6 +160,9 @@ def main():
         elif a == "--only":
             opt["parts"] = args[i + 1].split(",")
             i += 2
+        elif a == "--kinds":
+            opt["kinds"] = args[i + 1].split(",")
+            i += 2
         elif a == "--members":
             opt["members"] = args[i + 1].split(",")
             i += 2
@@ -189,7 +192,7 @@ def main():
                     subprocess.run(["nice", "-n", "19", MNIST, "baselines", "--mnist-code", "t28"],
                                    stdout=f, cwd=ROOT)
             for s in opt["seeds"]:
-                for k in ("born", "lived", "shuffled"):
+                for k in opt.get("kinds", ("born", "lived", "shuffled")):
                     jobs.append(mnist_cmd(k, s, opt, flags,
                                           os.path.join(outdir, "mnist-%s-%d.txt" % (k, s))))
         if "calc" in opt["parts"]:
