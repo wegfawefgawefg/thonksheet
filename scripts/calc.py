@@ -44,7 +44,8 @@ QUICK = {"steps": 4000, "window": 200, "trials": 1000, "seeds": [5, 6]}
 
 
 def member(fam, name, args, first=False):
-    return dict(fam=fam, name=name, args=["--task", "calc"] + args, first=first)
+    return dict(fam=fam, name=name, args=["--task", "calc"] + args, first=first,
+                op=args[1])
 
 
 def members():
@@ -79,8 +80,9 @@ def members():
                                           "--calc-list", "4"], True))
     for op, size in (("turn", 4), ("mirror", 4), ("move", 4), ("scale", 4), ("turn3d", 3),
                      ("move3d", 3), ("angle", 2), ("turn3", 2)):
-        m.append(member("geometry", "%s%d" % (op, size), ["--calc", op, "--calc-size",
-                                                           str(size)], op == "turn"))
+        label = "turn3pts%d" % size if op == "turn3" else "%s%d" % (op, size)
+        m.append(member("geometry", label, ["--calc", op, "--calc-size", str(size)],
+                        op == "turn"))
     return m
 
 

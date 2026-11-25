@@ -1,0 +1,7 @@
+# wiring at birth after a life: learning on (the default inner rules, no reward), measured
+# after 600,000 ticks of the probe's own input. the first line is the baseline.
+default:
+inhib local 3: --g.wire_inhib_reach -3
+mirror 100: --g.wire_mirror_percent 100
+two sheets 50: --g.wire_two_sheets 50
+stream 1: --g.wire_stream 1

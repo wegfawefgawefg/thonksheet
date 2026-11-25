@@ -1,0 +1,60 @@
+501 sheets. Score: readable from the tile next to the input.
+
+How each number moves each feature (rank correlation; |0.15| or more shown):
+number                    hold20  hold60 hold150   which
+inhibitory_percent         +0.21       .       .       .
+inhibit_gain               +0.18       .       .       .
+threshold_min                  .       .       .       .
+threshold_max                  .       .       .       .
+leak_shift_min                 .       .       .   +0.15
+leak_shift_max                 .   +0.23       .   +0.18
+cooldown_min                   .       .       .       .
+cooldown_max                   .       .       .   +0.16
+local_connect_shift            .       .       .       .
+strong_shift                   .       .       .       .
+far_percent                    .       .       .       .
+far_reach_tiles                .       .       .       .
+local_delay_min            +0.15       .       .       .
+local_delay_max            +0.26   +0.17       .       .
+branch_threshold           +0.19       .       .   +0.17
+branch_bonus                   .       .       .   +0.18
+noise_shift                +0.18   +0.16       .   +0.15
+sector_target_per_1024         .       .       .       .
+sector_smooth_shift        -0.18       .       .   -0.15
+pacemakers_per_1024            .       .       .       .
+strong_log                     .       .       .   +0.24
+fan_in_max                     .       .       .       .
+
+Spread over all sheets (lowest, median, highest), and the default sheet:
+  hold20   0.00   0.69   3.66   default 1.60
+  hold60   0.00   0.18   4.99   default 0.11
+  hold150   0.00   0.08   2.28   default 0.12
+  which    1.47   8.70  20.70   default 9.78
+
+The 8 best all-round sheets:
+  hold20 1.92  hold60 0.66  hold150 0.13  which 14.82
+      --g.inhibitory_percent 17 --g.inhibit_gain 8 --g.threshold_min 3 --g.threshold_max 20 --g.leak_shift_max 3 --g.cooldown_min 2 --g.cooldown_max 3 --g.strong_shift 1 --g.far_percent 51 --g.far_reach_tiles 2 --g.local_delay_min 4 --g.local_delay_max 7 --g.branch_threshold 5 --g.branch_bonus 6 --g.noise_shift 13 --g.sector_target_per_1024 85 --g.sector_smooth_shift 5 --g.pacemakers_per_1024 2 --g.fan_in_max 108
+  hold20 1.38  hold60 0.59  hold150 0.17  which 15.63
+      --g.inhibitory_percent 36 --g.inhibit_gain 4 --g.threshold_min 6 --g.threshold_max 10 --g.leak_shift_max 7 --g.cooldown_min 2 --g.cooldown_max 7 --g.strong_shift 3 --g.far_percent 56 --g.far_reach_tiles 5 --g.local_delay_min 2 --g.local_delay_max 9 --g.branch_bonus 6 --g.noise_shift 12 --g.sector_target_per_1024 42 --g.sector_smooth_shift 6 --g.pacemakers_per_1024 6 --g.fan_in_max 71
+  hold20 1.52  hold60 1.07  hold150 0.18  which 12.31
+      --g.inhibitory_percent 20 --g.threshold_max 14 --g.leak_shift_max 5 --g.cooldown_max 7 --g.far_percent 6 --g.far_reach_tiles 4 --g.local_delay_min 3 --g.local_delay_max 11 --g.branch_threshold 5 --g.branch_bonus 4 --g.sector_target_per_1024 73 --g.sector_smooth_shift 7 --g.pacemakers_per_1024 2 --g.fan_in_max 98
+  hold20 1.63  hold60 0.42  hold150 0.16  which 13.76
+      --g.inhibitory_percent 37 --g.inhibit_gain 3 --g.threshold_min 7 --g.threshold_max 10 --g.leak_shift_max 5 --g.cooldown_min 2 --g.strong_shift 3 --g.far_percent 44 --g.far_reach_tiles 2 --g.local_delay_min 4 --g.branch_threshold 4 --g.branch_bonus 5 --g.noise_shift 13 --g.sector_target_per_1024 96 --g.sector_smooth_shift 3 --g.pacemakers_per_1024 8 --g.fan_in_max 109
+  hold20 1.05  hold60 0.41  hold150 0.38  which 14.86
+      --g.inhibitory_percent 19 --g.inhibit_gain 4 --g.threshold_min 3 --g.threshold_max 14 --g.leak_shift_min 2 --g.leak_shift_max 6 --g.cooldown_min 2 --g.local_connect_shift 2 --g.strong_shift 1 --g.far_percent 3 --g.local_delay_min 3 --g.local_delay_max 8 --g.branch_threshold 6 --g.branch_bonus 3 --g.noise_shift 13 --g.sector_target_per_1024 90 --g.sector_smooth_shift 3 --g.pacemakers_per_1024 11 --g.fan_in_max 73
+  hold20 1.46  hold60 0.56  hold150 0.19  which 11.82
+      --g.inhibitory_percent 22 --g.inhibit_gain 4 --g.threshold_min 7 --g.threshold_max 14 --g.leak_shift_min 2 --g.leak_shift_max 7 --g.local_connect_shift 4 --g.strong_shift 1 --g.far_percent 2 --g.far_reach_tiles 6 --g.local_delay_min 3 --g.local_delay_max 6 --g.branch_threshold 5 --g.sector_target_per_1024 47 --g.sector_smooth_shift 2 --g.pacemakers_per_1024 3 --g.fan_in_max 62
+  hold20 1.70  hold60 1.29  hold150 0.20  which 10.43
+      --g.inhibitory_percent 35 --g.threshold_min 2 --g.threshold_max 9 --g.leak_shift_max 3 --g.cooldown_max 3 --g.strong_shift 1 --g.far_percent 13 --g.local_delay_min 2 --g.local_delay_max 11 --g.branch_bonus 5 --g.noise_shift 8 --g.sector_target_per_1024 16 --g.sector_smooth_shift 5 --g.pacemakers_per_1024 1 --g.fan_in_max 115
+  hold20 1.59  hold60 0.48  hold150 0.12  which 13.83
+      --g.inhibitory_percent 39 --g.inhibit_gain 4 --g.threshold_min 3 --g.threshold_max 18 --g.leak_shift_max 7 --g.cooldown_max 8 --g.local_connect_shift 4 --g.far_percent 53 --g.far_reach_tiles 4 --g.local_delay_min 4 --g.local_delay_max 7 --g.branch_threshold 4 --g.branch_bonus 6 --g.sector_target_per_1024 60 --g.sector_smooth_shift 3 --g.fan_in_max 84
+sheet     hold20  hold60 hold150   which   (mean over seeds 2,3)
+default     1.10    0.23    0.03   10.66
+best 1      0.93    0.29    0.00   13.79
+best 2      1.27    0.53    0.23   18.55
+best 3      1.77    0.58    0.07   13.14
+best 4      1.46    0.40    0.05   15.88
+best 5      1.12    0.55    0.15   16.23
+best 6      1.07    0.42    0.20   12.09
+best 7      0.95    0.27    0.07   11.30
+best 8      1.36    0.52    0.10   15.22

@@ -1,5 +1,5 @@
 // The reference lines of the score plot: the same task run by the learning-off twin (same
-// genome and seed, genome.learning_on = 0) and by coin flips (the world's stand-in), each a
+// engine, genome and seed, learning off) and by coin flips (the world's stand-in), each a
 // whole step at a time, never ahead of the main blob. They run on one thread of their own,
 // so the main blob keeps its speed; they share nothing with it but two atomic step counts.
 
@@ -11,6 +11,7 @@
 
 bool twin_birth(Twin& twin, const SimSettings& settings) {
     twin.run = settings.run;
+    twin.engine = settings.engine.engine;
     twin.learn_off = settings.twin;
     twin.steps = 0;
     twin.target = 0;
@@ -20,27 +21,19 @@ bool twin_birth(Twin& twin, const SimSettings& settings) {
         twin.scores.clear();
         twin.coin_scores.clear();
     }
-#if BLOB_HAS_CORE
     if (twin.learn_off) {
-        Genome off = settings.genome;
-        off.learning_on = 0;
-        twin.blob = blob_birth(off, settings.seed);
-        if (!ticker_start(twin.ticker, *twin.blob, twin.run)) {
+        twin.blob = engine_birth(settings.engine, settings.seed, false);
+        if (twin.blob == nullptr || !ticker_start(twin.ticker, *twin.blob, twin.run)) {
             return false;
         }
     }
-#endif
-    twin.coin = standin_birth(settings.genome, settings.seed);
+    twin.coin = standin_birth(settings.engine.genome, settings.seed);
     return ticker_start(twin.coin_ticker, *twin.coin, twin.run);
 }
 
 void twin_free(Twin& twin) {
-#if BLOB_HAS_CORE
-    if (twin.blob != nullptr) {
-        blob_free(twin.blob);
-        twin.blob = nullptr;
-    }
-#endif
+    engine_free(twin.engine, twin.blob);
+    twin.blob = nullptr;
     if (twin.coin != nullptr) {
         standin_free(twin.coin);
         twin.coin = nullptr;
@@ -49,17 +42,16 @@ void twin_free(Twin& twin) {
 
 // one whole task step for the twin and for the coin flips
 static void twin_step(Twin& twin) {
-#if BLOB_HAS_CORE
     if (twin.blob != nullptr) {
         do {
             ticker_before_tick(twin.ticker, *twin.blob);
-            blob_tick(*twin.blob);
+            engine_tick(twin.engine, *twin.blob);
         } while (!ticker_after_tick(twin.ticker, *twin.blob));
         if (twin.ticker.valence != 0) {
-            blob_reward(*twin.blob, twin.ticker.valence);
+            plug_mark_acted(twin.ticker.plug, *twin.blob, twin.ticker.move);
+            engine_reward(twin.engine, *twin.blob, twin.ticker.valence);
         }
     }
-#endif
     TaskTicker& ct = twin.coin_ticker;
     bool answered = false;
     while (!answered) {

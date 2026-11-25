@@ -57,14 +57,32 @@ alone: a design may pass tier 4 before tier 3.
 | 2 | combination | exclusive-or; the function battery's N-point patterns, counting | exclusive-or 0.88; the rest being built |
 | 3 | magnitude | functions of a number: step, tent, sine, cosine, sums, products | being built |
 | 4 | time | order; gap; delayed echo; beat; sequence; functions of the last few cues | on one richer sheet (rich2) with nothing changed between them: order 0.85, gap 0.93; a cue is still held only about 20 ticks, so delayed echo and beat fail |
-| 5 | space and what stays the same | the invariance battery: place, scale, turn, thickness, clutter, viewpoint | place fails (0.25); the rest being built |
+| 5 | space and what stays the same | the invariance battery: place, scale, turn, thickness, clutter, viewpoint; the seeing battery: name the shape, track a moving thing, count, a thing behind a cover | place fails (0.25); the rest being built |
 | 6 | sound | the invariance battery's tune, tempo and pitch rows | being built |
 | 7 | acting | bandit; switching bandit; chain; track; catch; forage; mountain car; pendulum; cartpole; snake | catch 0.32 (chance 0.25); cartpole below a coin; the rest being built |
 | 8 | keeping and adding | second task after the first; retest; idle; capacity; a changed rule; damage | second task 0.99 with the first kept at 0.98; idle loses nothing |
 | 9 | relation, number, parts and wholes, chance, context | same/different; odd one out; counting; grammar; noisy answers; context switch | being built |
 | 10 | no teacher | predict the next input; fill in a missing part; notice the odd one | hole |
-| 11 | real data | MNIST digits; spoken digits or tones; characters of text | being built (MNIST first) |
+| 11 | real data | MNIST digits; spoken digits or tones; characters of text | MNIST: a linear reader of the never-taught sheet 0.924 (linear on pixels 0.922, two-layer net 0.955); the sheet's own readout from good and bad 0.71 |
 | 12 | the long game | a maze; snake on a big board; several tasks interleaved for a whole life | hole |
+
+### The fixed reference
+
+One ordinary network setting run on the same rows (`scripts/reference.sh`, idea 117): a
+GRU of 128 units, backprop through 8 steps, told only good and bad. It is the bar for
+"learnable": tier 1 all 1.00 (16 cues included), exclusive-or 0.97, tier 4's delayed echo,
+beat, order and gap all 1.00, catch 0.72, tier 8 1.00. It fails the place never rewarded
+(0.16), holds longer than 8 steps, and cartpole. A world the reference fails is either
+truly hard or badly made; cartpole's "lean" reward and the place world are marked suspect
+until checked.
+
+### The memory engine
+
+`blobrun --engine memory` (idea 123) passes tiers 1, 2 (exclusive-or), 4 (order, gap,
+delayed echo, beat), 7 (catch 0.99; cartpole 109 and 279 steps per fall) and 8 with one
+setting, by storing what it has seen. So "every row of tiers 1 to 4 on one set of rules"
+is met, by a lookup table, and the milestone needs sharpening: rows where the asked case
+was never shown (idea 149). The place world is the only such row today and it fails there.
 
 ## Milestones worth naming
 
@@ -76,6 +94,9 @@ alone: a design may pass tier 4 before tier 3.
   good and bad; the second is the two-layer network. Neither of those baselines can cope
   with a digit that is moved or turned; tier 5 is where a sheet could do something they
   cannot.
+  *Where it stands:* the first target is met only by an offline reader (0.924), not by a
+  readout that hears only good and bad (0.71). Moved by 2 pixels every learner, plain ones
+  included, keeps about two thirds of its score.
 - **Cartpole balanced.** A classic control task learned from good and bad alone.
 - **One life, every tier.** The same sheet meeting worlds from each tier in turn without
   being reset.
@@ -84,5 +105,5 @@ alone: a design may pass tier 4 before tier 3.
 
 Kinds of task with no world yet: learning with no teacher (tier 10); the long game (tier
 12); output that is a whole pattern or an amount instead of a button; being shown the answer
-(imitation); damage to the sheet. Each needs a world before any design can be said to work
+(imitation); damage to the sheet; a changed rule on the *same* lines and buttons (today's second task uses new ones, so nothing interferes). Each needs a world before any design can be said to work
 on "any task".
