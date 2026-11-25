@@ -439,7 +439,14 @@ not known to do it.
      recurrent one), one size, one recipe, behind the same plug, told only good and bad,
      run on the whole map with nothing changed between tasks. Not to beat it task by task:
      to see where an unchanged network stops, and to calibrate which worlds are learnable.
-     *building*
+     *done (`blobrun --engine mlp|gru`, `scripts/reference.sh`). A plain recurrent network
+     (GRU, 128 units, backprop through 8 steps, good and bad only) learns every row any of
+     our engines learns, at the same or a higher score: echo to 16 cues 1.00, exclusive-or
+     0.97, delayed echo, beat, order and gap all 1.00, catch 0.72. Ours leads only in
+     speed on association (level reached in 1,000 steps against 2,000 to 3,000). Both
+     networks fail the place never rewarded (0.16, below chance), holds past the GRU's
+     8-step window, and cartpole from good and bad (below a coin; told the answer they
+     balance). docs/results-2026-11-25-fixed-net-reference.md*
 118. **One setting for everything.** Score our own designs the same way: one set of numbers
      for the whole map. Today the readout runs use flags chosen per task (long delays for
      the time tasks, more motor cells here, smaller line groups there). *idea: the combined

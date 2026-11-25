@@ -33,6 +33,20 @@ nothing lost after being unplugged (1.00 before, 1.00 after); Echo five tiles aw
 catch 0.32 where chance is 0.25. Still failing: delayed echo (0.55), beat, gap (0.52),
 cartpole (below a coin), and a shape in a place it was never rewarded (0.25, below chance).
 
+**Where we stand against ordinary networks (2026-11-25).** A plain recurrent network (a
+GRU of 128 units trained by backprop through its last 8 steps), with one fixed setting,
+behind the same plug and told only good and bad, learns every world any of our engines
+learns, at the same or a higher score, and several that none of ours learn: sixteen cues
+(1.00 against our 0.31), delayed echo, beat, order and gap (all 1.00), catch (0.72 against
+0.32). Our only lead is speed on plain association (1,000 steps against 2,000 to 3,000).
+So nothing here beats standard methods yet, and the bar for "learns it" on these worlds is
+1.00, not "above chance". What the reference cannot do is as useful: a shape in a place
+never rewarded (0.16, below chance, same as ours), a hold longer than its window (fails at
+11 steps), and cartpole from good and bad alone (worse than a coin; shown the right press
+it balances for 1,000 steps). Those three are not our private walls. They are where a
+fixed ordinary network also stops, and where it would normally be redesigned per task.
+docs/results-2026-11-25-fixed-net-reference.md
+
 ## Principles that hold so far
 
 1. **A neuron must pay for what it keeps.** [solid] A fixed budget of connections, where
@@ -201,10 +215,14 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
   Any rule graded against its own average also freezes once every reward equals the
   average: an all-wrong life stops moving.
 - **A new place.** A shape learned in some places is answered wrongly in a place never
-  rewarded (0.25 where chance is 0.49). Nothing in the sheet shares what one patch learned
+  rewarded (0.25 where chance is 0.49). The reference networks fail it the same way (0.16),
+  so the wall is real and general, though the world itself needs a cell-by-cell check
+  (everything scores below chance, which smells of overlapping shapes). Nothing in the sheet shares what one patch learned
   with another. This is the missing prior the owner started from on day one (a convolution
   shares; this sheet does not).
-- **Acting in a world.** Nothing learns catch or cartpole. On cartpole learning makes the
-  full engine worse than a coin.
+- **Acting in a world.** Nothing of ours learns catch or cartpole. On cartpole learning
+  makes the full engine worse than a coin, and the reference networks too: the "lean"
+  reward grades the press before the one it follows (a fault in the world, being fixed),
+  and the sparse reward needs credit carried 25 steps back. The GRU learns catch (0.72).
 - **More than four things.** Eight cues are now learned (0.84) by the new readout on the
   full engine. Sixteen is untested with it.
