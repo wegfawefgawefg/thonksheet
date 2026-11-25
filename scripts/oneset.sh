@@ -9,8 +9,10 @@
 #   scripts/oneset.sh base --rows xor,order      some rows
 #   scripts/oneset.sh table base,gru,memory,best side by side, each against the first
 #   JOBS=6 scripts/oneset.sh best                more at once (stevejobs; 2 on this PC)
-# A pass of one column is 22 worlds x 8 seeds x 2 (life and twin), 40,000 steps each
-# (20,000 digits for MNIST): run it on stevejobs (MINI_DIR=thonk-oneset scripts/mini.sh push).
+# A pass of one column is 22 worlds x 8 seeds x 2 (life and twin), 20,000 steps each
+# (40,000 for the 1,000-tick hold; 20,000 digits for MNIST); a column that changes only
+# learning numbers shares its twins. Run it on stevejobs (MINI_DIR=thonk-oneset
+# scripts/mini.sh push, then THONK_MNIST=... python3 scripts/oneset.py run NAME --jobs 6).
 # Lives are cached in out/oneset/, so a rerun only runs what is missing.
 set -euo pipefail
 cd "$(dirname "$0")/.."

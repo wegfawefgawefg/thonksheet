@@ -1,6 +1,8 @@
 # The quick map for one setting (scripts/oneset.sh). `row NAME: flags` is a world; every
 # other line `NAME: flags` is a column (a setting run unchanged on every row). Every row runs
-# on the standard life (--ticks 20 --sensor-side 3 --motor-side 3 --steps 40000 --window 1000)
+# on a half-length life (--ticks 20 --sensor-side 3 --motor-side 3 --steps 20000 --window 1000;
+# the standard 40,000 halved to fit the time budget: the output rule on seeds 1-4 scores
+# within 0.05 of its 40,000-step score on every row)
 # with its own flags after that; a row's flags are the world's own (layout, lines, buttons).
 # Results: docs/results-2026-11-26-one-setting.md.
 
@@ -19,7 +21,7 @@ row parity3: --task points --fn parity --fn-lines 3
 row order: --task order
 row gap: --task gap
 row delayed2: --task delayed-echo --delay 2
-row hold1000: --task delayed-echo --delay 50
+row hold1000: --task delayed-echo --delay 50 --steps 40000
 # acting
 row bandit: --task bandit
 row chain: --task chain
@@ -36,7 +38,7 @@ row pairs: --task pairs --sensor-side 2 --pair-every 100
 # real data: 20,000 digits seen once each, the online score on digits not seen before. the
 # 28x28 digit needs the whole sheet as the sensor region (the world cannot be plugged
 # otherwise), motor cells on the cells between
-row mnist: --task mnist --sensor-side 1 --mnist-code t28 --steps 20000 --g.sensor_w 64 --g.sensor_h 64 --g.motor_x 1 --g.motor_y 1 --g.motor_w 64 --g.motor_h 64
+row mnist: --task mnist --sensor-side 1 --mnist-code t28 --g.sensor_w 64 --g.sensor_h 64 --g.motor_x 1 --g.motor_y 1 --g.motor_w 64 --g.motor_h 64
 
 # the three references
 base: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128

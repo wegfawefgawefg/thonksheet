@@ -36,7 +36,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAP = os.path.join(ROOT, "scripts", "variants", "oneset.txt")
 MORE = [MAP, os.path.join(ROOT, "scripts", "variants", "best.txt")]
 OUT = os.path.join(ROOT, "out", "oneset")
-LIFE = ["--ticks", "20", "--sensor-side", "3", "--motor-side", "3", "--steps", "40000",
+LIFE = ["--ticks", "20", "--sensor-side", "3", "--motor-side", "3", "--steps", "20000",
         "--window", "1000"]
 
 
