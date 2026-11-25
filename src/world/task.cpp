@@ -57,6 +57,9 @@ static const char* const task_names[(int)TaskKind::count] = {
     "rare",
     "drift",
     "invariance",
+    "distract",
+    "serial-add",
+    "majority",
     "calc",
 };
 // clang-format on
@@ -139,6 +142,11 @@ void task_reset(Task& task, TaskKind kind, const TaskSettings& settings, uint64_
     case TaskKind::invariance:
         invariance_reset(task);
         break;
+    case TaskKind::distract:
+    case TaskKind::serial_add:
+    case TaskKind::majority:
+        beyond_reset(task);
+        break;
     case TaskKind::calc:
         calc_reset(task);
         break;
@@ -195,6 +203,10 @@ TaskShape task_shape(const Task& task) {
         return long_shape(task);
     case TaskKind::invariance:
         return invariance_shape(task);
+    case TaskKind::distract:
+    case TaskKind::serial_add:
+    case TaskKind::majority:
+        return beyond_shape(task);
     case TaskKind::calc:
         return calc_shape(task);
     case TaskKind::count:
@@ -265,6 +277,11 @@ void task_sense(const Task& task, TaskSense& sense) {
     case TaskKind::invariance:
         invariance_sense(task, sense);
         break;
+    case TaskKind::distract:
+    case TaskKind::serial_add:
+    case TaskKind::majority:
+        beyond_sense(task, sense);
+        break;
     case TaskKind::calc:
         calc_sense(task, sense);
         break;
@@ -321,6 +338,10 @@ int task_perfect_move(const Task& task) {
         return long_perfect_move(task);
     case TaskKind::invariance:
         return invariance_perfect_move(task);
+    case TaskKind::distract:
+    case TaskKind::serial_add:
+    case TaskKind::majority:
+        return beyond_perfect_move(task);
     case TaskKind::calc:
         return calc_perfect_move(task);
     case TaskKind::count:
@@ -392,6 +413,11 @@ int task_step(Task& task, const TaskStepIn& in) {
     case TaskKind::invariance:
         valence = invariance_step(task, in);
         break;
+    case TaskKind::distract:
+    case TaskKind::serial_add:
+    case TaskKind::majority:
+        valence = beyond_step(task, in);
+        break;
     case TaskKind::calc:
         valence = calc_step(task, in);
         break;
@@ -448,6 +474,9 @@ double task_window_score(Task& task) {
     case TaskKind::drift:
     case TaskKind::invariance:
         // right answers over chances to answer (each new world says what it counts)
+    case TaskKind::distract:
+    case TaskKind::serial_add:
+    case TaskKind::majority:
         score = ratio(t[0], t[1]);
         break;
     case TaskKind::beat:

@@ -388,7 +388,16 @@ void plug_write(Plug& plug, Blob& blob) {
         }
         bool on = plug.line_on[line];
         for (int k = 0; k < group; k++) {
-            blob_sense(blob, plug.sensor_neuron[line * PLUG_MAX_GROUP + k], on);
+            bool cell = on;
+            if (plug.settings.input_noise > 0) {
+                // splitmix64 step; the low 10 bits against the chance
+                uint64_t z = (plug.noise_state += 0x9e3779b97f4a7c15ull);
+                z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull;
+                z = (z ^ (z >> 27)) * 0x94d049bb133111ebull;
+                z ^= z >> 31;
+                cell ^= (int)(z & 1023) < plug.settings.input_noise;
+            }
+            blob_sense(blob, plug.sensor_neuron[line * PLUG_MAX_GROUP + k], cell);
         }
     }
 }
@@ -415,6 +424,7 @@ int plug_choice(Plug& plug) {
     bool tie = false;
     for (int line = 0; line < plug.motor_lines; line++) {
         int c = plug.motor_count[line];
+        plug.last_count[line] = c;
         if (c > best_count) {
             best = line;
             best_count = c;

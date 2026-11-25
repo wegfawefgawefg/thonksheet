@@ -34,6 +34,46 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
 - **Keeping is a capacity limit.** The output holds 8 to 14 pairs and has lost any pair by
   10,000 steps; freezing strong counters does not help.
 
+**Two more, the morning after (2026-11-25, late).**
+
+- **The inside learns, a second way, and this one is stable.** Tags from the chosen action
+  (idea 153): exclusive-or 0.996, eight cues 0.95; a fresh output on the lived sheet reads
+  0.998 against 0.855 as born; the sheet stays at its target rate through 160,000 steps.
+  Two independent rules now pass the inside-learning test, and they are the same idea:
+  one step of signed credit from the action's cells into hidden counters under a budget.
+  Neither transfers to a task it was not rewarded on, and neither helps MNIST.
+- **The owner's vvm converges once four things change** (idea 135): the input is written
+  into the state, an operation leaves most bits alone, lookup is by nearness, and new
+  inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
+  survives distractors on the cue lines (0.97; memory 0.63, GRU 0.50), does parity of 3
+  and 4 lines (0.85, 0.75; GRU 0.68, 0.52), and answers never-rewarded patterns (0.78;
+  memory 0.45). It has no sense of time, no credit one step back, and cannot keep several
+  items in order.
+- **Learning on good only when the vote was close** doubles the pairs held (16 cues 0.31
+  to 0.60) and lifts MNIST's online readout 0.71 to 0.81, without the lock.
+
+**The references on every row (2026-11-25, `docs/scoreboard.md`).** The GRU, the plain
+two-layer net and the memory engine now have the whole suite, eight seeds, on the
+integrated code. What that table says about the tests, before it says anything about us:
+
+- **Rows no reference learns, so they do not yet measure anything:** analogy (0.50, 0.33),
+  how many of 1 to 5 with mixed sizes (0.35), being shown the answer with no reward (all
+  nine rows at chance), fill-in, the pendulum (0.22 with the scripted player at 0.86), the
+  band of a sine at an x never rewarded (0.36 against 0.24), and the held-out rows for
+  place, turn, size and mixed. Either they need a kind of learner none of the three is, or
+  they are badly made. Each needs a learner that passes it, or a note saying why none can.
+- **The lookup table is a lookup table.** Memory matches or beats the GRU wherever the
+  exact case comes back (prediction 0.85 against 0.50, catch 0.99 against 0.72, n-back,
+  switching, parity of 4 lines 0.99 against 0.50). It is at chance the moment the case is
+  only near one it saw: a dimmer shape 0.50 (GRU 0.96), more clutter 0.50 (0.89), items
+  never taught 0.65 and 0.27 (0.87 and 0.48), reward true 60 in 100 0.73 (1.00).
+- **Where recurrence is the whole difference:** every row with a gap (delayed echo, order,
+  gap, same-then, copy, recall, n-back, brackets) the GRU learns and the plain net sits at
+  0.50. Our sheet without time cells sits with the plain net.
+- **The chain is ours.** GRU 0.01, memory 0.00, plain net 0.45, the readout alone 0.72;
+  with the critic 0.97 on the tuning seeds. It is the one row where a rule of ours beats
+  all three references, and it is the row that needs credit one step back.
+
 ## The headline (2026-11-25)
 
 **The output can now learn online, from good and bad alone, things no input line carries.**
@@ -288,6 +328,19 @@ docs/results-2026-11-25-mnist.md
 36. **A learning rule can be written as a table of ten local facts.** [solid as a
     construction] The error rule, the old rule and growth all are, and score alike. No
     evolved table is confirmed yet.
+
+37. **Credit inward must be a contrast between actions.** [likely] Feedback from the chosen
+    button alone hurts; the chosen button's wiring minus the others' is what teaches.
+38. **A neuron that learns inside must keep its counts.** [hint] Fixed numbers of
+    excitatory, inhibitory and strong connections per neuron is what keeps tags from
+    running the sheet hot, where reverse replay (which lets strength grow) runs away.
+    Inhibitory neurons should not learn from these credits.
+39. **Finding 17, restated: do not strengthen on good unconditionally.** [likely] Only when
+    the vote was close.
+40. **A state that addresses its own next step holds, once an operation can leave bits
+    alone and the input writes into the state.** [likely: one engine, 8 seeds] Matching by
+    nearness and waiting for the input to settle is what lets it survive noise and answer
+    unseen patterns, where a hashed lookup cannot.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 

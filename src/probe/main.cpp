@@ -8,6 +8,7 @@ int probe_rhythm(int argc, char** argv);
 int probe_carry(int argc, char** argv);
 int probe_feature(int argc, char** argv);
 int probe_linear(int argc, char** argv);
+int probe_transfer(int argc, char** argv);
 int probe_invariance(int argc, char** argv);
 int probe_wiring(int argc, char** argv);
 int probe_replay(int argc, char** argv);
@@ -49,6 +50,7 @@ static const Probe probes[] = {
     {"reader", probe_reader},
     {"invariance", probe_invariance},
     {"critic", probe_critic},
+    {"transfer", probe_transfer},
     {"calc", probe_calc},
 };
 

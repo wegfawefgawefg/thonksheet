@@ -1,0 +1,9 @@
+# tags and margin, the report (seeds 5-12), plug: 256 motor cells dealt over all buttons (for
+# many buttons, and shuffled echo). tags: contrast, no inhibitory, min 4. gate: the counter fix,
+# good moves only on a thin vote (20%). deepen: Baldassi's R2 at 10%
+readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --motor-spread 256 --g.readout_balance 1
+tags: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --motor-spread 256 --g.readout_balance 1 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4
+gate: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --motor-spread 256 --g.readout_balance 1 --g.readout_good 1 --g.margin_percent 20 --g.margin_win 2
+tags + gate: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --motor-spread 256 --g.readout_balance 1 --g.readout_good 1 --g.margin_percent 20 --g.margin_win 2 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4
+deepen: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --motor-spread 256 --g.readout_balance 1 --g.margin_percent 10
+always on good: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --motor-spread 256 --g.readout_balance 1 --g.readout_good 1

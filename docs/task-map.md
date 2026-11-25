@@ -76,6 +76,17 @@ beat, order and gap all 1.00, catch 0.72, tier 8 1.00. It fails the place never 
 truly hard or badly made; cartpole's "lean" reward and the place world are marked suspect
 until checked.
 
+Since the integration (2026-11-25) the GRU, the plain net and the memory engine have every
+row in `docs/scoreboard.md`, on the fixed cartpole (GRU 798 steps per fall on lean, 77 on
+sparse; memory 302 and 281). By tier, the GRU: tier 2 parity of 3 lines 0.78, of 4 lines
+0.50 (the plain net 0.96 and 0.90); tier 7 bandits 1.00, track and forage 0.9 to 1.0,
+mountain car 1.00, chain 0.01, pendulum 0.22; tier 9 same or different 0.87 to 1.00, odd
+one out 0.97 and 0.48, bigger 1.00, brackets 0.99 and 0.90, grammar 0.70 and 0.60, copy
+1.00 and 0.55, recall 1.00 and 0.99, n-back 0.97 and 0.94; tier 10 noisy and rare cues
+1.00, context 1.00 and 0.89, switching 0.75 and 0.50. No reference learns analogy, the
+shown-the-answer rows, fill-in, or any held-out place, turn or size. Those rows are
+suspect until something passes them.
+
 ### The memory engine
 
 `blobrun --engine memory` (idea 123) passes tiers 1, 2 (exclusive-or), 4 (order, gap,

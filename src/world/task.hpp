@@ -67,6 +67,9 @@ enum class TaskKind {
     rare,            // patterns asked one step in a thousand among common ones
     drift,           // fixed pairs; half change button late in life
     invariance,      // the invariance battery: a shape in versions never rewarded (task_invariance)
+    distract,        // delayed echo with distracting events in the gap (task_beyond_lookup.cpp)
+    serial_add,      // add two binary numbers a bit pair per step; press each sum bit
+    majority,        // 3 or more of 5 lines on; scored only on patterns never rewarded
     calc,            // the calculation battery: the answer is a pattern (task_calc.hpp)
     count,
 };
@@ -74,7 +77,7 @@ enum class TaskKind {
 constexpr int TASK_MAX_SINGLES = 32;
 constexpr int TASK_MAX_SHEET = 1024; // mnist's 28x28
 constexpr int TASK_MAX_NUMBERS = 4;
-constexpr int TASK_MAX_MOTORS = 16;
+constexpr int TASK_MAX_MOTORS = 32;
 constexpr int TASK_MAX_PATTERN = 64;
 constexpr int TASK_MAX_TRIAL = 16; // steps in one trial of a feature task
 constexpr int SCRIPT_MAX = 24;     // steps in one trial of a tier 9 or 10 task
@@ -140,6 +143,9 @@ struct TaskSettings {
     int mnist_code = 0;
     int mnist_test = 0;
     int mnist_first = 0, mnist_count = 0;
+    int distract = 4;  // distract: distracting events between cue and ask
+    int add_bias = 12; // serial-add: chance x16 that a pair passes the carry through
+    int maj_hold = 6;  // majority: patterns of 32 never rewarded, the scored ones
     int mnist_dx = 0, mnist_dy = 0;
 
     // tiers 9 and 10 (task_script.cpp and the files it lists)
@@ -217,6 +223,9 @@ struct Task {
     int food_dx = 0, food_dy = 0; // forage: food relative to the animal
     int64_t pos = 0, vel = 0;     // mountain car, pendulum: 16.16 fixed point
     int64_t off_average = 0;      // cartpole relative reward: recent mean distance from home
+
+    // serial-add: the carry into the current bit
+    int carry = 0;
 
     // window score, meaning depends on the kind (see task_window_score)
     int64_t tally[4] = {};
@@ -356,6 +365,13 @@ TaskShape classic_shape(const Task& task);
 void classic_sense(const Task& task, TaskSense& sense);
 int classic_perfect_move(const Task& task);
 int classic_step(Task& task, const TaskStepIn& in);
+
+// distract, serial-add, majority (task_beyond_lookup.cpp)
+void beyond_reset(Task& task);
+TaskShape beyond_shape(const Task& task);
+void beyond_sense(const Task& task, TaskSense& sense);
+int beyond_perfect_move(const Task& task);
+int beyond_step(Task& task, const TaskStepIn& in);
 void calc_reset(Task& task);
 TaskShape calc_shape(const Task& task);
 void calc_sense(const Task& task, TaskSense& sense);

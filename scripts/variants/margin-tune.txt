@@ -1,0 +1,11 @@
+# barely correct (learn_margin.cpp), tuning on seeds 1-4. base: the best readout (mode 5).
+# the plug's --motor-spread is given per task on the command line
+readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1
+margin 5: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.margin_percent 5
+margin 10: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.margin_percent 10
+margin 20: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.margin_percent 20
+margin 40: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.margin_percent 40
+margin 10, rival hidden: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.margin_percent 10 --g.margin_rival 1
+margin 20, rival hidden: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.margin_percent 20 --g.margin_rival 1
+margin 20, rival visible: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.margin_percent 20 --g.margin_rival 2
+margin 20, rival only: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.margin_percent 20 --g.margin_win 0 --g.margin_rival 1

@@ -44,14 +44,15 @@ are ordered by the one question above. An item is struck when done, with where t
 is.
 
 Running (four), as of 2026-11-25 night:
-- Inside learning: feedback tags from the chosen action, and the barely-correct margin
-  rule.
-- The vvm route (a state that is the address of its next operation).
+- Item B below (idea 155) and item C below (the critic).
 - The calculation battery, with answers that are patterns and held-out inputs.
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
-Also running unattended, not agents: the search on stevejobs (minimal, table); the
-memory, GRU and MLP reference suites on stevejobs (`thonk-ref`), on the integrated code
-with the fixed cartpole.
+Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
+153, 154), both merged. Their slots went to items B and C.
+Also running unattended, not an agent: the readout suite on stevejobs (`thonk-ref`, log
+`out/readout.log` there; pull with `MINI_DIR=thonk-ref scripts/mini.sh pull`). The memory,
+GRU and plain-net suites on the integrated code are done and on the scoreboard. The search
+is stopped on both machines (resumable).
 
 Done since the queue was written: the GPU (any world, evidence counters, the memory
 engine, one call per table of designs); the integration of all eleven wound-up branches
@@ -70,13 +71,16 @@ so they come first):
   tiring neurons (or time and hold cells), winners in the tile, the critic. Does it hold
   together on the whole map, and does the replay runaway stop under it? Scored with the
   references beside it.
-- B. Reverse replay made safe: zero-sum steps per neuron or a threshold that rises with
+- B. *(running, as idea 155)* One inner rule from tags and reverse replay; then the
+  inside-learning test on MNIST and held-out rows. (Was: reverse replay made safe: zero-sum steps per neuron or a threshold that rises with
   gain; the unsigned half separated from the signed half; the inside-learning test on
-  MNIST (0.924 and 0.943 to beat) and on held-out rows.
-- C. The critic on report seeds and long lives, on the fixed cartpole, with the wide
+  MNIST (0.924 and 0.943 to beat) and on held-out rows.)
+- C. *(running)* The critic on report seeds and long lives, on the fixed cartpole, with the wide
   critic.
-- D. Integration check: after the merges, re-run the suite for the readout, the GRU and
-  the memory engine, so the scoreboard is on the fixed cartpole and has the new rows.
+- D. *(GRU, plain net and memory done; readout running on stevejobs)* Integration check:
+  after the merges, re-run the suite for the readout, the GRU and the memory engine, so
+  the scoreboard is on the fixed cartpole and has the new rows. What the reference table
+  says about the tests is in `docs/findings.md`, "The references on every row".
 
 Queued, in order:
 1. The inside-learning test as one script: after a life, freeze, wipe the output, fit a
@@ -105,7 +109,10 @@ Queued, in order:
 16. Copy, vary, keep a frozen copy; never erase (140, 141).
 17. Look one step ahead (144), on the acting worlds.
 18. Position tolerance learned from motion (idea 104) on the invariance battery.
-19. A red-team agent: beat the best design by any means that keeps the rules (127).
+19. A red-team agent: beat the best design by any means that keeps the rules (127). It
+    also takes the rows no reference learns (analogy, how-many-hard, the shown-the-answer
+    rows, fill-in, the pendulum, the sine band): for each, a learner that passes it or
+    the reason none can, and the row fixed or struck.
 20. Loop audit: cut mechanisms and suite rows that have earned nothing; one page.
 21. Long memory, whatever its wind-up leaves unfinished: the forgetting curve to a
     million steps, the freezer.

@@ -96,6 +96,7 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
                                       tt.task.pattern_graded);
                 } else {
                     plug_mark_acted(tt.plug, *blob, tt.move);
+                    plug_mark_vote(tt.plug, *blob, tt.move);
                 }
                 reward(driver, *blob, tt.valence);
             }
