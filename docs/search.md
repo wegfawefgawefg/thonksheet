@@ -40,7 +40,9 @@ connection loses only the runs in flight; start it again and it carries on. Noth
 run twice: a command already in `results.jsonl` is never run again, by either machine.
 
 The search does not start a run while the one-minute load is over `--max-load` (default:
-the number of cores), except to keep one going, so it backs off when the machine is busy.
+the number of cores), except to keep `--busy-jobs` going (default 1), so it backs off when
+the machine is busy. On the second machine `mini start` uses `--max-load 21 --busy-jobs 4`:
+4 jobs while other agents load it, up to 8 when it is quieter.
 
 ## What a candidate is
 
@@ -180,7 +182,39 @@ blobrun's numbers for the same command; one that does not belongs in a search of
 
 ## What it costs
 
-COST_TABLE
+Seconds of one core for one world on one seed (a life and its twin; a probe), this PC,
+2026-11-25, at load 37 on 32 threads (every agent's runs going at about half speed; quiet,
+roughly half these):
+
+| engine | life world | probe | one pass of the map (13 life worlds, 4 probes) |
+| --- | --- | --- | --- |
+| full | 13.5 s | 2 s | 184 s |
+| minimal | 4 s | - | 53 s |
+| table | 27 s | - | 351 s |
+
+On the second machine the full engine is about 3.6 times slower than this PC, minimal
+about 0.7, table about 1.3 times faster (AGENTS.md). Per candidate, the rungs cost one
+pass times: rung 0 about 0.2 (three worlds), rung 1 one, rung 2 three, rung 3 seven, less
+whatever is cached (a twin is shared by every candidate with the same non-learning
+numbers; a probe by every candidate with the same sheet). Most candidates stop at rung 0
+or 1. The small case below managed 141 candidates per core hour on the minimal engine with
+three worlds; the report gives the live figure per engine for the real map.
+
+## The small case that proved it
+
+`scripts/search/small-map.txt`: Echo with 2 cues, with 4 cues, and with cue and button two
+tiles apart, minimal engine only, no named starts, 2 jobs on this PC (loaded), 1.2 core
+hours, 163 candidates (68 reached rung 1, 36 rung 2, 22 confirmed). It was killed with
+`kill -9` once and with TERM once and restarted each time: 1,562 runs recorded, 1,562
+distinct commands, every line from before each kill still there unchanged.
+
+On confirmation seeds 5 to 8 the defaults pass 1 of the 3 worlds (echo2 0.81, echo4 0.22,
+distance 2 0.00; mean 0.34). Eight of the ten best by selection pass 2 of 3: for example
+`--m.down_shift 10 --sensor-side 2 --m.threshold_max 9` gives echo2 0.48, echo4 0.41;
+`--m.down_shift 10 --m.up_shift 5 --sensor-side 2` gives 0.60, 0.32. Nothing passes
+distance 2 (best 0.19). Two warnings it gave at once: the two best by selection fell back to
+1 of 3 on confirmation (three selection seeds flatter whoever ranks top), and the mean
+score did not beat the defaults (echo4 was bought with echo2).
 
 ## Blind spots
 
@@ -190,6 +224,8 @@ COST_TABLE
   growth, anything that wins only after 40,000 steps) is missed or punished.
 - One seed decides rung 0 and rung 1; a lucky seed can carry a weak candidate up a rung
   and an unlucky one can stop a good one. Rung 2 uses three seeds; confirmation four more.
+  The small case showed the top of the selection ranking regressing on confirmation;
+  read the confirmation columns, not the order.
 - Racing on the fast worlds first: a setting that fails echo but solves something hard
   dies at rung 0 unless it also scores on the fast worlds.
 - Correlations of numbers with scores are taken over a population bred from good parents,

@@ -1,11 +1,13 @@
 # The quick map: the worlds every candidate of the search is scored on (docs/search.md).
 # Tiers 1 to 4 of docs/task-map.md as they stood on main on 2026-11-25.
 #
-# The budget: seconds of one core for one pass of every world on one seed, on this PC,
-# for the dearest engine (the full engine; about 3.6 times that on the second machine).
-# `scripts/search.sh report` shows what a pass really costs, per world and engine, and
-# marks a map over budget. Adding a world means raising this on purpose or cutting one.
-budget   90
+# The budget: seconds of one core for one pass of every world on one seed, on this PC.
+# Measured 2026-11-25 with this PC at load 37 on 32 threads (about half speed): full
+# engine 184 s (13.5 s a life world, 2 s a probe), table 351 s, minimal 53 s. Quiet, about
+# half that. `scripts/search.sh report` shows what a pass really costs, per world, engine
+# and machine, and marks a map over budget. Adding a world means raising this on purpose
+# or cutting one.
+budget   200
 
 # every life: 10,000 steps (20 ticks a step from the plug), windows of 200; late = the
 # last tenth. No coin or twin inside the call: the twin is its own cached run.
