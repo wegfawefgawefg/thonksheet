@@ -1,6 +1,7 @@
 // blobprobe looptrace --life "<blobrun flags of delayed echo, k 2>" [--born 1]
 //     [--read-delay D] [--calib N] [--trials N] [--carry C] [--loop-strong 1] [--out PATH]
-//     [--after "<--g.name value ...>"] [--set-cool N] [--set-leak N] [--quiet-pace 1]
+//     [--after "<name value ...>"] [--set-cool N] [--set-leak N] [--set-bias N]
+//     [--quiet-pace 1]
 //     [--g.name value ...]
 // idea 172 (docs/results-2026-11-26-loops.md): what ends the learned loop. Lives the life as
 // blobprobe transfer does, makes after_life's changes (the wiring stays the life's), stops
@@ -39,9 +40,24 @@ Blob* probe_sheet(int argc, char** argv, const Genome& genome, uint64_t seed);
 // a cell's role while a trial runs: loop cells by the cue they hold, others by kind
 enum Role { LOOP0, LOOP1, OTHER, INHIB, NOT_HIDDEN };
 // what is summed per tick of the trial
-enum Stat { LIT, RIVAL, HIDDEN, INHIBIT, LIT_THR, RIVAL_THR, LIT_BIAS, LIT_CUT, LIT_FULL, STATS };
-static const char* const stat_names[STATS] = {"lit",  "rival", "hidden", "inhib", "lit_thr",
-                                              "rival_thr", "lit_bias", "lit_cut", "lit_full"};
+enum Stat {
+    LIT,
+    RIVAL,
+    HIDDEN,
+    INHIBIT,
+    LIT_THR,
+    RIVAL_THR,
+    LIT_BIAS,
+    LIT_CUT,
+    LIT_FULL,
+    BIAS_ALL, // every sector's bias, mean
+    BIAS_TOP, // share of sectors at +sector_bias_max
+    BIAS_LOW, // share at -sector_bias_max
+    STATS
+};
+static const char* const stat_names[STATS] = {
+    "lit",      "rival",    "hidden",   "inhib",    "lit_thr",  "rival_thr",
+    "lit_bias", "lit_cut",  "lit_full", "bias_all", "bias_top", "bias_low"};
 
 struct TickSums {
     int ticks = 0;            // per trial, at most
@@ -77,6 +93,12 @@ static void tick_stats(const Blob& blob, const std::vector<uint64_t>& role, int 
             s[LIT_CUT] += over && !((fired[t] >> b) & 1) && blob.cooldown[n] == 0;
             s[LIT_FULL] += full;
         }
+    }
+    int top = blob.genome.sector_bias_max;
+    for (int q = 0; q < blob.sector_count; q++) {
+        s[BIAS_ALL] += blob.sector_bias[q];
+        s[BIAS_TOP] += blob.sector_bias[q] >= top;
+        s[BIAS_LOW] += blob.sector_bias[q] <= -top;
     }
     // per-cell means: divide by the class sizes
     for (int st = 0; st < STATS; st++) {
@@ -140,6 +162,7 @@ static void record(Blob& blob, const RunFlags& rec, int trials, Counts& c,
             sized[RIVAL] = sized[RIVAL_THR] = class_size[cue ? LOOP0 : LOOP1];
             sized[HIDDEN] = class_size[OTHER];
             sized[INHIBIT] = class_size[INHIB];
+            sized[BIAS_ALL] = sized[BIAS_TOP] = sized[BIAS_LOW] = blob.sector_count;
             tick_stats(blob, *role, cue, s, sized);
             for (int st = 0; st < STATS; st++) {
                 sums->sum[(size_t)tick * STATS + st] += s[st];
@@ -313,6 +336,32 @@ int probe_looptrace(int argc, char** argv) {
                     m[LIT_THR], m[RIVAL_THR], m[LIT_BIAS], m[LIT_CUT], m[LIT_FULL]);
     }
     std::printf("trace: %d blanks read at 0.75 or more\n", trace);
+
+    // the sheet's state over the read: sector biases, the hidden cells' thresholds, the rate
+    double whole[STATS] = {0};
+    for (int t = 0; t < sums.ticks; t++) {
+        for (int st = 0; st < STATS; st++) {
+            whole[st] += sums.seen[(size_t)t] > 0
+                             ? sums.sum[(size_t)t * STATS + st] / sums.seen[(size_t)t] / sums.ticks
+                             : 0;
+        }
+    }
+    double thr = 0, at_cap = 0, at_floor = 0, spikes = 0;
+    for (int i : hidden) {
+        thr += blob->threshold[i];
+        at_cap += blob->threshold[i] >= blob->genome.threshold_cap;
+        at_floor += blob->threshold[i] <= 1;
+        for (size_t r = 0; r < c.cue.size(); r++) {
+            for (int p = 0; p < c.phases; p++) {
+                spikes += c.spikes[(r * c.phases + p) * n + i];
+            }
+        }
+    }
+    double hn = hidden.empty() ? 1 : (double)hidden.size();
+    std::printf("state: hidden rate %.1f per 1024 cell-ticks; hidden thresholds mean %.2f, at cap "
+                "%.3f, at floor %.3f; sector bias mean %.2f, at +max %.3f, at -max %.3f\n",
+                1024 * spikes / hn / ((double)c.cue.size() * c.phases * ticks_per_step), thr / hn,
+                at_cap / hn, at_floor / hn, whole[BIAS_ALL], whole[BIAS_TOP], whole[BIAS_LOW]);
 
     const char* out = text_arg(argc, argv, "--out", nullptr);
     FILE* f = out ? std::fopen(out, "w") : nullptr;

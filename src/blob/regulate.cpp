@@ -6,8 +6,9 @@
 
 constexpr int THRESHOLD_FLOOR = 1;
 
-// smooth one sector's counts and move its bias toward the target
-static void regulate_one_sector(Blob& blob, int sector, int spikes, int wrong) {
+// smooth one sector's counts and move its bias toward the target. `step` 0: the bias stays
+// this tick (sector_step_shift)
+static void regulate_one_sector(Blob& blob, int sector, int spikes, int wrong, int step) {
     const Genome& g = blob.genome;
     int act = (int)blob.sector_activity[sector];
     act += ((spikes << 8) - act) >> g.sector_smooth_shift;
@@ -17,7 +18,7 @@ static void regulate_one_sector(Blob& blob, int sector, int spikes, int wrong) {
     blob.sector_surprise[sector] = (uint32_t)(sur < 0 ? 0 : sur);
 
     // a dead band of an eighth of the target either side, then one step
-    if (!g.sector_reg_on) {
+    if (!g.sector_reg_on || !step) {
         return;
     }
     int target = (int)blob.sector_target[sector];
@@ -38,8 +39,13 @@ static void regulate_sectors(Blob& blob) {
     int st = g.sector_tiles;
     int sectors_w = (blob.tiles_w + st - 1) / st;
     uint32_t total_fired = 0, total_wrong = 0, attached = 0;
+    // idea 172: a slow bias steps only on a drawn tick, one bit per sector (no draw while off)
+    uint64_t steps = ~0ull;
 
     for (int s = 0; s < blob.sector_count; s++) {
+        if (g.sector_step_shift > 0 && (s & 63) == 0) {
+            steps = sparse_word(blob.rng, g.sector_step_shift);
+        }
         int x0 = (s % sectors_w) * st, y0 = (s / sectors_w) * st;
         int spikes = 0, wrong = 0;
         for (int y = y0; y < y0 + st && y < blob.tiles_h; y++) {
@@ -55,7 +61,7 @@ static void regulate_sectors(Blob& blob) {
                 attached += (uint32_t)__builtin_popcountll(lines);
             }
         }
-        regulate_one_sector(blob, s, spikes, wrong);
+        regulate_one_sector(blob, s, spikes, wrong, (int)((steps >> (s & 63)) & 1));
     }
 
     blob.stats.fired = total_fired;
