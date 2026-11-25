@@ -9,7 +9,8 @@
 static const char* usage =
     "usage: blobrun [flags]\n"
     "  --task NAME        echo, shuffled-echo, delayed-echo, go-no-go, beat, sequence,\n"
-    "                     catch, cartpole, order, both-not-either, gap, place, mnist\n"
+    "                     catch, cartpole, order, both-not-either, gap, place, mnist,\n"
+    "                     two-step, distract, serial-add, majority\n"
     "                     (default echo)\n"
     "  --seed N           blob seed (default 1)\n"
     "  --task-seed N      task seed (default: same as --seed)\n"
@@ -45,6 +46,9 @@ static const char* usage =
     "  --gap-long N       gap: blank steps between blinks, long (default 3)\n"
     "  --place-size N     place: the sheet is N x N (default 4)\n"
     "  --place-hold N     place: places never rewarded, the scored ones (default 3)\n"
+    "  --distract N       distract: distracting events between cue and ask (default 4)\n"
+    "  --add-bias N       serial-add: chance x16 a pair passes the carry on (default 12)\n"
+    "  --maj-hold N       majority: patterns of 32 never rewarded, the scored ones (default 6)\n"
     "  --mnist-code C     mnist: t14 (default), g14 or t28 (src/world/mnist_data.hpp)\n"
     "  --mnist-first N    mnist: first training digit used (default 0)\n"
     "  --mnist-count N    mnist: training digits used from there (default 0: the rest)\n"
@@ -236,6 +240,12 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.task_settings.place_size = (int)v;
         } else if (std::strcmp(flag, "--place-hold") == 0) {
             flags.task_settings.place_hold = (int)v;
+        } else if (std::strcmp(flag, "--distract") == 0) {
+            flags.task_settings.distract = (int)v;
+        } else if (std::strcmp(flag, "--add-bias") == 0) {
+            flags.task_settings.add_bias = (int)v;
+        } else if (std::strcmp(flag, "--maj-hold") == 0) {
+            flags.task_settings.maj_hold = (int)v;
         } else if (std::strcmp(flag, "--mnist-first") == 0) {
             flags.task_settings.mnist_first = (int)v;
         } else if (std::strcmp(flag, "--mnist-count") == 0) {

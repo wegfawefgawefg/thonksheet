@@ -23,6 +23,9 @@ enum class TaskKind {
     place,           // a small shape at one of several places; answer which shape
     mnist,           // a handwritten digit on the sheet; press its button (task_mnist.cpp)
     two_step,        // press the cue's button, then the other one; judged only at the end
+    distract,        // delayed echo with distracting events in the gap (task_beyond_lookup.cpp)
+    serial_add,      // add two binary numbers a bit pair per step; press each sum bit
+    majority,        // 3 or more of 5 lines on; scored only on patterns never rewarded
     count,
 };
 
@@ -81,6 +84,9 @@ struct TaskSettings {
     int mnist_code = 0;
     int mnist_test = 0;
     int mnist_first = 0, mnist_count = 0;
+    int distract = 4;  // distract: distracting events between cue and ask
+    int add_bias = 12; // serial-add: chance x16 that a pair passes the carry through
+    int maj_hold = 6;  // majority: patterns of 32 never rewarded, the scored ones
     int mnist_dx = 0, mnist_dy = 0;
 };
 
@@ -188,3 +194,10 @@ TaskShape two_step_shape(const Task& task);
 void two_step_sense(const Task& task, TaskSense& sense);
 int two_step_perfect_move(const Task& task);
 int two_step_step(Task& task, const TaskStepIn& in);
+
+// distract, serial-add, majority (task_beyond_lookup.cpp)
+void beyond_reset(Task& task);
+TaskShape beyond_shape(const Task& task);
+void beyond_sense(const Task& task, TaskSense& sense);
+int beyond_perfect_move(const Task& task);
+int beyond_step(Task& task, const TaskStepIn& in);

@@ -190,6 +190,19 @@ static bool writes_something(const VmBlob& v, int e) {
     return false;
 }
 
+// event_m: an event entry also knows its context, the M bits it was written in; it counts
+// as this event's detector only when 3/4 of those are on now
+static bool context_matches(const VmBlob& v, int e) {
+    const uint64_t* a = v.addr + (size_t)e * v.a_words + v.x_words;
+    const uint64_t* m = v.state + v.x_words;
+    int size = 0, lit = 0;
+    for (int w = 0; w < v.m_words; w++) {
+        size += __builtin_popcountll(a[w]);
+        lit += __builtin_popcountll(a[w] & m[w]);
+    }
+    return 4 * lit >= 3 * size;
+}
+
 // events: the input changed, and no firing entry is a detector of it (an entry whose address
 // covers this input: at least 3/4 of its X part is on now, and that part is at least half
 // of what is on). a quiet entry becomes one, with a fresh code as its operation.
@@ -207,7 +220,8 @@ void vm_events(VmBlob& v) {
     for (int k = 0; k < v.vg.active; k++) {
         int e = v.winners[k];
         int size = v.x_size[e];
-        if (4 * v.match_x[e] >= 3 * size && 2 * size >= on && writes_something(v, e)) {
+        if (4 * v.match_x[e] >= 3 * size && 2 * size >= on && writes_something(v, e) &&
+            (!v.vg.event_m || context_matches(v, e))) {
             return; // already known
         }
     }

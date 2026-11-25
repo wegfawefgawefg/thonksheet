@@ -36,12 +36,22 @@ ROWS = {
     "both": ["--task", "both-not-either"],
     "two-step": ["--task", "two-step"],
     "beat": ["--task", "beat", "--period", "4"],
+    "dist1": ["--task", "distract", "--distract", "1"],
+    "dist2": ["--task", "distract", "--distract", "2"],
+    "dist4": ["--task", "distract", "--distract", "4"],
+    "dist8": ["--task", "distract", "--distract", "8"],
+    "add": ["--task", "serial-add"],
+    "majority": ["--task", "majority"],
+    "place": ["--task", "place"],
 }
 GROUPS = {
     "hold": ["delay0", "delay1", "delay2", "delay5", "delay20", "delay2k8"],
     "cues": ["echo2", "echo8", "echo16", "echo32", "shuffled"],
     "steps": ["order", "gap", "both", "two-step"],
     "time": ["beat"],
+    # what a lookup of the recent past cannot do: distractors in the gap, a computed held
+    # value, cases never rewarded
+    "beyond": ["dist1", "dist2", "dist4", "dist8", "add", "majority", "place"],
 }
 
 

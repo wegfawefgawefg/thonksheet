@@ -13,7 +13,9 @@
 #   scripts/vm.sh suite                             the whole bench suite (scripts/suite.sh vm)
 #
 # Groups for rows: hold (delayed echo, gaps 0 1 2 5 20, and 8 cues at gap 2), cues (echo with
-# 2 8 16 32 cues, shuffled), steps (order, gap, both-not-either, two-step), time (beat).
+# 2 8 16 32 cues, shuffled), steps (order, gap, both-not-either, two-step), time (beat),
+# beyond (distract 1 2 4 8, serial-add, majority, place: what a lookup cannot do).
+# Another engine on the same rows: add --engine memory or --engine gru at the end.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 scripts/build.sh

@@ -70,7 +70,9 @@ struct VmGenome {
     int event_min_bits = 8;  // an input with fewer X bits on is not an event
     int event_set_shift = 4; // an event's code: set-mask density over M
     int event_clr_shift = 1; // and clear-mask density (half of M: older marks fade by half)
-    int event_m = 0;         // 1: an event entry's address also samples M (context)
+    // 1: an event entry's address also samples M (its context), and an input in a new
+    // context is a new event: transitions become (input, state) -> a new mark
+    int event_m = 0;
     // the last this-many words of M form a ring that slides one bit along every tick: a
     // permutation, so a mark keeps all its bits and its place tells how long ago it was made
     int m_slide_words = 0;

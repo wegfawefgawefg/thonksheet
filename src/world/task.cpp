@@ -7,7 +7,7 @@ static const char* const task_names[(int)TaskKind::count] = {
     "echo",  "shuffled-echo", "delayed-echo", "go-no-go",        "beat", "sequence",
     "catch", "cartpole",      "order",        "both-not-either", "gap",  "place",
     "mnist",
-    "two-step",
+    "two-step", "distract", "serial-add", "majority",
 };
 
 const char* task_name(TaskKind kind) {
@@ -58,6 +58,11 @@ void task_reset(Task& task, TaskKind kind, const TaskSettings& settings, uint64_
     case TaskKind::two_step:
         two_step_reset(task);
         break;
+    case TaskKind::distract:
+    case TaskKind::serial_add:
+    case TaskKind::majority:
+        beyond_reset(task);
+        break;
     case TaskKind::count:
         break;
     }
@@ -86,6 +91,10 @@ TaskShape task_shape(const Task& task) {
         return mnist_shape(task);
     case TaskKind::two_step:
         return two_step_shape(task);
+    case TaskKind::distract:
+    case TaskKind::serial_add:
+    case TaskKind::majority:
+        return beyond_shape(task);
     case TaskKind::count:
         break;
     }
@@ -123,6 +132,11 @@ void task_sense(const Task& task, TaskSense& sense) {
     case TaskKind::two_step:
         two_step_sense(task, sense);
         break;
+    case TaskKind::distract:
+    case TaskKind::serial_add:
+    case TaskKind::majority:
+        beyond_sense(task, sense);
+        break;
     case TaskKind::count:
         break;
     }
@@ -151,6 +165,10 @@ int task_perfect_move(const Task& task) {
         return mnist_perfect_move(task);
     case TaskKind::two_step:
         return two_step_perfect_move(task);
+    case TaskKind::distract:
+    case TaskKind::serial_add:
+    case TaskKind::majority:
+        return beyond_perfect_move(task);
     case TaskKind::count:
         break;
     }
@@ -188,6 +206,11 @@ int task_step(Task& task, const TaskStepIn& in) {
     case TaskKind::two_step:
         valence = two_step_step(task, in);
         break;
+    case TaskKind::distract:
+    case TaskKind::serial_add:
+    case TaskKind::majority:
+        valence = beyond_step(task, in);
+        break;
     case TaskKind::count:
         break;
     }
@@ -215,6 +238,9 @@ double task_window_score(Task& task) {
     case TaskKind::place:
     case TaskKind::mnist:
     case TaskKind::two_step:
+    case TaskKind::distract:
+    case TaskKind::serial_add:
+    case TaskKind::majority:
         // right answers over chances to answer
         score = ratio(t[0], t[1]);
         break;
