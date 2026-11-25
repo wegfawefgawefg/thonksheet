@@ -7,7 +7,8 @@
 static const char* usage =
     "usage: blobrun [flags]\n"
     "  --task NAME        echo, shuffled-echo, delayed-echo, go-no-go, beat, sequence,\n"
-    "                     catch, cartpole, order, both-not-either, gap, place (default echo)\n"
+    "                     catch, cartpole, order, both-not-either, gap, place, points,\n"
+    "                     number, two-numbers, past (default echo)\n"
     "  --seed N           blob seed (default 1)\n"
     "  --task-seed N      task seed (default: same as --seed)\n"
     "  --steps N          life length in task steps (default 20000)\n"
@@ -39,6 +40,9 @@ static const char* usage =
     "  --gap-long N       gap: blank steps between blinks, long (default 3)\n"
     "  --place-size N     place: the sheet is N x N (default 4)\n"
     "  --place-hold N     place: places never rewarded, the scored ones (default 3)\n"
+    "  --fn NAME          points, number, two-numbers, past: the function (see\n"
+    "                     docs/curriculum.md); --fn-lines, --fn-bands, --fn-k, --fn-hold,\n"
+    "                     --fn-gap, --fn-items N set the rest\n"
     "  --distance N       plug: cue lines and motor lines N tiles apart (default: packed,\n"
     "                     1 tile with the default genome)\n"
     "  --motor-spread N   plug: N motor cells per button, dealt like a checkerboard over\n"
@@ -116,6 +120,13 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
         if (std::strncmp(flag, "--g.", 4) == 0 || std::strncmp(flag, "--m.", 4) == 0 ||
             std::strncmp(flag, "--t.", 4) == 0) {
             continue; // a genome number: apply_genome_args, apply_minimal_args, table_genome_args
+        }
+        bool fn_ok = true;
+        if (function_flag(flag, value, flags.task_settings, fn_ok)) {
+            if (!fn_ok) {
+                return false;
+            }
+            continue;
         }
         if (std::strcmp(flag, "--engine") == 0) {
             flags.engine = value;
@@ -250,6 +261,9 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
     }
     if (flags.steps < flags.window) {
         std::fprintf(stderr, "blobrun: --steps is shorter than one window\n");
+        return false;
+    }
+    if (!function_settings_ok(flags.task, flags.task_settings)) {
         return false;
     }
     if (flags.task_seed == 0) {
