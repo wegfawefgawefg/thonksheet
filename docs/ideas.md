@@ -414,7 +414,14 @@ not known to do it.
      freely. The sectors already exist; the numbers are global today. *idea*
 113. **Screen the neuron and synapse family.** Ideas 66 to 76, each at several strengths,
      through the feature and hold probes, then a combined search. *building*
-114. **Screen the wiring family.** Ideas 19 to 21 and 77 to 83, likewise. *building*
+114. **Screen the wiring family.** Ideas 19 to 21 and 77 to 83, likewise. *screen done on the
+     sheet as born (4 seeds, ideal reader); the combined search and the readout runs are
+     still going. Movers: inhibition kept local (exclusive-or 1.76 to 2.84, gap 1.60 to
+     4.62, at a cost to which-cue and order) and mirror links (small steady gains, carry
+     +0.34). Reach only: two sheets (reach 3.25 to 5.0 tiles) and gentle streams. Harmful:
+     layers (19), fine locality (21), fewer slots (20). Nothing: hubs (78), far-link
+     topography (83). One early sign that growth and pruning erase birth wiring within
+     100,000 ticks. docs/results-2026-11-25-family-wiring.md on its branch*
 115. **MNIST.** The owner: "wed be cool as fuck if we beat mnist." Digits onto the sensor
      sheet, ten buttons, good and bad only. Three numbers: what a linear reader gets from a
      never-taught sheet, what the evidence readout learns, and how long it takes. Targets: a
