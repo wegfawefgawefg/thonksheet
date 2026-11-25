@@ -313,6 +313,16 @@ struct Genome {
     int compete_shift = 3;      // a spike (or a loss) moves the cell with chance 2^-this
     int compete_down_shift = 2;
     int compete_inh = 0;
+    // the churn control (docs/results-2026-11-25-compete2.md): 1, a winner's counters move
+    // up for as many sources as were on, drawn at random among the excitatory sources it may
+    // wire, instead of those that were on. the same number of moves and re-picks, nothing
+    // about the input in which. 0 is off and changes nothing.
+    int compete_churn = 0;
+    // the read-off. 0: a cell re-picks its top counters only when a step crossed a bound
+    // (lowest wired, highest unwired, lowest strong, highest weak), with the same wiring and
+    // the same chance drawn as re-picking on every update. 1: re-pick on every update (the
+    // first form, for speed comparisons). 2: as 1, and stop if the bounds ever missed a change.
+    int compete_full = 0;
 
     // the error sent one hop (direct feedback alignment in bits, Nokland 2016, with marks as
     // in e-prop; learn_hop.cpp, docs/results-2026-11-25-hop.md), any learn mode. the world

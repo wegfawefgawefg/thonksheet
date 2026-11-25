@@ -34,3 +34,8 @@ inline uint64_t deep_blocked(const Blob& blob, int n, uint32_t src) {
     z ^= z >> 31;
     return (int)(z % 100) < p ? blob.sensor[src] : 0;
 }
+// the same, faster with guesses: pick[3 j] is a guess at where pick j's line is (j: excitatory
+// wired, excitatory strong, inhibitory wired, inhibitory strong) and comes back as the line;
+// pick[3 j + 1] is 1 if sources at the line were left out, pick[3 j + 2] 1 if it drew chance.
+// the wiring and the chance drawn are tag_rewire's whatever the guesses
+void tag_rewire_hinted(Blob& blob, int n, int8_t* pick);

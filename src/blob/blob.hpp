@@ -194,6 +194,9 @@ struct Blob {
 
     // the error sent one hop (genome hop_on, learn_hop.cpp): made on first use
     struct HopState* hop = nullptr;
+
+    // competitive learning's bounds on its counters (genome compete_on, learn_compete.cpp)
+    struct CompeteState* compete = nullptr;
 };
 
 // birth and death

@@ -41,6 +41,9 @@ def mnist_cmd(kind, seed, opt, flags, out):
         cmd += RULE + ["--life-teach", str(opt["teach"])]
     if kind == "coin":
         cmd += ["--g.hop_coin", "1"]
+    if kind == "churn":
+        # the churn control (docs/results-2026-11-25-compete2.md): moves toward random sources
+        cmd += ["--g.compete_churn", "1"]
     return cmd + opt.get("mnist_extra", []) + flags, out
 
 
@@ -49,8 +52,12 @@ def calc_cmd(member, kind, seed, opt, flags, out):
            CALC[member].split() + ["--seed", str(seed), "--task-seed", str(seed),
                                    "--trials", str(opt["trials"]), "--label", member,
                                    "--out", out[:-4] + ".csv"])
-    if kind == "lived":
+    if kind != "born":
         cmd += ["--life", str(opt["calc_life"])]
+    if kind == "shuffled":
+        cmd += ["--life-shuffle", "1"]
+    if kind == "churn":
+        cmd += ["--g.compete_churn", "1"]
     return cmd + flags, out
 
 

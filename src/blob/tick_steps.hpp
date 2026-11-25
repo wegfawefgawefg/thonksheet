@@ -47,6 +47,9 @@ void learn_tags(Blob& blob, int valence);
 void learn_replay(Blob& blob, int valence);
 // competitive learning on hidden cells, no reward (genome compete_on, learn_compete.cpp)
 void learn_compete(Blob& blob, int read_now);
+// a neuron was re-picked from the tag store: competitive learning's bounds on it are stale
+void compete_stale(Blob& blob, int n);
+void compete_free(Blob& blob);
 // the error sent one hop (genome hop_on, learn_hop.cpp): after the fire step, which learners
 // were near their bar; in the learning step, the error of a judged step moves marked counters
 void hop_after_fire(Blob& blob);

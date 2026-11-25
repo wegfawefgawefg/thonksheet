@@ -26,7 +26,9 @@
 #   scripts/inside.sh hop2 --teach 2 --g.hop_on 1 --only mnist    the one-hop rule, told the answer
 # Options: --seeds 1,2 (MNIST; default 1,2), --calc-seeds 5,6, --life 60000 (digits),
 #   --fit 60000, --calc-life 200000 (ticks), --trials 3000, --members xor4,parity4,add4,
-#   --only mnist|calc, --kinds born,lived,shuffled (MNIST runs to make), --jobs 3 (runs at
+#   --only mnist|calc, --kinds born,lived,shuffled (MNIST runs to make; also churn, the
+#   competitive rule's moves toward random sources, docs/results-2026-11-25-compete2.md;
+#   calc lives: scripts/compete2.sh calc has shuffled and churn), --jobs 3 (runs at
 #   once). Results in out/inside/NAME/table.txt; a
 #   finished run is kept, so running it again only runs what is missing. One MNIST run is
 #   about 2 to 4 minutes, one calc run under a minute. Docs: docs/results-2026-11-25-compete.md
