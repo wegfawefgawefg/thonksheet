@@ -90,7 +90,7 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
                 continue;
             }
             // with a critic the blob hears every step, valence 0 included (blob/critic.hpp)
-            if (tt.valence != 0 || (flags.genome.critic_on && real_blob(driver))) {
+            if (tt.valence != 0 || (flags.genome.critic_on && core_blob(driver))) {
                 plug_mark_acted(tt.plug, *blob, tt.move);
                 plug_mark_vote(tt.plug, *blob, tt.move);
                 reward(driver, *blob, tt.valence);

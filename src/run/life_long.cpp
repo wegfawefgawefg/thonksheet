@@ -53,8 +53,10 @@ static bool long_life(Driver d, const RunFlags& flags, FILE* csv, LongTotals& be
         if (!ticker_after_tick(tt, *blob)) {
             continue;
         }
-        if (tt.valence != 0) {
+        // with a critic the blob hears every step, valence 0 included (blob/critic.hpp)
+        if (tt.valence != 0 || (flags.genome.critic_on && core_blob(d))) {
             plug_mark_acted(tt.plug, *blob, tt.move);
+            plug_mark_vote(tt.plug, *blob, tt.move);
             reward(d, *blob, tt.valence);
         }
         step++;
