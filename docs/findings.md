@@ -33,6 +33,41 @@ nothing lost after being unplugged (1.00 before, 1.00 after); Echo five tiles aw
 catch 0.32 where chance is 0.25. Still failing: delayed echo (0.55), beat, gap (0.52),
 cartpole (below a coin), and a shape in a place it was never rewarded (0.25, below chance).
 
+**Where we stand against ordinary networks (2026-11-25).** A plain recurrent network (a
+GRU of 128 units trained by backprop through its last 8 steps), with one fixed setting,
+behind the same plug and told only good and bad, learns every world any of our engines
+learns, at the same or a higher score, and several that none of ours learn: sixteen cues
+(1.00 against our 0.31), delayed echo, beat, order and gap (all 1.00), catch (0.72 against
+0.32). Our only lead is speed on plain association (1,000 steps against 2,000 to 3,000).
+So nothing here beats standard methods yet, and the bar for "learns it" on these worlds is
+1.00, not "above chance". What the reference cannot do is as useful: a shape in a place
+never rewarded (0.16, below chance, same as ours), a hold longer than its window (fails at
+11 steps), and cartpole from good and bad alone (worse than a coin; shown the right press
+it balances for 1,000 steps). Those three are not our private walls. They are where a
+fixed ordinary network also stops, and where it would normally be redesigned per task.
+docs/results-2026-11-25-fixed-net-reference.md
+
+**A memory passes most of the suite (2026-11-25).** An engine that only stores and recalls
+(the input cut into events; now plus the last four events as the address; hashed tables of
+small counters; all integers, 187,000 ticks a second) passes, with one setting, every row
+the GRU passes and two it does not: echo to 16 cues, delayed echo across 4,000 silent
+ticks, beat, gap, order, exclusive-or, catch (0.99), cartpole (109 and 279 steps per fall
+where the GRU and every sheet sit below a coin's 23). It learns a pair in about one error
+and holds about 1,000. It is the first thing here to beat the backprop reference anywhere.
+Two cautions. It is a lookup table of what it has seen, so those rows turn out to test
+storing, not understanding; where the asked case was never shown (a shape in a new place:
+0.57, a coin per layout) it has nothing. And reading a sheet's spikes instead of the raw
+input made it worse on every row: mixing is not what a memory wants from a partner.
+docs/results-2026-11-25-memory-engine.md
+
+**MNIST, first pass (2026-11-25).** The never-taught sheet, read offline by a linear
+reader, gets 0.924 on the test digits: level with a linear classifier on the pixels (0.922),
+under a random projection of the same bits (0.943) and a small two-layer network (0.955).
+The sheet's own readout, learning online from good and bad, gets 0.71 in about a minute
+(20,000 digits) and then drifts down. So for digits the sheet adds about a point to its
+input, and the online readout loses twenty more. The readout is the gap.
+docs/results-2026-11-25-mnist.md
+
 ## Principles that hold so far
 
 1. **A neuron must pay for what it keeps.** [solid] A fixed budget of connections, where
@@ -112,8 +147,8 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
     A cell that only knows whether it fired itself gets roughly half the benefit. The
     world has to tell the motor cells which button won. That is one bit per cell, and it
     is the one part of the rule that is not strictly local.
-16. **A decision needs many cells.** [likely] 32 or more motor cells per button, instead of
-    9, adds 0.02 to 0.13. It is the count that matters, to beat spike noise, more than
+16. **A decision needs many cells.** [solid: echo and MNIST] 32 or more motor cells per button, instead of
+    9, adds 0.02 to 0.13. On MNIST 51 to 102 cells a button took 0.62 to 0.71. It is the count that matters, to beat spike noise, more than
     where the cells sit.
 17. **Do not strengthen your own answer on good.** [likely] The rule above never does, and
     it has no locked lives: shuffled Echo is 1.00 on every seed, crossed ones included,
@@ -122,6 +157,9 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
     good, but on a good that was barely won, deepen the hidden evidence of what helped.
     Without that case learning time grows exponentially with size; with it, about twice as
     many patterns are held. Being tested (the tags-and-margin run).
+    And with ten buttons it is simply wrong: on MNIST the readout stays near chance (0.14)
+    unless the right button also gains on good (0.41 with it, same settings). Blaming the
+    pressed button says little when nine others could have been right.
 
 18. **Size does not break it, so far.** [hint] Echo scores the same with the sheet grown 16
     times around the same task (minimal engine 0.94, 0.93, 0.92 at 4,096, 16,384 and 65,536
@@ -163,6 +201,25 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
     and pruning took mirror wiring from 0.80 reciprocal back to 0.15 within 100,000 ticks.
     A wiring idea has to live in the growth rule to survive a life.
 
+25. **A random sheet is not much of a feature maker for real input.** [hint] For digits the
+    frozen sheet holds its input plus about a point; a plain random projection of the same
+    bits adds three. Finding 8 ("already rich") is about time and combination features of
+    a few lines; it does not carry to pictures. What raised the digit ceiling was layout
+    (the digit spread over the whole sheet: 0.856 to 0.924), not any genome number, and
+    the sheets tuned rich for order and gap read digits worse.
+26. **Counters that fill up silence a cell.** [likely] With ten buttons more than a cell's
+    budget of counters sat at the top value; the rewiring step then wired none of them and
+    4 to 6 buttons went quiet for good. Fixed (`readout_evidence 2`). Sixteen-cue echo
+    (0.31) may be the same fault and is being re-run.
+
+27. **Storing by content removes four walls at once.** [likely: one engine] Holding (by
+    events, not ticks: silence costs nothing), many pairs, learning in one go, and a second
+    task without loss all come free when what is learned is filed under what was seen.
+    What it costs: no answer for anything unseen, a fixed depth of past events (one
+    distracting event is survived, two are not), and slots (about 1,000 pairs in 5 MB).
+28. **Most of our worlds test remembering.** [solid: the memory engine passes them] A suite
+    for "any task" needs, in every family, cases that were never shown.
+
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 
 - Finding 14's hidden counter is a known device (permanence in HTM; hidden states in binary
@@ -201,10 +258,18 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
   Any rule graded against its own average also freezes once every reward equals the
   average: an all-wrong life stops moving.
 - **A new place.** A shape learned in some places is answered wrongly in a place never
-  rewarded (0.25 where chance is 0.49). Nothing in the sheet shares what one patch learned
+  rewarded (0.25 where chance is 0.49). The reference networks fail it the same way (0.16),
+  so the wall is real and general, though the world itself needs a cell-by-cell check
+  (everything scores below chance, which smells of overlapping shapes). On MNIST a
+  digit moved 2 pixels drops every learner to about two thirds of its score (linear 0.91
+  to 0.60, two-layer net 0.96 to 0.65, sheet ceiling 0.92 to 0.66). Nothing in the sheet shares what one patch learned
   with another. This is the missing prior the owner started from on day one (a convolution
   shares; this sheet does not).
-- **Acting in a world.** Nothing learns catch or cartpole. On cartpole learning makes the
-  full engine worse than a coin.
+- **Acting in a world.** Nothing of ours learns catch or cartpole. On cartpole learning
+  makes the full engine worse than a coin, and the reference networks too: the "lean"
+  reward grades the press before the one it follows (a fault in the world, being fixed),
+  and the sparse reward needs credit carried 25 steps back. The GRU learns catch (0.72).
+  The memory engine learns catch (0.99) and cartpole (109 lean, 279 sparse) once credit
+  reaches two steps back, which confirms the lean reward's one-step lag from a second side.
 - **More than four things.** Eight cues are now learned (0.84) by the new readout on the
   full engine. Sixteen is untested with it.

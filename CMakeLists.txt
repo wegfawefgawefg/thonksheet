@@ -120,6 +120,52 @@ if(minimal_sources)
     endif()
 endif()
 
+# blobmemory: idea 123, a memory instead of a sheet (src/memory/): codes, a store found by
+# content, counters per button. blobrun drives it with --engine memory.
+file(GLOB memory_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/memory/*.cpp)
+if(memory_sources)
+    add_library(blobmemory STATIC ${memory_sources})
+    target_include_directories(blobmemory PUBLIC src)
+    target_compile_options(blobmemory PRIVATE ${warnings} ${speed})
+    # the combination (--y.sheet) puts a minimal-engine sheet in front of the memory
+    if(TARGET blobminimal)
+        target_link_libraries(blobmemory PUBLIC blobminimal)
+        target_compile_definitions(blobmemory PRIVATE MEMORY_HAS_SHEET=1)
+    endif()
+    if(TARGET blobrun)
+        target_link_libraries(blobrun PRIVATE blobmemory)
+        target_compile_definitions(blobrun PRIVATE BLOB_HAS_MEMORY=1)
+    endif()
+endif()
+# memprobe: worlds the suite lacks, for the memory engine (src/memory/probe/)
+file(GLOB memory_probe_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/memory/probe/*.cpp)
+if(memory_probe_sources AND TARGET blobmemory AND TARGET blobworld AND TARGET blobcore)
+    add_executable(memprobe ${memory_probe_sources})
+    target_compile_options(memprobe PRIVATE ${warnings} ${speed})
+    target_link_libraries(memprobe PRIVATE blobmemory blobworld blobcore)
+endif()
+# blobnn: the fixed reference networks (mlp, gru) behind the same shell, picked with
+# blobrun --engine mlp|gru. floats, no fused multiply-add, so runs match across machines
+file(GLOB nn_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/nn/*.cpp)
+if(nn_sources AND TARGET blobworld AND TARGET blobrun)
+    add_library(blobnn STATIC ${nn_sources})
+    target_include_directories(blobnn PUBLIC src)
+    target_compile_options(blobnn PRIVATE ${warnings} ${speed} -ffp-contract=off)
+    target_link_libraries(blobnn PUBLIC blobworld)
+    target_link_libraries(blobrun PRIVATE blobnn)
+    target_compile_definitions(blobrun PRIVATE BLOB_HAS_NN=1)
+endif()
+
+# blobmnist: MNIST through the sheet, and the plain learners it is measured against (src/mnist/)
+file(GLOB mnist_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/mnist/*.cpp)
+if(mnist_sources AND TARGET blobcore AND TARGET blobworld)
+    add_executable(blobmnist ${mnist_sources} ${CMAKE_SOURCE_DIR}/src/run/task_ticker.cpp
+                   ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp)
+    target_include_directories(blobmnist PRIVATE src)
+    target_compile_options(blobmnist PRIVATE ${warnings} ${speed})
+    target_link_libraries(blobmnist PRIVATE blobworld blobcore)
+endif()
+
 # blobgpu: the minimal engine on a Vulkan compute device, many lives at once, headless only
 # (src/gpu/, shaders/gpu/). Skipped without Vulkan or glslangValidator, or with THONK_NO_VIEW.
 find_package(Vulkan QUIET)

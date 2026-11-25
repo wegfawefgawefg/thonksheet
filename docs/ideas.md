@@ -429,7 +429,14 @@ not known to do it.
      sheet, ten buttons, good and bad only. Three numbers: what a linear reader gets from a
      never-taught sheet, what the evidence readout learns, and how long it takes. Targets: a
      linear classifier on pixels (about 92%), then a small two-layer network (about 97%).
-     *building*
+     *done, first pass (`scripts/mnist.sh`). A linear reader of the never-taught sheet:
+     0.924 on the test set (linear on pixels 0.922, two-layer net 0.955, a random
+     projection of the same bits 0.943). The sheet's own readout from good and bad: 0.71,
+     reached in 20,000 digits (about a minute), then it drifts down (0.687 at 60,000, 0.635
+     after three passes). It was at chance until: good also moves the right button, a fix
+     for counters at the clamp silencing buttons, wired strength 1, 102 cells a button, the
+     digit spread over the whole sheet. Moved 2 pixels, everything (ours and the plain
+     learners) keeps about two thirds of its score. docs/results-2026-11-25-mnist.md*
 116. **The rest of the map.** Worlds for relation (same or different, odd one out, bigger
      than), number, parts and wholes (grammar), chance (answers right only most of the
      time), context (a cue that changes what another means), longer memory (copy, recall,
@@ -439,7 +446,14 @@ not known to do it.
      recurrent one), one size, one recipe, behind the same plug, told only good and bad,
      run on the whole map with nothing changed between tasks. Not to beat it task by task:
      to see where an unchanged network stops, and to calibrate which worlds are learnable.
-     *building*
+     *done (`blobrun --engine mlp|gru`, `scripts/reference.sh`). A plain recurrent network
+     (GRU, 128 units, backprop through 8 steps, good and bad only) learns every row any of
+     our engines learns, at the same or a higher score: echo to 16 cues 1.00, exclusive-or
+     0.97, delayed echo, beat, order and gap all 1.00, catch 0.72. Ours leads only in
+     speed on association (level reached in 1,000 steps against 2,000 to 3,000). Both
+     networks fail the place never rewarded (0.16, below chance), holds past the GRU's
+     8-step window, and cartpole from good and bad (below a coin; told the answer they
+     balance). docs/results-2026-11-25-fixed-net-reference.md*
 118. **One setting for everything.** Score our own designs the same way: one set of numbers
      for the whole map. Today the readout runs use flags chosen per task (long delays for
      the time tasks, more motor cells here, smaller line groups there). *idea: the combined
@@ -456,7 +470,16 @@ exactly, hash and look things up in one step.
      computing; new here] An engine whose learning is storing and recalling bit patterns by
      content: long random bit vectors, bound with XOR, compared with popcount, kept in a
      table found by hashing. One-shot, no wiring to change, nothing to saturate. A brain has
-     an organ like this beside its sheets. *building*
+     an organ like this beside its sheets. *done (`blobrun --engine memory`,
+     `scripts/memory.sh`). The input is cut into events; the address is now plus the last
+     four events and how long each lasted; 256 hashed tables of small per-button counters.
+     One setting, seeds 5-12: echo to 16 cues 0.98, delayed echo 0.99 (also across 4,000
+     silent ticks), beat, gap, order, exclusive-or all 0.99, catch 0.99, cartpole 109 and
+     279 steps per fall (coin 23, GRU 12 to 14), about 1,000 random pairs held, a pair
+     learned in under one error on average. It is a lookup table of what it has seen, and
+     it fails where that is not enough: place 0.57 (a coin per layout), two distracting
+     events in a gap, 2,000 pairs. Reading a sheet's spikes instead of the raw input made
+     every row worse. docs/results-2026-11-25-memory-engine.md*
 124. **Organs.** [known] Not one sheet with one rule: a sheet that mixes, a memory that
      stores at once, a selector that picks actions and explores, a bank of clocks for time.
      Each cheap, each with its own rule, behind one plug. *idea, after 123*
@@ -561,3 +584,24 @@ and started as machine time frees up (both machines are full).
      latent learning, spacing, superstition. *queued*
 Also from Braitenberg, for whoever builds a holding region: holding activity while wiring by
 co-activity runs ties the held units together and loses their order.
+146. **Why the readout drifts down on a long life.** On MNIST it peaks at 20,000 digits and
+     then loses a point every 20,000 more. Not the counter clamp. Suspects: the motor
+     cells' threshold regulation; sources dropped and re-wired at the budget's edge. The
+     same thing may be hiding in every long life. *queued: small, first when a core frees*
+147. **A weighted vote.** Wired strength set by where the counter stands (1, 4, 5 are already
+     in the weight planes), so a motor cell is a weighted vote and not a count. Aimed at the
+     25 points between the sheet's readout (0.71) and what a linear reader gets from the
+     same sheet (0.92). *queued*
+148. **Search richness on digits.** The rich sheets found for order and gap read digits
+     worse than the default. Score the search on the digit ceiling. *queued*
+149. **A suite a lookup table cannot pass.** The memory engine passes tiers 1, 2, 4, 7 and 8
+     by storing what it saw. So those rows test storing. Every family needs rows where the
+     asked case was never shown: held-out inputs (the calculation and function batteries
+     have them), noise on the input lines, real data, more distracting events than any
+     fixed depth. Score "generalises" apart from "remembers" on the scoreboard. *next: fold
+     into the batteries as they land; with idea 126*
+150. **What the memory needs from a partner.** Not mixing: a code that is the same for
+     things that should be treated the same (a shape wherever it is, a digit moved 2
+     pixels). A sheet, or anything, that learns such a code with no reward, feeding the
+     memory. This is the invariance problem restated as one organ's job. *queued behind the
+     invariance battery*
