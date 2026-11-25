@@ -16,6 +16,7 @@ int probe_reader(int argc, char** argv);
 int probe_critic(int argc, char** argv);
 int probe_calc(int argc, char** argv);
 int probe_predict(int argc, char** argv);
+int probe_timewire(int argc, char** argv);
 
 int int_arg(int argc, char** argv, const char* name, int fallback) {
     for (int i = 1; i + 1 < argc; i++) {
@@ -54,6 +55,7 @@ static const Probe probes[] = {
     {"transfer", probe_transfer},
     {"calc", probe_calc},
     {"predict", probe_predict},
+    {"timewire", probe_timewire},
 };
 
 int main(int argc, char** argv) {
