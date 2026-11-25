@@ -116,7 +116,9 @@ def table(outdir, opt):
             p = os.path.join(outdir, "bars-%s-%d.txt" % (task, passes))
             if os.path.exists(p):
                 for line in open(p).read().splitlines():
-                    if line.startswith(("linear", "two-layer", "random")):
+                    want = ("linear,", "two-layer, 100", "random") if passes == 1 else (
+                        "two-layer, 100",)
+                    if line.startswith(want):
                         lines.append("  tree baseline (net passes %d): %s" % (passes,
                                                                           line[:60].rstrip()))
     return "\n".join(lines)
