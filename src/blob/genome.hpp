@@ -125,6 +125,29 @@ struct Genome {
     // are graded too, with the chance a noise spike has, and moved the other way.
     int noise_learn_sign = 1;
     int noise_learn_pair = 0;
+
+    // actor and critic (learn_critic.cpp, learn_actor.cpp; Barto, Sutton and Anderson 1983).
+    // the world calls blob_reward every step; a group of critic cells beside the motor
+    // lattice learns to fire more where things go well, and the change in their spike
+    // count plus the reward is the surprise that teaches the readout instead of raw good
+    // and bad. needs learn mode 5 and readout_evidence. 0 is off and changes nothing.
+    int critic_on = 0;
+    int critic_reward = 16;        // level, in spikes, that one good or bad is worth
+    int critic_margin = 4;         // a surprise this close to zero is neither good nor bad
+    int critic_center = 1;         // 1: reward counts against its running mean
+    int critic_average_shift = 8;  // that mean is over about 2^this steps
+    int critic_shift = 4;          // critic chance per source spike per update, 2^-this
+    int critic_trace_steps = 4;    // steps back a surprise reaches, for the critic (1..8)
+    int critic_fade = 1;           // each step back makes the chance 2^-this smaller
+    int actor_form = 0;            // 0 error rule (readout_good decides the good half),
+                                   // 1 reinforce: the pressed button alone, both ways
+    int actor_trace_steps = 4;     // steps back a surprise reaches, for the actor (1..8)
+    int actor_fade = 1;            // each step back makes the chance 2^-this smaller
+    int explore_shift = 0;         // chance per step, 2^-this, of a random press; 0 never
+    int explore_scale = 0;         // the chance halves per this many spikes the critic's
+                                   // level stands above its mean; 0 keeps it fixed
+    int critic_opponent = 1;       // 1: half the critic cells (a checkerboard) learn the other
+                                   // way and count against, so what all cells share cancels
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

@@ -102,6 +102,20 @@ static const GenomeField fields[] = {
     {"bad_cut_on", &Genome::bad_cut_on},
     {"noise_learn_sign", &Genome::noise_learn_sign},
     {"noise_learn_pair", &Genome::noise_learn_pair},
+    {"critic_on", &Genome::critic_on},
+    {"critic_reward", &Genome::critic_reward},
+    {"critic_margin", &Genome::critic_margin},
+    {"critic_center", &Genome::critic_center},
+    {"critic_average_shift", &Genome::critic_average_shift},
+    {"critic_shift", &Genome::critic_shift},
+    {"critic_trace_steps", &Genome::critic_trace_steps},
+    {"critic_fade", &Genome::critic_fade},
+    {"actor_form", &Genome::actor_form},
+    {"actor_trace_steps", &Genome::actor_trace_steps},
+    {"actor_fade", &Genome::actor_fade},
+    {"explore_shift", &Genome::explore_shift},
+    {"explore_scale", &Genome::explore_scale},
+    {"critic_opponent", &Genome::critic_opponent},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

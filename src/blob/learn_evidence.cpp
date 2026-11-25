@@ -1,4 +1,5 @@
 #include "blob/blob.hpp"
+#include "blob/critic.hpp"
 #include "blob/tick_steps.hpp"
 
 #include <cstdlib>
@@ -22,6 +23,7 @@ static int8_t* evidence_row(Blob& blob, int n) {
         blob.readout_row = (int32_t*)std::malloc(sizeof(int32_t) * (size_t)blob.neuron_count);
         for (int m = 0; m < blob.neuron_count; m++) {
             bool motor = (blob.motor[m / TILE_NEURONS] >> (m % TILE_NEURONS)) & 1;
+            motor = motor || critic_cell(blob, m); // the critic's cells read the same way
             blob.readout_row[m] = motor ? rows++ : -1;
         }
         blob.readout_evidence = (int8_t*)std::calloc((size_t)rows * EVIDENCE_ROW, 1);

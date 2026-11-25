@@ -127,6 +127,9 @@ struct Blob {
     int32_t* readout_row = nullptr;
     int8_t* readout_evidence = nullptr;
     uint16_t* readout_keep = nullptr;
+
+    // actor and critic (genome critic_on, blob/critic.hpp): made on the first step, one block
+    struct CriticState* critic = nullptr;
 };
 
 // birth and death
@@ -136,7 +139,8 @@ void blob_free(Blob* blob);
 // one tick: integrate, fire, regulate, learn. the world writes sense_in before calling.
 void blob_tick(Blob& blob);
 
-// broadcast good (+1) or bad (-1). a task also raises its good/bad sensor line.
+// broadcast good (+1) or bad (-1). a task also raises its good/bad sensor line. with genome
+// critic_on the world calls it at the end of every step, 0 included, after marking the press.
 void blob_reward(Blob& blob, int valence);
 
 // cell (x, y) on the sheet to a neuron index, and back

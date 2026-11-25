@@ -8,6 +8,7 @@ int probe_rhythm(int argc, char** argv);
 int probe_carry(int argc, char** argv);
 int probe_feature(int argc, char** argv);
 int probe_linear(int argc, char** argv);
+int probe_critic(int argc, char** argv);
 
 int int_arg(int argc, char** argv, const char* name, int fallback) {
     for (int i = 1; i + 1 < argc; i++) {
@@ -40,8 +41,11 @@ int main(int argc, char** argv) {
     if (argc > 1 && std::strcmp(argv[1], "linear") == 0) {
         return probe_linear(argc, argv);
     }
-    std::fputs(
-        "blobprobe rhythm|carry|feature|linear [--label text] [--seed n] [--g.name value ...]\n",
-        stderr);
+    if (argc > 1 && std::strcmp(argv[1], "critic") == 0) {
+        return probe_critic(argc, argv);
+    }
+    std::fputs("blobprobe rhythm|carry|feature|linear|critic [--label text] [--seed n] [--g.name "
+               "value ...]\n",
+               stderr);
     return 1;
 }

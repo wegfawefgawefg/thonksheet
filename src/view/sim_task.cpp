@@ -61,7 +61,10 @@ bool sim_task_after_tick(Sim& sim) {
     if (!ticker_after_tick(tt, *sim.blob)) {
         return false;
     }
-    if (tt.valence != 0) {
+    // the pressed button's cells, for learn modes 5 and 6; with a critic the blob hears
+    // every step, valence 0 included (blob/critic.hpp)
+    if (tt.valence != 0 || sim.blob->genome.critic_on) {
+        plug_mark_acted(tt.plug, *sim.blob, tt.move);
         blob_reward(*sim.blob, tt.valence);
     }
 
