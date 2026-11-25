@@ -5,6 +5,8 @@
 //   speed  ticks per second on one core at 4,096, 65,536 and 1,048,576 neurons
 //   trace  delayed echo: teach, freeze, then how readable the cue is tick by tick after it
 //          goes off (the whole sheet and the motor neurons)
+//   linear a ridge reader of every neuron's spike counts on a real task, frozen sheet (as
+//          blobprobe linear): --trials N, --warmup N ticks, --teach-steps N learned first
 // --engine full|minimal picks the engine (default minimal). blobrun's task, plug, seed and
 // --g. flags all work; --m.name value sets a minimal genome number.
 
@@ -15,8 +17,9 @@
 #include <cstring>
 #include <vector>
 
-static const char* const probe_only[] = {"--idle-ticks", "--test-steps", "--tail-ticks", "--input",
-                                         "--warmup",     "--tiles",      "--seconds-ms"};
+static const char* const probe_only[] = {"--idle-ticks", "--test-steps",  "--tail-ticks",
+                                         "--input",      "--warmup",      "--tiles",
+                                         "--seconds-ms", "--teach-steps", "--trials"};
 
 bool probe_args(int argc, char** argv, ProbeArgs& args) {
     // probe flags are read here; the rest goes to blobrun's parser
@@ -38,6 +41,10 @@ bool probe_args(int argc, char** argv, ProbeArgs& args) {
                     args.warmup = (int)v;
                 } else if (std::strcmp(name, "--tiles") == 0) {
                     args.tiles = (int)v;
+                } else if (std::strcmp(name, "--teach-steps") == 0) {
+                    args.teach_steps = v;
+                } else if (std::strcmp(name, "--trials") == 0) {
+                    args.trials = (int)v;
                 } else {
                     args.seconds_ms = (int)v;
                 }
@@ -68,8 +75,9 @@ bool probe_args(int argc, char** argv, ProbeArgs& args) {
 
 int main(int argc, char** argv) {
     if (argc < 2) {
-        std::fputs("minimalprobe alive|life|idle|speed|trace [--engine full|minimal] [flags]\n",
-                   stderr);
+        std::fputs(
+            "minimalprobe alive|life|idle|speed|trace|linear [--engine full|minimal] [flags]\n",
+            stderr);
         return 1;
     }
     ProbeArgs args;
@@ -93,6 +101,9 @@ int main(int argc, char** argv) {
     }
     if (std::strcmp(mode, "trace") == 0) {
         return probe_trace(args);
+    }
+    if (std::strcmp(mode, "linear") == 0) {
+        return probe_linear(args);
     }
     std::fprintf(stderr, "minimalprobe: no mode '%s'\n", mode);
     return 1;

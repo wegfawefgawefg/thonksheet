@@ -76,3 +76,15 @@ void min_evidence_reward(MinimalBlob& m, bool better, int shift);
 void min_evidence_cowire(MinimalBlob& m, int n);
 // counters at their lowest and highest value, over every counter neuron (for the probes)
 void min_evidence_ends(const MinimalBlob& m, double& low, double& high);
+// one step up on the counters of n's slot k selected by `up`, one down on `down`
+void min_evidence_move(MinimalBlob& m, int n, int k, uint64_t up, uint64_t down);
+// rebuild n's mask from its counters
+void min_evidence_read(MinimalBlob& m, int n);
+
+// the readout (minimal_readout.cpp): the buttons' cells of tile t, which the inner rules leave
+// alone while it runs (0 when it is off)
+inline uint64_t min_readout_cells(const MinimalBlob& m, int t) {
+    return m.mg.readout && m.shell.motor_attached ? m.shell.motor_attached[t] : 0;
+}
+// a reward: the error rule at the buttons' cells
+void min_readout_reward(MinimalBlob& m, int valence);

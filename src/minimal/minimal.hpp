@@ -24,6 +24,8 @@
 //    per slot; far slots read later the further away they are.
 //  - evidence counters: a small hidden counter per possible source, moved on reward; the
 //    mask is read off them, so weak evidence adds up before anything is wired.
+//  - the readout (idea 65): the full engine's error rule at the buttons' cells, moving those
+//    same counters; the rules inside the sheet can each be switched off around it.
 //
 // It stands behind the same Blob shell the plug and tasks use, as world/standin does: the
 // shell holds sense_in, the sensor/motor/inhibitory masks and a copy of the latest spike map.
@@ -58,7 +60,8 @@ struct MinimalGenome {
     int far_slots = 0;          // 0..2 far slots per neuron
     int far_percent = 15;       // share of non-sensor neurons that get each far slot
     int far_reach = 3;          // typical far distance in tiles (2 and up, long tail)
-    int delay_max = 1;          // slot delays drawn in 1..this; 1 is the one-tick reading
+    int delay_max = 1;          // slot delays drawn in delay_min..this; 1 is the one-tick reading
+    int delay_min = 1;          // shortest local slot delay drawn (idea 65: long delays only)
     int far_delay_per_tile = 1; // far slot delay: distance x this, capped at delay_max
     int delay_percent = 100;    // share of local slots that draw a delay (the rest read 1 back)
     // evidence counters (docs/results-2026-11-24-evidence.md): a hidden counter per possible
@@ -66,7 +69,8 @@ struct MinimalGenome {
     int ev_on = 0;
     int ev_bits = 4;        // counter width, 2..8, offset binary (2^(bits-1) is zero)
     int ev_init = 2;        // a source wired at birth starts this far above zero
-    int ev_read = 0;        // mask from counters: 0 the top `budget`, 1 a moving line, 2 above 0
+    int ev_read = 0;        // mask from counters: 0 the top `budget`, 1 a moving line, 2 above 0,
+                            // 3 the top `budget` of those above 0 (a cap, not a count)
     int ev_spikes = 0;      // graded: 0 latest spike if noise, 1 latest spike, 2 every spike
     int ev_fired_min = 1;   // spikes in the window that count a neuron as fired (1..8)
     int ev_quiet = 1;       // quiet through the window moves the other way: 0 no, 1 no spike,
@@ -83,6 +87,17 @@ struct MinimalGenome {
     // where random words come from (minimal_keyed.hpp): 0 the life's one stream in a fixed
     // order, 1 a stream per draw site keyed by tick and place, which the GPU port can match
     int rng_mode = 0;
+    // idea 65: the error-rule readout of idea 58 at the buttons' motor cells, which the world
+    // marks (minimal_readout.cpp). it moves the evidence counters above (ev_bits, ev_init),
+    // and the inner rules leave those cells alone. 0 off, 1 on
+    int readout = 0;
+    int readout_shift = 4;   // chance per heard source per tick it was heard
+    int readout_ticks = 15;  // ticks before the reward that count as heard
+    int readout_balance = 1; // other buttons move less, by their number over the pressed one's
+    int readout_good = 0;    // 1: on good the pressed button gains and the others lose
+    int readout_cowire = 0;  // 1: the buttons' cells also wire by co-activity
+    int readout_inh = 1;     // 0: only excitatory sources' counters move
+    int inner_reward = 1;    // 0: the noise-graded reward rule is off inside the sheet
 };
 
 struct MinimalStats {
@@ -142,6 +157,8 @@ void minimal_free(Blob* blob);
 void minimal_tick(Blob& blob);
 // a reward arrives (+1 good, -1 bad): grade the neurons whose recent spike was noise
 void minimal_reward(Blob& blob, int valence);
+// --frozen-readout: nothing inside the sheet learns, the readout does
+void minimal_readout_only(MinimalGenome& mg);
 
 inline MinimalBlob& minimal_of(Blob& blob) {
     return *reinterpret_cast<MinimalBlob*>(&blob);

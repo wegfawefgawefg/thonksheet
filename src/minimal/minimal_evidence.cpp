@@ -2,6 +2,9 @@
 #include "minimal/minimal.hpp"
 #include "minimal/minimal_steps.hpp"
 
+#include <cstdlib>
+#include <cstring>
+
 // evidence counters (idea 59). every possible source of a counter neuron has a small hidden
 // counter, offset binary in ev_bits bits (2^(bits-1) is zero), stored bitsliced: plane i of a
 // slot is one word holding bit i of its 64 sources' counters, so moving every heard source's
@@ -70,6 +73,41 @@ static int count_at_least(const MinimalBlob& m, int n, const uint64_t* allowed, 
     return total;
 }
 
+// the top `budget` counters: those above the line `lo`, then ties at it, keeping the wired
+// ones first and filling or trimming at random
+static void read_top(MinimalBlob& m, int n, const uint64_t* allowed, int lo, uint64_t* next,
+                     uint64_t* above) {
+    const int slots = m.slots;
+    const int top = (1 << m.mg.ev_bits) - 1;
+    int sure = lo < top ? count_at_least(m, n, allowed, lo + 1, above) : 0;
+    if (lo == top) {
+        for (int k = 0; k < slots; k++) {
+            above[k] = 0;
+        }
+    }
+    count_at_least(m, n, allowed, lo, next);
+    uint64_t tie_wired[MIN_SLOTS_MAX], tie_free[MIN_SLOTS_MAX];
+    int wired = 0;
+    for (int k = 0; k < slots; k++) {
+        uint64_t tie = next[k] & ~above[k];
+        tie_wired[k] = tie & m.mask[min_index(m, n, k)];
+        tie_free[k] = tie & ~tie_wired[k];
+        wired += __builtin_popcountll(tie_wired[k]);
+    }
+    int need = m.mg.budget - sure;
+    int slot = 0, bit = 0;
+    for (; wired > need && min_pick_one(m.rng, tie_wired, slots, slot, bit); wired--) {
+        tie_wired[slot] &= ~(1ull << bit);
+    }
+    for (; wired < need && min_pick_one(m.rng, tie_free, slots, slot, bit); wired++) {
+        tie_free[slot] &= ~(1ull << bit);
+        tie_wired[slot] |= 1ull << bit;
+    }
+    for (int k = 0; k < slots; k++) {
+        next[k] = above[k] | tie_wired[k];
+    }
+}
+
 // rebuild neuron n's mask from its counters
 static void read_off(MinimalBlob& m, int n) {
     const MinimalGenome& mg = m.mg;
@@ -103,33 +141,12 @@ static void read_off(MinimalBlob& m, int n) {
                 hi = mid - 1;
             }
         }
-        int sure = lo < top ? count_at_least(m, n, allowed, lo + 1, above) : 0;
-        if (lo == top) {
-            for (int k = 0; k < slots; k++) {
-                above[k] = 0;
-            }
-        }
-        count_at_least(m, n, allowed, lo, next);
-        // ties at the line: keep the wired ones first, then fill or trim at random
-        uint64_t tie_wired[MIN_SLOTS_MAX], tie_free[MIN_SLOTS_MAX];
-        int wired = 0;
-        for (int k = 0; k < slots; k++) {
-            uint64_t tie = next[k] & ~above[k];
-            tie_wired[k] = tie & m.mask[min_index(m, n, k)];
-            tie_free[k] = tie & ~tie_wired[k];
-            wired += __builtin_popcountll(tie_wired[k]);
-        }
-        int need = mg.budget - sure;
-        int slot = 0, bit = 0;
-        for (; wired > need && min_pick_one(m.rng, tie_wired, slots, slot, bit); wired--) {
-            tie_wired[slot] &= ~(1ull << bit);
-        }
-        for (; wired < need && min_pick_one(m.rng, tie_free, slots, slot, bit); wired++) {
-            tie_free[slot] &= ~(1ull << bit);
-            tie_wired[slot] |= 1ull << bit;
-        }
-        for (int k = 0; k < slots; k++) {
-            next[k] = above[k] | tie_wired[k];
+        if (mg.ev_read == 3 && lo <= (top >> 1)) {
+            // read 3: never a counter at or under zero, so the budget is a cap and a neuron
+            // with little evidence wires less (as the full engine's readout does)
+            count_at_least(m, n, allowed, (top >> 1) + 1, next);
+        } else {
+            read_top(m, n, allowed, lo, next, above);
         }
     }
     for (int k = 0; k < slots; k++) {
@@ -157,16 +174,45 @@ static void move(MinimalBlob& m, int n, const uint64_t* x, bool up) {
     read_off(m, n);
 }
 
+void min_evidence_move(MinimalBlob& m, int n, int k, uint64_t up, uint64_t down) {
+    uint64_t* p = planes_of(m, n, k);
+    count_up(p, m.mg.ev_bits, up);
+    count_down(p, m.mg.ev_bits, down);
+}
+
+void min_evidence_read(MinimalBlob& m, int n) {
+    m.stats.ev_moved++;
+    read_off(m, n);
+}
+
+// neurons of tile t with counters: every non-sensor neuron (ev_on 2), else the motor
+// neurons (ev_on 1, or the readout, which may mark any of them as a button's cell)
+static uint64_t counter_neurons(const MinimalBlob& m, int t) {
+    uint64_t kind = m.mg.ev_on == 2 ? ~0ull : m.shell.motor[t];
+    return kind & ~m.shell.sensor[t];
+}
+
 void min_evidence_birth(MinimalBlob& m) {
     const Blob& b = m.shell;
     const MinimalGenome& mg = m.mg;
     const int bits = mg.ev_bits, zero = 1 << (bits - 1), top = (1 << bits) - 1;
     const int wired_value = zero + mg.ev_init > top ? top : zero + mg.ev_init;
+    size_t map_words = (size_t)b.tile_count + 1;
+    m.ev_tiles = (uint64_t*)std::aligned_alloc(64, ((map_words * 8 + 63) / 64) * 64);
+    std::memset(m.ev_tiles, 0, map_words * 8);
+    m.ev_rows = 0;
+    for (int t = 0; t < b.tile_count; t++) {
+        m.ev_rows += __builtin_popcountll(counter_neurons(m, t));
+    }
+    size_t plane_bytes = sizeof(uint64_t) * (size_t)m.ev_rows * (size_t)m.slots * (size_t)bits;
+    m.ev_row = (int32_t*)std::calloc((size_t)b.neuron_count, sizeof(int32_t));
+    m.ev_planes = (uint64_t*)std::calloc(plane_bytes / 8 + 1, 8);
+    m.ev_line = (uint8_t*)std::calloc((size_t)m.ev_rows + 1, 1);
     int row = 0;
     for (int n = 0; n < b.neuron_count; n++) {
         int t = n / TILE_NEURONS;
         uint64_t bit = 1ull << (n % TILE_NEURONS);
-        bool mine = !(b.sensor[t] & bit) && (mg.ev_on == 2 || (b.motor[t] & bit));
+        bool mine = (counter_neurons(m, t) & bit) != 0;
         m.ev_row[n] = mine ? row : -1;
         if (!mine) {
             continue;
@@ -191,7 +237,8 @@ void min_evidence_reward(MinimalBlob& m, bool better, int shift) {
     const MinimalGenome& mg = m.mg;
     uint64_t graded_at[MIN_HISTORY];
     for (int t = 0; t < m.shell.tile_count; t++) {
-        uint64_t mine = m.ev_tiles[t];
+        // the readout's cells learn by its rule, not this one
+        uint64_t mine = m.ev_tiles[t] & ~min_readout_cells(m, t);
         if (!mine) {
             continue;
         }
