@@ -70,6 +70,12 @@ tables)
     sw --name "both-not-either" --variants $f -- --task both-not-either $LIFE
     sw --name "echo k=2, 3 tiles" --variants $f -- --task echo --distance 3 $LIFE
     sw --name "echo k=2, 5 tiles" --variants $f -- --task echo --distance 5 $LIFE
+    # the shuffled-sign control at depth 1
+    f=scripts/variants/replay-depth1.txt
+    sw --name "order" --variants $f -- --task order $LIFE
+    sw --name "both-not-either" --variants $f -- --task both-not-either $LIFE
+    sw --name "echo k=2, 3 tiles" --variants $f -- --task echo --distance 3 $LIFE
+    sw --name "echo k=2, 5 tiles" --variants $f -- --task echo --distance 5 $LIFE
     # a fresh readout on the walked sheet, same task and another one (windows 40-79)
     f=scripts/variants/replay-relearn.txt
     sw --windows 40:80 --name "order, then order" --variants $f -- --task order \
