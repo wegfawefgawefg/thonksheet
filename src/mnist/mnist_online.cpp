@@ -16,8 +16,9 @@
 #include <cstdlib>
 #include <vector>
 
-static const char* const online_own[] = {
-    "--checks", "--check-seconds", "--test-count", "--pretrain", "--shift", "--val", "--gap"};
+static const char* const online_own[] = {"--checks",   "--check-seconds", "--test-count",
+                                         "--pretrain", "--shift",         "--val",
+                                         "--gap",      "--diag"};
 
 static std::vector<int64_t> number_list(const char* text) {
     std::vector<int64_t> out;
@@ -31,6 +32,60 @@ static std::vector<int64_t> number_list(const char* text) {
         text = *end == ',' ? end + 1 : end;
     }
     return out;
+}
+
+// per button: its cells' mean spikes per digit on its own digits and on the others, mean
+// connections, mean threshold, and the share of its connections that come from sensor cells
+static void diagnose(Sheet& s) {
+    Rows counts;
+    sheet_eval(s, 0, 0, 1000, &counts);
+    const Blob& b = *s.blob;
+    std::printf("%6s %6s %8s %8s %8s %8s %8s\n", "button", "cells", "own", "others", "fan in",
+                "thresh", "sensor");
+    for (int line = 0; line < s.tt->plug.motor_lines; line++) {
+        const int* cells = nullptr;
+        int n = plug_motor_cells(s.tt->plug, line, &cells);
+        double own = 0, other = 0, fan = 0, th = 0, sens = 0;
+        int own_n = 0, other_n = 0;
+        for (int r = 0; r < counts.n; r++) {
+            double sum = 0;
+            for (int k = 0; k < n; k++) {
+                sum += counts.v[(size_t)r * counts.d + cells[k]];
+            }
+            (counts.label[(size_t)r] == line ? own : other) += sum / n;
+            (counts.label[(size_t)r] == line ? own_n : other_n)++;
+        }
+        for (int k = 0; k < n; k++) {
+            int c = cells[k];
+            fan += b.fan_in[c];
+            th += b.threshold[c];
+            int wired = 0, from_sensor = 0;
+            for (int slot = 0; slot < SLOTS; slot++) {
+                int64_t w = blob_weight_index(c, slot);
+                uint64_t conn = b.w0[w] | b.w1[w];
+                uint32_t src = slot < LOCAL_SLOTS
+                                   ? b.local_tile[(c / TILE_NEURONS) * LOCAL_SLOTS + slot]
+                                   : b.far_tile[c * FAR_SLOTS + slot - LOCAL_SLOTS];
+                wired += __builtin_popcountll(conn);
+                from_sensor += __builtin_popcountll(conn & b.sensor[src]);
+            }
+            sens += wired ? (double)from_sensor / wired : 0;
+        }
+        // the first cell's hidden counters: how many above, at and below zero, and the extremes
+        int above = 0, zero = 0, below = 0, top = -128, low = 127;
+        int row = b.readout_row ? b.readout_row[cells[0]] : -1;
+        for (int j = 0; row >= 0 && j < SLOTS * TILE_NEURONS; j++) {
+            int v = b.readout_evidence[(size_t)row * SLOTS * TILE_NEURONS + j];
+            above += v > 0;
+            zero += v == 0;
+            below += v < 0;
+            top = v > top ? v : top;
+            low = v < low ? v : low;
+        }
+        std::printf("%6d %6d %8.2f %8.2f %8.1f %8.1f %8.2f   counters +%d 0:%d -%d [%d, %d]\n",
+                    line, n, own_n ? own / own_n : 0, other_n ? other / other_n : 0, fan / n,
+                    th / n, sens / n, above, zero, below, low, top);
+    }
 }
 
 // the share right on the moved test digits, averaged over the four directions
@@ -126,6 +181,9 @@ int mnist_online(int argc, char** argv) {
         if (seen >= last && next_sec >= check_secs.size()) {
             break;
         }
+    }
+    if (int_flag(argc, argv, "--diag", 0)) {
+        diagnose(s);
     }
     if (shift) {
         double m1 = moved_score(s, 1, test_count), m2 = moved_score(s, 2, test_count);

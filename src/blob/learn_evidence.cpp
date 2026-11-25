@@ -100,9 +100,24 @@ void evidence_rewire(Blob& blob, int n) {
     } else {
         cut++;
     }
+    // readout_evidence 2: the level that did not fit fills what is left of the budget, from a
+    // random place, instead of all of it being dropped. with 1, a cell whose counters all
+    // reach the clamp together (more of them than its budget) wires nothing and goes silent
+    // for good: ten-button mnist lost four buttons that way
+    int fill = blob.genome.readout_evidence == 2 && cut > 1 ? keep - total : 0;
+    int start = fill > 0 ? (int)(blob.rng[0] % (uint64_t)EVIDENCE_ROW) : 0;
+    uint64_t extra[SLOTS] = {};
+    for (int j = 0; j < EVIDENCE_ROW && fill > 0; j++) {
+        int at = (start + j) % EVIDENCE_ROW;
+        int k = at / TILE_NEURONS, b = at % TILE_NEURONS;
+        if (((usable[k] >> b) & 1) && c[at] == cut - 1) {
+            extra[k] |= 1ull << b;
+            fill--;
+        }
+    }
     bool strong = blob.genome.readout_evidence_strong != 0;
     for (int k = 0; k < SLOTS; k++) {
-        uint64_t wired = 0;
+        uint64_t wired = extra[k];
         for (int b = 0; b < TILE_NEURONS; b++) {
             wired |= (uint64_t)(c[k * TILE_NEURONS + b] >= cut) << b;
         }
