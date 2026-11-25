@@ -18,6 +18,7 @@ struct GpuShape {
     int max_windows = 0; // score windows per life
     int workgroup = 256; // threads per life
     int wave = 0;        // subgroup size asked of the driver (0: its own choice)
+    int host = 0;        // 1: host worlds, one task step a dispatch (gpu_host.hpp)
 };
 
 // what one life holds on the device, host side, ready to upload
@@ -33,6 +34,8 @@ struct GpuLifeData {
 struct GpuGroup {
     int first = 0, count = 0; // lives [first, first + count) of the batch
     GpuBuffer params, genomes, lives, masks, thresholds, rings, inhibitory, scores;
+    // host worlds: the exchange, host-visible and mapped (tiny placeholders otherwise)
+    GpuBuffer xin, xwords, xout;
     VkDescriptorSet set = VK_NULL_HANDLE;
     bool done = false;
 };
@@ -63,6 +66,12 @@ bool gpu_batch_open(GpuContext& g, GpuBatch& b, const GpuShape& shape, const Gpu
 bool gpu_group_add(GpuContext& g, GpuBatch& b, int first, const GpuLifeData* lives, int count);
 // step one group by up to `ticks` ticks (one submit, waited for)
 bool gpu_group_step(GpuContext& g, GpuBatch& b, GpuGroup& group, int ticks);
+// the same for `count` of its lives from `first` (host worlds split a group's step)
+bool gpu_group_step_part(GpuContext& g, GpuBatch& b, GpuGroup& group, int ticks, int first,
+                         int count);
+// the same, submitted on a slot of its own and not waited for (gpu_slot_wait)
+bool gpu_group_step_async(GpuContext& g, GpuBatch& b, GpuGroup& group, int ticks, int first,
+                          int count, GpuSlot& slot);
 // read back a group's life states
 bool gpu_group_lives(GpuContext& g, GpuGroup& group, GpuLife* out);
 // read back one life of a group, whole

@@ -13,14 +13,20 @@
 // grades the neurons whose latest spike was noise. Lives are independent, so a workgroup
 // barrier is the only sync. Random words are keyed (rng_mode 1), so this matches the CPU
 // engine bit for bit. src/gpu/gpu_layout.hpp holds the layout.
+//
+// HOST 1 (host worlds, src/gpu/gpu_host.cpp): any task, its world on the CPU. A dispatch is
+// one task step of each life: the reward the host sends for the last step, the rest ticks,
+// then the step's ticks with the sensor words the host wrote; the motor counts go back.
 
 layout(local_size_x_id = 0) in;
 layout(constant_id = 1) const int TILES = 64;  // tiles in a sheet
 layout(constant_id = 2) const int STRIDE = 72; // words from one ring map to the next
 layout(constant_id = 3) const int TILES_W = 8; // tiles across the sheet
+layout(constant_id = 4) const int HOST = 0;    // 1: the world is on the host (see above)
 
 layout(push_constant) uniform Push {
-    int ticks;
+    int ticks; // at most this many ticks
+    int first; // the group's lives from this one
 }
 push;
 
@@ -58,12 +64,14 @@ shared uint64_t s_words[6][TILES];
 #define s_cow(t) s_words[5][t]
 #define s_age(j, t) s_words[j][t]
 #define s_graded(t) s_words[5][t]
+shared uint64_t s_task[TILES + 1]; // host worlds: the task's sensor words this step
 shared int s_count[MAX_MOTORS];
 shared uint s_lines;
 shared int s_resting, s_grade, s_better, s_shift, s_done;
 
 uint g_mask_base, g_ring_base;
 int g_now;
+uint g_attached; // lines attached: P.attached, or the life's own with host worlds
 
 // the source tile of local slot k of tile t: itself and the 8 around it, TILES off the sheet
 int local_tile(int t, int k) {
@@ -85,10 +93,10 @@ void before_tick(uint life) {
     s_resting = L.rest_left > 0 ? 1 : 0;
     if (L.rest_left > 0) {
         L.rest_left--;
-    } else if (L.tick_in_step == 0) {
+    } else if (HOST == 0 && L.tick_in_step == 0) {
         L.line_on = task_lines(L);
     }
-    uint lines = L.line_on;
+    uint lines = HOST != 0 ? 0u : L.line_on; // host worlds: the task's part is s_task
     if (L.good_left > 0) {
         lines |= 1u;
         L.good_left--;
@@ -97,8 +105,28 @@ void before_tick(uint life) {
         lines |= 2u;
         L.bad_left--;
     }
-    s_lines = lines & P.attached;
+    s_lines = lines & g_attached;
     lives[life] = L;
+}
+
+// a reward against its running average; sets up the grading that follows (minimal_reward),
+// and the good or bad line and the rest ticks (plug_reward, plug_quiet_lines)
+void reward_life(inout Life L, Genome G, int valence) {
+    if ((HOST != 0 ? (L.attached & 3u) != 0u : P.uses_reward != 0)) {
+        L.good_left = valence > 0 ? P.reward_line_ticks : L.good_left;
+        L.bad_left = valence < 0 ? P.reward_line_ticks : L.bad_left;
+    }
+    L.line_on = 0u;
+    L.rest_left = P.rest_ticks;
+    int delta = (valence > 0 ? 256 : -256) - L.reward_avg;
+    L.reward_avg += delta >= 0 ? delta >> G.avg_shift : -((-delta) >> G.avg_shift);
+    if (G.learning_on == 0 || delta == 0) {
+        return;
+    }
+    int width = findMSB(abs(delta)) + 1;
+    s_grade = 1;
+    s_better = (delta > 0) == (G.noise_sign >= 0) ? 1 : 0;
+    s_shift = G.learn_shift + (width >= 9 ? 0 : 9 - width);
 }
 
 // a step's last tick: the answer, the task's move, the window score, and the reward against
@@ -112,14 +140,6 @@ void end_step(inout Life L, Genome G, uint life) {
     int move = plug_choice(counts);
     int valence = task_step(L, move);
     L.tick_in_step = 0;
-    if (valence != 0) {
-        if (P.uses_reward != 0) {
-            L.good_left = valence > 0 ? P.reward_line_ticks : L.good_left;
-            L.bad_left = valence < 0 ? P.reward_line_ticks : L.bad_left;
-        }
-        L.line_on = 0u;
-        L.rest_left = P.rest_ticks;
-    }
     L.step++;
     if (L.step % P.window == 0) {
         if (L.windows < P.max_windows) {
@@ -132,18 +152,20 @@ void end_step(inout Life L, Genome G, uint life) {
     if (L.step >= P.steps) {
         s_done = 1;
     }
-    if (valence == 0) {
-        return;
+    if (valence != 0) {
+        reward_life(L, G, valence);
     }
-    int delta = (valence > 0 ? 256 : -256) - L.reward_avg;
-    L.reward_avg += delta >= 0 ? delta >> G.avg_shift : -((-delta) >> G.avg_shift);
-    if (G.learning_on == 0 || delta == 0) {
-        return;
+}
+
+// host worlds, a step's last tick: the counts go to the host, which answers next dispatch
+void host_end_step(uint life) {
+    for (int i = 0; i < MAX_MOTORS; i++) {
+        xout[life].motor_count[i] = s_count[i];
+        s_count[i] = 0;
     }
-    int width = findMSB(abs(delta)) + 1;
-    s_grade = 1;
-    s_better = (delta > 0) == (G.noise_sign >= 0) ? 1 : 0;
-    s_shift = G.learn_shift + (width >= 9 ? 0 : 9 - width);
+    xout[life].surprise = 0;
+    lives[life].tick_in_step = 0;
+    s_done = 1;
 }
 
 // after a tick: count it toward the step, and end the step on its last tick
@@ -154,15 +176,87 @@ void after_tick(uint life, Genome G) {
     }
     int in_step = lives[life].tick_in_step + 1;
     lives[life].tick_in_step = in_step;
-    if (in_step >= P.ticks_per_step) {
+    if (in_step >= P.ticks_per_step && HOST != 0) {
+        host_end_step(life);
+    } else if (in_step >= P.ticks_per_step) {
         Life L = lives[life];
         end_step(L, G, life);
         lives[life] = L;
     }
 }
 
+// a reward: grade the neurons whose latest spike in the window was noise (grade_mode 1: any
+// spike); each moves one connection by chance toward or away from what it heard
+void grade(uint64_t key, uint64_t tick, Genome G, int tid, int WG) {
+    const uint noise_base = g_ring_base + uint(RING * STRIDE);
+    const int shift = s_shift;
+    for (int t = tid; t < TILES; t += WG) {
+        uint64_t not_sensor = ~s_sensor[t], seen = 0UL, graded = 0UL;
+        uint64_t a0 = 0UL, a1 = 0UL, a2 = 0UL, a3 = 0UL, a4 = 0UL;
+        for (int a = 0; a < G.credit_ticks; a++) {
+            uint index = uint(((g_now - a) & (RING - 1)) * STRIDE + t);
+            uint64_t spikes = rings[g_ring_base + index];
+            uint64_t noise = rings[noise_base + index];
+            uint64_t pick = (G.grade_mode == 0 ? noise : spikes) & ~seen & not_sensor;
+            seen |= spikes;
+            if (pick == 0UL) {
+                continue;
+            }
+            Rng r = rng_at(key, tick, SITE_GRADE, uint(t), uint(a));
+            pick &= sparse_word(r, shift);
+            graded |= pick;
+            a0 |= (a & 1) != 0 ? pick : 0UL;
+            a1 |= (a & 2) != 0 ? pick : 0UL;
+            a2 |= (a & 4) != 0 ? pick : 0UL;
+            a3 |= (a & 8) != 0 ? pick : 0UL;
+            a4 |= (a & 16) != 0 ? pick : 0UL;
+        }
+        s_graded(t) = graded;
+        s_age(0, t) = a0;
+        s_age(1, t) = a1;
+        s_age(2, t) = a2;
+        s_age(3, t) = a3;
+        s_age(4, t) = a4;
+    }
+    barrier();
+    const bool better = s_better != 0;
+    for (int n = tid; n < N; n += WG) {
+        int t = tile_of(n), b = n & 63;
+        if (((s_graded(t) >> b) & 1UL) == 0UL) {
+            continue;
+        }
+        int age = 0;
+        for (int j = 0; j < 5; j++) {
+            age |= int((s_age(j, t) >> b) & 1UL) << j;
+        }
+        Rng r = rng_at(key, tick, SITE_GRADE_PICK, uint(n), uint(age));
+        if (better) {
+            gain_active(t, b, age, r, G.budget_on);
+        } else {
+            lose_active(t, b, age, r, G.budget_on);
+        }
+    }
+}
+
+// host worlds, before the step's ticks: the host's answer to the last step (its reward, and
+// whether the life goes on) and the sensor words of this one
+void host_start(uint life, Genome G, int tid, int WG) {
+    if (tid == 0) {
+        s_done = xin[life].run != 0 ? 0 : 1;
+        int valence = xin[life].valence;
+        if (s_done == 0 && valence != 0) {
+            Life L = lives[life];
+            reward_life(L, G, valence);
+            lives[life] = L;
+        }
+    }
+    for (int t = tid; t <= TILES; t += WG) {
+        s_task[t] = xwords[life * uint(TILES + 1) + uint(t)];
+    }
+}
+
 void main() {
-    const uint life = gl_WorkGroupID.x;
+    const uint life = gl_WorkGroupID.x + uint(push.first);
     const int tid = int(gl_LocalInvocationID.x);
     const int WG = int(gl_WorkGroupSize.x);
     if (int(life) >= P.lives) {
@@ -173,9 +267,13 @@ void main() {
     g_mask_base = life * uint(TILES * 9 * 64);
     g_ring_base = life * uint(2 * RING * STRIDE);
     const uint noise_base = g_ring_base + uint(RING * STRIDE);
-    const uint motor_base = uint((1 + MAX_LINES) * (TILES + 1));
+    // the life's world table: one per batch, or its own world's block with host worlds
+    const uint world_base = HOST != 0 ? uint(lives[life].block * WORLD_ROWS * (TILES + 1)) : 0u;
+    const uint motor_base = world_base + uint((1 + MAX_LINES) * (TILES + 1));
+    const int motor_lines = HOST != 0 ? lives[life].motor_lines : P.motor_lines;
+    g_attached = HOST != 0 ? lives[life].attached : P.attached;
     const bool cowire_gate =
-        G.learning_on != 0 && G.cowire_on != 0 && (G.cowire_needs_input == 0 || P.attached != 0u);
+        G.learning_on != 0 && G.cowire_on != 0 && (G.cowire_needs_input == 0 || g_attached != 0u);
 
     g_now = lives[life].now;
     uint64_t tick = lives[life].tick;
@@ -185,6 +283,7 @@ void main() {
             s_count[i] = lives[life].motor_count[i];
         }
         s_done = lives[life].done;
+        s_grade = 0;
     }
     for (int t = tid; t <= TILES; t += WG) {
         s_inh[t] = inhibitory[life * uint(TILES + 1) + uint(t)];
@@ -194,6 +293,13 @@ void main() {
     }
     int cur = 0;
     barrier();
+    if (HOST != 0) {
+        host_start(life, G, tid, WG);
+        barrier();
+        if (s_grade != 0) {
+            grade(key, tick, G, tid, WG);
+        }
+    }
 
     for (int step_tick = 0; step_tick < push.ticks; step_tick++) {
         if (s_done != 0) {
@@ -211,9 +317,9 @@ void main() {
         for (int j = tid; j < 4 * TILES; j += WG) {
             int t = j % TILES, job = j / TILES;
             if (job == 0) {
-                uint64_t sense = 0UL;
+                uint64_t sense = HOST != 0 && s_resting == 0 ? s_task[t] : 0UL;
                 for (uint on = lines; on != 0u; on &= on - 1u) {
-                    sense |= world_words[uint((1 + findLSB(on)) * (TILES + 1) + t)];
+                    sense |= world_words[world_base + uint((1 + findLSB(on)) * (TILES + 1) + t)];
                 }
                 s_sense(t) = sense;
                 s_would(t) = 0UL;
@@ -270,7 +376,7 @@ void main() {
             s_down(t) = ~sensor & ~up & s_down(t);
             s_cow(t) = fired & ~sensor & s_cow(t);
             if (s_resting == 0) {
-                for (int line = 0; line < P.motor_lines; line++) {
+                for (int line = 0; line < motor_lines; line++) {
                     int c = bc64(fired & world_words[motor_base + uint(line * (TILES + 1) + t)]);
                     if (c != 0) {
                         atomicAdd(s_count[line], c);
@@ -308,55 +414,8 @@ void main() {
         }
         barrier();
 
-        // a reward: grade the neurons whose latest spike in the window was noise
         if (s_grade != 0) {
-            const int shift = s_shift;
-            for (int t = tid; t < TILES; t += WG) {
-                uint64_t not_sensor = ~s_sensor[t], seen = 0UL, graded = 0UL;
-                uint64_t a0 = 0UL, a1 = 0UL, a2 = 0UL, a3 = 0UL, a4 = 0UL;
-                for (int a = 0; a < G.credit_ticks; a++) {
-                    uint index = uint(((g_now - a) & (RING - 1)) * STRIDE + t);
-                    uint64_t spikes = rings[g_ring_base + index];
-                    uint64_t noise = rings[noise_base + index];
-                    uint64_t pick = (G.grade_mode == 0 ? noise : spikes) & ~seen & not_sensor;
-                    seen |= spikes;
-                    if (pick == 0UL) {
-                        continue;
-                    }
-                    Rng r = rng_at(key, tick, SITE_GRADE, uint(t), uint(a));
-                    pick &= sparse_word(r, shift);
-                    graded |= pick;
-                    a0 |= (a & 1) != 0 ? pick : 0UL;
-                    a1 |= (a & 2) != 0 ? pick : 0UL;
-                    a2 |= (a & 4) != 0 ? pick : 0UL;
-                    a3 |= (a & 8) != 0 ? pick : 0UL;
-                    a4 |= (a & 16) != 0 ? pick : 0UL;
-                }
-                s_graded(t) = graded;
-                s_age(0, t) = a0;
-                s_age(1, t) = a1;
-                s_age(2, t) = a2;
-                s_age(3, t) = a3;
-                s_age(4, t) = a4;
-            }
-            barrier();
-            const bool better = s_better != 0;
-            for (int n = tid; n < N; n += WG) {
-                int t = tile_of(n), b = n & 63;
-                if (((s_graded(t) >> b) & 1UL) == 0UL) {
-                    continue;
-                }
-                int age = 0;
-                for (int j = 0; j < 5; j++) {
-                    age |= int((s_age(j, t) >> b) & 1UL) << j;
-                }
-                Rng r = rng_at(key, tick, SITE_GRADE_PICK, uint(n), uint(age));
-                if (better) {
-                    gain_active(t, b, age, r, G.budget_on);
-                } else {
-                    lose_active(t, b, age, r, G.budget_on);
-                }
-            }
+            grade(key, tick, G, tid, WG);
         }
     }
 
@@ -367,6 +426,8 @@ void main() {
         for (int i = 0; i < MAX_MOTORS; i++) {
             lives[life].motor_count[i] = s_count[i];
         }
-        lives[life].done = s_done;
+        if (HOST == 0) {
+            lives[life].done = s_done;
+        }
     }
 }

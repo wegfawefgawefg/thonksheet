@@ -18,6 +18,7 @@ struct GpuLifeSpec {
     uint64_t seed = 1;
     Genome genome;
     MinimalGenome mg;
+    int world = 0; // host worlds: which of the batch's worlds
 };
 
 // the batch's world: task and plug numbers, sensor, line and button masks
@@ -27,6 +28,8 @@ struct GpuWorld {
     GpuShape shape;
 };
 
+// the task runs inside the shader (the Echo family); any other runs as a host world
+bool gpu_world_in_shader(TaskKind kind);
 // a minimal genome the shader runs as written; false with the reason if it is not
 bool gpu_genome_supported(const MinimalGenome& mg, std::string& why);
 // the world from a born life (the plug is attached to it and detached again)

@@ -21,15 +21,20 @@ struct CpuLife {
     int64_t step = 0;
     int64_t ticks = 0;
     bool done = false;
-    std::vector<double> scores; // one per window
+    std::vector<double> scores;         // one per window
+    int pending = 0, pending_move = -1; // cpu_life_step: the reward held back
 };
 
 bool cpu_life_start(CpuLife& c, const GpuLifeSpec& spec, const RunFlags& flags);
 // up to `ticks` ticks, fewer if the life ends. returns the ticks run.
 int64_t cpu_life_ticks(CpuLife& c, int64_t ticks);
+// one task step, as blobrun's loop runs it, except that the step's reward is held back and
+// given at the start of the next call: where a host-world dispatch has it. returns the ticks.
+int64_t cpu_life_step(CpuLife& c);
 void cpu_life_free(CpuLife& c);
 
 // the CPU life against the GPU's copy of it: spike and noise maps of the last `recent`
-// ticks, then the whole ring, masks, thresholds, reward average and task. false with the
-// first difference in `why`.
-bool cpu_life_matches(const CpuLife& c, const GpuLifeData& gpu, int recent, std::string& why);
+// ticks, then the whole ring, masks, thresholds, reward average and task (host worlds: the
+// task is the host's, compared apart). false with the first difference in `why`.
+bool cpu_life_matches(const CpuLife& c, const GpuLifeData& gpu, int recent, bool host,
+                      std::string& why);

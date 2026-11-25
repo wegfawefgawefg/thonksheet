@@ -7,7 +7,7 @@
 // the compute pipelines (a life's ticks, a life's birth), the groups' buffers and
 // descriptor sets, and one dispatch.
 
-constexpr int BINDINGS = 9;
+constexpr int BINDINGS = 12;
 constexpr int MAX_GROUPS = 256;
 
 static uint64_t mask_words(const GpuShape& s) {
@@ -57,7 +57,7 @@ static bool make_layout(GpuContext& g, GpuBatch& b) {
     VkDescriptorSetLayoutCreateInfo set_info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
     set_info.bindingCount = BINDINGS;
     set_info.pBindings = bindings;
-    VkPushConstantRange push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 4};
+    VkPushConstantRange push{VK_SHADER_STAGE_COMPUTE_BIT, 0, 8};
     VkPipelineLayoutCreateInfo layout_info{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
     layout_info.setLayoutCount = 1;
     layout_info.pSetLayouts = &b.set_layout;
@@ -77,7 +77,8 @@ static bool make_layout(GpuContext& g, GpuBatch& b) {
 }
 
 // one compute pipeline from a .spv. specialization: workgroup size, tiles, ring stride,
-// tiles across (a shader with a fixed workgroup size ignores the first)
+// tiles across, host worlds (a shader with a fixed workgroup size ignores the first, and one
+// without host worlds the last)
 static bool make_pipeline(GpuContext& g, GpuBatch& b, const char* spv, int wave, VkPipeline& out) {
     std::vector<uint32_t> code;
     if (!read_file(spv, code)) {
@@ -90,9 +91,10 @@ static bool make_pipeline(GpuContext& g, GpuBatch& b, const char* spv, int wave,
     if (!gpu_ok(g, vkCreateShaderModule(g.device, &module_info, nullptr, &module), "shader")) {
         return false;
     }
-    int32_t values[4] = {b.shape.workgroup, b.shape.tiles, b.shape.stride, b.shape.tiles_w};
-    VkSpecializationMapEntry entries[4] = {{0, 0, 4}, {1, 4, 4}, {2, 8, 4}, {3, 12, 4}};
-    VkSpecializationInfo spec{4, entries, sizeof(values), values};
+    int32_t values[5] = {b.shape.workgroup, b.shape.tiles, b.shape.stride, b.shape.tiles_w,
+                         b.shape.host};
+    VkSpecializationMapEntry entries[5] = {{0, 0, 4}, {1, 4, 4}, {2, 8, 4}, {3, 12, 4}, {4, 16, 4}};
+    VkSpecializationInfo spec{5, entries, sizeof(values), values};
     VkComputePipelineCreateInfo info{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
     info.stage =
         VkPipelineShaderStageCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
@@ -133,16 +135,17 @@ static bool zeros_new(GpuContext& g, GpuBuffer& buf, uint64_t bytes) {
     return gpu_submit(g);
 }
 
-// one dispatch of a pipeline over a group
+// one dispatch of a pipeline over a group (push: ticks, first life)
 static bool dispatch(GpuContext& g, GpuBatch& b, GpuGroup& group, VkPipeline pipeline,
-                     uint32_t workgroups, int32_t push) {
+                     uint32_t workgroups, int32_t ticks, int32_t first = 0) {
     if (!gpu_begin(g)) {
         return false;
     }
+    int32_t push[2] = {ticks, first};
     vkCmdBindPipeline(g.command, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
     vkCmdBindDescriptorSets(g.command, VK_PIPELINE_BIND_POINT_COMPUTE, b.layout, 0, 1, &group.set,
                             0, nullptr);
-    vkCmdPushConstants(g.command, b.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, 4, &push);
+    vkCmdPushConstants(g.command, b.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push), push);
     vkCmdDispatch(g.command, workgroups, 1, 1);
     return gpu_submit(g);
 }
@@ -198,9 +201,17 @@ bool gpu_group_add(GpuContext& g, GpuBatch& b, int first, const GpuLifeData* liv
              upload_new(g, gr.thresholds, thresholds.data(), thresholds.size()) &&
              upload_new(g, gr.inhibitory, inhibitory.data(), inhibitory.size() * 8);
     }
+    // the exchange: host-visible, written and read in place between dispatches
+    size_t xn = s.host ? n : 1;
+    ok = ok && gpu_buffer(g, gr.xin, sizeof(GpuExchangeIn) * xn, true) &&
+         gpu_buffer(g, gr.xwords, 8 * tiles1 * xn, true) &&
+         gpu_buffer_read_back(g, gr.xout, sizeof(GpuExchangeOut) * xn);
     if (!ok) {
         return false;
     }
+    std::memset(gr.xin.mapped, 0, sizeof(GpuExchangeIn) * xn);
+    std::memset(gr.xwords.mapped, 0, 8 * tiles1 * xn);
+    std::memset(gr.xout.mapped, 0, sizeof(GpuExchangeOut) * xn);
     VkDescriptorSetAllocateInfo alloc{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
     alloc.descriptorPool = b.pool;
     alloc.descriptorSetCount = 1;
@@ -208,8 +219,9 @@ bool gpu_group_add(GpuContext& g, GpuBatch& b, int first, const GpuLifeData* liv
     if (!gpu_ok(g, vkAllocateDescriptorSets(g.device, &alloc, &gr.set), "descriptor set")) {
         return false;
     }
-    GpuBuffer* order[BINDINGS] = {&gr.params,     &b.world,  &gr.genomes,    &gr.lives, &gr.masks,
-                                  &gr.thresholds, &gr.rings, &gr.inhibitory, &gr.scores};
+    GpuBuffer* order[BINDINGS] = {&gr.params, &b.world,       &gr.genomes, &gr.lives,
+                                  &gr.masks,  &gr.thresholds, &gr.rings,   &gr.inhibitory,
+                                  &gr.scores, &gr.xin,        &gr.xwords,  &gr.xout};
     VkDescriptorBufferInfo infos[BINDINGS];
     VkWriteDescriptorSet writes[BINDINGS];
     for (int i = 0; i < BINDINGS; i++) {
@@ -228,6 +240,25 @@ bool gpu_group_add(GpuContext& g, GpuBatch& b, int first, const GpuLifeData* liv
 
 bool gpu_group_step(GpuContext& g, GpuBatch& b, GpuGroup& group, int ticks) {
     return dispatch(g, b, group, b.pipeline, (uint32_t)group.count, ticks);
+}
+
+bool gpu_group_step_part(GpuContext& g, GpuBatch& b, GpuGroup& group, int ticks, int first,
+                         int count) {
+    return dispatch(g, b, group, b.pipeline, (uint32_t)count, ticks, first);
+}
+
+bool gpu_group_step_async(GpuContext& g, GpuBatch& b, GpuGroup& group, int ticks, int first,
+                          int count, GpuSlot& slot) {
+    if (!gpu_slot_begin(g, slot)) {
+        return false;
+    }
+    int32_t push[2] = {ticks, first};
+    vkCmdBindPipeline(slot.command, VK_PIPELINE_BIND_POINT_COMPUTE, b.pipeline);
+    vkCmdBindDescriptorSets(slot.command, VK_PIPELINE_BIND_POINT_COMPUTE, b.layout, 0, 1,
+                            &group.set, 0, nullptr);
+    vkCmdPushConstants(slot.command, b.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push), push);
+    vkCmdDispatch(slot.command, (uint32_t)count, 1, 1);
+    return gpu_slot_submit(g, slot);
 }
 
 bool gpu_group_lives(GpuContext& g, GpuGroup& group, GpuLife* out) {
@@ -265,7 +296,8 @@ void gpu_batch_close(GpuContext& g, GpuBatch& b) {
     }
     for (GpuGroup& gr : b.groups) {
         GpuBuffer* all[] = {&gr.params,     &gr.genomes, &gr.lives,      &gr.masks,
-                            &gr.thresholds, &gr.rings,   &gr.inhibitory, &gr.scores};
+                            &gr.thresholds, &gr.rings,   &gr.inhibitory, &gr.scores,
+                            &gr.xin,        &gr.xwords,  &gr.xout};
         for (GpuBuffer* buf : all) {
             gpu_free(g, *buf);
         }

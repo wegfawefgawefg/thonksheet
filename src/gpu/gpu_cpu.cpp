@@ -46,6 +46,35 @@ int64_t cpu_life_ticks(CpuLife& c, int64_t ticks) {
     return ran;
 }
 
+int64_t cpu_life_step(CpuLife& c) {
+    TaskTicker& tt = *c.ticker;
+    Blob& blob = *c.blob;
+    if (c.pending != 0) {
+        plug_mark_acted(tt.plug, blob, c.pending_move);
+        minimal_reward(blob, c.pending);
+        c.pending = 0;
+    }
+    int64_t ran = 0;
+    while (!c.done) {
+        ticker_before_tick(tt, blob);
+        minimal_tick(blob);
+        ran++;
+        if (!ticker_after_tick(tt, blob)) {
+            continue;
+        }
+        c.pending = tt.valence;
+        c.pending_move = tt.move;
+        c.step++;
+        if (c.step % c.flags.window == 0) {
+            c.scores.push_back(task_window_score(tt.task));
+        }
+        c.done = c.step >= c.flags.steps;
+        break;
+    }
+    c.ticks += ran;
+    return ran;
+}
+
 void cpu_life_free(CpuLife& c) {
     if (c.blob) {
         minimal_free(c.blob);
@@ -64,7 +93,8 @@ static bool same_words(const uint64_t* a, const uint64_t* b, size_t count, size_
     return true;
 }
 
-bool cpu_life_matches(const CpuLife& c, const GpuLifeData& gpu, int recent, std::string& why) {
+bool cpu_life_matches(const CpuLife& c, const GpuLifeData& gpu, int recent, bool host,
+                      std::string& why) {
     const MinimalBlob& m = minimal_of(*c.blob);
     const Blob& b = m.shell;
     const GpuLife& L = gpu.life;
@@ -115,8 +145,8 @@ bool cpu_life_matches(const CpuLife& c, const GpuLifeData& gpu, int recent, std:
         return false;
     }
     const Task& task = c.ticker->task;
-    if (L.reward_avg != m.reward_avg || L.world != task.random.state || L.cue != task.cue ||
-        L.phase != task.phase) {
+    if (L.reward_avg != m.reward_avg ||
+        (!host && (L.world != task.random.state || L.cue != task.cue || L.phase != task.phase))) {
         std::snprintf(text, sizeof(text),
                       "reward average or task: gpu avg %d cue %d phase %d, cpu avg %d cue %d "
                       "phase %d",

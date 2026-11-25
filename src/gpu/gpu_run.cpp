@@ -52,23 +52,32 @@ bool gpu_run_open(GpuContext& g, GpuBatch& b, const GpuFlags& f,
 
 // lives [first, first + count) born and packed, every `step`-th one from `from`
 static void birth_some(const GpuFlags& f, const std::vector<GpuLifeSpec>& lives, int first,
-                       int count, int from, int step, GpuLifeData* out) {
+                       int count, int from, int step, GpuLifeData* out,
+                       const std::vector<HostWorld>* worlds) {
     for (int i = from; i < count; i += step) {
         const GpuLifeSpec& spec = lives[(size_t)(first + i)];
         if (f.birth_gpu) {
             gpu_life_unborn(out[i], spec, f.run);
-            continue;
+        } else {
+            Blob* blob = minimal_birth(spec.genome, spec.mg, spec.seed);
+            RunFlags rf = f.run;
+            rf.task_seed = spec.seed;
+            gpu_life_pack(out[i], minimal_of(*blob), rf, spec.seed);
+            minimal_free(blob);
         }
-        Blob* blob = minimal_birth(spec.genome, spec.mg, spec.seed);
-        RunFlags rf = f.run;
-        rf.task_seed = spec.seed;
-        gpu_life_pack(out[i], minimal_of(*blob), rf, spec.seed);
-        minimal_free(blob);
+        if (worlds) {
+            // host worlds: the life's table block, buttons and attached lines
+            const HostWorld& w = (*worlds)[(size_t)spec.world];
+            out[i].life.block = spec.world;
+            out[i].life.motor_lines = w.motor_lines;
+            out[i].life.attached = w.attached;
+        }
     }
 }
 
 bool gpu_run_upload(GpuContext& g, GpuBatch& b, const GpuFlags& f,
-                    const std::vector<GpuLifeSpec>& lives, std::vector<CpuLife>* check) {
+                    const std::vector<GpuLifeSpec>& lives, std::vector<CpuLife>* check,
+                    const std::vector<HostWorld>* worlds) {
     int total = (int)lives.size();
     int size = f.check ? total : gpu_group_size(g, b.shape);
     size = f.group > 0 && f.group < size ? f.group : size;
@@ -82,9 +91,9 @@ bool gpu_run_upload(GpuContext& g, GpuBatch& b, const GpuFlags& f,
         std::vector<std::thread> helpers;
         for (int h = 1; h < f.birth_threads; h++) {
             helpers.emplace_back(birth_some, std::cref(f), std::cref(lives), first, count, h,
-                                 f.birth_threads, data.data());
+                                 f.birth_threads, data.data(), worlds);
         }
-        birth_some(f, lives, first, count, 0, f.birth_threads, data.data());
+        birth_some(f, lives, first, count, 0, f.birth_threads, data.data(), worlds);
         for (std::thread& helper : helpers) {
             helper.join();
         }
@@ -104,7 +113,8 @@ bool gpu_run_upload(GpuContext& g, GpuBatch& b, const GpuFlags& f,
     if (check) {
         check->resize(lives.size());
         for (size_t i = 0; i < lives.size(); i++) {
-            if (!cpu_life_start((*check)[i], lives[i], f.run)) {
+            const RunFlags& rf = worlds ? (*worlds)[(size_t)lives[i].world].flags : f.run;
+            if (!cpu_life_start((*check)[i], lives[i], rf)) {
                 return false;
             }
         }
@@ -138,7 +148,7 @@ bool gpu_run_scores(GpuContext& g, GpuBatch& b, std::vector<std::vector<double>>
 }
 
 bool gpu_run_check(GpuContext& g, GpuBatch& b, GpuGroup& group, std::vector<CpuLife>& cpu,
-                   int ticks) {
+                   int ticks, bool host) {
     GpuLifeData data;
     for (int i = 0; i < group.count; i++) {
         CpuLife& c = cpu[(size_t)(group.first + i)];
@@ -147,7 +157,7 @@ bool gpu_run_check(GpuContext& g, GpuBatch& b, GpuGroup& group, std::vector<CpuL
             return false;
         }
         std::string why;
-        if (!cpu_life_matches(c, data, ticks, why)) {
+        if (!cpu_life_matches(c, data, ticks, host, why)) {
             std::fprintf(stderr, "check: life %d (seed %llu) differs after tick %llu: %s\n",
                          group.first + i, (unsigned long long)c.flags.seed,
                          (unsigned long long)c.blob->stats.tick, why.c_str());
@@ -158,12 +168,14 @@ bool gpu_run_check(GpuContext& g, GpuBatch& b, GpuGroup& group, std::vector<CpuL
 }
 
 void cpu_run(const GpuFlags& f, const std::vector<GpuLifeSpec>& lives,
-             std::vector<std::vector<double>>& scores, int64_t& ticks, double& seconds) {
+             const std::vector<HostWorld>& worlds, std::vector<std::vector<double>>& scores,
+             int64_t& ticks, double& seconds) {
     ticks = 0;
     seconds = 0;
     for (size_t i = 0; i < lives.size(); i++) {
         CpuLife c;
-        if (!cpu_life_start(c, lives[i], f.run)) {
+        const RunFlags& rf = worlds.empty() ? f.run : worlds[(size_t)lives[i].world].flags;
+        if (!cpu_life_start(c, lives[i], rf)) {
             std::fprintf(stderr, "blobgpu: life %zu: the plug does not fit\n", i);
             cpu_life_free(c);
             return;

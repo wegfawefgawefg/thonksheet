@@ -8,6 +8,8 @@ const int TASK_ECHO = 0;
 const int TASK_SHUFFLED_ECHO = 1;
 const int TASK_DELAYED_ECHO = 2;
 const int TASK_BOTH_NOT_EITHER = 3;
+const int TASK_HOST_WORLD = 4;
+const int WORLD_ROWS = 1 + MAX_LINES + MAX_MOTORS; // a world table block, in tiles + 1 words
 
 struct Params {
     int lives;
@@ -39,9 +41,21 @@ struct Life {
     int tick_in_step, rest_left, good_left, bad_left;
     uint line_on;
     int step, right, chances, windows, done;
-    int pad;
+    int block;
     int button_of[MAX_MOTORS];
     int motor_count[MAX_MOTORS];
+    int motor_lines;
+    uint attached; // host worlds: bit 0 good, 1 bad, 31 any task line
+    int pad2, pad3;
+};
+
+struct ExchangeIn {
+    int valence, run, acted, pad;
+};
+
+struct ExchangeOut {
+    int motor_count[MAX_MOTORS];
+    int surprise, ticks, pad0, pad1;
 };
 
 layout(std430, binding = 0) readonly buffer ParamsBlock {
@@ -75,4 +89,15 @@ layout(std430, binding = 7) buffer Inhibitory { // written by births only
 // per life per window: right answers, chances to answer
 layout(std430, binding = 8) buffer Scores {
     uvec2 scores[];
+};
+// host worlds (one step a dispatch): the reward and the next step's sensor words in, the
+// motor counts out. host-visible memory, written and read between dispatches.
+layout(std430, binding = 9) readonly buffer XIn {
+    ExchangeIn xin[];
+};
+layout(std430, binding = 10) readonly buffer XWords { // tiles + 1 words per life
+    uint64_t xwords[];
+};
+layout(std430, binding = 11) writeonly buffer XOut {
+    ExchangeOut xout[];
 };

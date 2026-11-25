@@ -45,6 +45,12 @@ static GpuTaskKind kind_of(TaskKind kind, bool& ok) {
     }
 }
 
+bool gpu_world_in_shader(TaskKind kind) {
+    bool known = false;
+    kind_of(kind, known);
+    return known;
+}
+
 static void set_bit(std::vector<uint64_t>& words, size_t first, int neuron) {
     words[first + (size_t)(neuron / TILE_NEURONS)] |= 1ull << (neuron % TILE_NEURONS);
 }
@@ -144,12 +150,18 @@ static void genome_numbers(GpuGenome& g, const MinimalGenome& mg, const Genome& 
     g.inhibitory_percent = sheet.inhibitory_percent;
 }
 
-// a newborn life's clock, reward average and task
+// a newborn life's clock, reward average and task (the task's part only for the tasks in
+// the shader; a host world's task is on the host)
 static void life_start(GpuLife& L, uint64_t seed, const RunFlags& flags) {
-    Task task;
-    task_reset(task, flags.task, flags.task_settings, seed);
     L = GpuLife{};
     L.key = seed ^ 0x4d696e696d616c00ull; // minimal_birth's rng_key
+    bool known = false;
+    kind_of(flags.task, known);
+    if (!known) {
+        return;
+    }
+    Task task;
+    task_reset(task, flags.task, flags.task_settings, seed);
     L.world = task.random.state;
     L.cue = task.cue;
     L.phase = task.phase;

@@ -5,7 +5,12 @@
 #
 #   scripts/gpu.sh                  a small safe batch: 64 lives of echo k=2, 2,000 steps
 #   scripts/gpu.sh check            the shader against the CPU engine, tick by tick: nine cases
-#                                   on lavapipe (software Vulkan) first, then on the GPU
+#                                   of the Echo family in the shader and nine of host worlds, on
+#                                   lavapipe (software Vulkan) first, then on the GPU
+#   scripts/gpu.sh check host       only the host-world cases (check shader: only the others)
+#   scripts/gpu.sh against          host worlds against blobrun --engine minimal --m.rng_mode 1
+#                                   as text: echo, order, gap, both-not-either, catch, cartpole,
+#                                   seeds 5-8 and twins, 2,000 steps (out/gpu/against/)
 #   scripts/gpu.sh run --lives 4096 --task shuffled-echo --steps 40000 --twin
 #                                   any batch; blobrun's flags (--task --k --steps --ticks
 #                                   --window --g.name --m.name ...); rows to out/gpu/lives.csv
@@ -13,13 +18,18 @@
 #                                   a population: one life per row of in.csv (columns: seed and
 #                                   any minimal number, e.g. noise_shift, or g.name), scores
 #                                   (late, early, twin_late, twin_early) per row to out.csv
+#   scripts/gpu.sh settings in.csv out.csv --tasks echo:k=8,order,gap,catch:catch-size=4/4 --twin
+#                                   every row on every world of the list, one batch: late_<world>
+#                                   and twin_late_<world> per row (key=value is a blobrun flag)
 #   scripts/gpu.sh speed            the speed table: 1, 64, 1,024, 16,384 lives, learning on and
 #                                   off, then the CPU engine on one core, same task (a few min)
 #   scripts/gpu.sh big              16,384 lives of echo k=2 with twins, 40,000 steps (the
 #                                   search's life; 40 minutes on the RX 9070 XT, 10.8 GB)
 #
-# Tasks on the GPU: echo, shuffled-echo, delayed-echo, both-not-either. The plain minimal
-# engine only (no far slots, delays, evidence counters, drop_mode 1 or noise_pair).
+# Every task runs. The Echo family (echo, shuffled-echo, delayed-echo, both-not-either) runs
+# inside the shader; every other task, and these with --host, runs as a host world: the sheet
+# on the GPU, the task and plug code of src/world on the CPU, one exchange per task step. The
+# plain minimal engine only (no far slots, delays, evidence counters, drop_mode 1 or noise_pair).
 # Base flags as scripts/minimal.sh: 20 ticks a step, 3x3 sensor and motor groups.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -63,6 +73,63 @@ check_all() {
     one workgroup1024 --lives 2 --workgroup 1024 --task both-not-either "${b[@]}"
 }
 
+# host worlds: the world's own code on the CPU, the sheet on the GPU, checked every step
+check_host() {
+    local run=$1 b=("${base[@]}" --window 50 --steps 150)
+    mkdir -p out/gpu
+    printf 'seed,grade_mode,budget_on,noise_shift,learn_shift,noise_sign,cowire_on,cowire_needs_input,credit_ticks,avg_shift,up_shift,g.inhibitory_percent,budget\n1,0,1,9,0,1,1,1,20,5,4,25,48\n2,1,0,7,1,-1,1,0,10,3,3,10,96\n' \
+        >out/gpu/settings-host.csv
+    one() {
+        local name=$1
+        shift
+        printf '%-18s ' "$name"
+        $run --check --out out/gpu/check-$name.csv "$@" 2>&1 |
+            grep -E "^check|validation messages|blobgpu:" | sed 's/: [0-9]* ticks.*, \([0-9]* validation\)/: \1/' |
+            tr '\n' ' '
+        echo
+    }
+    one host-echo --host --lives 2 --task echo --k 2 "${b[@]}"
+    one host-order --lives 1 --seed-from 3 --twin --task order "${b[@]}"
+    one host-gap --lives 1 --seed-from 3 --twin --task gap "${b[@]}"
+    one host-both --host --lives 1 --seed-from 3 --twin --task both-not-either "${b[@]}"
+    one host-catch --lives 1 --seed-from 3 --twin --task catch --catch-size 4 4 "${b[@]}"
+    one host-cartpole --lives 1 --seed-from 3 --twin "${b[@]}" --task cartpole --sensor-side 2 \
+        --cart-reward lean --number-code place
+    one host-sequence --lives 1 --seed-from 3 --twin --task sequence "${b[@]}"
+    one host-place --lives 1 --seed-from 3 --twin --task place "${b[@]}"
+    one host-worlds --settings out/gpu/settings-host.csv --twin --rest-ticks 3 --reward-ticks 4 \
+        --tasks echo:k=4,order,gap,catch:catch-size=4/4,cartpole:sensor-side=2:cart-reward=lean \
+        "${b[@]}"
+}
+
+# one world, seeds 5-8 and their twins, on the GPU and in blobrun; the windows compared as text
+against() {
+    local name=$1
+    shift
+    local dir=out/gpu/against cpu_args=()
+    mkdir -p $dir
+    for a in "$@"; do [ "$a" = --host ] || cpu_args+=("$a"); done
+    gpu --lives 4 --seed-from 5 --twin "$@" --out $dir/$name.csv --windows $dir/$name-w.csv |
+        grep -E "^gpu" || true
+    awk -F, 'NR > 1 { s[$1 "," $3 "," $4 "," $2] = $5 }
+        END { for (k in s) { split(k, p, ","); if (p[4] == 0)
+              print p[1] "," p[2] "," p[3] "," s[k] "," s[p[1] "," p[2] "," p[3] ",1"] } }' \
+        $dir/$name-w.csv | sort -t, -k1,1n -k2,2n >$dir/$name-gpu.txt
+    : >$dir/$name-cpu.txt
+    for seed in 5 6 7 8; do
+        nice -n 19 build/blobrun --engine minimal --m.rng_mode 1 --seed $seed "${cpu_args[@]}" \
+            --out $dir/$name-br-s$seed.csv --alive-ticks 0 --rhythm-ticks 0 >/dev/null
+        awk -F, -v s=$seed 'NR > 1 { print s "," $1 "," $2 "," $3 "," $4 }' \
+            $dir/$name-br-s$seed.csv >>$dir/$name-cpu.txt
+    done
+    sort -t, -k1,1n -k2,2n -o $dir/$name-cpu.txt $dir/$name-cpu.txt
+    if cmp -s $dir/$name-gpu.txt $dir/$name-cpu.txt; then
+        echo "$name: identical as text to blobrun ($(wc -l <$dir/$name-cpu.txt) windows)"
+    else
+        echo "$name: DIFFERS from blobrun"
+    fi
+}
+
 case "${1:-small}" in
 small)
     gpu --lives 64 --task echo --k 2 "${base[@]}" --steps 2000 --window 100 --twin \
@@ -70,10 +137,34 @@ small)
     kernel_log
     ;;
 check)
-    echo "lavapipe:"
-    check_all lavapipe
-    echo "GPU:"
-    check_all "gpu --validate"
+    which=${2:-all}
+    if [ "$which" != host ]; then
+        echo "lavapipe, in the shader:"
+        check_all lavapipe
+    fi
+    if [ "$which" != shader ]; then
+        echo "lavapipe, host worlds:"
+        check_host lavapipe
+    fi
+    if [ "$which" != host ]; then
+        echo "GPU, in the shader:"
+        check_all "gpu --validate"
+    fi
+    if [ "$which" != shader ]; then
+        echo "GPU, host worlds:"
+        check_host "gpu --validate"
+    fi
+    kernel_log
+    ;;
+against)
+    b=("${base[@]}" --steps 2000 --window 100)
+    against echo --host --task echo --k 2 "${b[@]}"
+    against order --task order "${b[@]}"
+    against gap --task gap "${b[@]}"
+    against both --host --task both-not-either "${b[@]}"
+    against catch --task catch --catch-size 4 4 "${b[@]}"
+    against cartpole --task cartpole --cart-reward lean --number-code place "${b[@]}" \
+        --sensor-side 2
     kernel_log
     ;;
 run)

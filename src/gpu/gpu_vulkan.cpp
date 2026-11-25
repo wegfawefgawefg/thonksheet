@@ -188,7 +188,17 @@ static uint32_t memory_type(GpuContext& g, uint32_t bits, VkMemoryPropertyFlags 
     return UINT32_MAX;
 }
 
+static bool make_buffer(GpuContext& g, GpuBuffer& b, VkDeviceSize size, bool host, bool cached);
+
 bool gpu_buffer(GpuContext& g, GpuBuffer& b, VkDeviceSize size, bool host) {
+    return make_buffer(g, b, size, host, false);
+}
+
+bool gpu_buffer_read_back(GpuContext& g, GpuBuffer& b, VkDeviceSize size) {
+    return make_buffer(g, b, size, true, true);
+}
+
+static bool make_buffer(GpuContext& g, GpuBuffer& b, VkDeviceSize size, bool host, bool cached) {
     VkBufferCreateInfo info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     info.size = size;
     info.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
@@ -205,6 +215,10 @@ bool gpu_buffer(GpuContext& g, GpuBuffer& b, VkDeviceSize size, bool host) {
     VkMemoryAllocateInfo alloc{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     alloc.allocationSize = req.size;
     alloc.memoryTypeIndex = memory_type(g, req.memoryTypeBits, want);
+    uint32_t cached_type =
+        memory_type(g, req.memoryTypeBits, want | VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+    alloc.memoryTypeIndex =
+        cached && cached_type != UINT32_MAX ? cached_type : alloc.memoryTypeIndex;
     if (alloc.memoryTypeIndex == UINT32_MAX) {
         std::fprintf(stderr, "blobgpu: no memory type for a buffer\n");
         return false;
@@ -231,43 +245,89 @@ void gpu_free(GpuContext& g, GpuBuffer& b) {
 }
 
 // everything before (earlier submits, host writes) is seen by what comes after
-static void memory_barrier(GpuContext& g, VkPipelineStageFlags to, VkAccessFlags reads) {
+static void memory_barrier(VkCommandBuffer command, VkPipelineStageFlags to, VkAccessFlags reads) {
     VkMemoryBarrier barrier{VK_STRUCTURE_TYPE_MEMORY_BARRIER};
     barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
     barrier.dstAccessMask = reads;
-    vkCmdPipelineBarrier(g.command, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, to, 0, 1, &barrier, 0,
+    vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, to, 0, 1, &barrier, 0,
                          nullptr, 0, nullptr);
 }
 
-bool gpu_begin(GpuContext& g) {
+static bool begin_on(GpuContext& g, VkCommandBuffer command) {
     if (g.lost) {
         return false;
     }
     VkCommandBufferBeginInfo info{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    if (!gpu_ok(g, vkResetCommandBuffer(g.command, 0), "reset commands") ||
-        !gpu_ok(g, vkBeginCommandBuffer(g.command, &info), "begin commands")) {
+    if (!gpu_ok(g, vkResetCommandBuffer(command, 0), "reset commands") ||
+        !gpu_ok(g, vkBeginCommandBuffer(command, &info), "begin commands")) {
         return false;
     }
-    memory_barrier(g, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+    memory_barrier(command, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                    VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT);
     return true;
 }
 
-bool gpu_submit(GpuContext& g) {
-    memory_barrier(g, VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_HOST_READ_BIT);
-    if (!gpu_ok(g, vkEndCommandBuffer(g.command), "end commands")) {
+static bool submit_on(GpuContext& g, VkCommandBuffer command, VkFence fence) {
+    memory_barrier(command, VK_PIPELINE_STAGE_HOST_BIT, VK_ACCESS_HOST_READ_BIT);
+    if (!gpu_ok(g, vkEndCommandBuffer(command), "end commands")) {
         return false;
     }
     VkSubmitInfo submit{VK_STRUCTURE_TYPE_SUBMIT_INFO};
     submit.commandBufferCount = 1;
-    submit.pCommandBuffers = &g.command;
-    if (!gpu_ok(g, vkResetFences(g.device, 1, &g.fence), "reset fence") ||
-        !gpu_ok(g, vkQueueSubmit(g.queue, 1, &submit, g.fence), "submit")) {
-        return false;
+    submit.pCommandBuffers = &command;
+    return gpu_ok(g, vkResetFences(g.device, 1, &fence), "reset fence") &&
+           gpu_ok(g, vkQueueSubmit(g.queue, 1, &submit, fence), "submit");
+}
+
+static bool wait_on(GpuContext& g, VkFence fence) {
+    return gpu_ok(g, vkWaitForFences(g.device, 1, &fence, VK_TRUE, g.wait_ms * 1000000ull), "wait");
+}
+
+bool gpu_begin(GpuContext& g) {
+    return begin_on(g, g.command);
+}
+
+bool gpu_submit(GpuContext& g) {
+    return submit_on(g, g.command, g.fence) && wait_on(g, g.fence);
+}
+
+bool gpu_slot_open(GpuContext& g, GpuSlot& s) {
+    VkCommandBufferAllocateInfo alloc{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+    alloc.commandPool = g.pool;
+    alloc.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    alloc.commandBufferCount = 1;
+    VkFenceCreateInfo fence{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+    return gpu_ok(g, vkAllocateCommandBuffers(g.device, &alloc, &s.command), "command buffer") &&
+           gpu_ok(g, vkCreateFence(g.device, &fence, nullptr, &s.fence), "fence");
+}
+
+void gpu_slot_close(GpuContext& g, GpuSlot& s) {
+    if (s.pending && !g.lost) {
+        wait_on(g, s.fence);
     }
-    return gpu_ok(g, vkWaitForFences(g.device, 1, &g.fence, VK_TRUE, g.wait_ms * 1000000ull),
-                  "wait");
+    if (s.fence != VK_NULL_HANDLE) {
+        vkDestroyFence(g.device, s.fence, nullptr);
+    }
+    if (s.command != VK_NULL_HANDLE) {
+        vkFreeCommandBuffers(g.device, g.pool, 1, &s.command);
+    }
+    s = GpuSlot{};
+}
+
+bool gpu_slot_begin(GpuContext& g, GpuSlot& s) {
+    return begin_on(g, s.command);
+}
+
+bool gpu_slot_submit(GpuContext& g, GpuSlot& s) {
+    s.pending = submit_on(g, s.command, s.fence);
+    return s.pending;
+}
+
+bool gpu_slot_wait(GpuContext& g, GpuSlot& s) {
+    bool ok = wait_on(g, s.fence);
+    s.pending = false;
+    return ok;
 }
 
 // copy through the staging buffer, a chunk at a time
