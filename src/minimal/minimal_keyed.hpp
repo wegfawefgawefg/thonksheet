@@ -19,6 +19,8 @@ enum MinDrawSite : uint32_t {
     MIN_DRAW_COWIRE_PICK = 4, // per neuron: the swap itself
     MIN_DRAW_GRADE = 5,       // per tile and age: which graded neurons move
     MIN_DRAW_GRADE_PICK = 6,  // per neuron and age: the move itself
+    MIN_DRAW_EV_GRADE = 7,    // evidence, per tile: which counter neurons move, then the quiet
+    MIN_DRAW_EV_MOVE = 8,     // evidence, per neuron (age 0 graded, 1 quiet): the read-off's ties
 };
 
 // the splitmix64 finalizer, a bijection

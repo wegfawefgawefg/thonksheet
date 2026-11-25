@@ -212,6 +212,7 @@ void min_evidence_reward(MinimalBlob& m, bool better, int shift) {
         }
         // fired: at least ev_fired_min spikes. quiet: none (ev_quiet 1) or fewer (2)
         uint64_t fired = at[mg.ev_fired_min - 1];
+        min_site(m, MIN_DRAW_EV_GRADE, (uint32_t)t, 0);
         graded &= mine & fired & sparse_word(m.rng, shift + mg.ev_shift);
         uint64_t quiet = 0;
         if (mg.ev_quiet) {
@@ -234,6 +235,7 @@ void min_evidence_reward(MinimalBlob& m, bool better, int shift) {
                 }
             }
             m.stats.graded++;
+            min_site(m, MIN_DRAW_EV_MOVE, (uint32_t)n, 0);
             move(m, n, x, better);
         }
         // quiet through the window: what it heard last, the other way
@@ -243,6 +245,7 @@ void min_evidence_reward(MinimalBlob& m, bool better, int shift) {
             for (int k = 0; k < m.slots; k++) {
                 x[k] = min_heard(m, 0, n, k);
             }
+            min_site(m, MIN_DRAW_EV_MOVE, (uint32_t)n, 1);
             move(m, n, x, !better);
         }
     }
