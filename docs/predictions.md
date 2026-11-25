@@ -217,3 +217,10 @@ inner neurons measurably better for a task than unsupervised wiring already make
     positive, the paddle's and forager's move, not predicted). Mine, from the queue
     note: "the sheet comes to hold more of the future than the raw input lines do" was
     the test, and the answer is no beyond the controls.
+39. **Why the sheet's answer is not repeatable** (its bot's predictions are in
+    docs/results-2026-11-26-repeatable.md, committed before any scoring run and scored
+    there). Mine, from idea 168's text: the first suspect I named was recurrent
+    excitation with strong delayed inhibition making the activity chaotic. Wrong: the
+    dynamics arms move the reader under 0.01. The second, thresholds and sector bias
+    moving during the read, is the cause, with small counts. I also expected a lower
+    target rate to help the transplant; it does not.

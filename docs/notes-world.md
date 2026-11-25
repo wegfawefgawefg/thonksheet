@@ -657,3 +657,14 @@ the future from the hidden cells alone (`h<h>_hidden`), takes `--lean 1` (skip t
 whole-sheet readers, which are nearly all of a run's time) and writes the life's task
 score and the rule's counts. `scripts/predhop.sh main --table-only` prints every table
 of docs/results-2026-11-25-predhop.md.
+
+## Read probes for repeatability (idea 168)
+
+`blobmnist ceiling` flags from `src/mnist/mnist_repeat.cpp`, all off by default and all
+acting only in the MNIST harness (nothing in `src/blob/`): `--twice 1` (read the test
+digits twice and report each cell's self-correlation), `--read-freeze 1|2|3` (thresholds,
+sector bias, or both held still after settling), `--reset-digit 2` (potentials, cooldowns
+and the spike ring cleared at each digit), `--pace-off 1`, `--rec-cut 1|2` (no recurrent
+excitation, no recurrence), `--ticks N` (a digit shown N ticks). `scripts/repeat.sh arms
+--table-only` prints the table; the header of the script lists the modes. "The quiet
+read" in later docs means `--read-freeze 3 --ticks 80`.

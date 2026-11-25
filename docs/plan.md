@@ -48,8 +48,7 @@ Running (four), as of 2026-11-25 afternoon:
   best one written into the real sheet (takes in item 4).
 - Queued item 2g (idea 167): the rule's ladder, which step from backprop down to our
   one-hop rule loses the features.
-- Queued item 2h (idea 168): why the sheet does not answer the same digit the same way
-  twice, and the two cheap levers (lower target rate, wider cells) with the transplant.
+- Queued item 2j (idea 174): do the inner rules learn more from a steadier sheet.
 - Queued item 2i (idea 172): make the learned loops hold as long as the task needs.
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
 153, 154), both merged; their slots went to items B and C. The calculation battery
@@ -142,10 +141,16 @@ Queued, in order:
    one at a time, random fixed feedback wires, a few wires a cell, sign only, good or
    bad only, counter steps on marked inputs, the sheet's own output). The rung where the
    score falls is what our rule is missing.
-2h. *(running, idea 168)* Why the sheet does not answer the same digit the same way twice
-   (a cell's counts correlate 0.61 with themselves from another starting state), and the
-   two cheap levers idea 165 left: a lower per-cell target rate, wider cells, each tried
-   with the transplant (`blobmnist ceiling --wiring-load`).
+2j. *(running, idea 174)* The inner rules on a steadier sheet: longer showings during the
+   life, regulation slowed or by sector only, counter moves on a digit's whole count;
+   scored by lived less shuffled at matched rate, read the standard way and the quiet way.
+2h. *(done, merged: docs/results-2026-11-26-repeatable.md, `scripts/repeat.sh`; the cause
+   is regulation moving during the read and one spike or none a digit; regulation frozen
+   and 80 ticks a digit read born 0.954 / 0.752 and the teacher's wiring 0.975 / 0.826; a
+   lower target rate and wider cells do not pay; the long step breaks order and copy as a
+   life's setting. Left: a spiking model for the last 0.004 to 0.018, the dynamics arms on
+   8 seeds, a teacher trained at a lower rate)* Why the sheet does not answer the same
+   digit the same way twice, and the two cheap levers idea 165 left.
 2e. *(done, merged: docs/results-2026-11-25-inside-ladder.md, `scripts/ladder2.sh`; the
    cells are not the limit: the teacher's wiring inside every constraint reads 0.966 on
    MNIST and 0.785 on the pair test in the real sheet, born 0.924 and 0.673, competitive

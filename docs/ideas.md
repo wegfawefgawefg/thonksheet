@@ -818,7 +818,11 @@ co-activity runs ties the held units together and loses their order.
      cheap change gives a repeatable code without killing the time rows (which need
      state), every rule that counts spikes gains. With it: the two cheap levers idea
      165 left, a lower per-cell target rate and wider cells, tried with the transplant.
-     *building*
+     *done: docs/results-2026-11-26-repeatable.md, `scripts/repeat.sh`.
+     Regulation moving during the read and one spike or none a digit, not the wiring's
+     dynamics. Frozen regulation and an 80-tick showing: born 0.954 / 0.752, the
+     teacher's wiring 0.975 / 0.826. A lower target rate and wider cells do not pay.
+     As a life's setting the long step breaks order and copy.*
 169. **Hold cells fed by inner neurons.** Hold cells today copy sensor cells only, which
      is why they lift reach and delayed echo and nothing that needs a computed thing
      held (from the one-setting job). Let a share of them hold a hidden cell's state
@@ -856,3 +860,13 @@ co-activity runs ties the held units together and loses their order.
      moved digits, against born, churn and a shuffled-pixel life; the best one written
      into the real sheet. Only a family that beats competitive learning there gets
      built in bits. *building*
+174. **Do the inner rules learn more from a steadier sheet?** Idea 168: two fifths of a
+     cell's spike count on a digit is the sheet's rate control moving, and a cell fires
+     0.66 times a digit. Every inner rule (competitive learning, the one-hop error)
+     counts those same spikes to decide what to wire, so it is taught by a noisy cell.
+     Run the lives with the sheet steadier and read them the standard way and the quiet
+     way: digits shown 40 and 80 ticks during the life (the same number of digits, and
+     the same number of ticks); regulation slowed or acting on the sector only after an
+     early settling; counter moves decided on a digit's whole count, not a spike; each
+     with its shuffled-digit and churn controls at matched rate. The number to move is
+     lived less shuffled, which is +0.003 for competitive learning today. *building*

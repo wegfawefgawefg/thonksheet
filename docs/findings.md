@@ -340,6 +340,34 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   learning added to the one setting does not add (15 rows; order, gap, exclusive-or and
   copy fall): hold cells and learned loops compete. The chain goes to 0.000 wherever
   competitive learning is on.
+- **Why the sheet does not answer the same digit the same way twice: regulation moving
+  during the read, and too few spikes a digit** (idea 168, queue item 2h,
+  docs/results-2026-11-26-repeatable.md, `scripts/repeat.sh`). MNIST / the pair test,
+  the fresh reader, seeds 5 to 12 for the five arms the conclusion rests on, seed 5 for
+  the rest. I re-ran seed 5 from the merged build (born 0.923 to 0.954, transplant 0.967
+  to 0.975 on MNIST; pairs 0.679 to 0.748 and 0.786 to 0.834).
+  - Not the wiring's dynamics: recurrent excitation cut, all recurrence cut, inhibition
+    with no delay, every delay 1, pacemakers or noise off each move the born MNIST
+    reader under 0.01. A sheet whose cells hear only pixels is hardly more repeatable.
+  - Thresholds and sector bias frozen after settling: born +0.014 / +0.021, every seed.
+    A sheet held fully still (regulation frozen, potentials and cooldowns cleared at
+    each digit, no noise or pacemakers) reads 0.952 / 0.735 born and 0.975 / 0.824 with
+    the teacher's wiring. That closes most of the gap to idea 165's noise-free model.
+  - Small counts are the rest: a cell fires 0.66 times in a 20-tick digit. Shown 80
+    ticks, born +0.021 / +0.044. Regulation frozen and 80 ticks together: born 0.954 /
+    0.752, the teacher's wiring 0.975 / 0.826 (standard read 0.924 / 0.673 and 0.966 /
+    0.785).
+  - A quiet gap between digits makes it worse (regulation lowers thresholds in the gap
+    and the next digit lands on a hair-trigger sheet: rate 63, self-correlation 0.45).
+  - The two levers idea 165 left do not pay in the real sheet: a lower firing target
+    moves the transplant by nothing; wider cells give a transplant of 0.967 / 0.772
+    against 0.967 / 0.786. The fan-in is not what holds the real sheet back.
+  - Cost side: every step 80 ticks as a life's setting breaks the time rows (order 0.994
+    to 0.493, copy -0.153). No per-cell threshold regulation (sector bias up to 32)
+    keeps every time row and costs exclusive-or 0.115. So this is a way to read a sheet
+    and a pointer to where the noise is, not a setting for a life.
+  - Open (idea 174): the inner rules count the same noisy spikes while they learn. Do
+    they learn more from a steadier sheet?
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -789,15 +817,21 @@ docs/results-2026-11-25-mnist.md
     local rule 0.952 and 0.726 at twice the rate). No change to the cell is needed to
     get there. The trained wiring is a concrete target for a rule; finding 47's
     "rewiring at born counts" has +0.014 and +0.06 of room above it.
-53. **The sheet does not answer the same input the same way twice.** [hint: seed 5,
-    two tests] From another starting state a cell's spike count on the same digit
-    correlates 0.6 with itself. A noise-free model of the same wiring reads 0.04 (MNIST)
-    to 0.08 to 0.10 (pairs) higher. This is paid by every reader and every rule that
-    counts spikes, and may be part of why a decision needs many cells (finding 16).
+53. **The sheet does not answer the same input the same way twice, and the cause is
+    its own rate control moving while it is read, plus one spike or none a digit.**
+    [likely: 8 seeds, two tests, born and transplanted wiring] Thresholds and sector
+    bias frozen during the read and the digit shown four times as long take the born
+    reader 0.924 to 0.954 on MNIST and 0.673 to 0.752 on pairs. The recurrent wiring,
+    inhibition, delays and noise are not the cause. This is paid by every reader and
+    every rule that counts spikes, and is part of why a decision needs many cells
+    (finding 16). A quiet gap between inputs makes it worse.
 54. **The best code is sparse, and holding every cell at one rate forbids it.** [hint:
     3 seeds, in the model] Left free the teacher silences two fifths of the cells and
     has 1 to 4 in 100 cell-digits active; one target rate for every cell costs 0.029 on
     pairs, more than any wiring constraint.
+    In the real sheet a lower target did not pay (idea 168, seed 5: the transplant
+    unchanged at half and a quarter of the rate), so this stays a statement about the
+    model.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 
