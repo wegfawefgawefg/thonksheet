@@ -89,6 +89,19 @@ def load_all(store, args):
     return settings, engines, spaces, qm, starts
 
 
+def all_engines(store, args):
+    """for status and report: every engine with candidates in the folder (a folder may hold
+    another machine's engines after a merge), unless --engines names them"""
+    settings, engines, spaces, qm, starts = load_all(store, args)
+    if not args.engines:
+        for row in store.candidates.values():
+            e = row["engine"]
+            if e not in engines and os.path.exists(os.path.join(HERE, "space-%s.txt" % e)):
+                engines.append(e)
+                spaces[e] = sp.load_space(os.path.join(HERE, "space-%s.txt" % e), ROOT)
+    return engines, spaces, qm
+
+
 def read_starts(path, spaces):
     """lines `engine name: --flag value ...`; values must be numbers of that engine's space"""
     out = []
@@ -255,7 +268,7 @@ def cmd_status(args):
     pid = pid_alive(folder)
     print("search %s: %s" % (args.name, "running, pid %d" % pid if pid else "not running"))
     store = st.Store(folder)
-    settings, engines, spaces, qm, starts = load_all(store, args)
+    engines, spaces, qm = all_engines(store, args)
     print(leaderboard.short_status(store, qm, spaces, engines))
     logfile = os.path.join(folder, "run.log")
     if os.path.exists(logfile):
@@ -268,7 +281,7 @@ def cmd_status(args):
 def cmd_report(args):
     folder = folder_of(args.name)
     store = st.Store(folder)
-    settings, engines, spaces, qm, starts = load_all(store, args)
+    engines, spaces, qm = all_engines(store, args)
     out = args.out or (os.path.join(ROOT, "docs", "search-leaderboard.md") if args.name == "main"
                        else os.path.join(folder, "leaderboard.md"))
     text = leaderboard.report(store, qm, spaces, engines, args.name, folder)
