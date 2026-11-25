@@ -2,7 +2,7 @@
 """The calculation battery (ideas 133, 134; docs/curriculum.md "Calculation").
 
     scripts/calc.py NAME [--quick] [--jobs N] [--seeds 5-12] [--only fam,fam] [--configs a,b]
-                    [--table-only] [blobrun flags and --g.name value ...]
+                    [--all-sizes] [--table-only] [blobrun flags and --g.name value ...]
 
 Every member is a `blobrun --task calc` world whose answer is a pattern of bits. Each member
 is scored three ways (configs):
@@ -18,8 +18,8 @@ is scored three ways (configs):
   minimal  the minimal engine, whole answer (it reads no marks), with its own twin
   table    table neurons, whole answer, with their own twin
 
-`probe` and `bit` run on every member; the rest on the first size of each family (marked
-* in the table) unless --configs names them. Runs go to out/calc/NAME/, at most --jobs
+`probe` and `bit` run on every member; the rest on the first size of each op (marked * in
+the table) unless --all-sizes. Runs go to out/calc/NAME/, at most --jobs
 (2) at a time under nice; finished runs are kept, so a second call only runs what is
 missing (--table-only just prints). Everything not recognised is appended to every call.
 """
@@ -251,7 +251,7 @@ def main():
     i = 0
     while i < len(rest):
         a = rest[i]
-        if a in ("--quick", "--table-only"):
+        if a in ("--quick", "--table-only", "--all-sizes"):
             pass
         elif a == "--jobs":
             jobs = int(rest[i + 1])
@@ -271,7 +271,7 @@ def main():
     life = QUICK if quick else FULL
     seeds = seeds or life["seeds"]
     mems = [m for m in members() if not only or m["fam"] in only or m["name"] in only]
-    explicit = configs is not None
+    explicit = "--all-sizes" in rest
     configs = configs or ["probe", "bit", "whole", "good", "m6", "minimal", "table"]
     outdir = os.path.join(ROOT, "out", "calc", name + ("-quick" if quick else ""))
     os.makedirs(outdir, exist_ok=True)

@@ -11,6 +11,7 @@
 #   scripts/calc.sh main --only arith,program    some families (or member names)
 #   scripts/calc.sh main --configs probe,bit     some ways of scoring (probe bit whole good
 #                                                m6 minimal table)
+#   scripts/calc.sh main --configs m6 --only program --all-sizes   every size, not only the first
 #   scripts/calc.sh main --table-only            print what is there, run nothing
 #   scripts/calc.sh main --jobs 4                more at once (the second machine)
 # Finished runs are kept: running it again only runs what is missing. Anything else on the

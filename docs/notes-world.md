@@ -10,6 +10,10 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
 - `world/task_reflex.cpp`: echo, shuffled echo, delayed echo, go/no-go, beat.
 - `world/task_sequence.cpp`, `world/task_control.cpp` (catch, cartpole).
 - `world/task_feature.cpp`: order, both-not-either, gap, place (features nobody designed in).
+- `world/task_calc.hpp/.cpp`, `world/calc_ops.hpp/.cpp`, `world/task_calc_flags.cpp`: the
+  calculation battery (`--task calc --calc OP`), answers that are patterns of bits.
+- `world/plug_pattern.cpp`: reading a pattern answer off pairs of motor lines, and the
+  marks for its good or bad.
 - `world/standin.hpp/.cpp`: a Blob shell with only the arrays the plug touches, and a fake
   tick (coin-flip motors, or the right motor group firing). Needs no core.
 - `run/main.cpp`: the driver calls (birth, tick, reward, death; declared in `run/drive.hpp`)
@@ -18,6 +22,8 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
 - `run/life_protocols.cpp`: plain life, retention, idle, capacity; the csv and the summary.
 - `run/life_measures.cpp`: `--reach` and `--speed`.
 - `run/life_end.cpp`: room and aliveness at the end of a life.
+- `run/life_extra.cpp`: a task's extra scores per window (the calculation battery) into the
+  summary and `<stem>-extra.csv`.
 - `probe/rhythm_find.hpp`, `probe/carry_measure.hpp`: shared with `blobprobe`.
 
 ## The plug
@@ -186,6 +192,52 @@ Every call also writes `<csv stem>-sum.csv`, lines of `driver,key,value` for eve
 it printed. That file is what the suite reads. Retention and idle csvs have a `phase`
 column after `end_step`; capacity writes `<stem>-k2.csv` to `-k16.csv`; reach writes
 `distance,blob,learn_off`.
+
+## Answers that are patterns: the calculation battery (2026-11-25)
+
+Definitions: `docs/curriculum.md`, "Calculation". Results:
+`docs/results-2026-11-25-calculation.md`.
+
+- **Reading.** A task sets `TaskShape.pattern_bits = B` and gets 2B motor lines: line 2b is
+  bit b "off", 2b + 1 "on". `ticker_after_tick` calls `plug_pattern` in place of
+  `plug_choice`: each pair votes like two buttons (more spikes over the step wins, a tie is
+  no answer) into `TaskStepIn.pattern` and `pattern_tied`; `move` is -1.
+- **Marks.** Before a good or bad, `life.cpp` calls `plug_mark_pattern` in place of
+  `plug_mark_acted`: only the cells of the output bits in `Task.pattern_graded` are marked
+  as buttons' cells (`motor_attached`), and of each the group that won as pressed
+  (`motor_acted`; neither on a tie). The working readout rule moves nothing on good and,
+  on bad, moves only marked cells, so this is all a per-bit verdict needs: no change in
+  `src/blob/`. Whole-answer grading marks every output; per-bit grading marks only the
+  wrong bits (and all bits on a good, where nothing moves). The minimal engine and table
+  neurons read no marks: for them both gradings are one good or bad for the whole answer.
+- **Scores.** The window score is bits right on seen cases. A task may fill `Task.extras`
+  scores per window; `life.cpp` keeps them per driver and `life_extra.cpp` writes their
+  early and late to the summary (`whole_seen_late`, `bits_held_late`, `whole_held_late`,
+  `bit<k>_seen_late`, `bit<k>_held_late`) and every window to `<stem>-extra.csv`. Tasks
+  without extras are byte-identical.
+- **Perfect player.** For a pattern task `task_perfect_move` returns the answer's bits and
+  the stand-in fires the right group of every pair.
+- **Plug limits.** With `--motor-spread` the region's 256 cells go to 2B lines (B = 9 gives
+  14 cells a line). The checkerboard deals cell (x, y) to line (x + y) mod lines, which has
+  only 31 diagonals, so at most 15 output bits; `turn3` runs at size 2 (12 bits) for that
+  reason. Past 25 lines the packed layout no longer fits; with spread on, the extra lines
+  share the first packed place (it only sets how near a motor cell may sit). At sensor side
+  3 there are 23 task lines; every member of the battery fits.
+- **Flags** live in `world/task_calc_flags.cpp` (one hook in `run_flags.cpp`), so every
+  program that parses blobrun's flags (probes included) has them.
+
+```
+scripts/calc.sh main                       the battery, seeds 5-12, 2 runs at a time
+scripts/calc.sh main --quick               2 seeds, short lives
+scripts/calc.sh main --only arith --configs probe,bit
+scripts/calc.sh main --table-only          the table from what has run
+nice -n 19 ./build/blobrun --task calc --calc add --calc-bits 4 --calc-grade bit \
+    --ticks 20 --sensor-side 3 --motor-side 3 --motor-spread 128 --steps 40000 \
+    --window 1000 --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 \
+    --g.readout_balance 1
+nice -n 19 ./build/blobprobe calc --task calc --calc add --calc-bits 4 --ticks 20 \
+    --sensor-side 3 --motor-side 3 --motor-spread 128 --seed 5
+```
 
 ## The suite
 

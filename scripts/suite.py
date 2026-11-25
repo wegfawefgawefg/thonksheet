@@ -70,7 +70,19 @@ def jobs_for(life, readout):
     if readout:
         # the control: a readout that can learn at all, where the input hands over the answer
         jobs["readout-echo"] = (["--task", "echo", "--frozen-readout"] + plain, 1)
+    # the calculation battery (ideas 133, 134; scripts/calc.sh has all of it): answers that
+    # are patterns of bits, a verdict per bit, some cases held out
+    for job, calc in CALC_JOBS:
+        jobs[job] = (["--task", "calc"] + calc + ["--calc-grade", "bit"] + plain, 1)
     return jobs
+
+
+CALC_JOBS = [("calc-copy4", ["--calc", "copy", "--calc-bits", "4"]),
+             ("calc-add2", ["--calc", "add", "--calc-bits", "2"]),
+             ("calc-add4", ["--calc", "add", "--calc-bits", "4"]),
+             ("calc-xor4", ["--calc", "xor", "--calc-bits", "4"]),
+             ("calc-program2", ["--calc", "program", "--calc-bits", "3", "--calc-len", "2"]),
+             ("calc-turn4", ["--calc", "turn", "--calc-size", "4"])]
 
 
 # (property, test, job, key). key "late" is the late score: the mean of the last tenth of
@@ -141,6 +153,17 @@ def rows_for():
                      "ticks_per_s_" + size))
     rows.append(("fits the machine", "bytes per neuron (32x32 tiles)", "speed",
                  "bytes_per_neuron_32x32"))
+    calc = [("copy, 4 bits (the control)", "calc-copy4"), ("add, 2 + 2 bits", "calc-add2"),
+            ("add, 4 + 4 bits", "calc-add4"), ("xor, 4 bits", "calc-xor4"),
+            ("program of 2 steps on a 3-bit register", "calc-program2"),
+            ("a point on a 4x4 grid turned a quarter", "calc-turn4")]
+    for label, job in calc:
+        rows.append(("calculation (answer is a pattern)", label + ": bits right, seen cases",
+                     job, "late"))
+        rows.append(("calculation (answer is a pattern)", label + ": bits right, held-out "
+                     "cases", job, "bits_held_late"))
+        rows.append(("calculation (answer is a pattern)", label + ": whole answers right, "
+                     "seen cases", job, "whole_seen_late"))
     return rows
 
 
