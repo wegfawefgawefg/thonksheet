@@ -365,7 +365,8 @@ def main():
         for mem in mems:
             for seed in seeds:
                 done_file, cmd = jobs_for(mem, level, seed, life, extra, outdir)
-                if not os.path.exists(done_file):
+                # blobrun opens its -sum.csv at the start: an empty one is a run cut short
+                if not os.path.exists(done_file) or os.path.getsize(done_file) == 0:
                     todo.append((done_file, cmd))
     if todo and not flags["--table-only"]:
         jobs = int(opts["--jobs"])

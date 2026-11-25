@@ -10,6 +10,10 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
 - `world/task_reflex.cpp`: echo, shuffled echo, delayed echo, go/no-go, beat.
 - `world/task_sequence.cpp`, `world/task_control.cpp` (catch, cartpole).
 - `world/task_feature.cpp`: order, both-not-either, gap, place (features nobody designed in).
+- `world/task_function.hpp/.cpp`: the function battery (points, number, two-numbers, past):
+  function names, the `--fn` flags, drawing inputs, the shared trial; the class of every
+  input in `task_function_points.cpp` (points, past) and `task_function_number.cpp`
+  (number, two-numbers, the sheet they are drawn on).
 - `world/standin.hpp/.cpp`: a Blob shell with only the arrays the plug touches, and a fake
   tick (coin-flip motors, or the right motor group firing). Needs no core.
 - `run/main.cpp`: the driver calls (birth, tick, reward, death; declared in `run/drive.hpp`)
@@ -19,6 +23,9 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
 - `run/life_measures.cpp`: `--reach` and `--speed`.
 - `run/life_end.cpp`: room and aliveness at the end of a life.
 - `probe/rhythm_find.hpp`, `probe/carry_measure.hpp`: shared with `blobprobe`.
+- `probe/reader.cpp`: `blobprobe reader`, level (a) of the function battery (a ridge reader
+  of the frozen sheet and of the input lines; held-out values scored apart). Results so
+  far: `docs/results-2026-11-25-function-battery.md` (unfinished; resume lines there).
 
 ## The plug
 
@@ -111,6 +118,12 @@ that fires the right group every tick and predicts its input exactly.
 | gap 1 or 3 | cue, ask; 2 buttons | right / trials | 0.44 | 1.00 |
 | place 4x4, 3 held out | ask, 4x4 sheet; 2 buttons | right / held-out trials | 0.44 | 1.00 |
 
+The function battery (79 members, `scripts/functions.py --list`; 20,000 steps, window 200,
+seed 1): perfect is 1.000 on every member; coin is 0.47-0.48 on two-button members and a
+little under 1/answers on the rest (0.31 for 3, 0.23 for 4, 0.18 for 5, 0.11 for 8, 0.10
+for 9). `--task points --fn parity --fn-lines 2` gives a csv byte-identical to
+both-not-either, whose own 40,000-step csv did not change.
+
 The four new rows were checked with the core linked (coin and perfect are the stand-in
 either way), mean over all 100 windows. Definitions: `docs/curriculum.md`, "Features nobody
 designed in".
@@ -147,6 +160,25 @@ nice -n 19 ./build/blobrun --task place --place-size 4 --place-hold 3 --steps 20
 nice -n 19 ./build/blobrun --task echo --distance 3 --show-plug     any task, N tiles apart
 nice -n 19 ./build/blobrun --task echo --cue-offset 2               cues and buttons 2 and 3
 ```
+
+The function battery (definitions: `docs/curriculum.md`, "The function battery"):
+
+```
+nice -n 19 ./build/blobrun --task points --fn parity --fn-lines 3          and or parity majority
+nice -n 19 ./build/blobrun --task points --fn exactly --fn-k 1 --fn-lines 4  exactly table
+nice -n 19 ./build/blobrun --task points --fn table-nonlin --fn-lines 4    table-lin count first
+nice -n 19 ./build/blobrun --task number --fn sine --fn-lines 16 --fn-bands 4 --sensor-side 2
+nice -n 19 ./build/blobrun --task number --fn sine --fn-lines 16 --fn-bands 4 --fn-hold 3 \
+    --sensor-side 2                                                      held-out x only scored
+nice -n 19 ./build/blobrun --task two-numbers --fn product --fn-lines 8 --fn-bands 2 --sensor-side 2
+nice -n 19 ./build/blobrun --task past --fn same --fn-gap 2                recall majority parity
+nice -n 19 ./build/blobprobe reader --task points --fn parity --fn-lines 3 --ticks 20 \
+    --sensor-side 3 --motor-side 3 --seed 5                              level (a): linear reader
+scripts/functions.sh main                                               the whole battery
+```
+
+Number kinds lay x on the bitmap sheet, 8 lines a row in a snake, so they need 2x2 sensor
+groups or smaller (`--sensor-side 2`); at 3x3 the plug refuses a sheet 8 wide.
 
 Life protocols (one per call; without them a call is one task for the whole life, as
 before, with byte-identical csvs). Definitions: `docs/curriculum.md`, stage 4. Easiest
