@@ -218,7 +218,7 @@ def print_one(name, rows, col_args, cache, seeds):
     print("\npasses %d of %d rows\n" % (passed, len(rows)))
 
 
-def print_many(names, rows, cols, cache, seeds):
+def print_many(names, rows, cols, cache, seeds, show_se=False):
     flags = [column_flags(n, [], cols) for n in names]
     print("| row | " + " | ".join(names) + " |")
     print("|---" * (len(names) + 1) + "|")
@@ -240,7 +240,8 @@ def print_many(names, rows, cols, cache, seeds):
                 d, se = paired(late, base)
                 mark = "+" if d > 2 * se and d > 0 else ("-" if d < -2 * se and d < 0 else "")
                 fmt = "%+.0f" if abs(d) >= 10 else "%+.3f"
-                text += (" (" + fmt + "%s)") % (d, mark)
+                se_text = (" ±" + fmt.replace("+", "")) % se if show_se else ""
+                text += (" (" + fmt + "%s%s)") % (d, se_text, mark)
             cells.append(text)
         print("| %s | %s |" % (rname, " | ".join(cells)))
     print("| rows passed | " + " | ".join(str(p) for p in passes) + " |")
@@ -259,6 +260,7 @@ def main():
     ap.add_argument("--jobs", type=int, default=2)
     ap.add_argument("--blobrun", default=os.path.join(ROOT, "build", "blobrun"))
     ap.add_argument("--no-twin", action="store_true")
+    ap.add_argument("--se", action="store_true", help="table: print each standard error")
     opt = ap.parse_args(argv[:split])
     flags = argv[split + 1:]
     rows, cols = read_map(MORE)
@@ -294,7 +296,7 @@ def main():
     if len(names) == 1:
         print_one(names[0], rows, column_flags(names[0], flags, cols), cache, seeds)
     else:
-        print_many(names, rows, cols, cache, seeds)
+        print_many(names, rows, cols, cache, seeds, opt.se)
     return 0
 
 
