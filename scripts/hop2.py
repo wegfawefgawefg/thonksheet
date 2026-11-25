@@ -60,10 +60,10 @@ RECIPES = {
     "widesame": {"kind": "mnist", "test": SAME, "seeds": [5, 6, 7, 8],
                  "arms": [(n, l, f + " " + WIDE) for n, l, f in mnist_arms(PAIRHOP)]},
     # depth: half the cells hear no pixels, only cells
-    "deepsame": {"kind": "mnist", "test": SAME, "seeds": [5, 6, 7, 8],
+    "deepsame": {"kind": "mnist", "test": SAME, "seeds": list(range(5, 13)),
                  "arms": [(n, l, f + " " + DEEP) for n, l, f in mnist_arms(PAIRHOP)]},
     # errors against the answer alone, every step teaching (hop_teach 3)
-    "target": {"kind": "mnist", "test": "", "seeds": [5, 6, 7, 8], "arms": [
+    "target": {"kind": "mnist", "test": "", "seeds": list(range(5, 13)), "arms": [
         ("born", None, ""), ("hop", 3, HOP + " --g.hop_shift 9"),
         ("coin", 3, HOP + " --g.hop_shift 9 --g.hop_coin 1"),
         ("shuffled", 3, HOP + " --g.hop_shift 9 --life-shuffle 1")]},
@@ -71,6 +71,11 @@ RECIPES = {
     "targetcap": {"kind": "mnist", "test": "--g.threshold_cap 1000", "seeds": [5, 6, 7, 8],
                   "arms": [("born", None, ""), ("hop", 3, HOP + " --g.hop_shift 9"),
                            ("coin", 3, HOP + " --g.hop_shift 9 --g.hop_coin 1")]},
+    # told the answer only on bad steps at the same slow step: is it the target, or the step?
+    "slow": {"kind": "mnist", "test": "", "seeds": [5, 6, 7, 8], "arms": [
+        ("hop", 2, HOP + " --g.hop_shift 9"), ("coin", 2, HOP + " --g.hop_shift 9 --g.hop_coin 1")]},
+    "slowsame": {"kind": "mnist", "test": SAME, "seeds": [5, 6, 7, 8], "arms": [
+        ("hop", 2, HOP + " --g.hop_shift 9"), ("coin", 2, HOP + " --g.hop_shift 9 --g.hop_coin 1")]},
     "targetsame": {"kind": "mnist", "test": SAME, "seeds": [5, 6, 7, 8], "arms": [
         ("born", None, ""), ("hop", 3, HOP + " --g.hop_shift 9"),
         ("coin", 3, HOP + " --g.hop_shift 9 --g.hop_coin 1"),

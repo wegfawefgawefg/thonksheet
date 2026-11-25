@@ -5,13 +5,15 @@
 #              a random projection, a two-layer net (1 and 5 passes); seed 1
 #   pick       the step chance on the same-class test: validation slice, seeds 1 and 2
 #   same       the report on "are two interleaved digits the same class", seeds 5-12: born,
-#              the hop rule told the answer, its coin, its shuffled-digit life, competitive
-#              learning, both
+#              the hop rule told the answer, its coin (and on distinct lines), its
+#              shuffled-digit life, competitive learning, both, both with the coin
 #   sum        the second test, "is the sum of two side-by-side digits odd", seeds 5-8
 #   wide       MNIST with wider cells (more pixel inputs a cell), seeds 5-8
 #   widesame   the same-class test with wider cells, seeds 5-8
-#   deepsame   the same-class test with half the cells hearing no pixels, seeds 5-8
-#   targetpick, target   MNIST with errors against the answer alone (hop_teach 3)
+#   deepsame   the same-class test with half the cells hearing no pixels, seeds 5-12
+#   targetpick, target   MNIST with errors from the answer alone (hop_teach 3; target
+#              seeds 5-12); targetcap the same at target rate (5-8); slow the old errors
+#              at the same step (5-8); targetsame, slowsame on the pair test (5-8)
 #   toys       xor and parity of 3 with the shuffled-input control, seeds 5-12
 #   parity4    parity of 4 under every arm, seeds 5-8
 #   calc       the calc held-out columns: shuffled input, depth, width; seeds 5 and 6
