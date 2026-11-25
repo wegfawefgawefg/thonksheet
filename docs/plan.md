@@ -49,9 +49,10 @@ Running (four), as of 2026-11-25 night:
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
 153, 154), both merged. Their slots went to items B and C.
-Also running unattended, not agents: the search on stevejobs (minimal, table); the
-memory, GRU and MLP reference suites on stevejobs (`thonk-ref`), on the integrated code
-with the fixed cartpole.
+Also running unattended, not an agent: the readout suite on stevejobs (`thonk-ref`, log
+`out/readout.log` there; pull with `MINI_DIR=thonk-ref scripts/mini.sh pull`). The memory,
+GRU and plain-net suites on the integrated code are done and on the scoreboard. The search
+is stopped on both machines (resumable).
 
 Done since the queue was written: the GPU (any world, evidence counters, the memory
 engine, one call per table of designs); the integration of all eleven wound-up branches
@@ -76,8 +77,10 @@ so they come first):
   MNIST (0.924 and 0.943 to beat) and on held-out rows.)
 - C. *(running)* The critic on report seeds and long lives, on the fixed cartpole, with the wide
   critic.
-- D. Integration check: after the merges, re-run the suite for the readout, the GRU and
-  the memory engine, so the scoreboard is on the fixed cartpole and has the new rows.
+- D. *(GRU, plain net and memory done; readout running on stevejobs)* Integration check:
+  after the merges, re-run the suite for the readout, the GRU and the memory engine, so
+  the scoreboard is on the fixed cartpole and has the new rows. What the reference table
+  says about the tests is in `docs/findings.md`, "The references on every row".
 
 Queued, in order:
 1. The inside-learning test as one script: after a life, freeze, wipe the output, fit a
