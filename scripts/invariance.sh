@@ -18,7 +18,8 @@
 #   scripts/invariance.sh show scale               any of position scale rotation bright clutter
 #   scripts/invariance.sh show view --inv-motion 50     mixed view shift tempo pitch
 # and on the sheet, in the viewer (owner only; it opens a window):
-#   scripts/watch.sh inv-rotation --sensor-side 1 --inv-motion 50
+#   scripts/watch.sh inv-rotation --inv-motion 50
+#   scripts/invariance.sh gru --engine gru          the fixed reference networks: level c only
 set -euo pipefail
 cd "$(dirname "$0")/.."
 scripts/build.sh --target blobrun blobprobe

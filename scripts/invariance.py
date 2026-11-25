@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 """The invariance battery (docs/curriculum.md, "Invariance"; idea 101), at three levels.
 
-    scripts/invariance.py NAME [--quick] [--resume] [--levels abc] [--jobs N] [flags ...]
+    scripts/invariance.py NAME [--quick] [--resume] [--levels abc] [--rows a,b] [--jobs N] [flags]
 
 Every row is a task whose held-out versions are never rewarded and are the only ones
 scored. For each row and seed (5 to 12; --quick: 5 and 6, short lives):
   a  is the answer readable: `blobprobe invariance` on the sheet as born, a plain linear
      reader fitted on the rewarded versions, scored on the same versions and on the
-     held-out ones; for the input lines, the whole sheet and the motors' view
+     held-out ones; for the input lines, the whole sheet and the motors' view; and the
+     nearest taught input pattern (a reader that only remembers: well under 0.5 held out
+     means the world misleads pattern matchers, as the suite's place does)
   b  does the working readout get it: blobrun with the frozen sheet and the evidence
      readout (learn_mode 5 ... --motor-spread 128); full engine only
   c  does the whole thing learning get it: learn_mode 6 with the same readout (full
      engine), or the engine's own defaults (--engine minimal, --table)
 b and c show the held-out score, the rewarded versions' score, the learning-off twin and
-coin flips. The engine follows the flags: --engine minimal or --table pick another. Rows
+coin flips. The engine follows the flags: --engine minimal or --table pick another;
+--engine mlp or gru (the fixed reference networks) run level c only. Rows
 "+ motion" spend half the life in unrewarded stretches where the shape drifts through its
 versions; level a is the same as without (nothing learns there).
 
@@ -76,15 +79,19 @@ def engine_of(extra):
     return "blob"
 
 
-def jobs_for(life, levels, engine):
+def jobs_for(life, levels, engine, only):
     """(row, level, seed) -> command"""
     jobs = {}
     full = engine == "blob"
     spread = READOUT[-2:] if full else []
+    # level a reads a sheet: the fixed reference networks (mlp, gru) have none
+    sheet = engine in ("blob", "minimal", "table")
     for row, _, task, has_a in rows():
+        if only and row not in only:
+            continue
         for seed in life["seeds"]:
             s = ["--seed", str(seed), "--task-seed", str(seed)]
-            if "a" in levels and has_a:
+            if "a" in levels and has_a and sheet:
                 jobs[(row, "a", seed)] = (
                     [BLOBPROBE, "invariance"] + PLUG + task + spread + s +
                     ["--trials", str(life["trials"]), "--settle", str(life["settle"]),
@@ -135,7 +142,7 @@ def main():
     name = args[0]
     quick = "--quick" in args
     resume = "--resume" in args
-    levels, jobs_at_once, extra = "abc", 2, []
+    levels, jobs_at_once, extra, only = "abc", 2, [], []
     i = 1
     while i < len(args):
         a = args[i]
@@ -143,6 +150,9 @@ def main():
             pass
         elif a == "--levels":
             levels = args[i + 1]
+            i += 1
+        elif a == "--rows":
+            only = args[i + 1].split(",")
             i += 1
         elif a == "--jobs":
             jobs_at_once = int(args[i + 1])
@@ -155,7 +165,7 @@ def main():
     outdir = os.path.join(ROOT, "out", "invariance", card)
     os.makedirs(outdir, exist_ok=True)
     engine = engine_of(extra)
-    jobs = jobs_for(life, levels, engine)
+    jobs = jobs_for(life, levels, engine, only)
 
     def launch(item):
         key, cmd = item
@@ -188,7 +198,7 @@ def main():
                 print("  %d of %d runs, %.0f min" % (done, len(order),
                                                      (time.time() - started) / 60), flush=True)
     minutes = (time.time() - started) / 60
-    table = collect(outdir, life, levels, engine)
+    table = [r for r in collect(outdir, life, levels, engine) if not only or r["row"] in only]
     print_table(table, levels)
     write_card(os.path.join(ROOT, "out", "scorecards", "invariance-" + card + ".csv"), table,
                [("name", card), ("engine", engine), ("flags", " ".join(extra)),
@@ -202,7 +212,8 @@ def main():
     return 0
 
 
-A_KEYS = [("input", "input"), ("whole", "sheet"), ("view", "motors' view")]
+A_KEYS = [("input", "input"), ("nearest", "nearest"), ("whole", "sheet"),
+          ("view", "motors' view")]
 LIFE_KEYS = [("late", "blob", "held"), ("taught_late", "blob", "taught"),
              ("late", "learn_off", "twin held"), ("late", "coin", "coin held")]
 
@@ -240,7 +251,7 @@ def collect(outdir, life, levels, engine):
 def print_table(table, levels):
     head = "%-46s" % "row (held-out score; chance 0.50)"
     if "a" in levels:
-        head += " | a: same/held  input   sheet   view"
+        head += " | a: same/held  input  nearest   sheet   view"
     for level in "bc":
         if level in levels:
             head += " | %s: held  taught  twin  coin" % level
@@ -260,7 +271,7 @@ def print_table(table, levels):
 
 def write_card(path, table, about):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    cols = ["a_input_same", "a_input_held", "a_whole_same", "a_whole_held", "a_view_same",
+    cols = ["a_input_same", "a_input_held", "a_nearest_same", "a_nearest_held", "a_whole_same", "a_whole_held", "a_view_same",
             "a_view_held", "b_held", "b_taught", "b_twin held", "b_coin held", "c_held",
             "c_taught", "c_twin held", "c_coin held"]
     with open(path, "w", newline="") as f:
