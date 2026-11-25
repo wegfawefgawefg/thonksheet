@@ -191,3 +191,8 @@ inner neurons measurably better for a task than unsupervised wiring already make
     docs/results-2026-11-25-hop-real.md, written before any run and scored there). In
     short: a real-data test where the rule beats its coin by 0.02 was not found; wider
     cells did not help MNIST; depth did not get parity of 4.
+35. **Competitive learning's controls** (its bot's six predictions are in
+    docs/results-2026-11-25-compete2.md, written before any scoring run and scored
+    there). In short: lived less shuffled at matched rate of 0.005 or more, wrong
+    (+0.003); lived less churn of 0.005 or more, right (+0.015); no time row moves by
+    0.03, wrong by a wide margin (delayed echo +0.33, gap +0.39).

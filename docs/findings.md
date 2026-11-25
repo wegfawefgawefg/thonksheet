@@ -172,6 +172,34 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
     the fresh output learned). Frozen, the toy result stands and is a little stronger:
     parity of 3 0.847, coin 0.618, shuffled-input life 0.607; held-out xor4 0.871
     against 0.692 shuffled and 0.667 coin. Parity of 4 fails in every arm.
+- **Competitive learning, checked: little of the MNIST gain is about digits, and it
+  lifts the time rows a great deal** (queue item 2a, docs/results-2026-11-25-compete2.md,
+  `scripts/compete2.sh`).
+  - MNIST at matched rate: see the note under "The inside learns features from the input
+    alone": about +0.003 over a shuffled-digit life.
+  - Time rows, the rule on for the whole life beside the readout, seeds 5 to 12, no
+    reward reaching the inside: delayed echo (2 steps) 0.587 to 0.913, gap 0.544 to
+    0.938, order 0.664 to 0.728; with the rate held at target 0.874, 0.929, 0.809. Every
+    seed is up on delayed echo and gap. Random rewiring is under rule-off on all three
+    (0.537, 0.503, 0.606). The plain sheet with this rule matches the richest searched
+    sheet on delayed echo and gap (0.89, 0.89). It is the first inner rule to move a time
+    row. A reading, not tested: a winner's counters gain for sources that were on at the
+    delay of the slot that reads them, so a cell comes to detect "this cue now and that
+    one some ticks ago".
+  - That result does not yet agree with the prediction battery (idea 162), where on
+    another sheet shape and a 4-step delay the same rule left delayed echo unchanged
+    (0.485 to 0.486) and a fresh reader of the frozen hidden cells read time since the
+    cue worse (0.859 to 0.645). Finding 50 is therefore narrowed below, and the
+    difference (shape, delay, rule on beside the readout or frozen) is idea 166.
+  - Held-out calculation columns on 8 seeds: xor4 +0.11 to +0.15, add4 +0.06 to +0.09
+    over born and over churn on every seed. The shuffled control cannot test these
+    (their inputs are independent coin flips).
+  - With the one-hop rule, both together are worse than the one-hop rule alone (held-out
+    xor4 0.794 against 0.878): the two rules share counters and competitive learning
+    outvotes the error; at a quarter of its moves the pair is back to 0.836.
+  - Cost after a cheaper read-off with identical wiring (lives byte-identical): 1.17
+    times the rule-off tick at target rate (was 1.32), 1.64 at the rule's own rate (was
+    1.93; the doubled spike rate alone is 1.2 of that).
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -205,6 +233,14 @@ reward and no error.
   seeds each). A higher rate alone does not help (the born sheet pushed to 63 reads
   0.910). So about half of the headline gain is structure and half is not yet separated
   from rate.
+  *Settled on 8 seeds (docs/results-2026-11-25-compete2.md, `scripts/compete2.sh mnist`):
+  with every sheet held at its target rate, lived 0.9351, shuffled 0.9322, born 0.9217,
+  random rewiring ("churn") 0.9201. Lived less shuffled is +0.003 (5 of 8 seeds; +0.002
+  without tile winners, 6 of 8). So what is about digit shapes is about 0.003; the rest of
+  the 0.026 headline is the doubled rate (64 against 33) and a drift toward active inputs
+  that shuffled digits give as well. It is not churn: moving the same counters toward
+  random sources reads at or under born, and lived beats churn by 0.015 at matched rate on
+  every seed.*
 - **Caveat two, our own output cannot use it.** With the rule on from the first digit of
   the rewarded online life, the sheet's own readout scores the same as with it off (0.72
   at 20,000 digits, falling to 0.66 to 0.68 by 120,000). A linear reader gets 0.95 from
@@ -560,7 +596,9 @@ docs/results-2026-11-25-mnist.md
 46. **"Near the bar and did not fire" is the useful mark for an error-driven rule.**
     [hint] Parity of 3: 0.90 against 0.82 with the cells that fired included. In bits it
     is one word per tile per tick.
-47. **Rewiring busy cells at their born counts lifts a linear reader whatever drives it.**
+47. **Rewiring busy cells toward what was just active lifts a linear reader whatever
+    signal gates it.** (Toward random sources it does not: churn reads at or under born,
+    docs/results-2026-11-25-compete2.md.)
     [likely: three rules, 8 seeds each on MNIST] Tags with coin rewards 0.936, one-hop
     error on random lines 0.935, real signals 0.938 and 0.936, born 0.925. A teaching
     signal has shown its worth only where it beats that: the toys and the held-out
@@ -575,8 +613,11 @@ docs/results-2026-11-25-mnist.md
 49. **Surprise fed back in as input makes the recent past readable.** [likely: 8 seeds,
     several worlds, rate unchanged] "I said on and it was off" lines are change
     detectors; a sheet that hears them carries what just happened and how long ago.
-50. **A rule that turns cells toward the input costs them the recent past.** [likely: 8
-    seeds] Competitive learning lifts what a reader gets from one frame and lowers what it
+50. **A rule that turns cells toward the input costs them the recent past.** [hint,
+    narrowed the same day: true for a frozen read on the prediction battery's sheet at a
+    4-step delay; on the suite's sheet at a 2-step delay the same rule, left on beside
+    the readout, lifts delayed echo 0.59 to 0.91 and gap 0.54 to 0.94. Which of shape,
+    delay and frozen-or-running decides is open: idea 166] Competitive learning lifts what a reader gets from one frame and lowers what it
     gets about time (time since the cue 0.86 to 0.65). Feature learning and holding
     compete for the same inputs of a cell unless something keeps them apart.
 51. **The one-hop error teaches a cell what a few of its inputs can jointly decide, and

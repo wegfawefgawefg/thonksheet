@@ -48,8 +48,7 @@ Running (four), as of 2026-11-25 afternoon:
 - Queued item 2e (idea 165): the inside's ladder, what these cells can hold under the
   best possible teacher.
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
-- Queued item 2a: the competitive-learning follow-ups (rate-matched and churn controls,
-  held-out calculation columns on 8 seeds, a cheap read-off, the time suite).
+- Queued item 2f (idea 166): why competitive learning lifts the time rows, and how far.
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
 153, 154), both merged; their slots went to items B and C. The calculation battery
 (ideas 133, 134; docs/results-2026-11-25-calculation.md), merged; its slot went to
@@ -99,7 +98,12 @@ Queued, in order:
    and on the held-out columns. Every item below is scored with it.
 2. *(done, passes: 0.952 against 0.926 born and 0.939 shuffled, 8 seeds; idea 158)* Competitive learning with local inhibition, no reward: units that win on an input
    move toward it (in bits: gain the input's bits, lose others, under a budget).
-2a. *(running; docs/results-2026-11-25-compete2.md when done)* Follow-ups to item 2, in this order, as one job after 2b and 2c are placed: a
+2f. *(running, idea 166)* Why competitive learning lifts the time rows and how far it
+   goes; reconcile with the prediction battery, where it did not.
+2a. *(done, merged: docs/results-2026-11-25-compete2.md; MNIST margin over shuffled at
+   matched rate +0.003; not churn; delayed echo 0.59 to 0.91 and gap 0.54 to 0.94 with
+   the rule on; cheaper read-off, 1.17 times at target rate. Left: the whole suite with
+   the rule on, `scripts/suite.sh compete-on ...`, line in that doc)* Follow-ups to item 2, in this order, as one job after 2b and 2c are placed: a
    rate-matched control (half the margin is not yet separated from a doubled firing
    rate); a cheap read-off (the rule costs 1.9 times per tick); the rule in the time suite
    (half of each cell's inputs become pixels: does delayed echo or order pay?); a

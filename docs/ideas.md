@@ -696,7 +696,10 @@ co-activity runs ties the held units together and loses their order.
      --g.compete_shift 5`, `scripts/inside.sh`, docs/results-2026-11-25-compete.md. MNIST
      lived 0.952 against born 0.926 and shuffled control 0.939, 8 seeds; half the margin
      is not yet separated from a doubled firing rate; the sheet's own readout does not
-     use it. Next: a cheap read-off (it costs 1.9x per tick), the rate, the time suite.*
+     use it. Follow-up done the same day (docs/results-2026-11-25-compete2.md): at matched
+     rate the MNIST margin over shuffled digits is +0.003; churn is not the gain; the time
+     rows jump (delayed echo 0.59 to 0.91, gap 0.54 to 0.94); the read-off now costs 1.17
+     times at target rate. Next: idea 166.*
 159. **The error sent one hop, to every hidden cell.** [direct feedback alignment, Nokland
      2016; e-prop, Bellec 2020; in bits] Fixed random wires from the output's error lines
      to each hidden cell, a fading mark on each connection that just helped its cell
@@ -768,3 +771,11 @@ co-activity runs ties the held units together and loses their order.
      fine and every shortfall is the teaching rule. If it reads 0.93, no local rule can
      do better and the cell has to change. Either answer decides where the work goes.
      Then load the best teacher's wiring into the real sheet and read it. *building*
+166. **Why competitive learning lifts the time rows, and how far it goes.** Delayed echo
+     0.59 to 0.91 and gap 0.54 to 0.94 with no reward reaching the inside, on 3 rows of
+     one sheet. Against it: on the prediction battery's sheet at a 4-step delay nothing
+     moved, and a frozen read of time since the cue got worse. Find which of sheet shape,
+     delay and "rule still running" decides; add a shuffled-in-time control; run longer
+     delays, beat, sequence, copy, recall and n-back; test the reading that a winner's
+     counters learn "this now and that some ticks ago" by looking at what the cells
+     wired. *building*
