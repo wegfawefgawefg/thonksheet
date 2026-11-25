@@ -266,3 +266,85 @@ Status words: idea, building, tried (with result), kept, dropped.
     evidence counters at the motor cells and inside, many motor cells per button, delays
     for the time tasks. Does the combination keep the reflex, the reach, the features and
     the speed at once? *building*
+
+## The wider space (added 2026-11-25)
+
+The owner: "you tested like what, 20 mechanics? shouldnt there be a fuckton of possible
+ones?" There are. Three things widen the search from here.
+
+- **Screen sheets without any learning rule.** Learning has turned out to be mostly selection
+  at the output, so a mechanism inside the sheet can be judged in seconds by how readable
+  the features are (`scripts/richness.sh`). Hundreds of variants an hour instead of a few a
+  day.
+- **Re-test the early nulls.** Delays, far links, the branch bonus and varied neurons were all
+  judged "does nothing" through a readout that could not read. Those verdicts are void until
+  re-run through the new readout.
+- **Families.** Mechanisms grouped by what they change, a handful per agent, each scored by
+  the richness screen first and the suite second.
+
+### What a connection does over a few ticks
+66. **Tiring synapses.** A source that just fired counts for less for a few ticks. *idea*
+67. **Warming synapses.** A source that just fired counts for more for a few ticks. *idea*
+68. **Tiring neurons.** A neuron's threshold jumps when it fires and drifts back. *idea*
+69. **A slow second potential.** Each neuron keeps a second sum that leaks much more slowly
+    and adds to the first. *idea*
+70. **Rebound.** A neuron that was just inhibited is easier to fire for a few ticks. *idea*
+71. **Up and down states.** A neuron has two thresholds and stays "up" until it falls below
+    the lower one. *idea*
+
+### What a neuron computes
+72. **Any-branch neurons.** Fire if any one slot has enough active sources (an OR of ANDs),
+    not on the sum over slots. *idea*
+73. **Veto.** One inhibitory source on a branch cancels the whole branch. *idea*
+74. **Coincidence only.** Fire only if sources at two different delays are both active. *idea*
+75. **Winner in the tile.** After the tick, only the most-driven few neurons of each tile keep
+    their spike. *idea*
+76. **Table plus count.** A table over the neuron's four strongest sources, a popcount over
+    the rest. *idea*
+
+### Wiring
+77. **Mirror links.** If A listens to B, B is likelier to listen to A (loops by design). *idea*
+78. **Hubs.** A few neurons with ten times the connections, in and out. *idea*
+79. **Streams.** Wiring biased along one direction of the sheet, so activity flows. *idea*
+80. **Two sheets.** A second sheet that only the first one feeds, and that feeds back. *idea*
+81. **Wire by timing.** Growth prefers sources that fired just before, not just recently. *idea*
+82. **Prune what is redundant.** Drop a source that always fires with another one you
+    already have. *idea*
+83. **Topography in the far links.** Far links from neighbouring neurons land near each other.
+    *idea*
+
+### Global states and signals
+84. **Novelty opens the gate.** Plasticity is on only for a while after surprise. *idea*
+85. **Arousal.** After good or bad, the whole sheet's thresholds drop a little for a while.
+    *idea*
+86. **Rhythm as a clock.** Keep a slow pulse on purpose and let neurons prefer a phase of it.
+    *idea*
+87. **Replay in sleep.** When idle, replay the last rewarded stretches of the spike ring and
+    learn from them again. *idea*
+88. **Critical periods.** Each neuron's plasticity starts high and falls as it is used. *idea*
+89. **Attention.** The readout's current evidence feeds back and raises the gain of the tiles
+    it relies on. *idea*
+
+### Credit
+90. **A value cell.** A group of neurons learns to predict good and bad, and its change, not
+    the raw reward, is what teaches. *idea*
+91. **Error by the difference of two phases.** Run a few ticks with the answer clamped and a
+    few without; learn from the difference in each neuron's activity. *idea*
+92. **Teach the inside to help the readout.** An inner neuron gains evidence when the readout
+    currently relies on it and was right. *idea*
+93. **Counters that forget.** Evidence leaks toward zero, so old evidence fades. *idea*
+94. **Two readouts that vote.** A fast one and a slow one; the slow one learns from the fast
+    one's mistakes. *idea*
+
+### Growth and development
+95. **Start small.** A sheet that begins with few connections and adds them as tasks demand.
+    *idea*
+96. **Add neurons where surprise stays high.** *idea*
+97. **Pre-wire by spontaneous waves.** Before any input, waves of activity cross the sheet and
+    co-activity wiring lays down local structure (as in a developing retina). *idea*
+
+### Automatic search
+98. **Search the sheet's numbers for richness.** Random sheets, each scored by the feature
+    probe as born. *running: 600 sheets*
+99. **Search the switches in combination.** Every mechanism on or off, scored by the quick
+    suite, to find pieces that only work together. *idea*
