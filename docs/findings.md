@@ -34,6 +34,24 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
 - **Keeping is a capacity limit.** The output holds 8 to 14 pairs and has lost any pair by
   10,000 steps; freezing strong counters does not help.
 
+**Two more, the morning after (2026-11-25, late).**
+
+- **The inside learns, a second way, and this one is stable.** Tags from the chosen action
+  (idea 153): exclusive-or 0.996, eight cues 0.95; a fresh output on the lived sheet reads
+  0.998 against 0.855 as born; the sheet stays at its target rate through 160,000 steps.
+  Two independent rules now pass the inside-learning test, and they are the same idea:
+  one step of signed credit from the action's cells into hidden counters under a budget.
+  Neither transfers to a task it was not rewarded on, and neither helps MNIST.
+- **The owner's vvm converges once four things change** (idea 135): the input is written
+  into the state, an operation leaves most bits alone, lookup is by nearness, and new
+  inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
+  survives distractors on the cue lines (0.97; memory 0.63, GRU 0.50), does parity of 3
+  and 4 lines (0.85, 0.75; GRU 0.68, 0.52), and answers never-rewarded patterns (0.78;
+  memory 0.45). It has no sense of time, no credit one step back, and cannot keep several
+  items in order.
+- **Learning on good only when the vote was close** doubles the pairs held (16 cues 0.31
+  to 0.60) and lifts MNIST's online readout 0.71 to 0.81, without the lock.
+
 ## The headline (2026-11-25)
 
 **The output can now learn online, from good and bad alone, things no input line carries.**
@@ -288,6 +306,19 @@ docs/results-2026-11-25-mnist.md
 36. **A learning rule can be written as a table of ten local facts.** [solid as a
     construction] The error rule, the old rule and growth all are, and score alike. No
     evolved table is confirmed yet.
+
+37. **Credit inward must be a contrast between actions.** [likely] Feedback from the chosen
+    button alone hurts; the chosen button's wiring minus the others' is what teaches.
+38. **A neuron that learns inside must keep its counts.** [hint] Fixed numbers of
+    excitatory, inhibitory and strong connections per neuron is what keeps tags from
+    running the sheet hot, where reverse replay (which lets strength grow) runs away.
+    Inhibitory neurons should not learn from these credits.
+39. **Finding 17, restated: do not strengthen on good unconditionally.** [likely] Only when
+    the vote was close.
+40. **A state that addresses its own next step holds, once an operation can leave bits
+    alone and the input writes into the state.** [likely: one engine, 8 seeds] Matching by
+    nearness and waiting for the input to settle is what lets it survive noise and answer
+    unseen patterns, where a hashed lookup cannot.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 

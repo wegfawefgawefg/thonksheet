@@ -43,30 +43,38 @@ when one hands back, its result is merged and recorded and the next item starts.
 are ordered by the one question above. An item is struck when done, with where the result
 is.
 
-Running (four):
-- Inside learning: feedback tags from the chosen action, and the barely-correct margin
-  rule.
-- The vvm route (a state that is the address of its next operation).
+Running (four), as of 2026-11-25 night:
+- Item B below (idea 155) and item C below (the critic).
 - The calculation battery, with answers that are patterns and held-out inputs.
-- ~~The GPU: any world, the evidence counters, the memory engine, one call per table of
-  designs.~~ Done; being merged. The slot is held by the integration agent until the
-  merges are in.
+- Item A below: one setting with everything that worked (`scripts/oneset.sh`).
+Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
+153, 154), both merged. Their slots went to items B and C.
+Also running unattended, not agents: the search on stevejobs (minimal, table); the
+memory, GRU and MLP reference suites on stevejobs (`thonk-ref`), on the integrated code
+with the fixed cartpole.
 
-Wound up and recorded (six merged, five being merged by an integration agent): the combined
+Done since the queue was written: the GPU (any world, evidence counters, the memory
+engine, one call per table of designs); the integration of all eleven wound-up branches
+and the GPU branch into main (it builds; four reference lives byte-identical; cartpole
+now uses the fixed step by default, `--cart-integrator euler` for old numbers). Raw
+outputs of every finished agent are under out/from-agents/.
+
+Wound up, merged and recorded: the combined
 core, reverse replay, nudges and balance, more worlds, the invariance battery, the
 function battery, the dynamics family, the rest of the map, rule tables, long memory, the
 critic. The unattended search is stopped on this PC and still runs on stevejobs.
 
 Added after the wind-up, ahead of the rest (these are the first rules that move a wall,
 so they come first):
-- A. One setting with everything that worked: the readout, one step of reverse replay,
+- A. *(running)* One setting with everything that worked: the readout, one step of reverse replay,
   tiring neurons (or time and hold cells), winners in the tile, the critic. Does it hold
   together on the whole map, and does the replay runaway stop under it? Scored with the
   references beside it.
-- B. Reverse replay made safe: zero-sum steps per neuron or a threshold that rises with
+- B. *(running, as idea 155)* One inner rule from tags and reverse replay; then the
+  inside-learning test on MNIST and held-out rows. (Was: reverse replay made safe: zero-sum steps per neuron or a threshold that rises with
   gain; the unsigned half separated from the signed half; the inside-learning test on
-  MNIST (0.924 and 0.943 to beat) and on held-out rows.
-- C. The critic on report seeds and long lives, on the fixed cartpole, with the wide
+  MNIST (0.924 and 0.943 to beat) and on held-out rows.)
+- C. *(running)* The critic on report seeds and long lives, on the fixed cartpole, with the wide
   critic.
 - D. Integration check: after the merges, re-run the suite for the readout, the GRU and
   the memory engine, so the scoreboard is on the fixed cartpole and has the new rows.

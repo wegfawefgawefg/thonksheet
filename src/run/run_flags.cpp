@@ -12,7 +12,8 @@ static const char* usage =
     "  --task NAME        echo, shuffled-echo, delayed-echo, go-no-go, beat, sequence,\n"
     "                     catch, cartpole, order, both-not-either, gap, place, mnist,\n"
     "                     points, number, two-numbers, past, bandit, switch-bandit, chain,\n"
-    "                     track, forage, mountain-car, pendulum (default echo); the\n"
+    "                     track, forage, mountain-car, pendulum, distract, serial-add,\n"
+    "                     majority (default echo); the\n"
     "                     invariance battery: inv-position, inv-scale, inv-rotation,\n"
     "                     inv-bright, inv-clutter, inv-mixed, inv-shift, inv-tempo, inv-pitch,\n"
     "                     inv-view (--inv-shapes N, --inv-hold 2,3 or rN, --inv-motion\n"
@@ -28,9 +29,10 @@ static const char* usage =
     "  --out PATH         csv path (default out/<task>-s<seed>.csv)\n"
     "  --no-baselines     skip the learning-off and coin-flip runs\n"
     "  --show-plug        print where each line sits on the sheet\n"
-    "  --engine NAME      blob (default), minimal, memory, mlp or gru; --m.name value sets\n"
-    "                     a minimal number, --y.name a memory number, --n.name a\n"
-    "                     reference network number (mlp, gru: the fixed reference)\n"
+    "  --engine NAME      blob (default), minimal, memory, mlp, gru or vm; --m.name value\n"
+    "                     sets a minimal number, --y.name a memory number, --n.name a\n"
+    "                     reference network number (mlp, gru: the fixed reference), --v.name\n"
+    "                     a vm number\n"
     "plug:\n"
     "  --sensor-side N    a sensor line drives N x N neurons (default 2)\n"
     "  --motor-side N     a motor line is read from N x N neurons (default 2)\n"
@@ -59,6 +61,10 @@ static const char* usage =
     "  --gap-long N       gap: blank steps between blinks, long (default 3)\n"
     "  --place-size N     place: the sheet is N x N (default 4)\n"
     "  --place-hold N     place: places never rewarded, the scored ones (default 3)\n"
+    "  --input-noise N    plug: each sensor cell flips with chance N/1024 per tick (default 0)\n"
+    "  --distract N       distract: distracting events between cue and ask (default 4)\n"
+    "  --add-bias N       serial-add: chance x16 a pair passes the carry on (default 12)\n"
+    "  --maj-hold N       majority: patterns of 32 never rewarded, the scored ones (default 6)\n"
     "  --mnist-code C     mnist: t14 (default), g14 or t28 (src/world/mnist_data.hpp)\n"
     "  --mnist-first N    mnist: first training digit used (default 0)\n"
     "  --mnist-count N    mnist: training digits used from there (default 0: the rest)\n"
@@ -239,9 +245,9 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
         const char* value = argv[++i];
         if (std::strncmp(flag, "--g.", 4) == 0 || std::strncmp(flag, "--m.", 4) == 0 ||
             std::strncmp(flag, "--t.", 4) == 0 || std::strncmp(flag, "--n.", 4) == 0 ||
-            std::strncmp(flag, "--y.", 4) == 0) {
+            std::strncmp(flag, "--y.", 4) == 0 || std::strncmp(flag, "--v.", 4) == 0) {
             continue; // a genome number: apply_genome_args, apply_minimal_args,
-                      // table_genome_args, apply_nn_args, apply_memory_args
+                      // table_genome_args, apply_nn_args, apply_memory_args, apply_vm_args
         }
         bool fn_ok = true;
         if (function_flag(flag, value, flags.task_settings, fn_ok)) {
@@ -359,6 +365,8 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.plug.reward_line_ticks = (int)v;
         } else if (std::strcmp(flag, "--rest-ticks") == 0) {
             flags.plug.rest_ticks = (int)v;
+        } else if (std::strcmp(flag, "--input-noise") == 0) {
+            flags.plug.input_noise = (int)v;
         } else if (std::strcmp(flag, "--k") == 0) {
             flags.task_settings.k = (int)v;
         } else if (std::strcmp(flag, "--delay") == 0) {
@@ -389,6 +397,12 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.task_settings.place_size = (int)v;
         } else if (std::strcmp(flag, "--place-hold") == 0) {
             flags.task_settings.place_hold = (int)v;
+        } else if (std::strcmp(flag, "--distract") == 0) {
+            flags.task_settings.distract = (int)v;
+        } else if (std::strcmp(flag, "--add-bias") == 0) {
+            flags.task_settings.add_bias = (int)v;
+        } else if (std::strcmp(flag, "--maj-hold") == 0) {
+            flags.task_settings.maj_hold = (int)v;
         } else if (std::strcmp(flag, "--mnist-first") == 0) {
             flags.task_settings.mnist_first = (int)v;
         } else if (std::strcmp(flag, "--mnist-count") == 0) {

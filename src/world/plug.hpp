@@ -42,6 +42,9 @@ struct PlugSettings {
     // how a task's bitmap lands (plug_map.cpp): 0 as it is, 1 log-polar (8 rings x 16
     // angles about the bitmap's middle, so growing and turning become sliding)
     int bitmap_map = 0;
+    // noise on the input: each attached sensor cell, good and bad included, is flipped each
+    // tick with chance input_noise / 1,024 (0 none). the same for every engine
+    int input_noise = 0;
 };
 
 constexpr int PLUG_MAP_RINGS = 8, PLUG_MAP_ANGLES = 16;
@@ -69,11 +72,14 @@ struct Plug {
 
     // ticks left on the good and bad lines
     int good_left = 0, bad_left = 0;
+    uint64_t noise_state = 0x6e6f697365ull; // --input-noise draws, deterministic
 
     // --motor-spread: line L's cells are spread_neuron[spread_first[L] .. spread_first[L + 1])
     int spread_first[PLUG_MAX_MOTOR_LINES + 1] = {};
     int spread_neuron[PLUG_MAX_SPREAD] = {};
 
+    // each line's spikes in the step plug_choice last read (the vote; plug_vote.cpp)
+    int last_count[PLUG_MAX_MOTOR_LINES] = {};
     // --bitmap-map logpolar: the task's own bitmap size, and for each mapped line the task
     // pixels it is the OR of (a bit each)
     int map_src_w = 0, map_src_h = 0;
@@ -95,6 +101,9 @@ int plug_motor_cells(const Plug& plug, int line, const int** cells);
 // cells after a step (move -1: none). only learn modes 5 and 6 read them (idea 58).
 void plug_mark_motors(const Plug& plug, Blob& blob, bool on);
 void plug_mark_acted(const Plug& plug, Blob& blob, int move);
+// the step's vote for the blob's barely-correct rule: the pressed button's spikes, the
+// runner-up's, and the runner-up's cells (plug_vote.cpp; nothing unless the genome asks)
+void plug_mark_vote(const Plug& plug, Blob& blob, int move);
 
 // task values to line bits, once per step
 void plug_set_lines(Plug& plug, const TaskSense& sense);

@@ -209,3 +209,24 @@ if(gpu_sources AND Vulkan_FOUND AND GPU_GLSLANG AND NOT THONK_NO_VIEW AND TARGET
 else()
     message(STATUS "blobgpu skipped: needs Vulkan, glslangValidator and the minimal engine")
 endif()
+
+# blobvm: idea 135, the owner's vvm in bits (src/vm/): a state that looks up its next
+# operations by content. blobrun drives it with --engine vm; vmprobe traces what it does.
+file(GLOB vm_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/vm/*.cpp)
+if(vm_sources)
+    add_library(blobvm STATIC ${vm_sources})
+    target_include_directories(blobvm PUBLIC src)
+    target_compile_options(blobvm PRIVATE ${warnings} ${speed})
+    if(TARGET blobrun)
+        target_link_libraries(blobrun PRIVATE blobvm)
+        target_compile_definitions(blobrun PRIVATE BLOB_HAS_VM=1)
+    endif()
+    file(GLOB vm_probe_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/vm/probe/*.cpp)
+    if(vm_probe_sources AND TARGET blobworld)
+        add_executable(vmprobe ${vm_probe_sources}
+                       ${CMAKE_SOURCE_DIR}/src/run/task_ticker.cpp
+                       ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp)
+        target_compile_options(vmprobe PRIVATE ${warnings} ${speed})
+        target_link_libraries(vmprobe PRIVATE blobvm blobworld)
+    endif()
+endif()

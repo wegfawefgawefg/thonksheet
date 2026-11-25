@@ -1,0 +1,11 @@
+# action-feedback tags (learn_tags.cpp), tuning on seeds 1-4. base: the best readout (mode 5)
+readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1
+tags: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.tag_mode 1
+tags, contrast: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.tag_mode 2
+tags, 2 hops: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.tag_mode 1 --g.tag_hops 2
+tags, contrast, 2 hops: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.tag_mode 2 --g.tag_hops 2
+tags, slow: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.tag_mode 1 --g.tag_shift 6
+tags, no inhibitory: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.tag_mode 1 --g.tag_inh 0
+tags, no far: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.tag_mode 1 --g.tag_far 0
+tags, min 4: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.tag_mode 1 --g.tag_min 4
+mode 6: --g.learn_mode 6 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1

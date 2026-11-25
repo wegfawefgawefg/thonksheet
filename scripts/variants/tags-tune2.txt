@@ -1,0 +1,8 @@
+# action-feedback tags, tuning round 2 on seeds 1-4: contrast with the parts that spared order
+readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1
+tags, contrast: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.tag_mode 2
+contrast, no inhibitory: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.tag_mode 2 --g.tag_inh 0
+contrast, no inhibitory, slow: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.tag_mode 2 --g.tag_inh 0 --g.tag_shift 6
+contrast, no inhibitory, min 4: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4
+contrast, no inhibitory, slow, min 4: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.tag_mode 2 --g.tag_inh 0 --g.tag_shift 6 --g.tag_min 4
+contrast, no inhibitory, very slow: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.tag_mode 2 --g.tag_inh 0 --g.tag_shift 8

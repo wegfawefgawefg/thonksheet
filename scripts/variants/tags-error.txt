@@ -1,0 +1,5 @@
+# tags as an error rule (tag_verdict 1: every bad moves, no good does), beside the report's
+# tags: the diagnostic for "are tags and the backward walk the same thing". not tuned
+readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --motor-spread 128 --g.readout_balance 1
+tags: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --motor-spread 128 --g.readout_balance 1 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4
+tags, error only: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --motor-spread 128 --g.readout_balance 1 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_verdict 1

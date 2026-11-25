@@ -22,8 +22,20 @@ static void tick_learn(Blob& blob, int read_now) {
         return;
     }
     if (mode == 5 || mode == 6) {
+        // tags first: the feedback runs along the wiring that made the answer
+        if (g.tag_mode && blob.pending_valence != 0) {
+            learn_tags(blob, blob.pending_valence);
+        }
         learn_replay(blob, blob.pending_valence); // idea 62; returns at once while off
-        learn_readout(blob, blob.pending_valence);
+        // barely correct: a good won by a thin vote; with margin_win 2 a comfortable good
+        // skips the readout's own move on good (stop learning)
+        bool thin = true;
+        if (g.margin_percent && blob.pending_valence > 0) {
+            thin = learn_margin(blob);
+        }
+        if (thin || g.margin_win != 2) {
+            learn_readout(blob, blob.pending_valence);
+        }
         if (mode == 5) {
             return;
         }
