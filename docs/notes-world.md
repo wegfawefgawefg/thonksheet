@@ -10,6 +10,10 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
 - `world/task_reflex.cpp`: echo, shuffled echo, delayed echo, go/no-go, beat.
 - `world/task_sequence.cpp`, `world/task_control.cpp` (catch, cartpole).
 - `world/task_feature.cpp`: order, both-not-either, gap, place (features nobody designed in).
+- `world/task_script.hpp/.cpp`: tiers 9 and 10 (the rest of the map), every one a trial
+  script; `task_relation.cpp`, `task_sheet_number.cpp`, `task_grammar.cpp`,
+  `task_chance.cpp`, `task_memory.cpp`, `task_unsupervised.cpp` draw the trials.
+  `world/plug_hidden.cpp`: fill-in's count of hidden cells' own predictions.
 - `world/standin.hpp/.cpp`: a Blob shell with only the arrays the plug touches, and a fake
   tick (coin-flip motors, or the right motor group firing). Needs no core.
 - `run/main.cpp`: the driver calls (birth, tick, reward, death; declared in `run/drive.hpp`)
@@ -18,6 +22,8 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
 - `run/life_protocols.cpp`: plain life, retention, idle, capacity; the csv and the summary.
 - `run/life_measures.cpp`: `--reach` and `--speed`.
 - `run/life_end.cpp`: room and aliveness at the end of a life.
+- `run/life_shown_damage.cpp`: the world's two hooks into every engine (`blob.silenced`,
+  `blob.forced`) for `--damage` and `--shown`.
 - `probe/rhythm_find.hpp`, `probe/carry_measure.hpp`: shared with `blobprobe`.
 
 ## The plug
