@@ -758,7 +758,12 @@ co-activity runs ties the held units together and loses their order.
      with no reward at all. Hundreds of error lines a step in place of a handful from
      the buttons. Scored by the inside read on the control worlds against a time-shuffled
      life and the coin control, by the held-out calculation columns, and by whether the
-     task improves. The critic's surprise is then one more such line. *building*
+     task improves. The critic's surprise is then one more such line. *done:
+     docs/results-2026-11-25-predhop.md, `scripts/predhop.sh`, `--predict-hop 1`. The
+     hidden cells come to carry what just changed (paddle move 0.52 to 0.74 against a
+     coin control 0.67 and a shuffled life 0.65; forage's last move likewise), at the
+     born rate. They do not come to hold more of the future than rewiring alone gives,
+     the predictors do not get better, the task does not move. Horizon 1 only.*
 165. **The inside's ladder: what can these cells hold under the best possible teacher?**
      The output-gap ladder (idea 161) found its fault in one day by walking from a free
      reader down to our motor cells. Do the same for the inside. Start from a two-layer
@@ -837,3 +842,17 @@ co-activity runs ties the held units together and loses their order.
      recall, copy, with the frozen and shuffled controls, the rate held, and the rows
      that must not break (exclusive-or, 16 cues, MNIST read). Also why the rate runs to
      50 on sensor side 2 with the wide lattice. *building*
+173. **Label-free rule families, tried in the model before the engine.** Idea 165 left
+     a model of the cells with every constraint, a target (0.966 on MNIST and 0.785 on
+     the pair test in the real sheet) and one label-free result (giving the pixels back:
+     no better than born). Use the model as a cheap bench for rules that need no labels
+     and no feedback wires, each written as a local step a cell could do in bits: the
+     engine's competitive learning itself (a calibration: the model should land near the
+     real 0.952 and 0.726); a local "is this real" score, real digits against shuffled
+     or patched ones (plan item 4); each cell predicting a pixel just outside its inputs
+     from the rest (the owner's "every line is a target", in space); two looks at the
+     same digit a pixel apart should give the same code (idea 104); cells that fire
+     together push each other apart. Read by a fresh reader on MNIST, the pair test and
+     moved digits, against born, churn and a shuffled-pixel life; the best one written
+     into the real sheet. Only a family that beats competitive learning there gets
+     built in bits. *building*

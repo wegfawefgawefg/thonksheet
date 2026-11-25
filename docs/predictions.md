@@ -211,3 +211,9 @@ inner neurons measurably better for a task than unsupervised wiring already make
     right; a time-shuffled life gives most of it, right; 6 rows move, wrong (9). My own
     reading in the compete2 record (cells learn "this now and that some ticks ago"
     through slot delays) was wrong: the loops are cells of the same cue wired together.
+38. **Prediction errors down the one-hop wires** (its bot's eight predictions are in
+    docs/results-2026-11-25-predhop.md, written before the report seeds and scored
+    there: 6 of 8 right; the cost and the rise of time-since-cue wrong; the one clear
+    positive, the paddle's and forager's move, not predicted). Mine, from the queue
+    note: "the sheet comes to hold more of the future than the raw input lines do" was
+    the test, and the answer is no beyond the controls.

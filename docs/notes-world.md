@@ -645,3 +645,15 @@ cue through the blanks and where their inputs come from), and for `transfer`:
 `--life-quiet 1`, `--then-keep 1` (the second phase keeps the life's readout instead of
 a fresh one) beside `--keep-output 1` (a fresh readout that keeps the life's close-vote
 gate).
+
+## Prediction errors as a teacher (idea 164)
+
+`--predict-hop 1` (with `--predict ...` and `--g.hop_on 1`; `--g.hop_teach 0` for no
+button errors) hands each input line's horizon-1 prediction error to the one-hop rule as
+an extra error line (wire lines 64 and up; `blob_hop_errors` in `src/blob/learn_hop.cpp`).
+`--predict-hop-reach R` wires a line's error only to cells within R cells of it.
+`--g.hop_coin 1` sends each error to a random prediction line. `blobprobe predict` reads
+the future from the hidden cells alone (`h<h>_hidden`), takes `--lean 1` (skip the
+whole-sheet readers, which are nearly all of a run's time) and writes the life's task
+score and the rule's counts. `scripts/predhop.sh main --table-only` prints every table
+of docs/results-2026-11-25-predhop.md.

@@ -302,6 +302,33 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   - This is the first memory here that is learned inside by a local rule with no
     reward, and not built by hand as hold cells are. Open (idea 172): what makes the
     loop fade after two steps, and why the rate runs up on the other sheet.
+- **Prediction errors sent to every hidden cell teach it what just changed, and not
+  more of the future** (idea 164, queue item 3b, docs/results-2026-11-25-predhop.md,
+  `scripts/predhop.sh`; the owner's "every line is a target", first real test). Each
+  input line's one-step prediction error becomes an error line of the one-hop rule; no
+  reward reaches the inside. 10 worlds, seeds 5 to 12, hidden cells read by a fresh
+  reader after the life, firing rates within 2 of born. I re-ran catch and forage on
+  two seeds from the merged build (paddle 0.752, coin 0.665, shuffled 0.595, born 0.526).
+  - What changed is learned. Which way the paddle moved (catch): born 0.521, rule off
+    0.549, prediction errors 0.742, coin control 0.672, time-shuffled life 0.649 (7 of 8
+    seeds over each control). Forage's last move: 0.275, 0.324, coin 0.253, shuffled
+    0.256 (8 of 8). A cell taught by "I said it stays and it moved" comes to carry the
+    move.
+  - The future is not. A fresh reader of the hidden cells for every line 1 and 8 steps
+    on moves under 0.01 from born on 8 of 10 worlds; where it moves (predict-next 0.822
+    to 0.870) the coin gets 0.861 and the shuffled life 0.864. Time since the cue 0.859
+    to 0.956, coin 0.963. Those gains are the rewiring, not the errors (finding 47).
+  - The loop does not close: the predictor cells' own skill rises no more than under
+    the coin (+0.015 against +0.008), and the task score is within 0.03 of rule-off on 9
+    of 10 worlds (chain -0.075).
+  - Errors wired only to nearby cells are worse than random wires (paddle 0.620).
+    Beside competitive learning the paddle read is best (0.842) and time since the cue
+    falls (0.811).
+  - Cost: 0.76 to 0.86 of the speed. Only horizon 1 is built.
+  - Suspect: the read drives the world with coin presses, so on acting worlds the next
+    lines depend on a press nothing can know, and "the future is in the lines" is
+    partly the test's doing; the coin control spreads errors over all lines where real
+    errors sit on the few that change; one setting, picked on seeds 1 and 2.
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -724,6 +751,10 @@ docs/results-2026-11-25-mnist.md
 49. **Surprise fed back in as input makes the recent past readable.** [likely: 8 seeds,
     several worlds, rate unchanged] "I said on and it was off" lines are change
     detectors; a sheet that hears them carries what just happened and how long ago.
+    Sent to the hidden cells as a teacher instead (idea 164), the same errors make the
+    cells carry what changed (which way the paddle moved 0.52 to 0.74, coin 0.67), and
+    nothing more about the future than the rewiring alone gives. [likely: 8 seeds, coin
+    and time-shuffled controls, two worlds of ten]
 50. **Competitive learning makes loops that hold what was on, for about two steps.**
     [likely: 8 seeds, 16 rows, frozen, shuffled, reward-free and churn controls; wiring
     looked at on 4 seeds] Cells that fire together on a cue wire to each other (28 of 49

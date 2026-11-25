@@ -44,7 +44,8 @@ are ordered by the one question above. An item is struck when done, with where t
 is.
 
 Running (four), as of 2026-11-25 afternoon:
-- Queued item 3b (idea 164): prediction errors down the one-hop wires.
+- Queued item 4b (idea 173): label-free rule families at the model's bottom rung, the
+  best one written into the real sheet (takes in item 4).
 - Queued item 2g (idea 167): the rule's ladder, which step from backprop down to our
   one-hop rule loses the features.
 - Queued item 2h (idea 168): why the sheet does not answer the same digit the same way
@@ -171,7 +172,16 @@ Queued, in order:
    cells with a spike path into the action; this reaches every cell and carries a signed
    error per output. Run it both ways: told only good or bad, and told the right button.
    Scored by the inside-learning test, MNIST 0.924 to beat.
-3b. *(running, idea 164)* Each input line's prediction error as an error line of the
+4b. *(running, idea 173)* Label-free rule families tried in idea 165's model at its
+   bottom rung before any is built in bits: competitive learning as calibration, the
+   local "is this real" score (item 4), predicting a nearby pixel, two looks agreeing,
+   pushing apart; the best written into the real sheet.
+3b. *(done, merged: docs/results-2026-11-25-predhop.md, `scripts/predhop.sh`; the hidden
+   cells learn what just changed (paddle move 0.52 to 0.74, coin 0.67, shuffled 0.65),
+   not more of the future than rewiring alone; predictors and task unmoved. Left:
+   horizons past 1, a read on the life's own moves in place of coin moves, reads at
+   matched rate, a world where the answer is shown as a line so the calculation battery
+   can be tried)* Each input line's prediction error as an error line of the
    one-hop rule: every hidden cell taught by what the sheet failed to predict, no reward.
 3. *(first version done, merged: `scripts/predict.sh`,
    docs/results-2026-11-25-predict.md; the cells predict where there is something to
