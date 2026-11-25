@@ -40,7 +40,9 @@ How it scored (born sheet, seeds 5-12, 20,000 digits; the ladder below):
   rule (0.05). Wrong almost everywhere past rung 3.
 - The drift first at rung 4 (0.5): wrong. On the plain rule no rung of the copy drifts,
   only the engine; under the gate it starts at rung 5, the vote of cells.
-- The lived sheet's lead gone by rung 6 (0.7): LIVED-PRED
+- The lived sheet's lead gone by rung 6 (0.7): half right. It is gone at rung 3 already
+  (integer weights: 0.856 against 0.864 born) and in the engine; but my copy's rung 6 reads
+  the lived sheet 0.04 better than the born one, more than any rung from 3 to 5.
 
 ## Short version
 
@@ -71,13 +73,13 @@ MNIST test digits, seeds 5-12, born sheet, at 20,000 digits unless said.
   (0.025 at 120,000) and 0.10 under the offline reader. Under the gate my copy of the motor
   cell reads 0.1 lower than the real one, for a reason not found. And one rung is not fixed:
   **the sign**. A one-bit excitatory connection can only speak for a button; a linear reader
-  limited to weights of zero or more loses 0.18 under the gate. Opponent cells (half of each
+  limited to weights of zero or more loses 0.17 under the gate. Opponent cells (half of each
   button's cells vote against it) were built and cost in the engine.
-- **The lived sheet's lead does not reach the output.** Offline 0.951 against 0.926 born;
-  online float 0.924 against 0.905; but integer readers, the motor cells and the engine read
+- **The lived sheet's lead does not reach the output.** Offline 0.952 against 0.926 born;
+  online float 0.925 against 0.905; but integer readers, the motor cells and the engine read
   the lived sheet no better than the born one (engine plain 0.693 / 0.692; fixed engine on
-  the lived sheet 0.818 and 0.845 at 20,000 and 120,000, against 0.822 and 0.852 born). The lead is lost at the first integer rung (0.844 against
-  0.864); centring the counts gets about 0.01 of it back late (2 seeds).
+  the lived sheet 0.818 and 0.845 at 20,000 and 120,000, against 0.822 and 0.852 born). The lead is lost at the first integer
+  rung (0.856 against 0.864); centring the counts gets about 0.01 of it back late (2 seeds).
 - **Toy rows**: 16 cues 0.305 to 0.605, 8 cues 0.842 to 0.940, order 0.695 to 0.779, echo
   k=2 and k=4 unchanged; **exclusive-or 0.883 to 0.793** (the gate's cost; with two buttons
   the new rule is the gate). Reference lives byte-identical.
@@ -91,36 +93,63 @@ competitive learning (`--g.compete_on 1 --g.compete_shift 5`), then frozen. Rung
 lived sheet is the engine on that frozen sheet (`--life 60000 --life-freeze 1`). Each seed's
 full lines are in `out/output-gap/ladder-born/` and `ladder-lived/`.
 
-LADDER
+| rung | born 20k | 60k | 120k | lived 20k | 60k | 120k |
+|---|---|---|---|---|---|---|
+| 1  float softmax, offline | 0.926 (offline) |  |  | 0.952 (offline) |  |  |
+| 2  float softmax, online | 0.905 | 0.920 | 0.924 | 0.925 | 0.942 | 0.947 |
+| 3  integer, told the right button | 0.864 | 0.881 | 0.880 | 0.856 | 0.883 | 0.899 |
+| 4n integer, good/bad, nothing on good | 0.401 | 0.423 | 0.438 | 0.439 | 0.502 | 0.523 |
+| 4u integer, good/bad, engine's good half | 0.577 | 0.581 | 0.580 | 0.584 | 0.589 | 0.591 |
+| 4g 4u, only on a close vote (gate) | 0.872 | 0.901 | 0.908 | 0.871 | 0.908 | 0.912 |
+| 4r close good: pressed up, runner-up down | 0.869 | 0.887 | 0.893 | 0.766 | 0.801 | 0.816 |
+| 4up 4u, weights never below zero | 0.528 | 0.532 | 0.533 | 0.571 | 0.584 | 0.586 |
+| 4gp 4g, weights never below zero | 0.702 | 0.692 | 0.693 | 0.668 | 0.646 | 0.643 |
+| 5s motor cells' fields, sum of drives | 0.602 | 0.605 | 0.603 | 0.606 | 0.610 | 0.610 |
+| 5v motor cells' fields, graded vote | 0.691 | 0.691 | 0.694 | 0.627 | 0.632 | 0.637 |
+| 5sg 5s, close-vote gate | 0.879 | 0.899 | 0.901 | 0.873 | 0.903 | 0.906 |
+| 5vg 5v, close-vote gate | 0.845 | 0.851 | 0.823 | 0.829 | 0.842 | 0.834 |
+| 6c counters as graded weights | 0.719 | 0.702 | 0.698 | 0.731 | 0.715 | 0.709 |
+| 6b one-bit top counters (engine) | 0.692 | 0.686 | 0.680 | 0.731 | 0.722 | 0.714 |
+| 6g 6b, close-vote gate | 0.721 | 0.726 | 0.725 | 0.762 | 0.768 | 0.765 |
+| 6r 6b, close good: pressed up, runner-up down | 0.754 | 0.780 | 0.797 | 0.797 | 0.826 | 0.836 |
+| 7  engine, plain | 0.692 | 0.673 | 0.649 | 0.693 | 0.679 | 0.653 |
+| 7  engine, gate | 0.811 | 0.799 | 0.759 |  |  |  |
+| 7  engine, runner-up + gate | 0.822 | 0.845 | 0.852 | 0.818 | 0.837 | 0.845 |
+
+Seed spread at 20,000 (lowest to highest, born): rung 2 0.902-0.908, rung 3 0.851-0.876,
+4u 0.534-0.611, 4g 0.864-0.883, 5sg 0.863-0.889, 5vg 0.833-0.854, 6b 0.629-0.729, 6r
+0.713-0.787; engine plain 0.659-0.739, gate 0.800-0.820, runner-up 0.818-0.827.
+(`python3 scripts/outgap_table.py out/output-gap --doc` prints this table and the spreads.)
 
 Read down a column; each line adds one handicap to one above it:
 
 - **1 to 2, online, one step a digit: 0.02.** Gone by 60,000 digits (0.920).
-- **2 to 3, integer weights and the perceptron's step: 0.04**, about 0.045 at every length.
+- **2 to 3, integer weights and the perceptron's step: 0.04** at every length.
 - **3 to 4, told only good or bad: the good half is the whole loss.** The engine's rule
   (4u: on good the pressed button gains 16 and the nine others lose 1) reads 0.58 and never
   moves from there; three or four of the ten buttons go quiet within 5,000 digits and stay
-  quiet, on every seed. Moving nothing on good (4n) is worse still (0.40: bad alone, with ten buttons, says
-  too little). Moving on good only when the vote was close (4g, the gate) reads 0.874, the
-  same as being told the answer (0.863), and passes it later (0.907 against 0.877). Moving
-  only the pressed button and the runner-up on a close good (4r) does the same (0.868,
-  0.893). Why the engine's good half fails: a button that wins gains on every good, so it
+  quiet, on every seed. Moving nothing on good (4n) is worse still (0.40: bad alone, with
+  ten buttons, says too little). Moving on good only when the vote was close (4g, the gate)
+  reads 0.872, the same as being told the answer (0.864), and passes it later (0.908 against
+  0.880). Moving only the pressed button and the runner-up on a close good (4r) does the
+  same (0.869, 0.893). Why the engine's good half fails: a button that wins gains on every good, so it
   wins more; with accuracy over one half, goods outnumber bads, so every button that is not
   pressed is pushed down more often than up and sinks.
 - **4 to 5, each output is the real motor cells with only what they can hear: nothing.**
-  The sum of the 102 cells' drives (5s 0.599, 5sg 0.883) reads as the free reader of every
-  cell (4u 0.581, 4g 0.874). The motor cells' 11 slots carry what a digit holds. Turning each
+  The sum of the 102 cells' drives (5s 0.602, 5sg 0.879) reads as the free reader of every
+  cell (4u 0.577, 4g 0.872). The motor cells' 11 slots carry what a digit holds. Turning each
   cell into a thresholded unit whose vote is how far it is over threshold (5v) *helps* the
-  engine's rule (0.691 against 0.599): a cell's threshold follows its own drive, which caps
-  the rich-get-richer. Under the gate it costs 0.035 (5vg 0.847 against 5sg 0.883).
+  engine's rule (0.691 against 0.602): a cell's threshold follows its own drive, which caps
+  the rich-get-richer. Under the gate it costs 0.034 (5vg 0.845 against 5sg 0.879).
 - **5 to 6, one-bit connections chosen by counters at the engine's width and chance:
-  nothing on the engine's rule** (6b 0.690 against 5v 0.691; counters used as graded weights,
-  6c, 0.713). Under the gate my copy loses 0.13 (6g 0.720 against 5vg 0.847), but see the
+  nothing on the engine's rule** (6b 0.692 against 5v 0.691; counters used as graded weights,
+  6c, 0.719). Under the gate my copy loses 0.12 (6g 0.721 against 5vg 0.845), but see the
   next line.
-- **6 to 7, the engine itself: equal on the plain rule** (0.692 against 6b 0.690, every
-  length within 0.03), so on the plain rule no handicap is left unnamed. **Under the gate and
-  the runner-up rule the engine reads better than my copy**: 0.811 against 6g 0.720, 0.822
-  against 6r 0.756. The copy's motor cell is a count reader (drive = wired spike counts, vote
+- **6 to 7, the engine itself: equal on the plain rule** at 20,000 (0.692 against 6b
+  0.692), so on the plain rule no handicap is left unnamed there; later the engine drifts
+  where the copy does not (0.649 against 0.680 at 120,000). **Under the gate and the
+  runner-up rule the engine reads better than my copy**: 0.811 against 6g 0.721, 0.822
+  against 6r 0.754. The copy's motor cell is a count reader (drive = wired spike counts, vote
   = how far over a threshold that follows the drive); the real cell fires tick by tick with
   a leak, a branch bonus and delays. Something in the real cell or the live sheet helps the
   gated rules and not the plain one. Not found. Candidates: the copy's vote is a smooth
@@ -131,16 +160,30 @@ Read down a column; each line adds one handicap to one above it:
   runner-up, and only the runner-up rule keeps rising).
 - **The sign.** A one-bit excitatory connection can only add evidence for a button; only an
   inhibitory source can count against. A linear reader allowed no weight below zero loses
-  0.18 under the gate (4gp 0.697 against 4g 0.874) and 0.05 on the plain rule (4up). The
+  0.17 under the gate (4gp 0.702 against 4g 0.872) and 0.05 on the plain rule (4up). The
   engine wires inhibitory sources too (`readout_evidence 2`), which is part of the way back.
   Opponent cells (half of each button's cells vote against it and learn the other way, the
   critic's trick) were tried in the engine and cost (below), so this rung is not fixed here.
 
-Where the drift starts (20,000 against 120,000): rung 2 rises (0.906 to 0.923); rung 3 is
-flat; 4u, 5v, 6b are flat (they stopped learning at 1,000 digits); the engine on the plain
-rule falls 0.043. Under the gate, the vote of cells falls (5vg 0.853 to 0.823 from 60,000)
-and the engine falls 0.052; the free and summed readers do not (4g, 5sg rise). Under the
-runner-up rule nothing falls at any rung: 4r, 6r and the engine all still rise at 120,000.
+Where the drift starts (20,000 against 120,000): rung 2 rises (0.905 to 0.924); rung 3 is
+flat; 4u and 5v are flat (they stop learning within a few thousand digits) and 6b loses
+0.012; the engine on the plain rule falls 0.043. Under the gate, the vote of cells falls
+(5vg 0.851 to 0.823 from 60,000) and the engine falls 0.052; the free and summed readers do
+not (4g, 5sg rise). Under the runner-up rule nothing falls at any rung: 4r, 6r and the
+engine all still rise at 120,000.
+
+The lived sheet, rung by rung (lived minus born, at 20,000 / 120,000): offline +0.026;
+online float +0.020 / +0.023; integer told the answer -0.008 / +0.019; the gate +0.000 /
++0.004; the runner-up linear reader -0.10 / -0.08 (it does badly on the lived sheet, not
+explained); the motor cells' summed fields +0.00, their graded vote -0.06; my copy of the
+engine's counters +0.04 on every rule; the engine itself +0.001 plain and -0.004 / -0.007
+with the runner-up rule. So the lead is lost where the float readers stop: at integer
+weights on raw counts. The lived cells fire about twice as often as the born ones and much
+less evenly (the compete job: 63 against 33 spikes per 1,000 cell-ticks), and a float reader
+centres and scales each one. Centring the integer readers' counts (3c, 4gc, 4rc; running
+mean per cell, seeds 5 and 6 only) gives back about 0.01 on both sheets at 120,000 (lived
+3c 0.912 against 3 0.898; born 0.895 against 0.879) and nothing at 20,000: part of it, not
+the whole.
 
 ## What was built
 
@@ -236,6 +279,8 @@ all 10,000 test digits: 0.801, 0.785, 0.747 at 20,000, 60,000, 120,000; runner-u
 | runner-up + gate + twice the budget (`--g.readout_keep_mul 2`) | 0.827 | 0.837 | 0.849 | the same |
 | runner-up + gate + top quarter strong (`--g.readout_evidence_strong 2`, idea 147) | 0.827 | 0.836 | 0.858 | maybe +0.01; one seed, not run on 8 |
 | runner-up, no gate | 0.700 | 0.701 | 0.706 | stops the drift only |
+| runner-up + gate + centred steps (`--g.readout_center 1`) | 0.788 | 0.824 | 0.841 | worse |
+| the same on the frozen lived sheet, against it without centring | 0.796 / 0.819 | 0.846 / 0.834 | 0.850 / 0.851 | no help |
 
 The rungs this leaves: under the runner-up rule the engine (0.822 at 20,000) is 0.04 under
 the integer perceptron told the answer (rung 3, 0.863) and 0.10 under the offline reader.
@@ -294,17 +339,42 @@ one pass over the wired counters.
 
 ## Reference lives
 
-REFS
+The four merge-reference lives (`out/merge-ref/`: echo; both-not-either with the readout;
+the minimal engine; table neurons) are byte-identical to the ones made before this job: on
+the branch after the last code change (`out/output-gap/refcheck-branch.txt`) and again after
+merging main and rebuilding (`out/output-gap/refcheck-merged.txt`). The check is
+`out/output-gap/refcheck.sh` (the compete job's checker, one life at a time): `cmp` on the
+four csvs and on the -sum files without their speed line. The runner-up rule also gives the
+same life before and after the merge (seed 5, 0.5930 and 0.7535 at 1,000 and 5,000).
 
 ## Unfinished
 
-UNFINISHED
+- **Why the real motor cell beats my copy under the gate** (0.811 against 0.720; 0.822
+  against 0.756 with the runner-up rule), while they agree on the plain rule. Candidates
+  named above; none tested. Until then rung 6 is trustworthy for the plain rule and only
+  for the ordering of rules under the gate.
+- **The sign rung is not fixed.** Opponent cells cost in the engine (one seed, three forms).
+  Not tried: opponent cells with their own threshold regulation per half, or a second
+  "against" counter per source.
+- **The lived sheet's lead does not reach any integer reader or the engine.** Centring the
+  counts gives about 0.01 back to the integer readers (2 seeds) and nothing in the engine's
+  crude form (`readout_center`, one seed). The lived sheet fires about twice as often as the
+  born one; a reader that scales each source by its own spread is the float readers' one
+  advantage not yet tried in bits.
+- The runner-up rule has been run to 120,000 digits only; the drift it removes could come
+  back later. The top-quarter-strong form (idea 147) is one seed.
+- **Exclusive-or** pays 0.09 for the gate. Not addressed.
+- The copy's rung 5v/6 stand-in for threshold regulation (mean plus z spreads over 128
+  digits) is mine, not the engine's; it is why 5v helps the plain rule, and it may be part of
+  why rung 6 differs under the gate.
+- The fixed rule was not run on the calculation battery, the critic's worlds or the rest of
+  the suite.
 
 ## What should change elsewhere (for the coordinator; not edited here)
 
 - `docs/findings.md`, "Where it stands" or the MNIST headline: the output's gap is mostly
-  its good half. A ladder of readers on the recorded sheet (offline 0.925, online 0.906,
-  integer perceptron told the answer 0.863, the engine's good-and-bad rule 0.58, the motor
+  its good half. A ladder of readers on the recorded sheet (offline 0.926, online 0.905,
+  integer perceptron told the answer 0.864, the engine's good-and-bad rule 0.58, the motor
   cells with their real fields and one-bit counters 0.69, the engine 0.69; seeds 5-12, 20,000
   digits) has one large step, 0.28, at the rule's good half: moving on every good (the motor
   cells' own thresholds then win back 0.1 of it). With
@@ -329,12 +399,15 @@ UNFINISHED
   the motor cells' vote under the gate.
 - Principle 41 and the compete result: the output still does not use the lived sheet's lead
   (competition on from the first digit, fixed output: 0.844 against 0.852 born). The next
-  question for the output is that one: LIVEDELSEWHERE
+  question for the output is that one: the lead survives float readers (online 0.925
+  against 0.905) and is lost at the first integer one; scaling each source by its own spread
+  is the next thing to try in bits.
 - `scripts/mnist.sh online`: consider the runner-up + gate rule as its rule (it would change
   that script's numbers; left as is here).
 - Toy rows: with the fix, 16 cues 0.305 to 0.605 and 8 cues 0.842 to 0.940, order 0.695 to
   0.779, exclusive-or 0.883 to 0.793 (the gate's known cost: with two buttons the runner-up
-  rule is the gate). TOYSELSEWHERE
+  rule is the gate: the lives are identical). With the gate alone k=4 falls to 0.898 and
+  k=8 is 0.866: the runner-up part is what keeps rows with more than two buttons.
 - `docs/design.md` and `genome.hpp` (core owner): `readout_good 2`, `readout_opponent`,
   `readout_halve`, `readout_keep_mul`, `readout_evidence_strong 2`; `blob/opponent.hpp`; the
   plug's signed vote (`plug.signed_vote`, `motor_gross`, `last_gross`) in `src/world/`.
