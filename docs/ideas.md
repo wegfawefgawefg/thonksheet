@@ -425,3 +425,12 @@ not known to do it.
      time), context (a cue that changes what another means), longer memory (copy, recall,
      n-back), no teacher (predict the next input, fill in a gap), being shown the answer,
      and damage to the sheet. `docs/task-map.md` lists the tiers. *building*
+117. **The fixed-net reference.** One ordinary network (a small two-layer one, and a small
+     recurrent one), one size, one recipe, behind the same plug, told only good and bad,
+     run on the whole map with nothing changed between tasks. Not to beat it task by task:
+     to see where an unchanged network stops, and to calibrate which worlds are learnable.
+     *building*
+118. **One setting for everything.** Score our own designs the same way: one set of numbers
+     for the whole map. Today the readout runs use flags chosen per task (long delays for
+     the time tasks, more motor cells here, smaller line groups there). *idea: the combined
+     engine is the first to be held to it*

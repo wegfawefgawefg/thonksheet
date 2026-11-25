@@ -58,6 +58,24 @@ picks it. A variant of an existing engine is a set of `--g.name value` numbers w
 An agent working on an engine edits only that engine's folder and adds its name to the
 engine list. That is what lets many agents work at once without colliding.
 
+## One setting for everything
+
+The owner, 2026-11-25: "you often have to change arch to get a nn to learn a task right.
+which is kind of part of the problem here. thats what were trying to engineer out."
+
+So a design is one fixed set of numbers, and it is scored with that one set on every world
+in `docs/task-map.md`. No flag may change from task to task except what belongs to the
+world itself (how its input is laid on the sensor sheet, how many buttons it has). A design
+that needs long delays for one task and short ones for another has not passed both; it has
+to carry both at once. The headline number for any design is how many worlds it passes with
+nothing changed between them.
+
+The same rule applies to the reference we compare against. It is not "the best network for
+each task". It is one ordinary network, one size, one training recipe, fed the same stream
+through the same plug and told only good and bad, run on the whole map unchanged
+(`mlp-fixed` and `gru-fixed` in the scoreboard). Where that fails without being redesigned
+is where a design of ours could be doing something different in kind.
+
 ## Honesty
 
 - Predictions before results. Nulls and failures stay on the list.
