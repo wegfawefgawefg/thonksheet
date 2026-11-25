@@ -43,6 +43,11 @@ struct Sheet {
     int teach = 0; // --life-teach: the life is judged (the readout and the hop rule learn)
     uint64_t shuffle_rng = 0;
     std::vector<int> shuffle_cells, shuffle_perm;
+    // the repeatability probes (mnist_repeat.cpp); 0 is off and changes nothing
+    int reset_digit = 0; // at each digit's start: 1 potentials, cooldowns cleared; 2 the ring too
+    int input_every = 0; // >1: the pixel lines reach the sheet only every this many ticks
+    int count_from = 0;  // a digit's counts start at this tick of it
+    int inh_fast = 0;    // 1: inhibition read one tick old whatever a slot's delay
 };
 
 // shuffle on: draw this digit's permutation (at the digit's start), and move the pixel
@@ -82,6 +87,15 @@ int64_t sheet_train(Sheet& s, int64_t digits, bool learn, Rows* counts);
 // the evaluation digits (moved by dx, dy) with learning frozen; the training stream carries
 // on afterwards where it was. returns the share right; counts as above
 double sheet_eval(Sheet& s, int dx, int dy, int count, Rows* counts);
+
+// why the sheet does not answer a digit the same way twice (mnist_repeat.cpp): probes set
+// before settling, after it, at each digit's start, on a digit's off ticks, and the second pass
+void repeat_setup(Sheet& s, int argc, char** argv);
+void repeat_after_settle(Sheet& s, int argc, char** argv);
+void repeat_digit_start(Sheet& s);
+void repeat_input_off(Sheet& s);
+void repeat_inh_fast(Sheet& s);
+void repeat_twice(Sheet& s, const Rows& test, const std::vector<int>& cols, int test_count);
 
 int mnist_baselines(int argc, char** argv);
 int mnist_online(int argc, char** argv);
