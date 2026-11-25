@@ -80,6 +80,11 @@ struct Plug {
 
     // each line's spikes in the step plug_choice last read (the vote; plug_vote.cpp)
     int last_count[PLUG_MAX_MOTOR_LINES] = {};
+    // genome readout_opponent (blob/opponent.hpp): the vote is the for cells' spikes less the
+    // against cells', and may be negative; gross counts both, for the close-vote margin
+    bool signed_vote = false;
+    int motor_gross[PLUG_MAX_MOTOR_LINES] = {};
+    int last_gross[PLUG_MAX_MOTOR_LINES] = {};
     // --bitmap-map logpolar: the task's own bitmap size, and for each mapped line the task
     // pixels it is the OR of (a bit each)
     int map_src_w = 0, map_src_h = 0;
