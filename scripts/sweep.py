@@ -39,6 +39,8 @@ LEARNING_ONLY = {
     "readout_center", "readout_evidence", "readout_evidence_bits", "readout_evidence_strong",
     "readout_balance",
     "lose_shift_steps", "win_stay_steps", "lose_shift_fires", "bad_cut_on",
+    "replay_depth", "replay_shift", "replay_thin", "replay_new", "replay_quiet",
+    "replay_until", "replay_reset", "replay_shuffle", "replay_strong_budget",
 }
 
 
@@ -150,6 +152,8 @@ def main():
     ap.add_argument("--no-twin", action="store_true")
     ap.add_argument("--table-only", action="store_true")
     ap.add_argument("--out-dir", default=OUT, help="where runs and the cache go")
+    ap.add_argument("--windows", default="",
+                    help="A:B scores only windows A to B-1 (a phase of a longer life)")
     opt = ap.parse_args(argv[:split])
     set_out(opt.out_dir)
     task_args = argv[split + 1:]
@@ -185,12 +189,21 @@ def main():
                     f.write(json.dumps(row) + "\n")
                 print(f"  {n + 1}/{len(todo)}", file=sys.stderr, flush=True)
 
+    lo, hi = (int(x) for x in opt.windows.split(":")) if opt.windows else (0, 0)
+
     def result(cmd, field):
         row = cache.get(" ".join(cmd))
-        return row[field] if row else None
+        if not row:
+            return None
+        if not opt.windows:
+            return row[field]
+        part = row["windows"][lo:hi]
+        edge = max(1, len(part) // 10)
+        return statistics.mean(part[-edge:] if field == "late" else part[:edge])
 
     print(f"## {opt.name}\n")
-    print(f"`{' '.join(task_args)}`, seeds {opt.seeds}\n")
+    span = f", windows {opt.windows}" if opt.windows else ""
+    print(f"`{' '.join(task_args)}`, seeds {opt.seeds}{span}\n")
     print("| variant | late | learning off | late - off | late - early | late vs base | t |")
     print("|---|---|---|---|---|---|---|")
     base_late = None

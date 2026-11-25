@@ -1,0 +1,7 @@
+# idea 62, report on seeds 5-12: is the walked sheet a better sheet? run with --retention: the
+# first task for 40,000 steps (walk on or off), then at tick 800,000 the walk stops, the motor
+# cells go back to their born wiring and the readout's counters are cleared, and a fresh
+# readout learns the second task on the sheet as it now is (frozen). score windows 40-79.
+born sheet, fresh readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_until 800000 --g.replay_reset 1
+walked sheet, fresh readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 2 --g.replay_until 800000 --g.replay_reset 1
+shuffle-walked sheet, fresh readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 2 --g.replay_shuffle 1 --g.replay_until 800000 --g.replay_reset 1

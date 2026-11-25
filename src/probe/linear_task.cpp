@@ -119,6 +119,7 @@ int probe_linear(int argc, char** argv) {
             continue;
         }
         if (tt.valence != 0) {
+            plug_mark_acted(tt.plug, *blob, tt.move); // the readout rules need it (mode 5)
             blob_reward(*blob, tt.valence);
         }
         bool scored = tt.task.tally[1] > tries_before;
