@@ -36,7 +36,24 @@ struct Sheet {
     // idea 155, a control: the blob is told good or bad by a coin instead of the answer
     int coin_reward = 0;
     uint64_t coin_state = 0x636f696eull;
+    // the inside-learning control (mnist_shuffle.cpp): while on, each digit's pixels are
+    // shuffled by a permutation drawn fresh for that digit (same ink, no structure)
+    int shuffle = 0;
+    uint64_t shuffle_rng = 0;
+    std::vector<int> shuffle_cells, shuffle_perm;
 };
+
+// shuffle on: draw this digit's permutation (at the digit's start), and move the pixel
+// cells' bits by it (after every write of the lines)
+void shuffle_draw(Sheet& s);
+void shuffle_apply(Sheet& s);
+
+// what a reward-free life did to the inside (mnist_wiring.cpp): the wiring as born, a life
+// in chunks with a line on activity and wiring after each, and those two lines alone
+void wiring_snapshot(const Sheet& s, std::vector<uint64_t>& born);
+void life_run(Sheet& s, int64_t digits, int chunks, const std::vector<uint64_t>& born);
+void activity_report(const Sheet& s, const Rows& rows, const char* label);
+void wiring_report(const Sheet& s, const std::vector<uint64_t>& born, const char* label);
 
 // own flags are read by the caller; everything else is blobrun's (task, plug, --g. numbers)
 bool sheet_start(Sheet& s, int argc, char** argv, const char* const* own, int own_count);

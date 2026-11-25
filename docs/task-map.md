@@ -35,6 +35,7 @@ value on every line, so the suite needs each value somewhere.
    - good or bad after every answer
    - good or bad late, after several steps
    - by being shown the answer
+   - by a verdict for each output (with two-valued outputs this is being shown the answer)
    - by acting on a world that answers back
 3. **What has to come out.** One of a few buttons; one of many; an amount; a sequence of
    presses; a press at the right moment; a whole pattern.
@@ -63,7 +64,7 @@ alone: a design may pass tier 4 before tier 3.
 | 8 | keeping and adding | second task after the first; retest; idle; capacity; a changed rule; damage | second task 0.99 with the first kept at 0.98; idle loses nothing |
 | 9 | relation, number, parts and wholes, chance, context | same/different side by side and in turn; odd one out; bigger; analogy; how many; more or fewer; Reber grammar; brackets; parts of a figure; noisy reward; rare cue; noisy lines; context line; unsignalled switch; copy; recall past others; n-back (`scripts/map.sh`) | readout rule, frozen sheet: chance (1.00 at 1 in 40), noisy lines 0.99, bigger 0.97, context 0.93, switch every 500 0.94; same 0.66, more-fewer 0.70, copy of 2 0.66, recall past 1 0.69, 1-back 0.71; chance on analogy, grammar, brackets, counting over size, every relation on untaught items, every hold of 2 steps or more. Unfinished: no linear-reader or minimal-engine numbers yet (docs/results-2026-11-25-rest-of-the-map.md) |
 | 10 | no teacher | predict the next input; fill in a missing part; notice the odd one (`scripts/map.sh`) | built; the design rule's own predictions do not beat its twin on predict-next (0.48 against 0.52); fill-in 0.14 against -0.06; odd-event not yet run |
-| 11 | real data | MNIST digits; spoken digits or tones; characters of text | MNIST: a linear reader of the never-taught sheet 0.924 (linear on pixels 0.922, two-layer net 0.955); the sheet's own readout from good and bad 0.71 |
+| 11 | real data | MNIST digits; spoken digits or tones; characters of text | MNIST: a linear reader of the never-taught sheet 0.924 (linear on pixels 0.922, two-layer net 0.955); after a reward-free life under competitive learning 0.952; the sheet's own readout from good and bad 0.71 to 0.81, the same with or without that rule |
 | 12 | the long game | a maze; snake on a big board; several tasks interleaved for a whole life | hole |
 
 ### The fixed reference
@@ -75,6 +76,17 @@ beat, order and gap all 1.00, catch 0.72, tier 8 1.00. It fails the place never 
 (0.16), holds longer than 8 steps, and cartpole. A world the reference fails is either
 truly hard or badly made; cartpole's "lean" reward and the place world are marked suspect
 until checked.
+
+Since the integration (2026-11-25) the GRU, the plain net and the memory engine have every
+row in `docs/scoreboard.md`, on the fixed cartpole (GRU 798 steps per fall on lean, 77 on
+sparse; memory 302 and 281). By tier, the GRU: tier 2 parity of 3 lines 0.78, of 4 lines
+0.50 (the plain net 0.96 and 0.90); tier 7 bandits 1.00, track and forage 0.9 to 1.0,
+mountain car 1.00, chain 0.01, pendulum 0.22; tier 9 same or different 0.87 to 1.00, odd
+one out 0.97 and 0.48, bigger 1.00, brackets 0.99 and 0.90, grammar 0.70 and 0.60, copy
+1.00 and 0.55, recall 1.00 and 0.99, n-back 0.97 and 0.94; tier 10 noisy and rare cues
+1.00, context 1.00 and 0.89, switching 0.75 and 0.50. No reference learns analogy, the
+shown-the-answer rows, fill-in, or any held-out place, turn or size. Those rows are
+suspect until something passes them.
 
 ### The memory engine
 
@@ -92,8 +104,13 @@ seeds and, above all, together under one setting):
   slow variable in the neuron or with time and hold cells. Beat and sequence unrun.
 - tier 5 and 6 (what stays the same): the invariance battery exists; every engine and both
   references fail the held-out rows. The old place row is retired as a trap.
-- tier 7 (acting): with a critic, bandit 1.00, chain 0.97, cartpole 89 steps per fall;
-  cartpole now uses the fixed step by default.
+- tier 7 (acting): with a critic, one setting on seeds 5 to 12 (the table is in
+  docs/results-2026-11-25-critic.md, `scripts/critic.sh tables`): bandits 1.00, switching
+  0.98, chain 0.99, track 0.88, forage 0.84, arrival-only track and forage 0.78, mountain
+  car 0.97, catch 0.39, cartpole 109 steps per fall on the lean reward (30 alive, 28
+  sparse) and no higher at 400,000 steps. Not learned: goal-only mountain car, the
+  pendulum, the chain with no stage cue. The readout alone is still our best on the
+  pendulum with the energy reward (0.23). Cartpole uses the fixed step by default.
 - tier 2 and 3: and, or, majority to 8 lines; parity to 2.
 - tier 9 and 10: 21 worlds built; association under noise and context learned, the rest
   at chance.
@@ -118,11 +135,18 @@ seeds and, above all, together under one setting):
 
 ## Holes
 
-Kinds of task with no world yet: the long game (tier 12); output that is a whole pattern or
-an amount instead of a button; a changed rule on the *same* lines and buttons (today's second
+Kinds of task with no world yet: the long game (tier 12); output that is an amount
+instead of a button; a changed rule on the *same* lines and buttons (today's second
 task uses new ones, so nothing interferes). Each needs a world before any design can be said to work on
 "any task". Built 2026-11-25 (`scripts/map.sh`, docs/curriculum.md "The rest of the map"):
 no teacher (tier 10), being shown the answer (`--shown N`) and damage to the sheet
 (`--damage P`, `--damage-tile 1`); their full-seed runs are unfinished (quick check: no
 engine learns from being shown; the readout rule loses nothing to 20 in 100 silenced).
 Output over several steps is now covered by copy (one press a step).
+Output that is a whole pattern is covered by the calculation battery (`--task calc`,
+`scripts/calc.sh`, docs/results-2026-11-25-calculation.md): with a verdict per bit the
+working rule learns pattern answers that are weighted sums of the input lines at small
+sizes, and nothing that needs a product of distant lines; with one verdict for the whole
+answer it holds two bits. Every member holds out a quarter of its cases, so this is also
+the first battery a lookup table fails (memory: seen 0.88 to 0.99, held out near the most
+common answer).

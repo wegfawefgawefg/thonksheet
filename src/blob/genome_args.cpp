@@ -188,6 +188,10 @@ static const GenomeField fields[] = {
     {"tag_counts", &Genome::tag_counts},
     {"tag_shuffle", &Genome::tag_shuffle},
     {"tag_random", &Genome::tag_random},
+    {"compete_on", &Genome::compete_on},
+    {"compete_shift", &Genome::compete_shift},
+    {"compete_down_shift", &Genome::compete_down_shift},
+    {"compete_inh", &Genome::compete_inh},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

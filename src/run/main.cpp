@@ -84,6 +84,15 @@ static VmGenome vm_genome;
 static const bool use_vm = false;
 #endif
 
+bool core_blob(Driver driver) {
+#ifdef BLOB_HAS_CORE
+    return real_blob(driver) && !use_minimal && !use_memory && !use_nn && !use_vm;
+#else
+    (void)driver;
+    return false;
+#endif
+}
+
 Blob* birth(Driver driver, const Genome& genome, uint64_t seed) {
     if (table_driver(driver)) {
         TableGenome tg = table_genome;
@@ -314,6 +323,14 @@ int main(int argc, char** argv) {
     if (flags.frozen_readout && (flags.table || use_memory || use_nn || use_vm)) {
         std::fprintf(stderr, "blobrun: --frozen-readout is the blob's learn_mode 1; this "
                              "engine has no readout mode\n");
+        return 1;
+    }
+
+    // the critic lives in the full engine; another would hear a valence 0 every step
+    if (flags.genome.critic_on && (flags.table || !core_blob(Driver::blob))) {
+        std::fprintf(stderr, "blobrun: --g.critic_on is the full engine's; engine '%s'%s has "
+                             "no critic\n",
+                     flags.engine.c_str(), flags.table ? " (--table)" : "");
         return 1;
     }
 

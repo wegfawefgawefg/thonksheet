@@ -136,7 +136,15 @@ static bool lay_motors(Plug& plug, const Blob& blob, const TaskShape& shape) {
     }
     for (int line = 0; line < plug.motor_lines; line++) {
         int gx = 0, gy = 0;
-        if (!shelf_place(shelf, 1, 1, gx, gy)) {
+        bool placed = shelf_place(shelf, 1, 1, gx, gy);
+        // with --motor-spread the packed groups only say how near the buttons may sit, so
+        // lines past the packed ones (a long pattern answer) share the first group's place
+        if (!placed && plug.settings.motor_spread > 0 && line > 0) {
+            Shelf first = shelf;
+            first.x = first.y = first.height = 0;
+            placed = shelf_place(first, 1, 1, gx, gy);
+        }
+        if (!placed) {
             std::fprintf(stderr, "plug: motor lines do not fit the motor region\n");
             return false;
         }

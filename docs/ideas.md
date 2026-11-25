@@ -327,7 +327,7 @@ ones?" There are. Three things widen the search from here.
 
 ### Credit
 90. **A value cell.** A group of neurons learns to predict good and bad, and its change, not
-    the raw reward, is what teaches. *tried with a critic (`--g.critic_on 1`, `scripts/critic.sh`; seeds 1-4 only): a second group of cells learns how well things are going, and its surprise teaches the buttons. Bandit 0.77 to 1.00, chain 0.78 to 0.97 (the GRU gets 0.01: the first row where a sheet beats the reference), catch 0.20 to 0.32, cartpole with the lean reward on the fixed world 20 to 89 steps per fall and still rising (the GRU 798). The surprise has to teach on good as well as bad, and the critic needs an opponent half. Report seeds and long lives unrun. docs/results-2026-11-25-critic.md*
+    the raw reward, is what teaches. *tried with a critic (`--g.critic_on 1`, `scripts/critic.sh`; seeds 1-4 only): a second group of cells learns how well things are going, and its surprise teaches the buttons. Bandit 0.77 to 1.00, chain 0.78 to 0.97 (the GRU gets 0.01: the first row where a sheet beats the reference), catch 0.20 to 0.32, cartpole with the lean reward on the fixed world 20 to 89 steps per fall and still rising (the GRU 798). The surprise has to teach on good as well as bad, and the critic needs an opponent half. docs/results-2026-11-25-critic.md. Finished 2026-11-25 on seeds 5-12, 17 worlds, one setting with a slower actor (`readout_shift 5`): above its twin on 15; chain 0.99; arrival-only track and forage 0.78; cartpole lean stops at about 110 steps per fall through 400,000 steps (GRU 895). Kept. Next on it: more information per press (a level per button), a cheaper step end, exploration for goal-only worlds.*
 91. **Error by the difference of two phases.** Run a few ticks with the answer clamped and a
     few without; learn from the difference in each neuron's activity. *idea*
 92. **Teach the inside to help the readout.** An inner neuron gains evidence when the readout
@@ -544,10 +544,15 @@ would be cool if we can arbitrarily learn calculations."
 133. **The calculation battery.** Adding and multiplying in binary with the answer given as
      bits, comparing, sorting three numbers, an ALU (an operation code and two operands),
      running a short program on a register, turning and moving points in 2D and 3D. Needs
-     an answer that is several bits at once, not one of a few buttons. *building*
+     an answer that is several bits at once, not one of a few buttons. *built 2026-11-25:
+     `--task calc`, `scripts/calc.sh`, docs/results-2026-11-25-calculation.md. 7 of 56
+     learned with held-out cases; nothing that needs a product of distant lines. Next: a
+     layout with the operands' bits side by side; more motor cells per output.*
 134. **An answer that is a pattern.** Several independent yes/no outputs read at once, each
      graded. Fills the "whole pattern out" hole in the task map; needed for calculation,
-     for copying, and later for generating sound or text. *building, with 133*
+     for copying, and later for generating sound or text. *built with 133: two motor
+     groups per bit, voted like two buttons. A verdict per bit teaches; one verdict for
+     the whole answer holds two bits (finding 42).*
 135. **The state is the address of what to do next.** [the owner's vvm, 2026; kin to
      Kanerva's memory and to production systems] A different route to a general learner,
      not a sheet: one state (a long bit vector) and a bank of operations found by content.
@@ -674,3 +679,36 @@ co-activity runs ties the held units together and loses their order.
 157. **Why the output declines on a long life.** With the gate, buttons die one by one. A
      floor per button, or balancing the good half by how often each button is right.
      Replaces idea 146. *queued*
+158. **Competitive learning with local inhibition, no reward.** [Rumelhart and Zipser
+     1985; Kohonen; in bits] A hidden cell that fires among its tile's winners moves
+     hidden counters toward the sources that were just on and rewires its top counters at
+     its born counts. *done 2026-11-25: `--g.compete_on 1 --g.tile_winners 4
+     --g.compete_shift 5`, `scripts/inside.sh`, docs/results-2026-11-25-compete.md. MNIST
+     lived 0.952 against born 0.926 and shuffled control 0.939, 8 seeds; half the margin
+     is not yet separated from a doubled firing rate; the sheet's own readout does not
+     use it. Next: a cheap read-off (it costs 1.9x per tick), the rate, the time suite.*
+159. **The error sent one hop, to every hidden cell.** [direct feedback alignment, Nokland
+     2016; e-prop, Bellec 2020; in bits] Fixed random wires from the output's error lines
+     to each hidden cell, a fading mark on each connection that just helped its cell
+     fire, a hidden counter moved by the sign on the wire when the error arrives. The
+     owner's "hyper truncated bit backprop". *queued, next slot*
+160. **The shuffled-input control.** Any life that claims to teach the inside is repeated
+     on inputs shuffled afresh each time and read on real inputs. *done, part of
+     `scripts/inside.sh`; a rate-matched control is still to add.*
+161. **Why our output cannot read what the inside learned.** A linear reader gets 0.95
+     from the lived sheet and the sheet's own readout 0.72, falling on long lives. The
+     motor cells hear only nearby cells, with one-bit connections and a vote. Candidates:
+     a weighted vote (147), motor cells that hear the whole sheet, the drift (146, 157).
+     *queued with the output item*
+162. **Every line is a target.** [predictive coding; Sutton's many predictions at many
+     horizons ("Horde"); in bits] Owner, 2026-11-25: "in all of our envs we should extract
+     rich signal. thonksheet shouldnt just output policy right. shouldnt it predict current
+     state, next state, future states ... a real brain extracts much more info from the
+     environment. and that info aids the goal and feature learning." Good or bad is at
+     most one bit a step; the input is hundreds of lines a step and each one, a step
+     later, is a free right answer. So: the sheet predicts every input line 1, 2, 4, 8
+     steps ahead, always on, in every world; its own last press comes back in as input so
+     the next state can depend on it; each line's error teaches its predictor, and the
+     errors go to the inside (as lines, and one hop to every hidden cell once idea 159 is
+     in). The critic is then just the predictor of the reward line. Takes in queue item 3
+     and idea 137. *building*

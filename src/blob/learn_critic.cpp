@@ -42,7 +42,7 @@ static void mark_cells(const Blob& blob, uint64_t* cells, uint64_t* minus) {
     }
 }
 
-static CriticState& critic_state(Blob& blob) {
+CriticState& critic_state(Blob& blob) {
     if (blob.critic) {
         return *blob.critic;
     }
@@ -195,6 +195,8 @@ bool critic_step(Blob& blob, int valence) {
     for (int t = 0; t < c.words; t++) {
         acted[t] = blob.motor_acted ? blob.motor_acted[t] : 0;
     }
+    c.vote[c.head][0] = blob.vote_pressed;
+    c.vote[c.head][1] = blob.vote_runner;
     c.level_before = c.level;
     c.level = level_of(c, planes);
 
@@ -203,6 +205,7 @@ bool critic_step(Blob& blob, int valence) {
     if (c.steps >= 1) {
         int64_t r = (int64_t)c.valence_before * 65536 - (g.critic_center ? c.reward_mean : 0);
         c.surprise = (int)((g.critic_reward * r) / 65536) + c.level - c.level_before;
+        c.surprise = c.oracle ? g.critic_reward * c.valence_before : c.surprise;
         c.sign = c.surprise > g.critic_margin ? 1 : (c.surprise < -g.critic_margin ? -1 : 0);
         if (c.sign != 0) {
             critic_learn(blob, c, c.sign);

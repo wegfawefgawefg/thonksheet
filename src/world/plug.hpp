@@ -138,3 +138,12 @@ inline int plug_motor_group(const Plug& plug) {
 // call once after each tick of the step (plug_hidden.cpp)
 void plug_count_hidden(const Plug& plug, const Blob& blob, uint32_t hidden, uint32_t hidden_on,
                        TaskStepIn& in);
+// an answer that is a pattern (idea 134, plug_pattern.cpp): output bit b is read from motor
+// lines 2b ("off") and 2b + 1 ("on"), whichever had more spikes over the step. a tie is no
+// answer (its bit in `tied`). clears the counts, as plug_choice does.
+void plug_pattern(Plug& plug, uint64_t& bits, uint64_t& tied);
+// the marks for one good or bad on a pattern answer: only the cells of the output bits in
+// `graded` are marked as buttons' cells, and of each, the group that won (none on a tie) as
+// pressed. the readout's error step then touches those outputs alone.
+void plug_mark_pattern(const Plug& plug, Blob& blob, uint64_t bits, uint64_t tied,
+                       uint64_t graded);

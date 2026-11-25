@@ -15,6 +15,9 @@ extern const char* const driver_names[(int)Driver::count];
 // the learning-off twin: same genome and seed, nothing changes its wiring
 void genome_learning_off(Genome& g);
 bool real_blob(Driver driver);
+// the full engine (src/blob/) or its twin, not another engine behind the shell: the only one
+// with a critic (genome critic_on), so the only one told every step
+bool core_blob(Driver driver);
 bool table_driver(Driver driver);
 // an engine that is measured (blob, table or minimal, and their learning-off twins), as
 // against the coin and perfect stand-ins

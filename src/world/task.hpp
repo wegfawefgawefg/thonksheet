@@ -3,6 +3,7 @@
 #include "world/task_function.hpp"
 #include "world/task_long.hpp"
 #include "world/task_invariance.hpp"
+#include "world/task_calc.hpp"
 #include "world/world_random.hpp"
 
 #include <cstdint>
@@ -69,6 +70,7 @@ enum class TaskKind {
     distract,        // delayed echo with distracting events in the gap (task_beyond_lookup.cpp)
     serial_add,      // add two binary numbers a bit pair per step; press each sum bit
     majority,        // 3 or more of 5 lines on; scored only on patterns never rewarded
+    calc,            // the calculation battery: the answer is a pattern (task_calc.hpp)
     count,
 };
 
@@ -80,6 +82,7 @@ constexpr int TASK_MAX_PATTERN = 64;
 constexpr int TASK_MAX_TRIAL = 16; // steps in one trial of a feature task
 constexpr int SCRIPT_MAX = 24;     // steps in one trial of a tier 9 or 10 task
 constexpr int SCRIPT_SHEET_WORDS = 4;
+constexpr int TASK_MAX_EXTRA = 64; // extra scores per window (calc)
 
 // what a task needs plugged in
 struct TaskShape {
@@ -91,6 +94,9 @@ struct TaskShape {
     int32_t number_hi[TASK_MAX_NUMBERS] = {};
     int motors = 0;
     bool uses_reward = true; // false leaves the good and bad lines unattached
+    // an answer that is a pattern (idea 134): this many output bits, motors = 2 per bit,
+    // line 2b "off" and 2b + 1 "on". 0: one button wins, as before
+    int pattern_bits = 0;
 };
 
 // one step's input as the task sees it
@@ -110,6 +116,9 @@ struct TaskStepIn {
     // fill-in: over the step's ticks, the hidden lines' sensor neurons whose own prediction
     // was on, split by the hidden truth (task_ticker.cpp)
     int fill_hit = 0, fill_on = 0, fill_false = 0, fill_off = 0;
+    // pattern tasks: each bit's answer, and the bits whose two groups tied (no answer)
+    uint64_t pattern = 0;
+    uint64_t pattern_tied = 0;
 };
 
 struct TaskSettings {
@@ -171,6 +180,7 @@ struct TaskSettings {
     int classic_reward = 0;                 // mountain car, pendulum: 0 shaped, 1 goal only
     LongSettings longs; // hold, pairs, once, rare, drift (task_long.hpp)
     InvarianceSettings inv; // the invariance battery
+    CalcSettings calc; // the calculation battery
 };
 
 // fixed point for cartpole: 16 fractional bits
@@ -246,6 +256,13 @@ struct Task {
     LongState longs; // hold, pairs, once, rare, drift
 
     InvarianceState inv; // the invariance battery
+    // the calculation battery
+    CalcState calc;
+    // pattern tasks: the output bits the last step's good or bad is for
+    uint64_t pattern_graded = 0;
+    // extra scores of the last window (task_extra_name names them)
+    int score_extras = 0;
+    double score_extra[TASK_MAX_EXTRA] = {};
 };
 
 // script step flags
@@ -355,3 +372,12 @@ TaskShape beyond_shape(const Task& task);
 void beyond_sense(const Task& task, TaskSense& sense);
 int beyond_perfect_move(const Task& task);
 int beyond_step(Task& task, const TaskStepIn& in);
+void calc_reset(Task& task);
+TaskShape calc_shape(const Task& task);
+void calc_sense(const Task& task, TaskSense& sense);
+// the right pattern, as bits (or -1 off the ask step)
+int calc_perfect_move(const Task& task);
+int calc_step(Task& task, const TaskStepIn& in);
+double calc_window_score(Task& task);
+// the name of extra score i, e.g. "whole_held" or "bit3_seen"
+void task_extra_name(const Task& task, int i, char* out, int size);

@@ -290,6 +290,18 @@ struct Genome {
                          // (pressed or other), as many pressed roles expected as real
     int tag_random = 0;  // control: as many neurons as were tagged, drawn at random among the
                          // learners that fired in the step, carry the tags instead
+    // competitive learning (learn_compete.cpp, docs/results-2026-11-25-compete.md), any learn
+    // mode, no reward anywhere. a hidden cell (not sensor, motor or pacemaker; excitatory
+    // unless compete_inh) that fires moves its hidden counters (the tag store) toward what
+    // made it fire: each excitatory source its slot read active on that spike gains a step,
+    // each silent one whose counter is above zero loses one with chance 2^-compete_down_shift;
+    // then it wires its top counters at its born counts, so its input stays the same size.
+    // compete_on 2: also, with tile_winners, cells over threshold that lost the tile's
+    // competition push their active sources down. 0 is off and changes nothing.
+    int compete_on = 0;
+    int compete_shift = 3;      // a spike (or a loss) moves the cell with chance 2^-this
+    int compete_down_shift = 2;
+    int compete_inh = 0;
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs
