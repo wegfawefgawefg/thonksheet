@@ -16,6 +16,12 @@ teacher is written out by hand, so each part of it can be swapped:
   step     grad: the score moves by the cell's error times the input; count: one count up or
            down with chance 2^-shift on each input that was on, integer counters (-31..31,
            born at their strengths), by the sign of the cell's error (the engine's step)
+  mark     what an input counts for in a step. grad steps: value (a pixel 1, a cell its count
+           / 20, its share of the drive) or bit (1 if it was on at all); count steps: bit (one
+           chance per verdict, the engine's mark) or ticks (one chance per tick it was on: a
+           pixel 20, a cell its count)
+  cellsign the cell's own error kept only as its sign (more or less), grad steps
+  cap      count steps: the counters' bound (31, genome tag_bits 6; 127 is tag_bits 8)
   verdict  full: the output's errors (softmax less the answer); pressed: told good or bad for
            the pressed button only (bad: it should be lower); right: on bad, the pressed one
            lower and the right one higher; answer: every step, each line's target less its
@@ -24,7 +30,7 @@ teacher is written out by hand, so each part of it can be swapped:
   coin     the cells get the error of another digit (drawn from the last 256), the output
            still learns from its own
 
-The teacher runs in blocks: online (one digit at a time, plain steps) the block is 16 digits:
+The teacher runs in blocks: online (one digit at a time, plain steps) the block is 64 digits:
 the output learns digit by digit, the scores move by the sum of the block's steps, and the
 cells rewire and regulate at the block's end (the wiring only changes at a rewire, so the
 scores reached are those of digit-by-digit steps). Batch (Adam, idea 165's teacher) the block
@@ -199,7 +205,8 @@ class Teacher:
 
 def score_step(t, x, f, d, d0, lr):
     """grad steps: S -= lr * cell error * input * sign, gathered into each kind's rows"""
-    a1 = torch.cat([x, f["c0"] / M.TICKS], 1) * t.sign
+    cells = (f["c0"] > 0).float() if t.cfg.get("mark") == "bit" else f["c0"] / M.TICKS
+    a1 = torch.cat([x, cells], 1) * t.sign
     G = d.t() @ a1
     if d0 is not None:
         G[:, :t.P] += d0.t() @ x
@@ -209,7 +216,10 @@ def score_step(t, x, f, d, d0, lr):
 def count_step(t, x, f, d, shift):
     """the engine's step: each input that was on moves its counter one toward the cell's
     teaching bit with chance 2^-shift (excitatory up for "more", inhibitory down)"""
-    on = (torch.cat([x, f["c0"]], 1) > 0).float()
+    if t.cfg.get("mark") == "ticks":  # a chance per tick on: a pixel all 20, a cell its count
+        on = torch.cat([x * M.TICKS, f["c0"]], 1)
+    else:
+        on = (torch.cat([x, f["c0"]], 1) > 0).float()
     more, less = (d < 0).float(), (d > 0).float()
     n_more, n_less = more.t() @ on, less.t() @ on
     p = 2.0 ** -shift
@@ -287,13 +297,16 @@ def teach(t, task, digits, opt, log):
             h = Hb if Hb is not None else E @ t.B.t()
             g = t.gate(f)
             d = g * h * t.learn
+            if cfg.get("cellsign"):  # the cell is told only more or less
+                d = torch.sign(d)
             d0 = None
             if cfg["hops"] == 2 and cfg["err"] == "bp":
                 d0 = (d @ t.W[:, t.P:] / M.TICKS) * f["s0"] * t.learn
             if t.counts:
                 moves = count_step(t, x, f, torch.sign(d), opt["shift"])
                 for S, mv in zip(t.S, moves):
-                    S.add_(mv).clamp_(-COUNTER_TOP, COUNTER_TOP)
+                    top = cfg.get("cap", COUNTER_TOP)
+                    S.add_(mv).clamp_(-top, top)
             elif online:
                 for S, G in zip(t.S, score_step(t, x, f, d, d0, opt["lr"])):
                     S.sub_(opt["lr"] * G)

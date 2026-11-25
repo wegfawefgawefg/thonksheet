@@ -24,13 +24,25 @@ import ladder2 as L2  # noqa: E402  the sheet's flags, the describe job, the job
 
 ROOT = L2.ROOT
 PY = sys.executable
-LADDER = ["T0", "T0b", "T1a", "T1b", "T2", "T2h", "T3", "T4", "T5", "T6f", "T6n", "T6", "T7",
-          "T8v", "T8r", "T8", "T10"]
-ALONE = ["A0", "A2h", "A3", "A5", "A6", "A8"]
+LADDER = ["T0", "T0b", "T1a", "T1b", "T2", "T2h", "T3", "T4", "T5", "T6f", "T6n", "T6", "T6b",
+          "T6s", "T7", "T7w", "T7m", "T7k", "T7x", "T7t", "T8v", "T8r", "T8", "T8t", "T8x",
+          "T10", "T10t", "T10x"]
+ALONE = ["S5", "S6", "S6f", "S7", "S8", "S10", "A0", "A2h", "A3", "A5", "A6", "A8"]
 COINLESS = {"T0", "T0b", "T1a", "T1b", "T2", "T2h", "born"} | set(ALONE)
 # step sizes picked on the validation slice, seed 1 (scripts/ladder3.sh pick ...; the doc's
 # "Picking the step"): score step for grad rungs, 2^-shift for count rungs
-PICKS = {"mnist": {}, "pair": {}}
+# rule: with a coin arm, the best of min(minus coin, minus born); without, the best reader;
+# within 0.0005 the higher reader, then the smaller step. T2h, S10 take T2's.
+PICKS = {
+    "mnist": {"T2": 100, "T2h": 100, "T3": 1, "T4": 0.3, "T5": 0.3, "T6f": 0.3, "T6n": 0.1,
+              "T6": 0.3, "T6b": 1, "T6s": 0.03, "T7": 3, "T7t": 7, "T7w": 7, "T7x": 0,
+              "T7m": 0, "T7k": 0, "T8v": 5, "T8r": 5, "T8": 7, "T8t": 11, "T8x": 6, "T10": 5,
+              "T10t": 7, "T10x": 3, "S5": 30, "S6": 30, "S6f": 30, "S7": 7, "S8": 30,
+              "S10": 100},
+    "pair": {"T2": 300, "T2h": 300, "T3": 1, "T4": 1, "T5": 0.3, "T6f": 1, "T6n": 0.3,
+             "T6": 0.3, "T6b": 1, "T6s": 3, "T7": 5, "T7t": 7, "T7w": 5, "T7x": 0, "T7m": 0,
+             "T7k": 0, "T8v": 9, "T8r": 3, "T8": 5, "T8t": 7, "T8x": 0, "T10": 5, "T10t": 7,
+             "T10x": 3, "S5": 30, "S6": 100, "S6f": 10, "S7": 7, "S8": 30, "S10": 300}}
 DEFAULT_LR, DEFAULT_SHIFT = 10.0, 9
 COST = {"T0": 12, "T0b": 12, "A0": 12, "A2h": 12, "A3": 12, "A5": 12, "A6": 12, "A8": 12}
 

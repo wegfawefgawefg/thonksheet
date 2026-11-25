@@ -20,11 +20,28 @@ NAMES = {
     "T6f": "T6f no derivative: fired",
     "T6n": "T6n no derivative: near, not fired",
     "T6": "T6  no derivative: near or fired",
+    "T6b": "T6b inputs as bits (on or not)",
+    "T6s": "T6s the cell told only more or less",
     "T7": "T7  counter steps on inputs that were on",
+    "T7w": "T7w counters of -127..127",
+    "T7m": "T7m counters of 9 bits (-255..255)",
+    "T7k": "T7k counters of 12 bits",
+    "T7x": "T7x counters of 16 bits",
+    "T7t": "T7t counter steps, a chance per tick on",
+    "T8t": "T8t T7t from the answer, every step",
+    "T10t": "T10t T8t, only the engine's learners",
+    "T8x": "T8x T7x from the answer, every step",
+    "T10x": "T10x T8x, only the engine's learners",
     "T8v": "T8v told good or bad (pressed)",
     "T8r": "T8r told the right button on bad",
     "T8": "T8  from the answer, every step",
     "T10": "T10 only the engine's learners",
+    "S5": "S5  T2, each line's error a sign",
+    "S6": "S6  T2, no derivative: near or fired",
+    "S6f": "S6f T2, no derivative: fired",
+    "S7": "S7  T2, counter steps",
+    "S8": "S8  T2, from the answer",
+    "S10": "S10 T2, only the engine's learners",
     "A0": "A0  T0 written out by hand",
     "A2h": "A2h T0, the error stops at the cell",
     "A3": "A3  T0, random feedback (one hop)",
@@ -33,7 +50,9 @@ NAMES = {
     "A8": "A8  T0, from the answer",
 }
 ORDER = ["born", "T0", "T0b", "T1a", "T1b", "T2", "T2h", "T3", "T4", "T5", "T6f", "T6n", "T6",
-         "T7", "T8v", "T8r", "T8", "T10", "A0", "A2h", "A3", "A5", "A6", "A8"]
+         "T6b", "T6s", "T7", "T7w", "T7m", "T7k", "T7x", "T7t", "T8v", "T8r", "T8", "T8t",
+         "T8x", "T10", "T10t", "T10x", "S5", "S6", "S6f", "S7", "S8", "S10", "A0", "A2h", "A3",
+         "A5", "A6", "A8"]
 
 
 def load(outdir):
@@ -99,7 +118,8 @@ def table(outdir, opt):
                 NAMES.get(name, name) + ("@" + v if v else ""), stat(rs, "reader"),
                 stat(coin, "reader") if coin else "", diff(rs, coin) if coin else "",
                 diff(rs, born) if born and arm != "born" else "",
-                stat(rs, "own", "%.3f").split(" ")[0], stat(rs, "born_changed", "%.1f").split(" ")[0],
+                stat(rs, "own", "%.3f").split(" ")[0],
+                stat(rs, "born_changed", "%.1f").split(" ")[0],
                 stat(rs, "pixels", "%.1f").split(" ")[0], stat(rs, "active", "%.3f").split(" ")[0],
                 step))
         # the real sheet: transplants and the engine's own rule
