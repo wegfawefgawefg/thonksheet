@@ -19,6 +19,7 @@
 #include "blob/tick_steps.hpp"
 #include "blob/weight_levels.hpp"
 #include "probe/linear_fit.hpp"
+#include "probe/time_read.hpp"
 #include "run/run_flags.hpp"
 #include "run/task_ticker.hpp"
 
@@ -49,12 +50,6 @@ enum Source {
 };
 static const char* const source_names[SOURCES] = {"cue+",   "cue-",   "ask",    "line", "motor",
                                                   "carry+", "carry-", "hidden", "inhib"};
-
-struct Counts {
-    int phases = 0;              // steps per trial: cue, blanks, ask
-    std::vector<int> cue;        // per trial
-    std::vector<uint8_t> spikes; // trial x phase x neuron
-};
 
 // delayed echo with every rule stopped, from a fresh task seed; spikes per cell per step
 static void record(Blob& blob, const RunFlags& life, int trials, Counts& c) {
@@ -124,8 +119,8 @@ static double d_prime(const std::vector<double>& x, const std::vector<int>& cue)
 // a ridge reader of cue from the given cells' counts at one phase (dual form): fit on the
 // first 60% of trials, the ridge picked on the next 15%, share right on the last 25%. the
 // weights on standardised counts go to `w` (one per cell)
-static double ridge_read(const Counts& c, const std::vector<int>& cells, int phase, int n,
-                         std::vector<double>* w) {
+double ridge_read(const Counts& c, const std::vector<int>& cells, int phase, int n,
+                  std::vector<double>* w) {
     int trials = (int)c.cue.size(), d = (int)cells.size();
     int fit = trials * 60 / 100, check = trials * 75 / 100;
     std::vector<double> z((size_t)trials * d), mu((size_t)d), sd((size_t)d);

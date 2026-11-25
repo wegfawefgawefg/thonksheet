@@ -228,12 +228,16 @@ static double mean_of(const std::vector<double>& v, size_t from, size_t to) {
     return to > from ? sum / (double)(to - from) : 0;
 }
 
+void after_life(int argc, char** argv, Blob& blob); // after_life.cpp: --after and the like
+
 // born, or born and lived (--life). on a lived sheet the genome's learning numbers are the
-// probe's again afterwards
+// probe's again afterwards. then after_life's changes, if any were asked for
 Blob* probe_sheet(int argc, char** argv, const Genome& genome, uint64_t seed) {
     const char* life = text_arg(argc, argv, "--life", nullptr);
     if (!life || int_arg(argc, argv, "--born", 0)) {
-        return blob_birth(genome, seed);
+        Blob* born = blob_birth(genome, seed);
+        after_life(argc, argv, *born);
+        return born;
     }
     RunFlags flags;
     if (!parse_life(life, genome, seed, flags)) {
@@ -279,6 +283,7 @@ Blob* probe_sheet(int argc, char** argv, const Genome& genome, uint64_t seed) {
                      (unsigned long long)c[2], (unsigned long long)c[3]);
     }
     blob->genome = genome;
+    after_life(argc, argv, *blob);
     return blob;
 }
 
