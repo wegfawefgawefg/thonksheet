@@ -59,6 +59,16 @@ storing, not understanding; where the asked case was never shown (a shape in a n
 0.57, a coin per layout) it has nothing. And reading a sheet's spikes instead of the raw
 input made it worse on every row: mixing is not what a memory wants from a partner.
 docs/results-2026-11-25-memory-engine.md
+On MNIST, where nothing repeats exactly, the same engine gets 0.20 (0.32 at best; chance
+0.10; the sheet's readout 0.71): its address is a hash, so nearly-the-same looks like
+entirely-different.
+
+**The rich sheet as one setting for the whole suite (2026-11-25).** The sheet tuned for
+time features (rich2), unchanged across all rows: delayed echo 0.89 (default sheet 0.55,
+the first sheet to learn it), order 0.86, exclusive-or 0.94, gap 0.89; and it pays for it
+on plain association: echo 0.89 where the default gets 1.00, eight cues 0.69 against
+0.84, reach 2.3 tiles against 3.4. One sheet cannot yet be best at both.
+docs/scoreboard.md
 
 **MNIST, first pass (2026-11-25).** The never-taught sheet, read offline by a linear
 reader, gets 0.924 on the test digits: level with a linear classifier on the pixels (0.922),

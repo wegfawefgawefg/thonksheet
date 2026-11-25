@@ -626,3 +626,12 @@ co-activity runs ties the held units together and loses their order.
      mode (engine on the card, world on the CPU, one exchange per step) so every world on
      the map runs, not only Echo. Then the search can vary the memory's shape (what goes in
      the address) on held-out worlds at ten million ticks a second. *building*
+152. **A memory that knows near from far.** The memory engine on MNIST, one pass from good
+     and bad, each digit new when first answered: 0.20 with its defaults, 0.32 at best
+     (address from the current picture only, 1,024 tables; chance 0.10; the sheet's readout
+     gets 0.71). Its codes are parities of 16 random cells, so one changed pixel changes
+     the whole address: it has exact recall and no sense of "nearly the same". Tables that
+     read small sets of raw input bits (an n-tuple memory; the table neurons are close to
+     this) keep nearness. Give the memory such an address and score it on MNIST and on the
+     held-out rows. *queued: small*
+
