@@ -195,7 +195,11 @@ def ladder(name, opt):
                      for o in opt["objectives"] for s in opt["seeds"]]
         jobs.sort(key=lambda j: "bound-" not in j[1])  # the long ones first
         pool(jobs, opt["jobs"])
-        pack(outdir)
+        if jobs:  # only what this call made: a transplant call elsewhere may be reading
+            pack(outdir, only={wiring_file(outdir, t, a, c, s) for t in opt["tasks"]
+                               for s in opt["seeds"] for a in opt["arms"] + ["B" + o for o in
+                                                                            opt["objectives"]]
+                               for c in opt["ctrls"] + ["life"]})
         if "engine" in opt["parts"]:
             pool([j for t in opt["tasks"] for sd in opt["seeds"]
                   for j in engine_jobs(outdir, t, sd, opt)], opt["jobs"])
