@@ -1,0 +1,10 @@
+# Named starting candidates, beside each engine's defaults (which are always added).
+# They always run every rung and are always confirmed, so the leaderboard shows them.
+#   engine name: --flag value ...      (numbers of that engine's space file only;
+#                                       a rule as --rule-file @rules/name.hex)
+# Frozen-inside designs (learn_mode 5) are left out: "Nothing frozen", docs/bench.md.
+
+blob    whole+evidence: --g.learn_mode 6 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128
+blob    rich1+evidence: --g.learn_mode 6 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.inhibitory_percent 20 --g.inhibit_gain 2 --g.threshold_min 8 --g.threshold_max 8 --g.leak_shift_min 2 --g.leak_shift_max 3 --g.cooldown_max 7 --g.local_connect_shift 2 --g.far_percent 43 --g.far_reach_tiles 4 --g.local_delay_min 3 --g.local_delay_max 10 --g.branch_threshold 6 --g.branch_bonus 4 --g.noise_shift 11 --g.sector_target_per_1024 18 --g.sector_smooth_shift 2 --g.pacemakers_per_1024 10 --g.fan_in_max 65
+minimal evidenceA: --m.ev_on 1 --m.ev_bits 6 --m.ev_init 4 --m.ev_spikes 1
+minimal evidenceC: --m.ev_on 2 --m.ev_bits 6 --m.ev_init 4 --m.ev_spikes 1
