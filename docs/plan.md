@@ -44,7 +44,8 @@ are ordered by the one question above. An item is struck when done, with where t
 is.
 
 Running (four), as of 2026-11-25 night:
-- Item B below (idea 155) and item C below (the critic).
+- Item B below (idea 155).
+- Queued item 2c (idea 161): why our output cannot read what the inside learned.
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
 - Queued item 2b (idea 159): the error sent one hop to every hidden cell.
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
@@ -79,7 +80,7 @@ so they come first):
   inside-learning test on MNIST and held-out rows. (Was: reverse replay made safe: zero-sum steps per neuron or a threshold that rises with
   gain; the unsigned half separated from the signed half; the inside-learning test on
   MNIST (0.924 and 0.943 to beat) and on held-out rows.)
-- C. *(running)* The critic on report seeds and long lives, on the fixed cartpole, with the wide
+- C. *(done, merged: docs/results-2026-11-25-critic.md; above its twin on 15 of 17 worlds; cartpole stops at 110 steps per fall)* The critic on report seeds and long lives, on the fixed cartpole, with the wide
   critic.
 - D. *(GRU, plain net and memory done; readout running on stevejobs)* Integration check:
   after the merges, re-run the suite for the readout, the GRU and the memory engine, so
@@ -97,7 +98,7 @@ Queued, in order:
    rate); a cheap read-off (the rule costs 1.9 times per tick); the rule in the time suite
    (half of each cell's inputs become pixels: does delayed echo or order pay?); a
    shuffled control for the calculation rows.
-2c. *(next free slot)* Why our output cannot read what the inside learned (idea 161): a
+2c. *(running)* Why our output cannot read what the inside learned (idea 161): a
    linear reader gets 0.95 from the lived sheet, the sheet's own readout 0.72 and falling.
    Takes in item 9 (the weighted vote, the drift). This gap is now the largest number on
    the board.
@@ -124,8 +125,10 @@ Queued, in order:
 7. Units pay the units that set them up (idea 139).
 8. A memory that knows near from far (idea 152), scored on MNIST.
 9. The output: a weighted vote (147) and the drift on long lives (146).
-10. Finish the critic: cartpole with the reward lag fixed, against the memory engine's 109
-    and 279 steps per fall.
+10. *(done as item C)* Finish the critic. What is left of it, as a later job: more
+    information per press (a critic level per button), a cheaper step end (it costs 2 to
+    4 times the readout alone), exploration for goal-only worlds, and the viewer's critic
+    check (`src/view/sim_task.cpp:100` must only use the critic on the full engine).
 11. The suite a lookup table cannot pass (149) and the held-out split (126): fold every
     battery's never-shown rows into the scoreboard as their own columns. The calculation
     battery is the first such suite (memory: seen 0.88 to 0.99, held out near the most

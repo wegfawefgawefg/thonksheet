@@ -20,9 +20,16 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   fades over about a hundred ticks takes delayed echo 0.55 to 0.91, order to 0.88, gap to
   0.68. Cells that hold without leaking, beside cells that mark time since an input came
   on, take delayed echo, gap and order to 0.98 or better and hold a cue 5,000 ticks.
-- **Acting yields to a critic.** A second group of cells that learns how well things are
-  going, and teaches the buttons by its surprise: bandit 1.00, two-step chain 0.97 (the
-  GRU reference: 0.01), cartpole 20 to 89 steps per fall and rising (the GRU: 798).
+- **Acting yields to a critic, up to a point.** A second group of cells that learns how
+  well things are going, and teaches the buttons by its surprise. One setting, 17 worlds,
+  seeds 5 to 12 (docs/results-2026-11-25-critic.md): above its learning-off twin on 15,
+  above the readout alone on 15. Bandits 1.00, switching bandit 0.98, the two-step chain
+  0.99 (GRU 0.01, memory 0.00), track 0.88, forage 0.84, arrival-only track and forage
+  0.78 (credit one step back, reached), mountain car 0.97, catch 0.39 (GRU 0.72).
+  **Cartpole does not balance:** 109 steps per fall at 40,000 steps and still about 110 at
+  400,000 (coin 21, memory 307, GRU 895). The sheet can represent balancing: told the
+  right press its buttons reach 865 to 1000. The limit is how little the critic's
+  surprise says about each press. It costs 2 to 4 times the readout alone per tick.
 - **Cartpole was broken.** Its reward judged the press before the one it followed, so no
   rule that credits the current press could learn it. Fixed (semi-implicit step). Every
   earlier cartpole number, the references' included, is on the faulty world.
@@ -352,7 +359,10 @@ docs/results-2026-11-25-mnist.md
     from finding 22 holds too but the output reads it worse. Each costs exclusive-or about
     0.1; a winner-in-the-tile rule lifts exclusive-or to 0.98 and may pay that back.
 31. **An actor needs a critic, and the critic's surprise must teach on good as well as
-    bad.** [hint: 4 tuning seeds] Finding 17 holds only when the world's own verdict is the
+    bad.** [likely: 17 worlds, seeds 5 to 12; a slower actor helps (cartpole 89 to 107,
+    chain 0.97 to 0.99); a wider critic costs (chain 0.84, cartpole 33); the close-vote
+    gate that helps raw good does not carry over to a critic's good (bandit 0.84, chain
+    0.79); an actor trace shorter than 4 steps costs] Finding 17 holds only when the world's own verdict is the
     teacher. A critic made of spiking cells needs an opponent half so common swings cancel.
 32. **Wiring by co-activity is the inner rule that pays beside an error-rule output.**
     [likely: third result for principle 3] In the minimal engine it adds 0.05 to 0.25 on
@@ -464,7 +474,15 @@ it.*
   to 0.60, two-layer net 0.96 to 0.65, sheet ceiling 0.92 to 0.66). Nothing in the sheet shares what one patch learned
   with another. This is the missing prior the owner started from on day one (a convolution
   shares; this sheet does not).
-- **Acting in a world.** Nothing of ours learns catch or cartpole. On cartpole learning
+- **Acting in a world (updated 2026-11-25, late).** With the critic: cartpole is learned
+  to about 110 steps per fall and stops there, though the sheet's buttons reach 865 to
+  1000 when told the right press, so the wall is the teaching signal per press, not what
+  the sheet can represent. Credit one step back is reached on the cued chain and on
+  arrival-only track and forage. Goal-only mountain car (0.00) is an exploration problem:
+  the critic never sees a reward. Upright-only pendulum (0.08) is a reader problem: even
+  told the right press the buttons get 0.08 to 0.14. The chain with no stage cue (0.09) is
+  a memory problem: nothing holds the last press. Before the critic:
+  Nothing of ours learns catch or cartpole. On cartpole learning
   makes the full engine worse than a coin, and the reference networks too: the "lean"
   reward grades the press before the one it follows (a fault in the world, being fixed),
   and the sparse reward needs credit carried 25 steps back. The GRU learns catch (0.72).
