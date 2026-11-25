@@ -195,6 +195,8 @@ static const GenomeField fields[] = {
     {"compete_shift", &Genome::compete_shift},
     {"compete_down_shift", &Genome::compete_down_shift},
     {"compete_inh", &Genome::compete_inh},
+    {"compete_churn", &Genome::compete_churn},
+    {"compete_full", &Genome::compete_full},
     {"hop_on", &Genome::hop_on},
     {"hop_teach", &Genome::hop_teach},
     {"hop_good", &Genome::hop_good},

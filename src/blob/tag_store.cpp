@@ -89,43 +89,70 @@ void tag_add(Blob& blob, int n, int slot, uint64_t up, uint64_t down) {
     }
 }
 
+// the counters of one slot at or above v, as a word: one compare of 64 bytes, then eight
+// multiplies gather a flag byte each into the bits (as hop_after_fire does)
+typedef int8_t SlotBytes __attribute__((vector_size(TILE_NEURONS)));
+static inline uint64_t at_least(const int8_t* c, int v) {
+    if (v > 127) {
+        return 0;
+    }
+    if (v < -127) {
+        return ~0ull;
+    }
+    SlotBytes x, line;
+    __builtin_memcpy(&x, c, sizeof x);
+    for (int b = 0; b < TILE_NEURONS; b++) {
+        line[b] = (int8_t)v;
+    }
+    SlotBytes flags = (SlotBytes)(x >= line) & 1;
+    uint64_t words[TILE_NEURONS / 8], m = 0;
+    __builtin_memcpy(words, &flags, sizeof words);
+    for (int j = 0; j < TILE_NEURONS / 8; j++) {
+        m |= ((words[j] * 0x0102040810204080ull) >> 56) << (8 * j);
+    }
+    return m;
+}
+
+// how many of `cand` have a counter at or above v
+static int count_at_least(const int8_t* c, const uint64_t* cand, int v) {
+    int n = 0;
+    for (int k = 0; k < SLOTS; k++) {
+        n += cand[k] ? __builtin_popcountll(cand[k] & at_least(c + k * TILE_NEURONS, v)) : 0;
+    }
+    return n;
+}
+
 // the `want` highest counters among `cand` (none under `floor`) into `out`; at the line,
 // `prefer` first, then the rest by chance
 static void select_top(Blob& blob, const int8_t* c, const uint64_t* cand, const uint64_t* prefer,
                        int want, int floor, uint64_t* out) {
-    int histogram[256] = {};
-    for (int k = 0; k < SLOTS; k++) {
-        uint64_t m = cand[k];
-        while (m) {
-            int b = __builtin_ctzll(m);
-            m &= m - 1;
-            histogram[c[k * TILE_NEURONS + b] + 128]++;
+    // the line: the highest value whose sources, with all above it, reach `want`, found by
+    // halving (fewer than `want` at or above the floor: the floor, and take them all)
+    // counters stay within [-top, top] once moved and start at 0..5, so the search only
+    // needs that range
+    int bits = blob.genome.tag_bits;
+    int top = (1 << ((bits < 2 ? 2 : (bits > 8 ? 8 : bits)) - 1)) - 1;
+    int lo = floor, hi = top > 5 ? top : 5;
+    if (count_at_least(c, cand, floor) >= want) {
+        lo = floor > -top ? floor : -top;
+        while (lo < hi) {
+            int mid = lo + (hi - lo + 1) / 2;
+            if (count_at_least(c, cand, mid) >= want) {
+                lo = mid;
+            } else {
+                hi = mid - 1;
+            }
         }
     }
-    // the line: the lowest value whose sources, with all above it, reach `want`
-    // (fewer than `want` at or above the floor: take them all)
-    int line = floor, above = 0, need = 0;
-    for (int v = 127; v >= floor; v--) {
-        if (above + histogram[v + 128] >= want || v == floor) {
-            line = v;
-            need = above + histogram[v + 128] >= want ? want - above : histogram[v + 128];
-            break;
-        }
-        above += histogram[v + 128];
-    }
+    int line = lo, reach = count_at_least(c, cand, line);
+    int above = count_at_least(c, cand, line + 1);
+    int need = reach >= want ? want - above : reach - above;
     uint64_t at[SLOTS];
     for (int k = 0; k < SLOTS; k++) {
-        uint64_t gt = 0, eq = 0;
-        uint64_t m = cand[k];
-        while (m) {
-            int b = __builtin_ctzll(m);
-            m &= m - 1;
-            int v = c[k * TILE_NEURONS + b];
-            gt |= (uint64_t)(v > line) << b;
-            eq |= (uint64_t)(v == line) << b;
-        }
+        uint64_t ge = cand[k] ? cand[k] & at_least(c + k * TILE_NEURONS, line) : 0;
+        uint64_t gt = cand[k] ? cand[k] & at_least(c + k * TILE_NEURONS, line + 1) : 0;
         out[k] = gt;
-        at[k] = eq;
+        at[k] = ge & ~gt;
     }
     // at the line: preferred first, then the others, each from a random slot onward
     for (int pass = 0; pass < 2 && need > 0; pass++) {
@@ -210,5 +237,8 @@ void tag_rewire(Blob& blob, int n) {
     blob.fan_in[n] = (uint16_t)count_fan_in(blob, n);
     if (blob.hop) {
         hop_stale(blob, n); // the one-hop rule keeps bounds on this neuron's counters
+    }
+    if (blob.compete) {
+        compete_stale(blob, n); // so does competitive learning
     }
 }

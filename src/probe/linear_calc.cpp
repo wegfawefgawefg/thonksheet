@@ -16,7 +16,9 @@
 // too, never with an answer). --life-teach 1|2: that life is judged as blobrun judges it,
 // the readout learns, and the genome's hop_teach is set to it (1 told good or bad, 2 told the
 // right answer); after it the motor cells are put back as born, so the reader cannot read
-// what the output learned (docs/results-2026-11-25-hop.md).
+// what the output learned (docs/results-2026-11-25-hop.md). --life-shuffle 1: the control, each
+// trial of the life on input lines moved by a fresh permutation (calc_shuffle.cpp). The hidden
+// cells' rate while read is printed and kept (reader "rate").
 
 #include "blob/blob.hpp"
 #include "probe/linear_fit.hpp"
@@ -31,13 +33,14 @@
 
 int int_arg(int argc, char** argv, const char* name, int fallback);
 const char* text_arg(int argc, char** argv, const char* name, const char* fallback);
+void calc_shuffle_trial(CalcState& c, uint64_t& rng);
 
-static const char* const calc_only[] = {"--trials", "--settle", "--learning", "--label",
-                                        "--out",    "--life",     "--life-teach"};
+static const char* const calc_only[] = {"--trials", "--settle", "--learning",   "--label",
+                                        "--out",    "--life",   "--life-teach", "--life-shuffle"};
 
 struct CalcRows {
-    int d = 0;                 // features per row
-    std::vector<double> x;     // rows x d
+    int d = 0;             // features per row
+    std::vector<double> x; // rows x d
     std::vector<uint8_t> held;
 };
 
@@ -58,8 +61,7 @@ static double dot(const double* a, const double* b, int n) {
 // ridge per output bit through the trials' kernel (dual form), fitted on seen rows
 // [0, fit), the ridge picked on seen rows [fit, train), scored on seen rows from `train`
 // and on every held row
-static CalcScore fit_bits(const CalcRows& rows, const std::vector<uint64_t>& answer,
-                          int out_bits) {
+static CalcScore fit_bits(const CalcRows& rows, const std::vector<uint64_t>& answer, int out_bits) {
     std::vector<int> seen, held;
     for (size_t r = 0; r < rows.held.size(); r++) {
         (rows.held[r] ? held : seen).push_back((int)r);
@@ -332,6 +334,8 @@ int probe_calc(int argc, char** argv) {
     int64_t life = int_arg(argc, argv, "--life", 0);
     bool learn_read = int_arg(argc, argv, "--learning", 0) != 0;
     int teach = int_arg(argc, argv, "--life-teach", 0);
+    bool shuffle = int_arg(argc, argv, "--life-shuffle", 0) != 0;
+    uint64_t shuffle_rng = (uint64_t)flags.seed * 0x9e3779b97f4a7c15ull + 7;
     flags.genome.hop_teach = teach > 0 ? teach : flags.genome.hop_teach;
     if (!learn_read && life == 0) {
         flags.genome.learning_on = 0;
@@ -348,6 +352,9 @@ int probe_calc(int argc, char** argv) {
     int steps = tt.task.calc.steps;
     // the life: the world as usual, its verdicts never delivered (unless taught)
     for (int64_t i = 0; i < life; i++) {
+        if (shuffle && tt.tick_in_step == 0 && tt.rest_left == 0 && tt.task.phase == 0) {
+            calc_shuffle_trial(tt.task.calc, shuffle_rng); // a trial begins
+        }
         ticker_before_tick(tt, *blob);
         blob_tick(*blob);
         if (ticker_after_tick(tt, *blob) && teach > 0 && tt.valence != 0) {
@@ -362,8 +369,9 @@ int probe_calc(int argc, char** argv) {
         uint64_t c[7];
         blob_hop_counts(*blob, c);
         std::printf("taught life %lld ticks: hop verdicts %llu, cells taught %llu, steps %llu, "
-                    "rewires %llu\n", (long long)life, (unsigned long long)c[0],
-                    (unsigned long long)c[1], (unsigned long long)c[2], (unsigned long long)c[3]);
+                    "rewires %llu\n",
+                    (long long)life, (unsigned long long)c[0], (unsigned long long)c[1],
+                    (unsigned long long)c[2], (unsigned long long)c[3]);
         blob_motor_reborn(*blob, flags.seed);
         plug_mark_motors(tt.plug, *blob, true); // every motor cell a button's cell again
     }
@@ -381,8 +389,12 @@ int probe_calc(int argc, char** argv) {
     std::vector<double> shown((size_t)inputs.d, 0.0);
     uint64_t answer = 0;
     bool asking = false, held = false;
-    int64_t ticks = 0;
+    int64_t ticks = 0, hidden_spikes = 0, hidden_cells = 0;
     int kept = 0;
+    for (int t = 0; t < blob->tile_count; t++) {
+        hidden_cells +=
+            __builtin_popcountll(~(blob->sensor[t] | blob->motor[t] | blob->pacemaker[t]));
+    }
     while (kept < trials) {
         // a step's first tick: is it the ask step, and what does the trial show
         if (tt.tick_in_step == 0 && tt.rest_left == 0) {
@@ -402,6 +414,10 @@ int probe_calc(int argc, char** argv) {
         ticker_before_tick(tt, *blob);
         blob_tick(*blob);
         ticks++;
+        for (int t = 0; t < blob->tile_count; t++) {
+            uint64_t not_hidden = blob->sensor[t] | blob->motor[t] | blob->pacemaker[t];
+            hidden_spikes += __builtin_popcountll(blob->spikes[blob->now][t] & ~not_hidden);
+        }
         for (int t = 0; !resting && t < blob->tile_count; t++) {
             uint64_t spikes = blob->spikes[blob->now][t] & ~blob->sensor[t];
             while (spikes) {
@@ -430,8 +446,10 @@ int probe_calc(int argc, char** argv) {
     blob_free(blob);
 
     FILE* csv = out_path.empty() ? nullptr : std::fopen(out_path.c_str(), "w");
+    double rate = 1000.0 * (double)hidden_spikes / (double)(hidden_cells * (ticks > 0 ? ticks : 1));
+    std::printf("%-20s read: %.1f hidden spikes per 1000 cell-ticks\n", label, rate);
     if (csv) {
-        std::fprintf(csv, "reader,key,value\n");
+        std::fprintf(csv, "reader,key,value\nrate,hidden_per_1000,%.4g\n", rate);
     }
     report(csv, label, "constant", constant_bits(inputs, answers, out_bits), out_bits);
     report(csv, label, "nearest", nearest_bits(inputs, answers, out_bits), out_bits);
