@@ -45,3 +45,8 @@ syn tire 8 ticks, sheet only: --g.syn_tire_ticks 8 --g.syn_tire_keep_shift 1 --g
 syn tire 4 ticks, keep 1/8, sheet only: --g.syn_tire_ticks 4 --g.syn_tire_keep_shift 3 --g.syn_sensors 0
 syn warm 4 ticks, sheet only: --g.syn_warm_ticks 4 --g.syn_sensors 0
 syn warm 8 ticks, sheet only: --g.syn_warm_ticks 8 --g.syn_sensors 0
+slow 6, share 1/8: --g.slow_leak_shift 6 --g.slow_share_shift 3
+slow 7, share 1/16: --g.slow_leak_shift 7 --g.slow_share_shift 4
+slow 7, share 1/32: --g.slow_leak_shift 7 --g.slow_share_shift 5
+tire neuron 8, slow fade: --g.tire_jump 8 --g.tire_shift 6
+tire neuron 4, slower fade: --g.tire_jump 4 --g.tire_shift 7
