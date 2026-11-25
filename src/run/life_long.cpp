@@ -78,6 +78,7 @@ static bool long_life(Driver d, const RunFlags& flags, FILE* csv, LongTotals& be
             }
             std::fprintf(csv, "\n");
             long_window_clear(tt.task);
+            std::fflush(csv); // a stopped life keeps its rows
         }
         if (engine_driver(d) && flags.steps >= 1000000 && step % tenth == 0) {
             double s =
