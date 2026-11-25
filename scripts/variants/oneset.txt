@@ -55,3 +55,6 @@ critic: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_
 good: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.readout_good 1
 inhlocal: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.wire_inhib_reach -3
 rich2: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.inhibitory_percent 34 --g.inhibit_gain 3 --g.threshold_min 6 --g.threshold_max 14 --g.cooldown_max 8 --g.local_connect_shift 2 --g.strong_shift 1 --g.far_percent 36 --g.far_reach_tiles 2 --g.local_delay_min 3 --g.local_delay_max 11 --g.branch_threshold 6 --g.branch_bonus 5 --g.noise_shift 9 --g.sector_target_per_1024 25 --g.sector_smooth_shift 6 --g.pacemakers_per_1024 11 --g.fan_in_max 103
+tags: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4
+margin: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.readout_good 1 --g.margin_percent 20 --g.margin_win 2
+vm: --engine vm
