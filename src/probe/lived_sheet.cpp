@@ -7,7 +7,7 @@
 //
 // blobprobe transfer --life "<blobrun flags>" [--born 1] --then TASK [--then-k N]
 //     [--then-steps N] [--window N] [--g.name value ...]
-// lives the life (none with --born 1), then freezes the inside (learn mode 5, no tags, no
+// [--keep-output 1] lives the life (none with --born 1), then freezes the inside (learn mode 5, no tags, no
 // margin rule), puts every motor cell's wiring back as born and wipes the readout's counters,
 // and lets that fresh readout learn TASK on the same plug. Prints the fresh readout's
 // windows, its mean over the first quarter and its late score (last tenth).
@@ -121,7 +121,9 @@ Blob* probe_sheet(int argc, char** argv, const Genome& genome, uint64_t seed) {
 }
 
 // the inside frozen; motor cells as born, the readout's counters gone
-static void fresh_readout(Blob& blob, uint64_t seed) {
+// keep_output: the fresh output keeps the life's margin gate (it is the output rule, not
+// inner learning)
+static void fresh_readout(Blob& blob, uint64_t seed, bool keep_output) {
     Blob* born = blob_birth(blob.genome, seed);
     for (int t = 0; t < blob.tile_count; t++) {
         uint64_t cells = blob.motor[t];
@@ -148,7 +150,7 @@ static void fresh_readout(Blob& blob, uint64_t seed) {
     blob.readout_keep = nullptr;
     blob.genome.learn_mode = 5;
     blob.genome.tag_mode = 0;
-    blob.genome.margin_percent = 0;
+    blob.genome.margin_percent = keep_output ? blob.genome.margin_percent : 0;
     blob.genome.replay_depth = 0; // the backward walk is inner learning too
 
 }
@@ -176,7 +178,7 @@ int probe_transfer(int argc, char** argv) {
     then.task_seed = seed + 100;
     int64_t steps = int_arg(argc, argv, "--then-steps", 20000);
     int window = int_arg(argc, argv, "--window", 1000);
-    fresh_readout(*blob, seed);
+    fresh_readout(*blob, seed, int_arg(argc, argv, "--keep-output", 0) != 0);
     std::vector<double> s = live(*blob, then, steps, window);
     size_t edge = s.size() / 10 > 0 ? s.size() / 10 : 1;
     std::printf("transfer %s %s seed %llu: first quarter %.4f late %.4f\n", task_name(then.task),
