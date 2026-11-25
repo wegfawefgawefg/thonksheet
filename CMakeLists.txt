@@ -119,3 +119,16 @@ if(minimal_sources)
         target_link_libraries(minimalprobe PRIVATE blobminimal blobworld blobcore)
     endif()
 endif()
+
+# blobmemory: idea 123, a memory instead of a sheet (src/memory/): codes, a store found by
+# content, counters per button. blobrun drives it with --engine memory.
+file(GLOB memory_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/memory/*.cpp)
+if(memory_sources)
+    add_library(blobmemory STATIC ${memory_sources})
+    target_include_directories(blobmemory PUBLIC src)
+    target_compile_options(blobmemory PRIVATE ${warnings} ${speed})
+    if(TARGET blobrun)
+        target_link_libraries(blobrun PRIVATE blobmemory)
+        target_compile_definitions(blobrun PRIVATE BLOB_HAS_MEMORY=1)
+    endif()
+endif()
