@@ -3,7 +3,7 @@
 
     scripts/search.py run [--name main] [--jobs 2] [--hours H] [--map FILE]
                           [--engines blob,minimal,table] [--starts FILE|none]
-                          [--batch program:PATH[:ENGINES]] [--max-load L]
+                          [--batch program:PATH[:ENGINES]] [--max-load L] [--busy-jobs N]
     scripts/search.py status [--name main]
     scripts/search.py report [--name main] [--out docs/search-leaderboard.md]
     scripts/search.py merge OTHER_FOLDER [--name main]
@@ -194,7 +194,7 @@ def cmd_run(args):
                                   qm.timeout, commit)
                 pending[fut] = jobs
         while not stopping and cpu_busy < args.jobs:
-            if cpu_busy and os.getloadavg()[0] > max_load:
+            if cpu_busy >= args.busy_jobs and os.getloadavg()[0] > max_load:
                 break  # the machine is busy with other work: wait
             refuse = (lambda e, k: not ev.accepts(e, k)) if ev else None
             jobs = search.next_commands(1, max_active=args.jobs * 3 + 4, accept=refuse)
@@ -315,6 +315,8 @@ def main():
     r.add_argument("--max-load", type=float, default=0,
                    help="do not start a run while the 1-minute load is above this "
                         "(default: the number of cores)")
+    r.add_argument("--busy-jobs", type=int, default=1,
+                   help="jobs kept going even while the load is over --max-load (default 1)")
     r.add_argument("--commit", default="")
     r.add_argument("--batch", default="", help="a batch evaluator beside the CPU jobs: "
                    "serial, or program:PATH[:ENGINES] (scripts/search/batch.py)")

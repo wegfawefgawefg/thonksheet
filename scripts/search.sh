@@ -14,8 +14,9 @@
 # Any of them takes --name NAME for a search other than main. A first run may also take
 # --map FILE, --engines blob,minimal,table and --starts FILE|none; they are kept.
 #
-# On the second machine (stevejobs, in its own folder ~/thonk-search; at most 8 jobs; it
-# keeps running when the ssh session ends):
+# On the second machine (stevejobs, in its own folder ~/thonk-search; at most 8 jobs, and
+# only 4 while its load is over 21, as other agents use it too; it keeps running when the
+# ssh session ends):
 #   scripts/search.sh mini start [--jobs 8] [--hours 48]   copy the code there, build, start
 #   scripts/search.sh mini status                          load, progress, best so far
 #   scripts/search.sh mini stop                            finish runs in flight, then stop
@@ -52,7 +53,7 @@ mini)
     start)
         jobs=8
         hours=48
-        rest=()
+        rest=(--max-load 21 --busy-jobs 4)
         while [ $# -gt 0 ]; do
             case "$1" in
             --jobs) jobs="$2"; shift 2 ;;
