@@ -119,6 +119,17 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
     0.63, every seed up. This is the first sign of a reward rule making neurons inside the
     sheet more useful. It costs memory (82 to 493 bytes per neuron) and reward-time work.
 
+20. **Richness can be tuned, and ours was not.** [likely] Among 600 random sheets the best
+    read order and gap three to four times better than the default and exclusive-or up to
+    twice as well, on fresh seeds. No single number does it (best rank correlation 0.3):
+    longer delays for time, denser local wiring, the dendrite-branch bonus for
+    exclusive-or, more inhibitory neurons. Whether richer sheets learn better through the
+    readout is being tested.
+21. **A mechanism can only be judged on a task that needs it, through a readout that can
+    read.** [solid] Delays, far links and the branch bonus all measured as doing nothing on
+    Echo. Delays turned out to carry time, far links reach, and the branch bonus
+    exclusive-or.
+
 ## Walls
 
 - **Reading a thin signal: broken at the output, standing inside.** An error rule moving

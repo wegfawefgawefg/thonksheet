@@ -345,7 +345,10 @@ ones?" There are. Three things widen the search from here.
 
 ### Automatic search
 98. **Search the sheet's numbers for richness.** Random sheets, each scored by the feature
-    probe as born. *running: 600 sheets*
+    probe as born. *tried: the default sheet is mediocre. The best of 600 read order and gap
+    three to four times better and exclusive-or up to twice, and keep the lead on fresh
+    seeds. Levers: longer delays (time), denser local wiring, the branch bonus (exclusive-
+    or), more inhibitory neurons. docs/results-2026-11-25-richness-search.md*
 99. **Search the switches in combination.** Every mechanism on or off, scored by the quick
     suite, to find pieces that only work together. *idea*
 100. **Share what one patch learned.** [the day-one question: a net with all the priors]

@@ -1,0 +1,62 @@
+601 sheets. Score: readable from the tile next to the input.
+
+How each number moves each feature (rank correlation; |0.15| or more shown):
+number                     which   order     xor     gap
+inhibitory_percent         +0.21   +0.24       .       .
+inhibit_gain                   .       .       .       .
+threshold_min                  .       .       .       .
+threshold_max                  .       .       .       .
+leak_shift_min             +0.21       .       .       .
+leak_shift_max             +0.22       .       .       .
+cooldown_min                   .       .       .       .
+cooldown_max                   .       .       .       .
+local_connect_shift            .       .   -0.29   -0.30
+strong_shift                   .       .       .       .
+far_percent                    .       .       .   -0.17
+far_reach_tiles                .       .       .       .
+local_delay_min                .   +0.30       .   +0.25
+local_delay_max                .   +0.32       .   +0.27
+branch_threshold               .   +0.16   +0.22       .
+branch_bonus               +0.16       .   +0.31       .
+noise_shift                    .       .       .       .
+sector_target_per_1024         .       .       .       .
+sector_smooth_shift        -0.20   -0.15       .   -0.18
+pacemakers_per_1024            .       .       .       .
+strong_log                 +0.24   +0.16       .       .
+fan_in_max                     .       .       .       .
+
+Spread over all sheets (lowest, median, highest), and the default sheet:
+  which    1.18   8.46  19.59   default 8.46
+  order    0.34   3.71   8.43   default 2.16
+  xor      0.23   1.77   5.11   default 1.93
+  gap      0.31   1.99   6.97   default 1.35
+
+The 8 best all-round sheets:
+  which 13.37  order 6.84  xor 3.78  gap 5.96
+      --g.inhibitory_percent 20 --g.inhibit_gain 2 --g.threshold_min 8 --g.threshold_max 8 --g.leak_shift_min 2 --g.leak_shift_max 3 --g.cooldown_max 7 --g.local_connect_shift 2 --g.far_percent 43 --g.far_reach_tiles 4 --g.local_delay_min 3 --g.local_delay_max 10 --g.branch_threshold 6 --g.branch_bonus 4 --g.noise_shift 11 --g.sector_target_per_1024 18 --g.sector_smooth_shift 2 --g.pacemakers_per_1024 10 --g.fan_in_max 65
+  which 18.59  order 7.42  xor 2.89  gap 4.90
+      --g.inhibitory_percent 34 --g.inhibit_gain 3 --g.threshold_min 6 --g.threshold_max 14 --g.cooldown_max 8 --g.local_connect_shift 2 --g.strong_shift 1 --g.far_percent 36 --g.far_reach_tiles 2 --g.local_delay_min 3 --g.local_delay_max 11 --g.branch_threshold 6 --g.branch_bonus 5 --g.noise_shift 9 --g.sector_target_per_1024 25 --g.sector_smooth_shift 6 --g.pacemakers_per_1024 11 --g.fan_in_max 103
+  which 16.08  order 8.43  xor 2.81  gap 5.86
+      --g.inhibitory_percent 26 --g.inhibit_gain 2 --g.threshold_min 5 --g.cooldown_max 7 --g.local_connect_shift 2 --g.strong_shift 3 --g.far_percent 10 --g.far_reach_tiles 5 --g.local_delay_min 4 --g.local_delay_max 10 --g.branch_bonus 4 --g.noise_shift 13 --g.sector_smooth_shift 2 --g.pacemakers_per_1024 8 --g.strong_log 1 --g.fan_in_max 83
+  which 16.67  order 7.49  xor 3.97  gap 3.00
+      --g.inhibitory_percent 34 --g.inhibit_gain 2 --g.threshold_max 17 --g.leak_shift_min 2 --g.leak_shift_max 3 --g.cooldown_min 2 --g.cooldown_max 6 --g.far_percent 9 --g.far_reach_tiles 5 --g.local_delay_min 2 --g.local_delay_max 9 --g.branch_threshold 4 --g.branch_bonus 4 --g.sector_target_per_1024 92 --g.sector_smooth_shift 3 --g.strong_log 1 --g.fan_in_max 84
+  which 13.71  order 7.46  xor 2.75  gap 4.91
+      --g.inhibitory_percent 20 --g.inhibit_gain 4 --g.threshold_min 8 --g.threshold_max 16 --g.cooldown_max 5 --g.local_connect_shift 4 --g.strong_shift 1 --g.far_percent 54 --g.far_reach_tiles 6 --g.local_delay_min 4 --g.local_delay_max 6 --g.branch_threshold 5 --g.branch_bonus 6 --g.noise_shift 12 --g.sector_target_per_1024 16 --g.sector_smooth_shift 3 --g.pacemakers_per_1024 10 --g.fan_in_max 75
+  which 19.03  order 7.38  xor 2.53  gap 5.79
+      --g.inhibitory_percent 39 --g.inhibit_gain 2 --g.threshold_min 8 --g.leak_shift_min 2 --g.leak_shift_max 2 --g.cooldown_max 6 --g.strong_shift 1 --g.far_percent 25 --g.far_reach_tiles 5 --g.local_delay_min 4 --g.local_delay_max 12 --g.branch_threshold 6 --g.branch_bonus 5 --g.noise_shift 13 --g.sector_target_per_1024 36 --g.sector_smooth_shift 5 --g.pacemakers_per_1024 1 --g.fan_in_max 98
+  which 15.30  order 7.58  xor 3.62  gap 2.85
+      --g.inhibitory_percent 33 --g.inhibit_gain 3 --g.threshold_max 19 --g.leak_shift_min 2 --g.leak_shift_max 5 --g.cooldown_max 7 --g.strong_shift 3 --g.far_percent 7 --g.far_reach_tiles 2 --g.local_delay_max 12 --g.branch_bonus 4 --g.sector_target_per_1024 20 --g.sector_smooth_shift 3 --g.pacemakers_per_1024 13 --g.strong_log 1 --g.fan_in_max 62
+  which 15.48  order 5.94  xor 2.73  gap 4.93
+      --g.inhibitory_percent 23 --g.inhibit_gain 6 --g.threshold_min 8 --g.threshold_max 16 --g.leak_shift_min 2 --g.cooldown_min 2 --g.local_connect_shift 2 --g.strong_shift 3 --g.far_percent 28 --g.far_reach_tiles 6 --g.local_delay_min 2 --g.local_delay_max 9 --g.branch_threshold 2 --g.noise_shift 13 --g.sector_target_per_1024 17 --g.sector_smooth_shift 5 --g.pacemakers_per_1024 1 --g.fan_in_max 101
+sheet      which   order     xor     gap   (mean over seeds 2,3)
+default     9.16    2.24    2.19    1.68
+best 1     13.54    7.20    3.28    4.88
+best 2     18.62    7.06    2.98    5.52
+best 3     17.52    8.19    2.62    6.55
+best 4     15.46    7.15    4.00    3.14
+best 5     12.04    6.03    2.41    3.78
+best 6     14.60    8.00    2.23    5.67
+best 7     15.83    7.35    3.79    2.31
+best 8     14.38    5.82    2.12    3.06
+best 9     12.85    6.80    3.55    4.15
+best 10    13.15    6.39    2.54    3.80
