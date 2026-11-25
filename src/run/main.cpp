@@ -18,6 +18,9 @@
 #ifdef BLOB_HAS_MINIMAL
 #include "minimal/minimal.hpp"
 #endif
+#ifdef BLOB_HAS_MEMORY
+#include "memory/memory.hpp"
+#endif
 #ifdef BLOB_HAS_NN
 #include "nn/nn.hpp"
 #endif
@@ -50,6 +53,13 @@ static MinimalGenome minimal_genome;
 #else
 static const bool use_minimal = false;
 #endif
+// --engine memory: idea 123, src/memory/, a content-addressed store instead of a sheet
+#ifdef BLOB_HAS_MEMORY
+static bool use_memory = false;
+static MemoryGenome memory_genome;
+#else
+static const bool use_memory = false;
+#endif
 
 // --engine mlp or gru: the fixed reference network (src/nn/) behind the same shell
 #ifdef BLOB_HAS_NN
@@ -69,6 +79,11 @@ Blob* birth(Driver driver, const Genome& genome, uint64_t seed) {
 #ifdef BLOB_HAS_MINIMAL
     if (use_minimal && real_blob(driver)) {
         return minimal_birth(genome, minimal_genome, seed);
+    }
+#endif
+#ifdef BLOB_HAS_MEMORY
+    if (use_memory && real_blob(driver)) {
+        return memory_birth(genome, memory_genome, seed);
     }
 #endif
 #ifdef BLOB_HAS_NN
@@ -93,6 +108,12 @@ void death(Driver driver, Blob* blob) {
 #ifdef BLOB_HAS_MINIMAL
     if (use_minimal && real_blob(driver)) {
         minimal_free(blob);
+        return;
+    }
+#endif
+#ifdef BLOB_HAS_MEMORY
+    if (use_memory && real_blob(driver)) {
+        memory_free(blob);
         return;
     }
 #endif
@@ -123,6 +144,12 @@ void tick(Driver driver, Blob& blob, const Plug& plug, int perfect_move) {
         return;
     }
 #endif
+#ifdef BLOB_HAS_MEMORY
+    if (use_memory && real_blob(driver)) {
+        memory_tick(blob);
+        return;
+    }
+#endif
 #ifdef BLOB_HAS_NN
     if (use_nn && real_blob(driver)) {
         nn_tick(blob, plug, perfect_move);
@@ -147,6 +174,12 @@ void reward(Driver driver, Blob& blob, int valence) {
 #ifdef BLOB_HAS_MINIMAL
     if (use_minimal && real_blob(driver)) {
         minimal_reward(blob, valence);
+        return;
+    }
+#endif
+#ifdef BLOB_HAS_MEMORY
+    if (use_memory && real_blob(driver)) {
+        memory_reward(blob, valence);
         return;
     }
 #endif
@@ -175,7 +208,7 @@ void drivers_wanted(const RunFlags& flags, bool* want) {
     want[(int)Driver::blob] = true;
     want[(int)Driver::learn_off] = flags.baselines;
 #endif
-    if (use_minimal || use_nn) {
+    if (use_minimal || use_memory || use_nn) {
         want[(int)Driver::blob] = true;
         want[(int)Driver::learn_off] = flags.baselines;
     }
@@ -215,17 +248,21 @@ int main(int argc, char** argv) {
     use_minimal = flags.engine == "minimal";
     apply_minimal_args(argc, argv, minimal_genome);
 #endif
+#ifdef BLOB_HAS_MEMORY
+    use_memory = flags.engine == "memory";
+    apply_memory_args(argc, argv, memory_genome);
+#endif
 #ifdef BLOB_HAS_NN
     use_nn = flags.engine == "mlp" || flags.engine == "gru";
     nn_kind = flags.engine == "gru" ? NnKind::gru : NnKind::mlp;
     apply_nn_args(argc, argv, nn_settings);
 #endif
-    if (flags.engine != "blob" && !use_minimal && !use_nn) {
+    if (flags.engine != "blob" && !use_minimal && !use_memory && !use_nn) {
         std::fprintf(stderr, "blobrun: no engine '%s' in this build\n", flags.engine.c_str());
         return 1;
     }
     // the readout mode is the blob genome's learn_mode 1; other engines do not read it
-    if (flags.frozen_readout && (flags.table || use_minimal || use_nn)) {
+    if (flags.frozen_readout && (flags.table || use_minimal || use_memory || use_nn)) {
         std::fprintf(stderr, "blobrun: --frozen-readout is the blob's learn_mode 1; this "
                              "engine has no readout mode\n");
         return 1;
