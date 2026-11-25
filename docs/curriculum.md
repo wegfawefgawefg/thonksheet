@@ -110,6 +110,85 @@ Coin flips score about 0.44 (ties are no move), the scripted player 1.00.
 16. **Jumping.** Clear gaps by timing a jump.
 17. **Walking.** A small 2D walker with joint motors. Hard; last.
 
+## More worlds: the rungs between Echo and cartpole (idea 63)
+
+Built 2026-11-25 (`src/world/task_bandit.cpp`, `task_move.cpp`, `task_classic.cpp`; all
+integers or 16.16 fixed point; `scripts/task.sh <world>`, the whole set with
+`scripts/ladder.py`). No move is always a move of its own: it is never good or bad by
+itself unless said. "Coin" is the stand-in's coin flips through the plug (ties are no
+move), "scripted" the perfect player. Results: `docs/results-2026-11-25-more-worlds.md`.
+
+- **Bandit** (`bandit`, `--k` buttons, default 2). No cue: one line that is always on and
+  carries nothing. One button, drawn per life, pays good on 80% of presses and bad
+  otherwise (`--bandit-good`); every other button pays good on 20% (`--bandit-poor`).
+  Score: share of steps on the best button. Episodes: presses. A table of two counts per
+  button solves it in tens of presses.
+- **Switching bandit** (`switch-bandit`). The same, but every `--switch-every` steps
+  (1,000) the paying button moves to another one. Score: share of steps on the best
+  button over the second half of each block only. Episodes: blocks. A table of counts
+  that forgets (a running mean) solves it; one that never forgets does not.
+- **Chain** (`chain`, `--k` buttons). A and B are two buttons drawn per life. Stage 0:
+  pressing A moves to stage 1, anything else stays; never a reward. Stage 1: B is good,
+  another button bad, no move nothing; then back to stage 0. So the press that starts a
+  chain is only ever paid one step later. `--chain-cue 1` (default): two lines show the
+  stage; `0`: one line always on, so the stage must be remembered (the best memoryless
+  player scores 0.5). Score: 2 x chains paid / steps (A, B, A, B, ... is 1.0).
+  Episodes: chains paid. A table of rewards per stage and button learns stage 1 and never
+  stage 0 (no reward there ever); it takes credit one step back (Q-learning with any
+  discount, or a trace) to learn stage 0. Four table entries.
+- **Track** (`track`). A `--track-size` x 2 bitmap (5): the target's cell on the top row,
+  the marker's on the bottom. Buttons left, right; no move or a move into an end stays.
+  `--track-reward shaped` (default): good when a step ends nearer the target, bad when
+  further. `arrive`: good on arrival only, bad if `track-size` steps pass without one. On
+  arrival the target jumps to another cell. Score: share of steps that ended nearer (an
+  arrival counts). Episodes: targets. Shaped, the right button is target-left-or-right of
+  the marker: linear in the lines (weight +i on target cell i, -i on marker cell i).
+- **Forage** (`forage`, needs `--sensor-side 2`). A `--forage-size` square grid (5) that
+  wraps at the edges, seen from the animal, which is always the middle cell; the bitmap
+  shows only the food. Buttons up, down, left, right. `--forage-warmer 1` (default): good
+  when a step ends nearer the food (grid steps, the short way round), bad when further;
+  `0`: good on reaching it, bad if 2 x (size - 1) steps pass (the food moves). The food
+  reappears at another random cell. Score: share of steps that ended nearer. Episodes:
+  targets. Warmer, it is echo with 24 cues and one or two right buttons each.
+- **Mountain car** (`mountain-car`, `--sensor-side 2 --number-code place`). The gym
+  constants (position -1.2 to 0.6, speed at most 0.07, push 0.001, gravity 0.0025
+  cos 3x, goal 0.5) in 16.16. Position and speed are 8 place-coded lines each. Buttons
+  push left, right. Episodes of at most 200 steps, new ones at rest between -0.6 and -0.4.
+  `--classic-reward energy` (default): a step is good when the car's energy (height plus
+  speed) rose, bad when it fell, the goal good. `goal`: good at the goal, bad when the 200
+  steps run out. Score: share of episodes that reach the goal. The push alone cannot
+  climb: the car must be rocked. Under the energy reward the right button is the sign of
+  the speed, readable from the speed lines.
+- **Pendulum swing-up** (`pendulum`, as mountain car). The gym pendulum (angle 0 upright,
+  gravity 10, torque 2, spin at most 8, 0.05 s steps) in 16.16; angle and spin 8 lines
+  each. Episodes of 200 steps from a random angle and spin within 1. Upright is within
+  0.4 rad. Energy reward: a step ending upright is good, falling out is bad; elsewhere
+  good when the energy gap to upright shrank, bad when it grew. `goal`: only the upright
+  part. Score: share of steps upright. The scripted player (pump, then a linear push near
+  the top) gets 0.86, not 1.0, because each episode starts somewhere random.
+- **Cartpole variants** (fairness). `--cart-start wide`: the cart within 1 m of the middle,
+  speed and spin within 0.5, lean within 0.1 rad (half way to a fall); the scripted player
+  still never falls. `--cart-reward relative`: good when the step ended nearer upright and
+  centred than the running mean (1/16 per step) of recent steps, bad when further, so good
+  and bad come about equally often (0.53 / 0.47 for a coin). `--cart-integrator semi`:
+  see the notes on cartpole below; it is what makes a step's reward judge that step's push.
+
+Checked scores, 200,000 steps straight on the task (uniform random press, no ties) and
+through the plug (coin, 20,000 steps, ties are no move):
+
+| world | random | coin | scripted |
+|---|---|---|---|
+| bandit k=2 | 0.50 | 0.47 | 1.00 |
+| bandit k=4 | 0.25 | 0.24 | 1.00 |
+| switching bandit k=2 | 0.50 | 0.46 | 1.00 |
+| chain, stage shown / not | 0.33 | 0.29 | 1.00 |
+| track 5, shaped / arrive | 0.50 | 0.46 / 0.47 | 1.00 |
+| forage 5x5, warmer / arrival | 0.43 | 0.38 | 1.00 |
+| mountain car (goal share) | 0.00 | 0.00 | 1.00 (129 steps an episode) |
+| pendulum (upright share) | 0.05 | 0.05 | 0.86 |
+| cartpole wide starts (steps per fall) | 20.9 | 20.0 | no fall |
+| cartpole relative | 22.1 | 23.9 | no fall |
+
 ## Stage 4: one life, many tasks
 
 - Switch tasks without a reset and see what survives.
@@ -149,3 +228,13 @@ upright-and-centred than they began, bad if further). Numbers also had a flaw: l
 from the left as the value rose, so "leaning left" was only an absence of activity.
 `--number-code place` lights the one line whose band holds the value. The scripts use
 `lean` and `place` for cartpole. `sparse` stays as the harder version for slow-credit ideas.
+
+2026-11-25: the cartpole step is gym's Euler step, which moves the cart and pole by the
+speeds from before the push; the push changes only the speeds. So where the pole ends a
+step does not depend on that step's press at all, and `lean` (and `relative`) judge the
+press one step earlier. Measured with a random player: after the scripted player's press
+lean is good 0.322 of the time, after the other press 0.321; by the previous press it is
+0.42 against 0.22. A rule that credits what was active just before the reward is graded
+on noise. `--cart-integrator semi` (gym's other option: speeds first, then positions by
+the new speeds) fixes that: lean then judges this press (0.40 against 0.20). Mountain car
+and the pendulum use the semi-implicit step already.
