@@ -105,18 +105,29 @@ void hop_after_fire(Blob& blob) {
     const uint64_t* fired = blob.spikes[blob.now];
     int eighths = g.hop_near < 0 ? 0 : (g.hop_near > 8 ? 8 : g.hop_near);
     for (int t = 0; t < blob.tile_count; t++) {
+        uint64_t learn = learners(blob, t);
+        if (!learn) {
+            out[t] = 0;
+            continue;
+        }
         int bias = blob.sector_bias[blob.tile_sector[t]];
         const int16_t* pot = blob.potential + t * TILE_NEURONS;
         const int16_t* thr = blob.threshold + t * TILE_NEURONS;
+        // eight cells at a time: a flag byte each, gathered into the word by a multiply
         uint64_t near = 0;
-        for (int b = 0; b < TILE_NEURONS; b++) {
-            int bar = thr[b] + bias;
-            int band = bar > 0 ? (bar * eighths) >> 3 : 0;
-            near |= (uint64_t)(pot[b] >= bar - band) << b;
+        for (int j = 0; j < 8; j++) {
+            uint64_t bytes = 0;
+            for (int i = 0; i < 8; i++) {
+                int b = 8 * j + i;
+                int bar = thr[b] + bias;
+                int band = bar > 0 ? (bar * eighths) >> 3 : 0;
+                bytes |= (uint64_t)(pot[b] >= bar - band) << (8 * i);
+            }
+            near |= ((bytes * 0x0102040810204080ull) >> 56) << (8 * j);
         }
         near &= ~fired[t];
         near |= g.hop_fired ? fired[t] : 0;
-        out[t] = near & learners(blob, t);
+        out[t] = near & learn;
     }
     out[blob.tile_count] = 0;
 }

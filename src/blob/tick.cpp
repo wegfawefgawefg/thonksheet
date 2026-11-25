@@ -78,8 +78,8 @@ void blob_tick(Blob& blob) {
     tick_fire(blob, blob.spikes[next]);
     blob.now = next;
     long_memory_after_fire(blob);
-    if (g.hop_on) {
-        hop_after_fire(blob);
+    if (g.hop_on && g.learning_on) {
+        hop_after_fire(blob); // the near maps only feed learning
     }
 
     // "fired recently": OR of the last recent_ticks maps
