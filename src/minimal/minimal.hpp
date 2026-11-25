@@ -75,6 +75,11 @@ struct MinimalGenome {
     int ev_shift = 0;       // extra chance shift for counter updates
     int ev_inh = 0;         // 1: an inhibitory source's counter moves the other way
     int ev_cowire = 1;      // co-activity on a counter neuron: 0 swaps the mask, 1 bumps a counter
+    // idea 57 (docs/results-2026-11-24-noise-sign.md). noise_sign -1 turns the reward rule
+    // over. noise_pair 1 also grades neurons that stayed quiet on a tick, at the noise chance,
+    // the other way, which takes the mean out of the rule.
+    int noise_sign = 1;
+    int noise_pair = 0;
 };
 
 struct MinimalStats {

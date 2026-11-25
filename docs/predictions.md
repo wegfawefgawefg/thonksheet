@@ -71,6 +71,8 @@ inner neurons measurably better for a task than unsupervised wiring already make
 11. **Lose-shift fixes the lock.** Making the motor cells that just earned a bad harder to
     fire for a while lifts the crossed shuffled-echo lives from 0.51 to above 0.8 and stops
     seed 3 locking onto one button. (55%)
+    - *Scored: wrong. 0.561 against 0.559. It fixed seed 3, a tuning seed, and nothing on
+      fresh ones.*
 12. **A slow "fired recently" bit lets cartpole beat coin flips.** Credit that reaches back
     hundreds of ticks, at a lower chance, gets steps per fall above 25. (40%) It also lets
     something learn delayed echo. (45%)
@@ -95,6 +97,8 @@ inner neurons measurably better for a task than unsupervised wiring already make
     once fixed the rule will be ordinary: no better than the default. (60%) If instead the
     reversed rule keeps beating the default on shuffled echo in a second engine, it is a
     real finding about what noise spikes mean in a sheet with inhibition.
+    - *Scored: right. A slip in the arithmetic. Reversed only works because it is the plain
+      rule applied to a random sample; in the minimal engine reversing collapses it.*
 
 ## 2026-11-24, before the readout work
 
@@ -110,4 +114,11 @@ inner neurons measurably better for a task than unsupervised wiring already make
 19. **They also raise how much it holds:** echo with 4 cues from 0.41 to above 0.6, and
     something above chance at 8 cues. (45%)
 20. **They let it use the delay trace:** delayed echo above 0.6 with delays on. (35%)
+
+## 2026-11-24, before decision-sized experiments and balanced reward
+
+21. **Nudging a whole button now and then breaks the lock.** Crossed shuffled-echo lives go
+    from about 0.55 to above 0.8 in at least two of the three engines. (50%)
+22. **Balancing good and bad lets something beat a coin on cartpole.** At least one engine
+    ends above 25 steps per fall under the lean reward. (35%)
 

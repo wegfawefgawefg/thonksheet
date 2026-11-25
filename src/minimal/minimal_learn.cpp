@@ -147,6 +147,24 @@ static void grade(MinimalBlob& m, bool better, int shift) {
             uint64_t spikes = minimal_map(m, m.now - a)[t];
             uint64_t noise = minimal_noise_map(m, m.now - a)[t];
             uint64_t pick = (mg.grade_mode == 0 ? noise : spikes) & ~seen & not_sensor;
+            if (mg.noise_pair && mg.grade_mode == 0) {
+                // the other half (idea 57): neurons quiet on this tick and on every later one
+                // in the window, at the noise chance, moved the other way
+                uint64_t quiet = ~spikes & ~seen & not_sensor & sparse_word(m.rng, mg.noise_shift) &
+                                 sparse_word(m.rng, shift);
+                if (m.ev_tiles) {
+                    quiet &= ~m.ev_tiles[t]; // counter neurons learn through their counters
+                }
+                while (quiet) {
+                    int n = t * TILE_NEURONS + __builtin_ctzll(quiet);
+                    quiet &= quiet - 1;
+                    if (better) {
+                        min_lose_active(m, n, a);
+                    } else {
+                        min_gain_active(m, n, a);
+                    }
+                }
+            }
             seen |= spikes;
             if (!pick) {
                 continue;
@@ -183,7 +201,7 @@ void minimal_reward(Blob& blob, int valence) {
     int size = delta > 0 ? delta : -delta;
     int width = 32 - __builtin_clz((unsigned)size); // 9 or 10 for a gap of a whole reward
     int extra = width >= 9 ? 0 : 9 - width;         // each halving of the gap halves the chance
-    grade(m, delta > 0, m.mg.learn_shift + extra);
+    grade(m, (delta > 0) == (m.mg.noise_sign >= 0), m.mg.learn_shift + extra);
     if (m.ev_tiles) {
         min_evidence_reward(m, delta > 0, m.mg.learn_shift + extra);
     }

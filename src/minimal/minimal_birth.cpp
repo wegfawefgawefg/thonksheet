@@ -319,6 +319,8 @@ static const MinimalField fields[] = {
     {"delay_max", &MinimalGenome::delay_max},
     {"far_delay_per_tile", &MinimalGenome::far_delay_per_tile},
     {"delay_percent", &MinimalGenome::delay_percent},
+    {"noise_sign", &MinimalGenome::noise_sign},
+    {"noise_pair", &MinimalGenome::noise_pair},
     {"ev_on", &MinimalGenome::ev_on},
     {"ev_bits", &MinimalGenome::ev_bits},
     {"ev_init", &MinimalGenome::ev_init},

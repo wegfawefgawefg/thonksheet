@@ -1,0 +1,5 @@
+# idea 53, long lives (160k steps): does lose-shift unlearn after an unlucky bad?
+baseline:
+lose-shift: --g.lose_shift_steps 16 --g.lose_shift_fires 2
+win-stay: --g.win_stay_steps 2
+lose-shift + win-stay: --g.lose_shift_steps 16 --g.lose_shift_fires 2 --g.win_stay_steps 2

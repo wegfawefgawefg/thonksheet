@@ -28,23 +28,25 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
 5. **Memory that is specific to the situation holds more.** [likely] Table neurons, where a
    neuron stores a separate answer for each pattern of its inputs, learn four cues (0.68)
    where both popcount engines manage 0.31 to 0.41, and reach one tile further. The cost
-   is no speed gain on a CPU.
+   is no speed gain on a CPU. In the suite they are also the only engine that learns a
+   second task after the first (two new cues and buttons: 0.96, against 0.13 and 0.11) and
+   still has the first afterwards (0.61 at once, 0.90 after a short retest).
 6. **The sheet makes its own variety.** [likely] Switching injected noise off changes
-   nothing in the full engine; rules that grade only injected-noise spikes lose in two
-   engines out of three.
+   nothing in the full engine. Grading only injected-noise spikes learns Echo in the minimal
+   engine (0.90 when built correctly) but nothing in the table engine.
 7. **Most of what we first built does nothing on reflex tasks.** [solid] Delays, the
    dendrite-branch bonus, varied neurons, far-link redraw and injected noise can each be
    removed with no measurable change, and a four-mechanism engine beats the
    twenty-one-mechanism one on Echo. Delays and far links cannot be judged yet: no task
    that needs them is learned by anything.
 
-8. **The sheet is already rich; reading it is the hard part.** [likely] With nothing
+8. **The sheet is already rich; reading it is the hard part.** [solid: four seeds, tight] With nothing
    learned and no reward, order, exclusive-or and gap length can all be read from the
    neurons a tile or two from the input by an ideal reader (1.3 to 3.4, where 1.0 is easy).
    The same features score at chance when a frozen sheet's readout has to learn them. This
    is the owner's richness thesis, half confirmed: the features are there; selection is
    what we cannot yet do.
-9. **Delays give a sense of time.** [likely] They do nothing measurable on Echo. On
+9. **Delays give a sense of time.** [solid: four seeds, tight] They do nothing measurable on Echo. On
    time features they are most of the story: gap length reads 0.43 with all delays at 1 and
    4.0 with delays of 4 to 8 ticks; order goes 1.5 to 5.4.
 
@@ -53,6 +55,17 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
 11. **More bits of evidence per thing learned helps.** [hint] Table neurons needed 4-bit
     counters to learn four cues (2-bit gave 0.56 on two). The popcount engines, with one or
     two bits per connection, hold less. Not yet tested head to head.
+
+12. **One neuron's experiment almost never changes the answer.** [likely] In the table
+    engine only 1 graded noise flip in 2,500 changed which button won. Those that did all
+    moved their counters the right way, and grading only them reaches 1.00 on the seeds
+    where a single flip can matter. So credit from single-neuron noise is correct but far
+    too rare; an experiment has to be the size of a decision.
+13. **A rule that grades against its own average must count everything it averaged over.**
+    [solid] Grading only the neurons noise flipped is half of the textbook rule. The
+    missing half (the unflipped neurons, the other way) is thousands of times larger than
+    the real signal, so the rule as first built learned the exact opposite (0.00 on six
+    seeds of eight; 1.00 with its sign reversed). This was a slip, not a principle.
 
 ## Walls
 
@@ -70,15 +83,13 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
 - **Time.** Nothing learns delayed echo. Nothing connects a reward to anything older than
   a few ticks.
 - **Locking on.** A sheet settles on one answer and keeps giving it while punished: Echo
-  seed 3, crossed shuffled-echo lives, probably cartpole.
+  seed 3 and crossed shuffled-echo lives. The cause is the reward rule strengthening its
+  own answer: making that stronger (win-stay) deepens the lock (0.56 to 0.14), and making
+  the last answer harder to give (lose-shift) only trades stuck lives for unstable ones.
+  Crossed lives need a two-tile path, so this is the thin-signal wall again. Cartpole is
+  not a lock: the blob leans to one side (0.58 of presses) without being stuck.
+  Any rule graded against its own average also freezes once every reward equals the
+  average: an all-wrong life stops moving.
 - **Acting in a world.** Nothing learns catch or cartpole. On cartpole learning makes the
   full engine worse than a coin.
 - **More than four things.** Eight cues: nothing above chance, in any engine.
-
-## Puzzles
-
-- **Credit by noise learns exactly the wrong answer.** In the table engine it ends at 0.00
-  on six seeds of eight, and with its sign reversed it scores 1.00 on shuffled echo on
-  eight of eight, the best shuffled result of any rule. The full engine's noise rule also
-  had lives at 0.01 to 0.07. A learner that is exactly wrong has found the signal; we do
-  not know why the sign is backwards.

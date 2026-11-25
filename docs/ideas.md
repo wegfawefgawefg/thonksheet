@@ -180,7 +180,11 @@ Status words: idea, building, tried (with result), kept, dropped.
 53. **Lose-shift.** [known behaviour, mechanism ours] credit. On bad, the motor cells that
     just fired get harder to fire for a while, so a different answer gets tried. Aimed at the
     lock seen in seed 3 and in crossed shuffled-echo lives, where the blob keeps pressing the
-    wrong button while punished. *building*
+    wrong button while punished. *tried: does not fix it. Crossed lives score 0.561 with it
+    and 0.559 without on fresh seeds. It lifts the worst lives and wrecks the ones that had
+    learned, and a learned blob wanders off after an unlucky bad. Its mirror, win-stay,
+    makes crossed lives lock far harder (0.135): the lock comes from the reward rule
+    strengthening its own answer. docs/results-2026-11-24-lose-shift.md*
 54. **The ablation sweep.** Each mechanism off in turn, 8 seeds. *tried: needed are
     inhibition, per-neuron threshold regulation, good, bad, growth, pruning. No measurable
     effect from delays, branch bonus, varied neurons, noise, far redraw. The surprise boost
@@ -201,7 +205,11 @@ Status words: idea, building, tried (with result), kept, dropped.
 57. **Why does credit by noise learn the exact opposite?** [ours] In the table engine the
     noise-graded rule ends at 0.00 on most seeds, and with its sign reversed it scores 1.00
     on shuffled echo on every seed. Find the cause, and try the reversed sign in the other
-    two engines. *building*
+    two engines. *tried: a slip in the rule's arithmetic, not a principle. Only flipped
+    neurons were graded, which is half of the textbook rule; the missing half swamps the
+    signal 2,500 to 1 and points the wrong way. Fixed, the rule learns nothing in the table
+    engine and 0.90 on Echo in the minimal one. Only 1 flip in 2,500 changes the answer.
+    docs/results-2026-11-24-noise-sign.md*
 58. **A readout that can read what is there.** [ours] On a frozen sheet, find the local,
     online rule at the motor cells that gets closest to the ideal reader on which-at-a-
     distance, order, exclusive-or and gap. Candidates: an error rule (on bad, the button
@@ -215,3 +223,12 @@ Status words: idea, building, tried (with result), kept, dropped.
     neuron's budget. Weak evidence then adds up over many tries before anything is wired.
     Why: table neurons needed 4-bit counters to learn four cues (2-bit gave 0.56), and
     every probe says the signal is present but thin. *building, in the minimal engine*
+60. **Experiments the size of a decision.** [known in RL, new on this sheet] credit. One
+    neuron's noise changes the answer once in 2,500 flips. So explore at the level of the
+    answer: now and then the world nudges one whole button group for a step (motor
+    babbling), and the usual rules learn from what follows. Also aimed at the lock, since it
+    forces the other answer to be tried. *building*
+61. **Make good and bad equally common.** [known, as a baseline] credit. Under cartpole's
+    reward bad arrives on 73% of steps whatever is done, so it says little. Thin out
+    whichever signal is commoner until the two balance, at the plug, so every engine gets
+    it. *building*
