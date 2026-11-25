@@ -19,6 +19,10 @@
 //     rewires (visible)
 // chance per source per tick it fired: 2^-readout_shift for the winner, 2^-(readout_shift +
 // margin_rival_shift) for the runner-up. a comfortable good moves nothing, as before.
+//
+// margin_win 2 is the stop-learning gate alone (Brader, Senn and Fusi): with readout_good 1
+// the readout moves on good (the pressed button gains, the others lose) only when the vote
+// was thin; a comfortable good moves nothing. returns whether the vote was thin.
 
 void blob_mark_vote(Blob& blob, int pressed, int runner, const int* runner_cells, int count) {
     if (!blob.genome.margin_percent) {
@@ -87,18 +91,21 @@ static void margin_cell(Blob& blob, int n, int ages, bool winner, int shift) {
     }
 }
 
-void learn_margin(Blob& blob) {
+bool learn_margin(Blob& blob) {
     const Genome& g = blob.genome;
     bool marked = blob.motor_attached && blob.motor_acted && blob.motor_runner;
     if (!marked || !g.readout_evidence || blob.vote_pressed <= 0) {
-        return;
+        return true;
     }
     blob.margin_goods++;
     int64_t lead = (int64_t)blob.vote_pressed - blob.vote_runner;
     if (lead * 100 >= (int64_t)g.margin_percent * blob.vote_pressed) {
-        return;
+        return false;
     }
     blob.margin_thin++;
+    if (g.margin_win == 2) {
+        return true; // the gate only: the readout's own move on good does the work
+    }
     int ages = g.readout_trace_ticks;
     ages = ages < 1 ? 1 : (ages > HISTORY - 1 ? HISTORY - 1 : ages);
     for (int t = 0; t < blob.tile_count; t++) {
@@ -116,4 +123,5 @@ void learn_margin(Blob& blob) {
             margin_cell(blob, n, ages, false, g.readout_shift + g.margin_rival_shift);
         }
     }
+    return true;
 }

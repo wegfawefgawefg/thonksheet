@@ -38,7 +38,7 @@ void evidence_add(Blob& blob, int n, int slot, uint64_t up, uint64_t down);
 void evidence_rewire(Blob& blob, int n);
 // barely correct: on a good won by a thin vote, deepen the winner's helping counters
 // (learn_margin.cpp)
-void learn_margin(Blob& blob);
+bool learn_margin(Blob& blob);
 // action-feedback tags: the chosen button's feedback tags inner neurons, the verdict moves
 // their hidden counters (learn_tags.cpp, tag_store.cpp)
 void learn_tags(Blob& blob, int valence);
