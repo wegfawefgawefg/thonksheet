@@ -135,18 +135,18 @@ struct TaskSettings {
     int rare = 10;          // rare cue: one try in N; odd event: one step in N
     int flip_pct = 10;      // noisy lines: chance in 100 that a line is flipped
     int context_early = 0;  // context: 1 shows the context a step before the cue
-    int switch_every = 500; // switch rule: tries between changes
+    // switch rule: tries between changes (0: 500); switching bandit: steps per block (0: 1000)
+    int switch_every = 0;
     int fill = 1;           // recall: other cues between the marked one and the ask
     int back = 1;           // n-back: how far back
     int markov_order = 1;   // predict-next: the next symbol depends on the last 1 or 2
     int diff_max = 0;       // bigger: largest difference shown, 0 any
     FnSettings fn; // the function battery (task_function.hpp)
-    int cart_reward = 0; // 3 relative: good when nearer upright than the recent average
+    // cart_reward 3, relative: good when nearer upright than the recent average
     int cart_start = 0;  // cartpole starts: 0 near upright (+-0.05), 1 wide (task_control.cpp)
     int cart_semi = 0;   // cartpole: 1 semi-implicit Euler (a push moves the pole this step)
     // more worlds (task_bandit.cpp, task_move.cpp, task_classic.cpp)
     int bandit_good = 80, bandit_poor = 20; // percent chance a press pays: best arm, the rest
-    int switch_every = 1000;                // switching bandit: steps per block
     int chain_cue = 1;                      // chain: a line shows the stage (0: nothing does)
     int track_size = 5;                     // track: cells on the line
     int track_reward = 0;                   // track: 0 each step nearer/further, 1 arrival only

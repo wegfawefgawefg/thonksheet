@@ -104,7 +104,7 @@ void script_reset(Task& task) {
     s.item_on = s.item_on < 1 ? 1 : (s.item_on >= s.item_lines ? s.item_lines - 1 : s.item_on);
     s.hold = s.hold < 0 ? 0 : s.hold;
     s.rare = s.rare < 2 ? 2 : s.rare;
-    s.switch_every = s.switch_every < 1 ? 1 : s.switch_every;
+    s.switch_every = s.switch_every < 1 ? 500 : s.switch_every;
     s.back = s.back < 1 ? 1 : (s.back > 8 ? 8 : s.back);
     s.fill = s.fill < 0 ? 0 : (s.fill > SCRIPT_MAX - 4 ? SCRIPT_MAX - 4 : s.fill);
     switch (family_of(task.kind)) {

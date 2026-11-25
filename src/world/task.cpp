@@ -3,20 +3,56 @@
 #include <cstring>
 
 // names as typed on the blobrun command line
+// one name per line, in the enum's order, so two branches adding tasks merge cleanly
+// clang-format off
 static const char* const task_names[(int)TaskKind::count] = {
-    "echo",  "shuffled-echo", "delayed-echo", "go-no-go",        "beat", "sequence",
-    "catch", "cartpole",      "order",        "both-not-either", "gap",  "place",
+    "echo",
+    "shuffled-echo",
+    "delayed-echo",
+    "go-no-go",
+    "beat",
+    "sequence",
+    "catch",
+    "cartpole",
+    "order",
+    "both-not-either",
+    "gap",
+    "place",
     "mnist",
-    // tiers 9 and 10
-    "same", "same-then", "odd-one", "bigger", "analogy", "how-many", "more-fewer", "grammar",
-    "brackets", "parts", "noisy-echo", "rare-cue", "noisy-lines", "context", "switch-rule",
-    "copy", "recall", "n-back", "predict-next", "fill-in", "odd-event",
-    "points", "number",       "two-numbers",  "past",
-    "echo",     "shuffled-echo", "delayed-echo", "go-no-go",      "beat",
-    "sequence", "catch",         "cartpole",     "order",         "both-not-either",
-    "gap",      "place",         "bandit",       "switch-bandit", "chain",
-    "track",    "forage",        "mountain-car", "pendulum",
+    "same",
+    "same-then",
+    "odd-one",
+    "bigger",
+    "analogy",
+    "how-many",
+    "more-fewer",
+    "grammar",
+    "brackets",
+    "parts",
+    "noisy-echo",
+    "rare-cue",
+    "noisy-lines",
+    "context",
+    "switch-rule",
+    "copy",
+    "recall",
+    "n-back",
+    "predict-next",
+    "fill-in",
+    "odd-event",
+    "points",
+    "number",
+    "two-numbers",
+    "past",
+    "bandit",
+    "switch-bandit",
+    "chain",
+    "track",
+    "forage",
+    "mountain-car",
+    "pendulum",
 };
+// clang-format on
 
 const char* task_name(TaskKind kind) {
     return task_names[(int)kind];

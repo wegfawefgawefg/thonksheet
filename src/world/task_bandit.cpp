@@ -40,7 +40,7 @@ void bandit_reset(Task& task) {
     s.k = clamp(s.k, 2, TASK_MAX_MOTORS);
     s.bandit_good = clamp(s.bandit_good, 0, 100);
     s.bandit_poor = clamp(s.bandit_poor, 0, 100);
-    s.switch_every = s.switch_every < 2 ? 2 : s.switch_every;
+    s.switch_every = s.switch_every == 0 ? 1000 : (s.switch_every < 2 ? 2 : s.switch_every);
     task.timer = 0;
     task.phase = 0;
     if (task.kind == TaskKind::chain) {
