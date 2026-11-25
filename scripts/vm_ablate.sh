@@ -17,13 +17,14 @@ flags_of() {
     no-events) echo "--v.event_on 0" ;;
     no-answers) echo "--v.write_on_bad 0 --v.write_on_good 0" ;;
     no-route) echo "--v.event_route 0" ;;
+    no-settle) echo "--v.event_settle 0" ;;
     learning-off) echo "--v.learning_on 0" ;;
     esac
 }
 list=out/vm/ablate/jobs.txt
 : > "$list"
 for name in default one-winner no-refract no-homeostat weak-input no-events no-answers no-route \
-    learning-off; do
+    no-settle learning-off; do
     f=$(flags_of "$name")
     echo "$P --task delayed-echo --delay 2 --steps 1 --window 1 --test-steps 0 $f > out/vm/ablate/$name-birth.txt" >> "$list"
     for s in 1 2; do
