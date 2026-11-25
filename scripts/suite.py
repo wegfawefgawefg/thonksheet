@@ -60,6 +60,9 @@ WORLDS = [
                        "wide"] + PLACE2, "cartpole, lean reward, wide starts (steps per fall)"),
     ("cartpole-rel", ["--task", "cartpole", "--cart-reward", "relative"] + PLACE2,
      "cartpole, relative reward (steps per fall)"),
+    ("cartpole-semi", ["--task", "cartpole", "--cart-reward", "lean", "--cart-integrator",
+                       "semi"] + PLACE2,
+     "cartpole, lean reward, semi-implicit: a step's reward judges its press (steps per fall)"),
 ]
 
 FEATURES = [("order", "order: which of two cues came on first"),

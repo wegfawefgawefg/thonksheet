@@ -82,6 +82,7 @@ struct TaskSettings {
     // nearer upright-and-centred than they began or are already there, bad if further)
     int cart_reward = 0; // 3 relative: good when nearer upright than the recent average
     int cart_start = 0;  // cartpole starts: 0 near upright (+-0.05), 1 wide (task_control.cpp)
+    int cart_semi = 0;   // cartpole: 1 semi-implicit Euler (a push moves the pole this step)
     // more worlds (task_bandit.cpp, task_move.cpp, task_classic.cpp)
     int bandit_good = 80, bandit_poor = 20; // percent chance a press pays: best arm, the rest
     int switch_every = 1000;                // switching bandit: steps per block

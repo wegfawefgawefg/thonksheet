@@ -41,6 +41,8 @@ static const char* usage =
     "                     step nearer upright and centred, bad when further)\n"
     "                     or relative (good when nearer upright than the recent average)\n"
     "  --cart-start S     cartpole starts: narrow (default, +-0.05) or wide\n"
+    "  --cart-integrator I  cartpole: euler (default; a push moves the pole only next step,\n"
+    "                     so a step's reward does not judge its own press) or semi\n"
     "  --cue-offset N     echo family: cues and buttons start at line N (default 0)\n"
     "  --order-gap N      order: steps the first cue is on alone (default 1)\n"
     "  --gap-short N      gap: blank steps between blinks, short (default 1)\n"
@@ -166,7 +168,8 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             }
             continue;
         }
-        if (std::strcmp(flag, "--cart-start") == 0 || std::strcmp(flag, "--track-reward") == 0 ||
+        if (std::strcmp(flag, "--cart-start") == 0 || std::strcmp(flag, "--cart-integrator") == 0 ||
+            std::strcmp(flag, "--track-reward") == 0 ||
             std::strcmp(flag, "--classic-reward") == 0) {
             if (!parse_world_word(flag, value, flags.task_settings)) {
                 return false;

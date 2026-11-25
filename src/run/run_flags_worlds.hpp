@@ -20,6 +20,8 @@ inline bool parse_world_word(const char* flag, const char* value, TaskSettings& 
     const Word words[] = {
         {"--cart-start", "narrow", &s.cart_start, 0},
         {"--cart-start", "wide", &s.cart_start, 1},
+        {"--cart-integrator", "euler", &s.cart_semi, 0},
+        {"--cart-integrator", "semi", &s.cart_semi, 1},
         {"--track-reward", "shaped", &s.track_reward, 0},
         {"--track-reward", "arrive", &s.track_reward, 1},
         {"--classic-reward", "energy", &s.classic_reward, 0},

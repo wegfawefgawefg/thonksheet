@@ -190,10 +190,20 @@ int cartpole_step(Task& task, const TaskStepIn& in) {
     int64_t pole_acc = fdiv(fmul(CP_GRAVITY, sin_a) - fmul(cos_a, temp), lever);
     int64_t cart_acc = temp - fdiv(fmul(CP_POLE_MASS_LENGTH, fmul(pole_acc, cos_a)), CP_MASS_TOTAL);
 
-    task.cart_x += fmul(CP_TAU, task.cart_v);
-    task.cart_v += fmul(CP_TAU, cart_acc);
-    task.pole_a += fmul(CP_TAU, task.pole_w);
-    task.pole_w += fmul(CP_TAU, pole_acc);
+    if (task.settings.cart_semi) {
+        // gym's semi-implicit option: speeds first, so this step's push already moves the
+        // cart and pole, and a reward on where they ended judges this press
+        task.cart_v += fmul(CP_TAU, cart_acc);
+        task.cart_x += fmul(CP_TAU, task.cart_v);
+        task.pole_w += fmul(CP_TAU, pole_acc);
+        task.pole_a += fmul(CP_TAU, task.pole_w);
+    } else {
+        // positions move by the speeds from before the push: a push shows only next step
+        task.cart_x += fmul(CP_TAU, task.cart_v);
+        task.cart_v += fmul(CP_TAU, cart_acc);
+        task.pole_a += fmul(CP_TAU, task.pole_w);
+        task.pole_w += fmul(CP_TAU, pole_acc);
+    }
     task.alive++;
     task.tally[0]++;
 
