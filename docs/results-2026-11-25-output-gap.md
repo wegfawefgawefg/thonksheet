@@ -80,9 +80,13 @@ MNIST test digits, seeds 5-12, born sheet, at 20,000 digits unless said.
   the lived sheet no better than the born one (engine plain 0.693 / 0.692; fixed engine on
   the lived sheet 0.818 and 0.845 at 20,000 and 120,000, against 0.822 and 0.852 born). The lead is lost at the first integer
   rung (0.856 against 0.864); centring the counts gets about 0.01 of it back late (2 seeds).
-- **Toy rows**: 16 cues 0.305 to 0.605, 8 cues 0.842 to 0.940, order 0.695 to 0.779, echo
-  k=2 and k=4 unchanged; **exclusive-or 0.883 to 0.793** (the gate's cost; with two buttons
-  the new rule is the gate). Reference lives byte-identical.
+- **A weighted vote on top** (`--g.readout_evidence_strong 2`, idea 147: each motor cell's
+  best quarter of connections at strength 4): **0.837, 0.854, 0.863**, above the runner-up
+  rule alone on every seed, free per tick.
+- **Toy rows**: 16 cues 0.305 to 0.605 (0.723 with the weighted vote), 8 cues 0.842 to 0.940,
+  order 0.695 to 0.779, echo k=2 and k=4 unchanged; **exclusive-or 0.883 to 0.793** (the
+  gate's cost; with two buttons the new rule is the gate), 0.725 with the weighted vote.
+  Reference lives byte-identical.
 
 ## The ladder
 
@@ -240,13 +244,25 @@ test accuracy, seeds 5-12:
 | born | plain (`scripts/mnist.sh online`'s rule) | 0.572 | 0.673 | 0.692 | 0.673 | 0.649 |
 | born | gate | 0.627 | 0.791 | 0.811 | 0.799 | 0.759 |
 | born | **runner-up + gate** | 0.587 | 0.769 | **0.822** | **0.845** | **0.852** |
+| born | **runner-up + gate + top quarter strong** | 0.616 | 0.795 | **0.837** | **0.854** | **0.863** |
 | competition on from the first digit | plain | 0.558 | 0.660 | 0.690 | 0.672 | 0.647 |
 | competition on from the first digit | gate | 0.603 | 0.789 | 0.811 | 0.798 | 0.708 |
 | competition on from the first digit | **runner-up + gate** | 0.582 | 0.757 | **0.816** | **0.837** | **0.844** |
+| competition on from the first digit | runner-up + gate + top quarter strong | COMPSTRONG |
 | lived, then frozen | plain | 0.568 | 0.669 | 0.693 | 0.679 | 0.653 |
 | lived, then frozen | runner-up + gate | 0.554 | 0.758 | 0.818 | 0.837 | 0.845 |
 
-(every sheet has `--g.tile_winners 4`; competition is `--g.compete_on 1 --g.compete_shift 5`.)
+(every sheet has `--g.tile_winners 4`; competition is `--g.compete_on 1 --g.compete_shift 5`;
+top quarter strong is `--g.readout_evidence_strong 2`.)
+
+**A weighted vote on top (idea 147).** `readout_evidence_strong 2` wires the top quarter of
+each motor cell's connections (by counter) at strength 4 and the rest at 1, so a cell's
+vote weighs its best evidence four times. With the runner-up rule and gate: 0.837, 0.854,
+0.863, above the runner-up rule alone on every one of the 8 seeds at 20,000 (0.832 to 0.842
+against 0.818 to 0.827) and at 120,000 (0.856 to 0.868 against 0.847 to 0.856), and quicker
+early (0.795 at 5,000, level with the gate alone). Free per tick: the w1 plane is read
+already. `scripts/outgap.sh online rivalstrong --g.readout_good 2 --g.margin_percent 20
+--g.margin_win 2 --g.readout_evidence_strong 2` (run on stevejobs; byte-identical there).
 
 - Every seed is above the gate at 60,000 and 120,000 (runner-up 0.847 to 0.856 at 120,000;
   gate 0.731 to 0.774), and above plain everywhere past 1,000 digits.
@@ -277,7 +293,7 @@ all 10,000 test digits: 0.801, 0.785, 0.747 at 20,000, 60,000, 120,000; runner-u
 | opponent cells + runner-up + gate | 0.761 | 0.786 | | worse than runner-up alone |
 | runner-up + gate + halve a full counter row (`--g.readout_halve 1`) | 0.815 | 0.832 | 0.834 | worse at 120,000: the clamp is not the drift |
 | runner-up + gate + twice the budget (`--g.readout_keep_mul 2`) | 0.827 | 0.837 | 0.849 | the same |
-| runner-up + gate + top quarter strong (`--g.readout_evidence_strong 2`, idea 147) | 0.827 | 0.836 | 0.858 | maybe +0.01; one seed, not run on 8 |
+| runner-up + gate + top quarter strong (`--g.readout_evidence_strong 2`, idea 147) | 0.827 | 0.836 | 0.858 | kept: +0.01 on 8 seeds (above) |
 | runner-up, no gate | 0.700 | 0.701 | 0.706 | stops the drift only |
 | runner-up + gate + centred steps (`--g.readout_center 1`) | 0.788 | 0.824 | 0.841 | worse |
 | the same on the frozen lived sheet, against it without centring | 0.796 / 0.819 | 0.846 / 0.834 | 0.850 / 0.851 | no help |
@@ -303,6 +319,7 @@ twin in brackets. `scripts/outgap.sh toys NAME FLAGS`.
 | working | 1.000 (0.519) | 0.997 (0.247) | 0.842 (0.116) | 0.305 (0.047) | **0.883** (0.489) | 0.695 (0.480) |
 | gate (`--g.readout_good 1 --g.margin_percent 20 --g.margin_win 2`) | 1.000 | 0.898 | 0.866 | 0.609 | 0.793 | 0.779 |
 | **runner-up + gate** (`--g.readout_good 2 --g.margin_percent 20 --g.margin_win 2`) | 1.000 | **0.993** | **0.940** | 0.605 | 0.793 | **0.779** |
+| runner-up + gate + top quarter strong (`--g.readout_evidence_strong 2`) | 1.000 | 0.995 | 0.957 | **0.723** | 0.725 | 0.767 |
 
 - With two buttons the runner-up is the other button, so the two rules are the same rule:
   the lives on echo k=2, both-not-either and order are identical to the gate's.
@@ -313,6 +330,9 @@ twin in brackets. `scripts/outgap.sh toys NAME FLAGS`.
   0.80). Order gains 0.08. Moving on every good (the working setting has
   `readout_good 0`, nothing on good) is what exclusive-or wants and what many buttons cannot
   afford; this setting does not solve both.
+- The weighted vote adds on many cues (16 cues 0.723, the best this row has had) and costs
+  exclusive-or another 0.07 (0.725). (On these toys the working setting wires everything at
+  strength 4, `readout_evidence_strong 1`; the weighted form puts three quarters back at 1.)
 - These toys run with `readout_evidence 1` as the working setting does; the MNIST runs use 2.
 
 ## Cost
@@ -391,8 +411,9 @@ same life before and after the merge (seed 5, 0.5930 and 0.7535 at 1,000 and 5,0
 - Ideas 146 and 157 (the drift): answered for MNIST. The drift is the good half pushing the
   nine others down; the runner-up rule removes it to 120,000 digits on every seed. Not the
   counter clamp (halving full rows made it worse), not the budget.
-- Idea 147 (weighted vote): built as `readout_evidence_strong 2` (top quarter at 4); one seed,
-  +0.01 at most; not settled.
+- Idea 147 (weighted vote): built as `readout_evidence_strong 2` (top quarter at 4). On top
+  of the runner-up rule, MNIST +0.015 at 20,000 and +0.011 at 120,000 on every seed (0.837,
+  0.863); 16 cues 0.605 to 0.723; exclusive-or 0.793 to 0.725. A trade, not a free gain.
 - Idea 161: the ladder is the answer to "where the 0.2 goes" (this doc). Two rungs are not
   closed: the sign (a linear reader with no weight below zero loses 0.18 under the gate;
   opponent cells did not get it back in the engine), and the 0.04 between a free reader and
