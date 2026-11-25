@@ -197,6 +197,7 @@ bool critic_step(Blob& blob, int valence) {
     }
     c.vote[c.head][0] = blob.vote_pressed;
     c.vote[c.head][1] = blob.vote_runner;
+    c.judged[c.head] = valence != 0;
     c.level_before = c.level;
     c.level = level_of(c, planes);
 

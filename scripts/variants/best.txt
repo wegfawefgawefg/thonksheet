@@ -1,0 +1,5 @@
+# The one setting (docs/results-2026-11-26-one-setting.md): the output rule with the margin
+# gate, time and hold cells, tiring neurons, two winners per tile, one step of the backward
+# walk on bad steps. Chosen on seeds 1-4 by adding one piece at a time; run unchanged on every
+# world: scripts/oneset.sh best
+best: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.time_percent 10 --g.hold_percent 10 --g.readout_good 1 --g.margin_percent 20 --g.margin_win 2 --g.tire_jump 4 --g.tire_shift 7 --g.tile_winners 2 --g.replay_depth 1 --g.replay_bad_only 1

@@ -39,6 +39,10 @@ void actor_learn(Blob& blob, CriticState& c, int sign) {
     ages = ages < c.steps ? ages : (int)c.steps;
     for (int a = 1; a <= ages; a++) {
         int slot = critic_slot(c, a);
+        // actor_unjudged: a press the world judged was taught by its verdict already
+        if (g.actor_unjudged && c.judged[slot]) {
+            continue;
+        }
         // the margin gate: a good surprise moves a step's press only if its vote was close
         int64_t pressed_votes = c.vote[slot][0], lead = pressed_votes - c.vote[slot][1];
         if (sign > 0 && g.margin_percent && pressed_votes > 0 &&
@@ -68,7 +72,7 @@ void actor_learn(Blob& blob, CriticState& c, int sign) {
             int pressed_sign = 0, other_sign = 0;
             if (g.actor_form == 1) {
                 pressed_sign = sign;
-            } else if (sign < 0 || g.readout_good) {
+            } else if (sign < 0 || g.readout_good || g.actor_good) {
                 pressed_sign = sign;
                 other_sign = -sign;
             }

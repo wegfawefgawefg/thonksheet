@@ -53,6 +53,7 @@ LEARNING_ONLY = {
     "critic_on", "critic_reward", "critic_margin", "critic_center", "critic_average_shift",
     "critic_shift", "critic_trace_steps", "critic_fade", "actor_form", "actor_trace_steps",
     "actor_fade", "explore_shift", "explore_scale", "critic_opponent", "critic_wide",
+    "critic_keep_world", "actor_good", "actor_unjudged", "replay_bad_only",
 }
 # flags with a value that only matter while learning is on (the rule table, idea 120)
 LEARNING_FLAGS = {"--rule-file", "--rule-hex"}

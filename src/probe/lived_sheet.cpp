@@ -7,8 +7,10 @@
 //
 // blobprobe transfer --life "<blobrun flags>" [--born 1] --then TASK [--then-k N]
 //     [--then-steps N] [--window N] [--g.name value ...]
+// [--keep-output 1]
 // lives the life (none with --born 1), then freezes the inside (learn mode 5, no tags, no
-// margin rule, no one-hop or competitive rule; --then-inside 1 leaves those two on, which
+// backward walk, no margin rule unless --keep-output 1 keeps the life's margin gate for the
+// fresh output; no one-hop or competitive rule; --then-inside 1 leaves those two on, which
 // is how docs/results-2026-11-25-hop.md measured its toys), puts every motor cell's wiring
 // back as born and wipes the readout's counters,
 // and lets that fresh readout learn TASK on the same plug. Prints the fresh readout's
@@ -272,7 +274,9 @@ Blob* probe_sheet(int argc, char** argv, const Genome& genome, uint64_t seed) {
 }
 
 // the inside frozen; motor cells as born, the readout's counters gone
-static void fresh_readout(Blob& blob, uint64_t seed) {
+// keep_output: the fresh output keeps the life's margin gate (it is the output rule, not
+// inner learning)
+static void fresh_readout(Blob& blob, uint64_t seed, bool keep_output) {
     Blob* born = blob_birth(blob.genome, seed);
     for (int t = 0; t < blob.tile_count; t++) {
         uint64_t cells = blob.motor[t];
@@ -299,8 +303,8 @@ static void fresh_readout(Blob& blob, uint64_t seed) {
     blob.readout_keep = nullptr;
     blob.genome.learn_mode = 5;
     blob.genome.tag_mode = 0;
-    blob.genome.replay_depth = 0;
-    blob.genome.margin_percent = 0;
+    blob.genome.replay_depth = 0; // the backward walk is inner learning too
+    blob.genome.margin_percent = keep_output ? blob.genome.margin_percent : 0;
 }
 
 // the inside rules that run in any learn mode stop too, so the inside is frozen while the
@@ -345,7 +349,7 @@ int probe_transfer(int argc, char** argv) {
     edit.perm = int_arg(argc, argv, "--then-perm", 0);
     edit.move = int_arg(argc, argv, "--then-move", -1);
     edit.seed = seed;
-    fresh_readout(*blob, seed);
+    fresh_readout(*blob, seed, int_arg(argc, argv, "--keep-output", 0) != 0);
     freeze_inside(*blob, int_arg(argc, argv, "--then-inside", 0));
     std::vector<double> s = live(*blob, then, steps, window, edit);
     size_t edge = s.size() / 10 > 0 ? s.size() / 10 : 1;

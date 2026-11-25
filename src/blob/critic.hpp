@@ -56,6 +56,7 @@ struct CriticState {
     // valence alone (critic_reward x valence: no level, no mean), so a probe that hands in a
     // clean valence from the world's true state drives the actor with a clean surprise
     int oracle = 0;
+    uint8_t judged[CRITIC_STEPS] = {}; // per kept step: 1 if the world gave it good or bad
 };
 
 // the critic cells: set if `neuron` is one (false before the first step)

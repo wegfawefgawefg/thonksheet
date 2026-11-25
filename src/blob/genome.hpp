@@ -354,6 +354,16 @@ struct Genome {
                                // cell of its 9 local tiles with chance 2^-this (strong as usual)
     int wire_deep_percent = 0; // share of hidden excitatory cells (by a hash of the cell) that
                                // hear no sensor cell: none at birth, none after any rewire
+    // glue for running the mechanisms together (docs/results-2026-11-26-one-setting.md).
+    // 0 is off and changes nothing.
+    int critic_keep_world = 0; // 1: with the critic on, the world's good and bad still reach
+                               // the readout, the replay walk and the integrator cells as
+                               // without it; the surprise teaches the actor on top
+    int actor_unjudged = 0;    // 1: the surprise teaches only presses the world left without
+                               // good or bad (with critic_keep_world the verdict taught them)
+    int replay_bad_only = 0;   // 1: the backward walk runs on bad only, even with readout_good
+    int actor_good = 0;        // 1: a good surprise teaches the actor's good half (pressed
+                               // gain, others lose) whatever readout_good says
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs
