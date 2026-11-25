@@ -105,6 +105,32 @@ overlaps most, which depends on which places were held out; on some layouts that
 right shape and on some the wrong one. That is a coin per layout, not generalization. Over
 the twelve seeds the mean is 0.57.
 
+## Against the fixed reference networks
+
+The reference networks landed on main while this ran (`gru-fixed`, `mlp-fixed`,
+docs/results-2026-11-25-fixed-net-reference.md; same suite, seeds 5-12, one setting). The
+plain GRU already passes most of what the memory passes, a little higher (0.998-0.9998
+where the memory sits at 0.98-0.99, which is its exploring floor of 2/256). Where they
+differ:
+
+| row | memory | gru-fixed | mlp-fixed |
+| --- | --- | --- | --- |
+| catch 4x4 | 0.991 | 0.722 | 0.493 |
+| cartpole lean / sparse (steps per fall) | 109 / 279 | 12.0 / 14.2 | 17.3 / 22.3 |
+| sequence, prediction | 1.000 | 0.50 | 0.50 |
+| place | 0.63 (a coin per layout) | 0.16 | 0.16 |
+| exclusive-or | 0.993 | 0.966 | 0.996 |
+| delayed echo, beat, gap, order | 0.99 each | 0.999 each | 0.50, 0.64, 0.49, 0.50 |
+| ticks/s in the echo k=2 life | 186,603 (integers) | 35,507 (floats) | 233,847 (floats) |
+
+So the memory is the first design in the project that learns everything the GRU learns
+with the same setting, and it also learns catch and cartpole, which the GRU does not (the
+GRU's cartpole failure is the lean-reward lag below plus no credit across steps; the
+memory's credit 40 ticks back is what carries it). The GRU reference said its walls are a
+held-out place, a hold longer than its backprop window, and the cartpole reward. The memory
+passes the second (4,000 ticks, any length of silence) and works around the third; the first
+stands for both.
+
 ## The walls, against the sheets
 
 | wall | sheets (best) | memory |
