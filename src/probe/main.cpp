@@ -30,32 +30,32 @@ const char* text_arg(int argc, char** argv, const char* name, const char* fallba
     return fallback;
 }
 
+// one line per measurement, so two branches adding one each merge cleanly
+struct Probe {
+    const char* name;
+    int (*run)(int argc, char** argv);
+};
+
+static const Probe probes[] = {
+    {"rhythm", probe_rhythm},
+    {"carry", probe_carry},
+    {"feature", probe_feature},
+    {"linear", probe_linear},
+    {"wiring", probe_wiring},
+    {"replay", probe_replay},
+    {"reader", probe_reader},
+};
+
 int main(int argc, char** argv) {
-    if (argc > 1 && std::strcmp(argv[1], "rhythm") == 0) {
-        return probe_rhythm(argc, argv);
+    for (const Probe& probe : probes) {
+        if (argc > 1 && std::strcmp(argv[1], probe.name) == 0) {
+            return probe.run(argc, argv);
+        }
     }
-    if (argc > 1 && std::strcmp(argv[1], "carry") == 0) {
-        return probe_carry(argc, argv);
+    std::fputs("blobprobe", stderr);
+    for (const Probe& probe : probes) {
+        std::fprintf(stderr, "%s%s", &probe == probes ? " " : "|", probe.name);
     }
-    if (argc > 1 && std::strcmp(argv[1], "feature") == 0) {
-        return probe_feature(argc, argv);
-    }
-    if (argc > 1 && std::strcmp(argv[1], "linear") == 0) {
-        return probe_linear(argc, argv);
-    }
-    if (argc > 1 && std::strcmp(argv[1], "wiring") == 0) {
-        return probe_wiring(argc, argv);
-    }
-    if (argc > 1 && std::strcmp(argv[1], "replay") == 0) {
-        return probe_replay(argc, argv);
-    }
-    std::fputs(
-        "blobprobe rhythm|carry|feature|linear|wiring|replay [--label text] [--seed n] [--g.name value ...]\n",
-    if (argc > 1 && std::strcmp(argv[1], "reader") == 0) {
-        return probe_reader(argc, argv);
-    }
-    std::fputs(
-        "blobprobe rhythm|carry|feature|linear|reader [--label text] [--seed n] [--g.name value ...]\n",
-        stderr);
+    std::fputs(" [--label text] [--seed n] [--g.name value ...]\n", stderr);
     return 1;
 }
