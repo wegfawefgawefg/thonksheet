@@ -147,6 +147,9 @@ struct TaskSettings {
     int add_bias = 12; // serial-add: chance x16 that a pair passes the carry through
     int maj_hold = 6;  // majority: patterns of 32 never rewarded, the scored ones
     int mnist_dx = 0, mnist_dy = 0;
+    // mnist pairs (mnist_data.hpp): 1 the parity of the sum of two half-size digits, 2 the
+    // same class or not; two buttons. mnist_mix 1: the two interleaved, not side by side
+    int mnist_pair = 0, mnist_mix = 0;
 
     // tiers 9 and 10 (task_script.cpp and the files it lists)
     int item_lines = 4;     // lines per item (relation, noisy lines, fill-in), levels (bigger)
@@ -234,6 +237,7 @@ struct Task {
     int64_t shown = 0;
     uint64_t order_seed = 0;
     int image = 0;
+    int partner = 0; // mnist pairs: the second digit
     // tiers 9 and 10: one trial as a script of steps (task_script.cpp)
     struct Script {
         int len = 0;

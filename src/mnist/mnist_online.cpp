@@ -7,6 +7,7 @@
 //   --shift 1                         at the end, the test digits moved 1 and 2 pixels
 //   --val 1                           train on 0-49,999, score on the validation slice
 //   --gap N                           quiet ticks after every digit (default 0)
+//   --pair 1|2 --pair-mix 0|1         pairs of digits, two buttons (blobmnist ceiling)
 // the rest are blobrun's flags (--seed, --ticks, --motor-spread, --g.name value, ...).
 
 #include "mnist/mnist_run.hpp"
@@ -16,9 +17,9 @@
 #include <cstdlib>
 #include <vector>
 
-static const char* const online_own[] = {"--checks",   "--check-seconds", "--test-count",
-                                         "--pretrain", "--shift",         "--val",
-                                         "--gap",      "--diag"};
+static const char* const online_own[] = {
+    "--checks", "--check-seconds", "--test-count", "--pretrain", "--shift",
+    "--val",    "--gap",           "--diag",       "--pair",     "--pair-mix"};
 
 static std::vector<int64_t> number_list(const char* text) {
     std::vector<int64_t> out;

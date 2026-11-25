@@ -314,14 +314,25 @@ struct Genome {
     // when a counter crossed a wired one. 0 is off and changes nothing.
     int hop_on = 0;
     int hop_teach = 1;      // 1: told good or bad (bad: the pressed line should be lower);
-                            // 2: told the right line too (it should have been higher)
+                            // 2: told the right line too (it should have been higher);
+                            // 3: every verdict, good or bad, teaches from the answer alone:
+                            // a line's error is its target (1 right, 0 not) less its running
+                            // rate of being right, so what the readout pressed plays no part
     int hop_good = 0;       // 1: on good, the pressed line should have been higher
     int hop_wire_shift = 1; // each error line reaches a cell with chance 2^-this
     int hop_near = 2;       // "near": potential within this many eighths of the bar under it
     int hop_fired = 1;      // 1: a cell that fired is near too; 0: only those that did not
     int hop_window = 12;    // ticks before the verdict whose marks count (1..15)
     int hop_shift = 3;      // chance per marked source per verdict, 2^-this
-    int hop_coin = 0;       // control: every error goes to a random line instead
+    int hop_coin = 0;       // control: every error goes to a random line instead; 2: to
+                            // distinct random lines, so none cancel (two-line tasks)
+    int hop_rate_shift = 8; // hop_teach 3: the running rates span about 2^this verdicts
+    // wider and deeper cells (docs/results-2026-11-25-hop-real.md, idea 163). 0 is off and
+    // changes nothing. "hidden excitatory": not sensor, motor, pacemaker or inhibitory.
+    int wire_pixel_shift = 0;  // >0: at birth a hidden excitatory cell also wires each sensor
+                               // cell of its 9 local tiles with chance 2^-this (strong as usual)
+    int wire_deep_percent = 0; // share of hidden excitatory cells (by a hash of the cell) that
+                               // hear no sensor cell: none at birth, none after any rewire
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

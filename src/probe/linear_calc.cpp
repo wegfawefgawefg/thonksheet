@@ -16,9 +16,12 @@
 // too, never with an answer). --life-teach 1|2: that life is judged as blobrun judges it,
 // the readout learns, and the genome's hop_teach is set to it (1 told good or bad, 2 told the
 // right answer); after it the motor cells are put back as born, so the reader cannot read
-// what the output learned (docs/results-2026-11-25-hop.md).
+// what the output learned (docs/results-2026-11-25-hop.md). --life-scramble 1: the
+// shuffled-input control, each step of that life shows another step's lines
+// (input_scramble.hpp, docs/results-2026-11-25-hop-real.md).
 
 #include "blob/blob.hpp"
+#include "probe/input_scramble.hpp"
 #include "probe/linear_fit.hpp"
 #include "run/run_flags.hpp"
 #include "run/task_ticker.hpp"
@@ -32,8 +35,8 @@
 int int_arg(int argc, char** argv, const char* name, int fallback);
 const char* text_arg(int argc, char** argv, const char* name, const char* fallback);
 
-static const char* const calc_only[] = {"--trials", "--settle", "--learning", "--label",
-                                        "--out",    "--life",     "--life-teach"};
+static const char* const calc_only[] = {"--trials", "--settle", "--learning",   "--label",
+                                        "--out",    "--life",   "--life-teach", "--life-scramble"};
 
 struct CalcRows {
     int d = 0;                 // features per row
@@ -347,8 +350,11 @@ int probe_calc(int argc, char** argv) {
     int out_bits = tt.task.calc.out_bits, lines = tt.task.calc.lines;
     int steps = tt.task.calc.steps;
     // the life: the world as usual, its verdicts never delivered (unless taught)
+    static Scramble mixed;
+    scramble_start(mixed, int_arg(argc, argv, "--life-scramble", 0), flags.seed);
     for (int64_t i = 0; i < life; i++) {
         ticker_before_tick(tt, *blob);
+        scramble_tick(mixed, tt, *blob);
         blob_tick(*blob);
         if (ticker_after_tick(tt, *blob) && teach > 0 && tt.valence != 0) {
             plug_mark_pattern(tt.plug, *blob, tt.in.pattern, tt.in.pattern_tied,

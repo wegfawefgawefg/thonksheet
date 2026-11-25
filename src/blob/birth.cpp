@@ -4,6 +4,7 @@
 #include "blob/long_memory.hpp"
 #include "blob/critic.hpp"
 #include "blob/random_words.hpp"
+#include "blob/tag_store.hpp"
 #include "blob/tick_steps.hpp"
 #include "blob/weight_levels.hpp"
 
@@ -183,6 +184,24 @@ void enforce_fan_in(Blob& blob, int n, int cap) {
     blob.fan_in[n] = (uint16_t)count;
 }
 
+// wire_pixel_shift: a hidden excitatory cell also wires the sensor cells of local slot k
+// with chance 2^-shift, strong as usual (docs/results-2026-11-25-hop-real.md)
+static void more_pixels(Blob& blob, int n, int k) {
+    const Genome& g = blob.genome;
+    int t = n / TILE_NEURONS;
+    uint64_t bit = 1ull << (n % TILE_NEURONS);
+    uint32_t src = blob.local_tile[t * LOCAL_SLOTS + k];
+    if ((blob.sensor[t] | blob.motor[t] | blob.pacemaker[t] | blob.inhibitory[t]) & bit) {
+        return;
+    }
+    int64_t w = blob_weight_index(n, k);
+    uint64_t extra =
+        blob.sensor[src] & sparse_word(blob.rng, g.wire_pixel_shift) & ~(blob.w0[w] | blob.w1[w]);
+    uint64_t strong = extra & sparse_word(blob.rng, g.strong_shift);
+    blob.w0[w] |= extra & ~strong;
+    blob.w1[w] |= strong;
+}
+
 static void wire(Blob& blob) {
     const Genome& g = blob.genome;
     for (int n = 0; n < blob.neuron_count; n++) {
@@ -203,6 +222,9 @@ static void wire(Blob& blob) {
             uint64_t strong = conn & sparse_word(blob.rng, g.strong_shift);
             blob.w0[blob_weight_index(n, k)] = conn & ~strong;
             blob.w1[blob_weight_index(n, k)] = strong;
+            if (g.wire_pixel_shift > 0) {
+                more_pixels(blob, n, k);
+            }
         }
         // far slots: some excitatory neurons, excitatory sources only, all weak
         bool excitatory = !((blob.inhibitory[t] >> (n % TILE_NEURONS)) & 1);
@@ -220,6 +242,11 @@ static void wire(Blob& blob) {
             uint64_t senders = ~blob.inhibitory[blob.far_tile[f]];
             blob.w0[blob_weight_index(n, LOCAL_SLOTS + k)] =
                 senders & sparse_word(blob.rng, g.far_connect_shift);
+        }
+        for (int k = 0; g.wire_deep_percent > 0 && k < SLOTS; k++) {
+            uint64_t off = deep_blocked(blob, n, slot_source(blob, n, k));
+            blob.w0[blob_weight_index(n, k)] &= ~off;
+            blob.w1[blob_weight_index(n, k)] &= ~off;
         }
         enforce_fan_in(blob, n, g.fan_in_max);
     }

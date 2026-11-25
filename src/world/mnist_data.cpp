@@ -120,6 +120,58 @@ void mnist_encode(const uint8_t* pixels, int code, int dx, int dy, uint8_t* out)
     }
 }
 
+// one digit at half size: the 2x2 block's sum against half ink
+static bool half_pixel(const uint8_t* pixels, int px, int py) {
+    int sum = 0;
+    for (int k = 0; k < 4; k++) {
+        sum += pixels[(2 * py + (k >> 1)) * MNIST_SIDE + 2 * px + (k & 1)];
+    }
+    return sum >= 512;
+}
+
+void mnist_pair_encode(const uint8_t* a, const uint8_t* b, int mix, uint8_t* out) {
+    for (int i = 0; i < MNIST_PIXELS; i++) {
+        out[i] = 0;
+    }
+    for (int py = 0; py < 14; py++) {
+        for (int px = 0; px < 14; px++) {
+            bool on_a = half_pixel(a, px, py), on_b = half_pixel(b, px, py);
+            if (mix == 0) {
+                out[(py + 7) * MNIST_SIDE + px] = on_a;
+                out[(py + 7) * MNIST_SIDE + px + 14] = on_b;
+                continue;
+            }
+            for (int r = 0; r < 2; r++) {
+                out[(2 * py + r) * MNIST_SIDE + 2 * px] = on_a;
+                out[(2 * py + r) * MNIST_SIDE + 2 * px + 1] = on_b;
+            }
+        }
+    }
+}
+
+int mnist_pair_answer(int label_a, int label_b, int pair) {
+    return pair == MNIST_PAIR_SAME ? label_a == label_b : (label_a + label_b) & 1;
+}
+
+static uint64_t mix_key(uint64_t& state) {
+    uint64_t z = (state += 0x9e3779b97f4a7c15ull);
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111ebull;
+    return z ^ (z >> 31);
+}
+
+int mnist_partner(const MnistSet& set, int first, int count, int image, int pair, uint64_t key) {
+    uint64_t state = key;
+    int want = (int)(mix_key(state) & 1); // same: 1 the same class, 0 another
+    for (;;) {
+        int other = first + (int)(mix_key(state) % (uint64_t)count);
+        bool same = set.labels[(size_t)other] == set.labels[(size_t)image];
+        if (other != image && (pair != MNIST_PAIR_SAME || (int)same == want)) {
+            return other;
+        }
+    }
+}
+
 // a 4-round feistel permutation of the next even power of two at or above n, walked until
 // it lands inside [0, n)
 static uint32_t feistel(uint32_t v, int half, uint64_t seed) {

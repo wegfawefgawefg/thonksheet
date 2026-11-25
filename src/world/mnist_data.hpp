@@ -37,5 +37,18 @@ void mnist_code_size(int code, int& w, int& h);
 // image first; blank comes in at the edge
 void mnist_encode(const uint8_t* pixels, int code, int dx, int dy, uint8_t* out);
 
+// pairs (docs/results-2026-11-25-hop-real.md): a task a straight-line reader fails. two
+// digits at half size (2x2 averaged, on at half ink) on one 28x28 sheet. mix 0: side by side,
+// rows 7-20, the first in columns 0-13, the second in 14-27; mix 1: interleaved, the first on
+// even columns and the second on odd ones, each half-size row shown twice. the answer:
+// MNIST_PAIR_SUM the parity of the sum of the two labels (0 even, 1 odd); MNIST_PAIR_SAME 1
+// if the two are the same class, 0 if not
+enum MnistPair { MNIST_PAIR_OFF = 0, MNIST_PAIR_SUM = 1, MNIST_PAIR_SAME = 2 };
+void mnist_pair_encode(const uint8_t* a, const uint8_t* b, int mix, uint8_t* out);
+int mnist_pair_answer(int label_a, int label_b, int pair);
+// the second digit for the digit `image` of [first, first + count) of a set, drawn from a key:
+// any digit for the sum; for same, half the keys draw one of the same class, half another
+int mnist_partner(const MnistSet& set, int first, int count, int image, int pair, uint64_t key);
+
 // position i of a seeded random order of [0, n): a permutation for each seed
 int mnist_order(int i, int n, uint64_t seed);

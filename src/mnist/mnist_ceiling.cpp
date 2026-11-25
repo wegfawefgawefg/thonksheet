@@ -24,6 +24,9 @@
 //                  (docs/results-2026-11-25-hop.md)
 //   --shift 1      the reader also scored on test digits moved 1 and 2 pixels
 //   --val 1        validation slice instead of the test set
+//   --pair 1|2     two half-size digits on the sheet, two buttons: 1 the parity of their
+//                  sum, 2 the same class or not; --pair-mix 1 interleaved, not side by side
+//                  (mnist_data.hpp, docs/results-2026-11-25-hop-real.md)
 //   --scale M      how the reader scales features (mnist_learn.hpp; default 0)
 //   --live N       first a life of N training digits with rewards and the genome's own
 //                  learning (idea 155), then the motor cells put back to their born wiring,
@@ -36,11 +39,10 @@
 
 #include <cstdio>
 
-static const char* const ceiling_own[] = {"--fit",     "--settle",   "--test-count", "--passes",
-                                          "--lr-1000", "--pretrain", "--shift",      "--val",
-                                          "--gap",     "--views",    "--scale",
-                                          "--live",    "--live-coin",
-                                          "--life",    "--life-shuffle", "--life-teach"};
+static const char* const ceiling_own[] = {
+    "--fit",       "--settle", "--test-count",   "--passes",     "--lr-1000", "--pretrain",
+    "--shift",     "--val",    "--gap",          "--views",      "--scale",   "--live",
+    "--live-coin", "--life",   "--life-shuffle", "--life-teach", "--pair",    "--pair-mix"};
 
 // a copy of rows with only the given columns
 static void pick_columns(const Rows& in, const std::vector<int>& cols, Rows& out) {
@@ -176,18 +178,21 @@ int mnist_ceiling(int argc, char** argv) {
     }
     s.blob->genome.learning_on = 0; // frozen from here on
     sheet_train(s, settle, false, nullptr);
-    std::vector<int> images;
+    std::vector<int> images, partners;
     s.images = &images;
+    s.partners = &partners;
     Rows train, test;
     double a = now_seconds();
     int64_t ticks0 = s.ticks;
     sheet_train(s, fit, false, &train);
     double sheet_secs = now_seconds() - a;
     double rate = (double)(s.ticks - ticks0) / sheet_secs;
-    std::vector<int> test_images;
+    std::vector<int> test_images, test_partners;
     s.images = &test_images;
+    s.partners = &test_partners;
     sheet_eval(s, 0, 0, test_count, &test);
     s.images = nullptr;
+    s.partners = nullptr;
     std::vector<Rows> moved;
     if (shift) {
         for (int by = 1; by <= 2; by++) {
@@ -231,20 +236,32 @@ int mnist_ceiling(int argc, char** argv) {
     }
     // the same reader on the same digits' bits, as shown to the sheet
     {
-        int code = s.flags.task_settings.mnist_code;
+        const TaskSettings& ts = s.flags.task_settings;
+        int code = ts.mnist_code, pair = ts.mnist_pair;
         int w = 0, h = 0;
-        mnist_code_size(code, w, h);
+        mnist_code_size(pair ? MNIST_T28 : code, w, h);
         Rows tr, te;
         tr.d = te.d = w * h;
         std::vector<uint8_t> bits((size_t)(w * h));
-        for (int i : images) {
-            mnist_encode(&data->train.pixels[(size_t)i * MNIST_PIXELS], code, 0, 0, bits.data());
-            rows_add(tr, bits.data(), data->train.labels[(size_t)i]);
+        // one digit (or pair) as the sheet was shown it, and its answer
+        auto add = [&](Rows& rows, const MnistSet& set, int i, int j) {
+            const uint8_t* a = &set.pixels[(size_t)i * MNIST_PIXELS];
+            int label = set.labels[(size_t)i];
+            if (pair) {
+                mnist_pair_encode(a, &set.pixels[(size_t)j * MNIST_PIXELS], ts.mnist_mix,
+                                  bits.data());
+                label = mnist_pair_answer(label, set.labels[(size_t)j], pair);
+            } else {
+                mnist_encode(a, code, 0, 0, bits.data());
+            }
+            rows_add(rows, bits.data(), label);
+        };
+        for (size_t k = 0; k < images.size(); k++) {
+            add(tr, data->train, images[k], partners[k]);
         }
         const MnistSet& set = s.eval_test ? data->test : data->train;
-        for (int i : test_images) {
-            mnist_encode(&set.pixels[(size_t)i * MNIST_PIXELS], code, 0, 0, bits.data());
-            rows_add(te, bits.data(), set.labels[(size_t)i]);
+        for (size_t k = 0; k < test_images.size(); k++) {
+            add(te, set, test_images[k], test_partners[k]);
         }
         Scale sc = scale_fit(tr, scale_mode);
         Linear lin;
