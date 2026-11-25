@@ -21,3 +21,5 @@ FILE* summary_open(const std::string& csv_path);
 // in life_measures.cpp: blobrun --reach and --speed
 int protocol_reach(const RunFlags& flags);
 int protocol_speed(const RunFlags& flags);
+// in life_long.cpp: blobrun --long, the long-memory worlds' forgetting tables
+int protocol_long(const RunFlags& flags);

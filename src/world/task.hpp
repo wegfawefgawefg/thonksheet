@@ -1,6 +1,7 @@
 #pragma once
 
 #include "world/task_function.hpp"
+#include "world/task_long.hpp"
 #include "world/world_random.hpp"
 
 #include <cstdint>
@@ -58,6 +59,11 @@ enum class TaskKind {
     forage,        // a small wrapped grid around the animal; walk onto the food
     mountain_car,  // rock a car out of a valley (the classic set)
     pendulum,      // swing a pendulum up and hold it there (the classic set)
+    hold,            // long memory (task_long.hpp): a cue held over a long blank gap
+    pairs,           // a stream of new pattern-button pairs, old ones re-asked by age
+    once,            // a pattern shown once with its answer, asked much later
+    rare,            // patterns asked one step in a thousand among common ones
+    drift,           // fixed pairs; half change button late in life
     count,
 };
 
@@ -153,6 +159,7 @@ struct TaskSettings {
     int forage_size = 5;                    // forage: the wrapped grid is size x size (odd)
     int forage_warmer = 1;                  // forage: each step nearer is good, further bad
     int classic_reward = 0;                 // mountain car, pendulum: 0 shaped, 1 goal only
+    LongSettings longs; // hold, pairs, once, rare, drift (task_long.hpp)
 };
 
 // fixed point for cartpole: 16 fractional bits
@@ -221,6 +228,8 @@ struct Task {
     int table_next[64] = {}; // predict-next: the likely next symbol; odd event: the cycle
     // over the whole life, never reset: episodes (falls, dots, arrivals) and wins among them
     int64_t episodes = 0, wins = 0;
+
+    LongState longs; // hold, pairs, once, rare, drift
 };
 
 // script step flags

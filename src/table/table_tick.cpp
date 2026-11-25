@@ -27,8 +27,8 @@ static uint64_t tile_lookup(const TableBlob& tb, int tile, const uint64_t* const
         uint32_t addr = 0;
         for (int j = 0; j < k_inputs; j++) {
             uint32_t e = in[j];
-            uint32_t src = e >> 4;
-            addr |= (uint32_t)((rows[e & 15][src >> 6] >> (src & 63)) & 1) << j;
+            uint32_t src = e >> 5;
+            addr |= (uint32_t)((rows[e & 31][src >> 6] >> (src & 63)) & 1) << j;
         }
         in += k_inputs;
         local[bit] = (uint8_t)addr;
@@ -94,9 +94,13 @@ void table_tick(Blob& blob) {
     uint8_t* address = &tb.address[(int64_t)(ring & (TABLE_ADDR_HISTORY - 1)) * b.neuron_count];
     uint32_t fired = 0, surprise = 0;
     bool per_neuron = tb.tg.rate_mode != 1;
-    const uint64_t* rows[HISTORY];
-    for (int d = 0; d < HISTORY; d++) {
+    // codes 1..15 read the ring, 16 + k timeline level k (table_memory.cpp)
+    const uint64_t* rows[32];
+    for (int d = 0; d < 32; d++) {
         rows[d] = b.spikes[(ring - d) & (HISTORY - 1)];
+    }
+    for (int k = 0; tb.level && k < tb.tg.timeline_levels && k < TABLE_MAX_LEVELS; k++) {
+        rows[16 + k] = tb.level + (int64_t)k * (b.tile_count + 1);
     }
 
     for (int t = 0; t < b.tile_count; t++) {
@@ -106,15 +110,19 @@ void table_tick(Blob& blob) {
         uint64_t flip = sparse_word(tb.rng, tb.tg.noise_shift) & ~sensor;
         b.predicted[t] = out & sensor;
         surprise += std::popcount((b.predicted[t] ^ sensed) & b.sense_attached[t] & sensor);
-        uint64_t inner = ((out ^ flip) | b.urge[t]) & ~sensor; // urge: idea 60
+        // integrator cells fire by their count, not their table; no noise, no rate bar.
+        // an urged cell (idea 60) fires on top of either
+        uint64_t hold = tb.hold_cell ? tb.hold_cell[t] : 0;
+        uint64_t inner = ((out ^ flip) & ~hold) | (hold ? tb.held[t] & hold : 0);
+        inner = (inner | b.urge[t]) & ~sensor;
         // the world's damage and being shown the answer (both null unless asked for)
         inner &= b.silenced ? ~b.silenced[t] : ~0ull;
         inner |= b.forced ? b.forced[t] & ~sensor : 0;
         uint64_t spikes = inner | sensed;
         map[t] = spikes;
-        flips[t] = flip;
+        flips[t] = flip & ~hold;
         fired += std::popcount(spikes);
-        tb.sector_fired[tb.tile_sector[t]] += std::popcount(spikes & ~sensor);
+        tb.sector_fired[tb.tile_sector[t]] += std::popcount(spikes & ~sensor & ~hold);
         if (per_neuron) {
             regulate_counters(tb, t, out, address);
         }
@@ -123,6 +131,7 @@ void table_tick(Blob& blob) {
     b.stats.tick++;
     b.stats.fired = fired;
     b.stats.surprise = surprise;
+    table_memory_tick(tb);
     if (tb.tg.rate_mode >= 1) {
         regulate_bars(tb);
     }

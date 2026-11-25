@@ -51,6 +51,11 @@ static const char* const task_names[(int)TaskKind::count] = {
     "forage",
     "mountain-car",
     "pendulum",
+    "hold",
+    "pairs",
+    "once",
+    "rare",
+    "drift",
 };
 // clang-format on
 
@@ -122,6 +127,13 @@ void task_reset(Task& task, TaskKind kind, const TaskSettings& settings, uint64_
     case TaskKind::pendulum:
         classic_reset(task);
         break;
+    case TaskKind::hold:
+    case TaskKind::pairs:
+    case TaskKind::once:
+    case TaskKind::rare:
+    case TaskKind::drift:
+        long_reset(task);
+        break;
     case TaskKind::count:
     default:
         break;
@@ -167,6 +179,12 @@ TaskShape task_shape(const Task& task) {
     case TaskKind::mountain_car:
     case TaskKind::pendulum:
         return classic_shape(task);
+    case TaskKind::hold:
+    case TaskKind::pairs:
+    case TaskKind::once:
+    case TaskKind::rare:
+    case TaskKind::drift:
+        return long_shape(task);
     case TaskKind::count:
     default:
         break;
@@ -225,6 +243,13 @@ void task_sense(const Task& task, TaskSense& sense) {
     case TaskKind::pendulum:
         classic_sense(task, sense);
         break;
+    case TaskKind::hold:
+    case TaskKind::pairs:
+    case TaskKind::once:
+    case TaskKind::rare:
+    case TaskKind::drift:
+        long_sense(task, sense);
+        break;
     case TaskKind::count:
     default:
         break;
@@ -270,6 +295,12 @@ int task_perfect_move(const Task& task) {
     case TaskKind::mountain_car:
     case TaskKind::pendulum:
         return classic_perfect_move(task);
+    case TaskKind::hold:
+    case TaskKind::pairs:
+    case TaskKind::once:
+    case TaskKind::rare:
+    case TaskKind::drift:
+        return long_perfect_move(task);
     case TaskKind::count:
     default:
         break;
@@ -329,6 +360,13 @@ int task_step(Task& task, const TaskStepIn& in) {
     case TaskKind::pendulum:
         valence = classic_step(task, in);
         break;
+    case TaskKind::hold:
+    case TaskKind::pairs:
+    case TaskKind::once:
+    case TaskKind::rare:
+    case TaskKind::drift:
+        valence = long_step(task, in);
+        break;
     case TaskKind::count:
     default:
         break;
@@ -370,6 +408,11 @@ double task_window_score(Task& task) {
     case TaskKind::forage:
     case TaskKind::mountain_car:
     case TaskKind::pendulum:
+    case TaskKind::hold:
+    case TaskKind::pairs:
+    case TaskKind::once:
+    case TaskKind::rare:
+    case TaskKind::drift:
         // right answers over chances to answer (each new world says what it counts)
         score = ratio(t[0], t[1]);
         break;

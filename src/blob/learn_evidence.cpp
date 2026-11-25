@@ -1,5 +1,6 @@
 #include "blob/blob.hpp"
 #include "blob/learn_rule.hpp"
+#include "blob/long_memory.hpp"
 #include "blob/tick_steps.hpp"
 
 #include <cstdlib>
@@ -57,6 +58,19 @@ void evidence_add(Blob& blob, int n, int slot, uint64_t up, uint64_t down) {
     int bits = blob.genome.readout_evidence_bits;
     int top = (1 << ((bits < 2 ? 2 : (bits > 8 ? 8 : bits)) - 1)) - 1;
     c += slot * TILE_NEURONS;
+    if (blob.genome.readout_lock_levels > 0) {
+        // the freezer (long_memory.cpp): the same steps, held back by locks
+        int64_t base = c - blob.readout_evidence;
+        for (int dir = 1; dir >= -1; dir -= 2) {
+            uint64_t bits = dir > 0 ? up : down;
+            while (bits) {
+                int b = __builtin_ctzll(bits);
+                bits &= bits - 1;
+                c[b] = long_memory_evidence_step(blob, base + b, c[b], dir, top);
+            }
+        }
+        return;
+    }
     while (up) {
         int b = __builtin_ctzll(up);
         up &= up - 1;
@@ -82,6 +96,9 @@ void evidence_rewire_as(Blob& blob, int n, int strength) {
         return;
     }
     int keep = blob.readout_keep[blob.readout_row[n]];
+    if (blob.genome.readout_decay > 0) {
+        long_memory_evidence_decay(blob, n, c - blob.readout_evidence, c);
+    }
     uint64_t self = 1ull << (n % TILE_NEURONS);
     // usable sources: a slot with a tile, not itself, no inhibitory source on a far slot
     uint64_t usable[SLOTS];

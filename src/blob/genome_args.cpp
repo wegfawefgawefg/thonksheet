@@ -143,6 +143,17 @@ static const GenomeField fields[] = {
     {"coincide_percent", &Genome::coincide_percent},
     {"tile_winners", &Genome::tile_winners},
     {"syn_sensors", &Genome::syn_sensors},
+    {"hold_percent", &Genome::hold_percent},
+    {"hold_cap", &Genome::hold_cap},
+    {"readout_lock_levels", &Genome::readout_lock_levels},
+    {"readout_lock_shift", &Genome::readout_lock_shift},
+    {"readout_lock_hold", &Genome::readout_lock_hold},
+    {"readout_decay", &Genome::readout_decay},
+    {"readout_decay_idle", &Genome::readout_decay_idle},
+    {"readout_lock_from", &Genome::readout_lock_from},
+    {"readout_lock_fade", &Genome::readout_lock_fade},
+    {"time_percent", &Genome::time_percent},
+    {"time_levels", &Genome::time_levels},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

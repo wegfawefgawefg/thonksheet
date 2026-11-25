@@ -162,6 +162,10 @@ struct Blob {
     uint64_t* any_branch = nullptr; // per tile words, fixed at birth: which neurons are
     uint64_t* veto = nullptr;       // of that kind
     uint64_t* coincide = nullptr;
+
+    // long memory (long_memory.hpp): integrator cells and the evidence freezer. null until
+    // one of their genome switches is on
+    struct BlobLongMemory* long_memory = nullptr;
 };
 
 // birth and death

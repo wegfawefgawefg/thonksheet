@@ -22,8 +22,9 @@
 #   scripts/task.sh cartpole --cart-integrator semi   a push moves the pole the same step, so a
 #                                                     step's reward judges its own press
 # Any engine or rule: --engine minimal, --table, or genome numbers (--g.name value).
-# A long life: --long is 1,000,000 steps in 100 windows (the csv stays 100 lines):
-#   scripts/task.sh cartpole --long --engine minimal
+# A long life: --million is 1,000,000 steps in 100 windows (the csv stays 100 lines):
+#   scripts/task.sh cartpole --million --engine minimal
+# (--long, unchanged, goes to blobrun: the long-memory protocol, scripts/longlife.sh)
 # Prints the score early and late in the life for the blob, the same blob with learning
 # off, coin flips and a perfect player, and episodes per life (falls, dots, arrivals).
 # Score per window goes to out/<task>-s<seed>.csv. The whole ladder: scripts/ladder.py.
@@ -44,7 +45,7 @@ forage) side=2 ;;
 esac
 args=()
 for a in "$@"; do
-    if [ "$a" = --long ]; then
+    if [ "$a" = --million ]; then
         args+=(--steps 1000000 --windows 100)
     else
         args+=("$a")

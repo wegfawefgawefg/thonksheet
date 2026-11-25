@@ -19,6 +19,7 @@ enum class Protocol {
     shown,     // the task with the answer shown (the right cells made to fire), no reward;
                // then tested with no help and no reward (life_shown_damage.cpp)
     damage,    // the task, then part of the sheet silenced, then the task again
+    longlife,  // long memory: per-bucket scores and the forgetting table (life_long.cpp)
 };
 
 // blobrun's command line, parsed into plain settings

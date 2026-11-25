@@ -18,7 +18,7 @@ checks; the suite's new rows. How to finish: "Unfinished" at the end.
   pendulum each with an energy and a goal reward) and three cartpole variants (wide
   starts, a relative reward, a semi-implicit step), all integer or 16.16, each checked with
   coin flips and a scripted player; episodes per life printed and in the summary;
-  `--windows N` and `scripts/task.sh --long`; `scripts/ladder.py`; 14 suite rows after the
+  `--windows N` and `scripts/task.sh --long` (now `--million`); `scripts/ladder.py`; 14 suite rows after the
   old ones.
 - **Cartpole as built cannot be learned by any rule we have, for a reason in the world, not
   the blob.** Gym's Euler step moves the pole by the spin from before the push, so a step's
@@ -308,7 +308,7 @@ million steps is the most useful unrun life.
 ```
 cmake -S . -B build && nice -n 19 cmake --build build -j4
 scripts/task.sh bandit                         one world, one life, beside twin, coin, scripted
-scripts/task.sh cartpole --cart-integrator semi --long --engine minimal     a million steps
+scripts/task.sh cartpole --cart-integrator semi --million --engine minimal  a million steps
 python3 scripts/ladder.py run --rules minimal              every world, seeds 5-12, 40,000 steps
 python3 scripts/ladder.py run --rules readout --long --seeds 5-8 --worlds cartpole,catch
 python3 scripts/ladder.py table                            the tables below

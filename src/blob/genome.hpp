@@ -203,6 +203,20 @@ struct Genome {
     int tile_winners = 0;        // 75: at most this many neurons of a tile keep their spike,
                                  //     the ones furthest over threshold
     int syn_sensors = 1;         // 66, 67: 1 sensor cells' spikes tire and warm too; 0 not
+    // long memory (long_memory.cpp). 0 is off and changes nothing.
+    int hold_percent = 0;         // integrator cells: share of excitatory inner neurons
+    int hold_cap = 15;            // their onset count stops here
+    int readout_lock_levels = 0;  // the freezer on readout evidence: lock depth, up to 3
+    int readout_lock_shift = 4;   // a push at the end of the range deepens with 2^-this
+    int readout_lock_hold = 3;    // a move against depth d goes with 2^-(this * d)
+    int readout_decay = 0;        // per motor-cell update, this many random counters step
+                                  // toward 0 (locked ones do not): forgetting makes room
+    int readout_decay_idle = 0;   // 1: only sources idle in the graded window decay
+    int readout_lock_from = 0;    // a push agreeing with a counter this strong deepens a
+                                  // lock (0: only at the end of the range)
+    int readout_lock_fade = 0;    // a decay pick on a lock lowers it with 2^-this (0 never)
+    int time_percent = 0;         // time cells: share of excitatory inner neurons
+    int time_levels = 14;         // their log bins, 16 ticks up to 2^(4 + this)
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

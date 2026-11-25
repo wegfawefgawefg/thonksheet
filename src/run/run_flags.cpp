@@ -154,7 +154,6 @@ static bool parse_map_flag(const char* flag, int64_t v, RunFlags& flags) {
         {"--rare", &t.rare},
         {"--flip-pct", &t.flip_pct},
         {"--context-early", &t.context_early},
-        {"--switch-every", &t.switch_every},
         {"--fill", &t.fill},
         {"--back", &t.back},
         {"--markov-order", &t.markov_order},
@@ -190,7 +189,12 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
         const char* flag = argv[i];
         if (std::strcmp(flag, "--help") == 0 || std::strcmp(flag, "-h") == 0) {
             std::fputs(usage, stderr);
+            std::fputs(long_usage, stderr);
             return false;
+        }
+        if (std::strcmp(flag, "--long") == 0) {
+            flags.protocol = Protocol::longlife;
+            continue;
         }
         if (std::strcmp(flag, "--no-baselines") == 0) {
             flags.baselines = false;
@@ -400,6 +404,8 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.babble.memory_shift = (int)v;
         } else if (std::strcmp(flag, "--signal-report") == 0) {
             flags.babble.report = (int)v;
+        } else if (long_flag(flag, v, flags.task_settings.longs)) {
+            // a long-memory world's number (task_long_flags.cpp)
         } else if (!parse_map_flag(flag, v, flags)) {
             std::fprintf(stderr, "blobrun: unknown flag %s\n%s", flag, usage);
             return false;

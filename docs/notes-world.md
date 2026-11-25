@@ -209,7 +209,7 @@ scripts/task.sh forage --forage-warmer 0
 scripts/task.sh mountain-car --classic-reward goal
 scripts/task.sh pendulum
 scripts/task.sh cartpole --cart-start wide | --cart-reward relative | --cart-integrator semi
-scripts/task.sh cartpole --long                     1,000,000 steps in 100 windows
+scripts/task.sh cartpole --million                  1,000,000 steps in 100 windows
 python3 scripts/ladder.py run --rules minimal [--long]; python3 scripts/ladder.py table
 ```
 
@@ -400,6 +400,30 @@ life is the standard one (20 ticks a step, 3x3 groups, 40,000 steps, windows of 
 protocols windows of 200 and a 10,000-step retest); the sheet worlds use 2x2 sensor groups.
 Runs go to `out/map/<name>/`; split across machines with `--levels`, copy the runs into one
 folder and `--print`.
+
+## Long memory worlds and `--long` (2026-11-25)
+
+`world/task_long.cpp` (hold, pairs, once, rare, drift; settings in `task_long.hpp`, flags in
+`task_long_flags.cpp`) and `run/life_long.cpp` (the protocol). Definitions:
+`docs/curriculum.md`, "Long memory". Shared edits were kept to the enum, the name table, one
+case group per switch in `task.cpp`, one `LongSettings` in `TaskSettings`, one `LongState`
+in `Task`, one flag hook in `run_flags.cpp` and one protocol entry.
+
+- `blobrun --long --task pairs ...` runs the engine, coin flips and the perfect player (the
+  learning-off twin only without `--no-baselines`), one life each, and writes per window
+  per driver a row of each bucket's right answers over asks (`score` is the headline:
+  probes for pairs and once, the rare patterns for rare, all pairs for drift, asks for
+  hold). The summary has `<bucket>_all`, `_before`, `_after` (split at `drift_at` for
+  drift, half the life otherwise), `_asked`, and `held` for pairs and once.
+- `held` is the forgetting curve above chance rescaled to 0..1, integrated over age (flat
+  before age 100, straight lines between ages), over steps per pair; an age within two
+  standard errors of chance counts as 0.
+- For the full engine the end of a life also prints button cells with no connection and the
+  share of evidence counters at an end of their range or not zero.
+- Speed: a step is 20 ticks, so 10M steps is 200M ticks. On this PC under load the full
+  engine ran 20k to 38k ticks/s, table neurons about 14k; on stevejobs under load table
+  neurons about 19k, the minimal engine about 58k (a 10M-step life about 1 hour).
+- Ticks per step stay 20 as everywhere; a hold gap is given in steps (`--hold-steps`).
 
 ## Reading a scorecard run with a readout rule in its flags (2026-11-25)
 
