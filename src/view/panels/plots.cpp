@@ -22,18 +22,25 @@ static const ImVec4 line_colors[LINE_COUNT] = {
 
 // one series from a ring of LinePoints, oldest first, scaled from 0 to its own top (or
 // floor_top, if higher)
-static void plot_series(int line, const LinePoint* ring, int count, int oldest, float height,
-                        float floor_top) {
+static void plot_series(const ViewFrame& f, int line, const LinePoint* ring, int count, int oldest,
+                        float height, float floor_top) {
     float top = 0, sum = 0;
     for (int i = 0; i < count; ++i) {
         top = std::max(top, ring[i].v[line]);
         sum += ring[i].v[line];
     }
     const float newest = count > 0 ? ring[(oldest + count - 1) % count].v[line] : 0.0f;
+    const char* name = engine_line_name(static_cast<Engine>(f.engine), line);
+    const bool known = (f.lines_known >> line) & 1;
     char overlay[96];
-    std::snprintf(overlay, sizeof overlay, "%s  now %.0f  mean %.2f  top %.0f", line_names[line],
-                  newest, count > 0 ? sum / count : 0.0f, top);
-    ImGui::PushStyleColor(ImGuiCol_PlotLines, line_colors[line]);
+    if (known) {
+        std::snprintf(overlay, sizeof overlay, "%s  now %.0f  mean %.2f  top %.0f", name, newest,
+                      count > 0 ? sum / count : 0.0f, top);
+    } else {
+        std::snprintf(overlay, sizeof overlay, "%s: not counted by the %s", name,
+                      engine_names[f.engine]);
+    }
+    ImGui::PushStyleColor(ImGuiCol_PlotLines, known ? line_colors[line] : DIM);
     ImGui::PushID(line);
     ImGui::PlotLines("##line", &ring[0].v[line], count, oldest, overlay, 0.0f,
                      std::max({top * 1.1f, floor_top, 1.0f}), ImVec2(-1, height),
@@ -80,7 +87,8 @@ void lines_panel(State& s) {
             target += sector.target;
         }
         for (int line = 0; line < LINE_COUNT; ++line) {
-            plot_series(line, ring, count, oldest, height, line == LINE_FIRED ? 2 * target : 0);
+            plot_series(s.frame, line, ring, count, oldest, height,
+                        line == LINE_FIRED ? 2 * target : 0);
         }
     }
     ImGui::End();
@@ -106,7 +114,22 @@ static void plot_histogram(const char* name, const Histogram& h, const char* uni
 
 void histograms_section(State& s) {
     const ViewFrame& f = s.frame;
-    ImGui::SeparatorText("histograms");
+    if (!ImGui::CollapsingHeader("histograms", f.task.on ? 0 : ImGuiTreeNodeFlags_DefaultOpen)) {
+        return;
+    }
+    plot_histogram("spikes per neuron (bins 0,1,2-3,4-7..)", f.rate, "");
+    if (f.has & HAS_THRESHOLDS) {
+        plot_histogram("threshold", f.threshold, "");
+    }
+    if (f.has & HAS_FAN_IN) {
+        plot_histogram("fan-in", f.fan_in, "links");
+    }
+    if (!(f.has & HAS_WEIGHTS)) {
+        ImGui::TextColored(DIM, "the %s has no weight levels or lengths to count%s",
+                           engine_names[f.engine],
+                           f.has & HAS_THRESHOLDS ? "" : ", nor thresholds and fan-in");
+        return;
+    }
 
     // weight levels, counted over every possible source in every live slot
     const uint64_t connected = f.weight_levels[1] + f.weight_levels[2] + f.weight_levels[3];
@@ -124,9 +147,5 @@ void histograms_section(State& s) {
     }
     ImGui::TextColored(DIM, "0 (empty, could connect): %llu",
                        static_cast<unsigned long long>(f.weight_levels[0]));
-
-    plot_histogram("spikes per neuron (bins 0,1,2-3,4-7..)", f.rate, "");
-    plot_histogram("threshold", f.threshold, "");
-    plot_histogram("fan-in", f.fan_in, "links");
     plot_histogram("length", f.length, "cells");
 }

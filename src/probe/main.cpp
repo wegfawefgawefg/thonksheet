@@ -9,6 +9,7 @@ int probe_carry(int argc, char** argv);
 int probe_feature(int argc, char** argv);
 int probe_linear(int argc, char** argv);
 int probe_invariance(int argc, char** argv);
+int probe_wiring(int argc, char** argv);
 
 int int_arg(int argc, char** argv, const char* name, int fallback) {
     for (int i = 1; i + 1 < argc; i++) {
@@ -44,8 +45,11 @@ int main(int argc, char** argv) {
     if (argc > 1 && std::strcmp(argv[1], "invariance") == 0) {
         return probe_invariance(argc, argv);
     }
-    std::fputs(
-        "blobprobe rhythm|carry|feature|linear|invariance [--label text] [--seed n] [--g.name value ...]\n",
-        stderr);
+    if (argc > 1 && std::strcmp(argv[1], "wiring") == 0) {
+        return probe_wiring(argc, argv);
+    }
+    std::fputs("blobprobe rhythm|carry|feature|linear|wiring|invariance [--label text] [--seed n] "
+               "[--g.name value ...]\n",
+               stderr);
     return 1;
 }

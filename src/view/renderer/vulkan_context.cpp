@@ -196,6 +196,7 @@ void shutdown(Renderer& r) {
         for (Slot& s : g.slots) {
             destroy_buffer(g, s.tape);
             destroy_buffer(g, s.marks);
+            destroy_buffer(g, s.overlay);
             vkDestroyFence(g.device, s.fence, nullptr);
             vkDestroySemaphore(g.device, s.acquired, nullptr);
         }

@@ -56,8 +56,8 @@ alone: a design may pass tier 4 before tier 3.
 | 1 | association | echo with 2, 4, 8, 16 cues; shuffled echo; go/no-go | passed: the evidence readout gets 2 to 8 cues, 16 at 0.31 |
 | 2 | combination | exclusive-or; the function battery's N-point patterns, counting | exclusive-or 0.88; the rest being built |
 | 3 | magnitude | functions of a number: step, tent, sine, cosine, sums, products | being built |
-| 4 | time | order; gap; delayed echo; beat; sequence; functions of the last few cues | order 0.70 to 0.84; a cue is held 20 ticks; everything needing a longer hold fails |
-| 5 | space and what stays the same | the invariance battery: place, scale, turn, thickness, clutter, viewpoint | place fails (0.25); the rest being built |
+| 4 | time | order; gap; delayed echo; beat; sequence; functions of the last few cues | on one richer sheet (rich2) with nothing changed between them: order 0.85, gap 0.93; a cue is still held only about 20 ticks, so delayed echo and beat fail |
+| 5 | space and what stays the same | the invariance battery: place, scale, turn, thickness, clutter, viewpoint; the seeing battery: name the shape, track a moving thing, count, a thing behind a cover | place fails (0.25); the rest being built |
 | 6 | sound | the invariance battery's tune, tempo and pitch rows | being built |
 | 7 | acting | bandit; switching bandit; chain; track; catch; forage; mountain car; pendulum; cartpole; snake | catch 0.32 (chance 0.25); cartpole below a coin; the rest being built |
 | 8 | keeping and adding | second task after the first; retest; idle; capacity; a changed rule; damage | second task 0.99 with the first kept at 0.98; idle loses nothing |
@@ -65,6 +65,16 @@ alone: a design may pass tier 4 before tier 3.
 | 10 | no teacher | predict the next input; fill in a missing part; notice the odd one | hole |
 | 11 | real data | MNIST digits; spoken digits or tones; characters of text | being built (MNIST first) |
 | 12 | the long game | a maze; snake on a big board; several tasks interleaved for a whole life | hole |
+
+### The fixed reference
+
+One ordinary network setting run on the same rows (`scripts/reference.sh`, idea 117): a
+GRU of 128 units, backprop through 8 steps, told only good and bad. It is the bar for
+"learnable": tier 1 all 1.00 (16 cues included), exclusive-or 0.97, tier 4's delayed echo,
+beat, order and gap all 1.00, catch 0.72, tier 8 1.00. It fails the place never rewarded
+(0.16), holds longer than 8 steps, and cartpole. A world the reference fails is either
+truly hard or badly made; cartpole's "lean" reward and the place world are marked suspect
+until checked.
 
 ## Milestones worth naming
 
@@ -84,5 +94,5 @@ alone: a design may pass tier 4 before tier 3.
 
 Kinds of task with no world yet: learning with no teacher (tier 10); the long game (tier
 12); output that is a whole pattern or an amount instead of a button; being shown the answer
-(imitation); damage to the sheet. Each needs a world before any design can be said to work
+(imitation); damage to the sheet; a changed rule on the *same* lines and buttons (today's second task uses new ones, so nothing interferes). Each needs a world before any design can be said to work
 on "any task".

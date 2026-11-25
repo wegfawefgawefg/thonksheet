@@ -8,3 +8,4 @@
 *.swp
 /.claude/worktrees/
 compile_commands.json
+__pycache__/

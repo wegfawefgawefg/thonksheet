@@ -5,25 +5,32 @@
 
 bool sim_birth(Sim& sim, const SimSettings& settings) {
     sim.settings = settings;
+    sim.engine = settings.engine.engine;
     sim.rng = settings.seed * 0x9e3779b97f4a7c15ull + 7;
     sim.input_was_on = false;
     sim.task.on = false;
-    if (settings.fake) {
-        if (settings.task) {
-            std::fprintf(stderr, "blobview: --task runs the real blob, not --fake\n");
+    sim.counts = EngineCounts{};
+    sim.probe = SimProbe{};
+    if (!engine_built(sim.engine)) {
+        return false;
+    }
+    if (sim.engine == ENGINE_FAKE) {
+        if (settings.task || settings.probe.feature >= 0) {
+            std::fprintf(stderr, "blobview: --task and --probe run a real engine, not --fake\n");
             return false;
         }
-        sim.fake_blob = fake_blob_birth(settings.genome, settings.seed, settings.scene);
+        sim.fake_blob = fake_blob_birth(settings.engine.genome, settings.seed, settings.scene);
     } else {
-#if BLOB_HAS_CORE
-        sim.blob = blob_birth(settings.genome, settings.seed);
-#else
-        std::fprintf(stderr, "blobview: built without the core; only --fake runs\n");
-        return false;
-#endif
+        sim.blob = engine_birth(settings.engine, settings.seed, true);
+        if (sim.blob == nullptr) {
+            return false;
+        }
     }
     if (settings.task && (!sim_task_start(sim) || !twin_birth(sim.twin, settings))) {
         return false;
+    }
+    if (settings.probe.feature >= 0) {
+        sim_probe_ask(sim, settings.probe.feature);
     }
     tape_init(sim.tape, sim_blob(sim).tile_count);
     sim.shared.ticks = 0;
@@ -36,16 +43,25 @@ void sim_free(Sim& sim) {
         fake_blob_free(sim.fake_blob);
         sim.fake_blob = nullptr;
     }
-#if BLOB_HAS_CORE
-    if (sim.blob != nullptr) {
-        blob_free(sim.blob);
-        sim.blob = nullptr;
-    }
-#endif
+    engine_free(sim.engine, sim.blob);
+    sim.blob = nullptr;
 }
 
 const Blob& sim_blob(const Sim& sim) {
     return sim.fake_blob != nullptr ? sim.fake_blob->blob : *sim.blob;
+}
+
+// the tick's counts for the lines over time: the engine's own, and the reward lines from
+// the broadcast (full engine) or the plug's good and bad lines (any engine)
+static LinePoint line_point(Sim& sim) {
+    const Blob& b = sim_blob(sim);
+    LinePoint p;
+    engine_line_point(sim.engine, b, sim.counts, p);
+    const Plug& plug = sim.task.ticker.plug;
+    const bool task = sim.task.on && sim.task.plugged;
+    p.v[LINE_GOOD] = b.good_ticks > 0 || (task && plug.good_left > 0) ? 1.0f : 0.0f;
+    p.v[LINE_BAD] = b.bad_ticks > 0 || (task && plug.bad_left > 0) ? 1.0f : 0.0f;
+    return p;
 }
 
 bool sim_tick(Sim& sim) {
@@ -57,23 +73,27 @@ bool sim_tick(Sim& sim) {
         }
         fake_blob_tick(*sim.fake_blob);
     } else {
-#if BLOB_HAS_CORE
         if (reward != 0) {
-            blob_reward(*sim.blob, reward);
+            engine_reward(sim.engine, *sim.blob, reward);
         }
-        // the world's side: the task through the plug, or random bits, or nothing
-        if (sim.task.on) {
+        // the world's side: the readability probe, the task through the plug, random bits,
+        // or nothing
+        const bool probing = sim_probe_on(sim);
+        if (probing) {
+            sim_probe_before_tick(sim);
+        } else if (sim.task.on) {
             sim_task_before_tick(sim);
         } else {
             sim_random_input(sim, sim.shared.input_on.load(std::memory_order_relaxed));
         }
-        blob_tick(*sim.blob);
-        if (sim.task.on) {
+        engine_tick(sim.engine, *sim.blob);
+        if (probing) {
+            sim_probe_after_tick(sim);
+        } else if (sim.task.on) {
             answered = sim_task_after_tick(sim);
         }
-#endif
     }
-    tape_record(sim.tape, sim_blob(sim));
+    tape_record(sim.tape, sim_blob(sim), line_point(sim));
     sim.shared.ticks.store(sim.tape.ticks, std::memory_order_relaxed);
     return answered;
 }
@@ -83,8 +103,17 @@ void sim_fill(Sim& sim, ViewFrame& out, int selected) {
     const bool heavy = sim.fills % 6 == 0;
     ++sim.fills;
     tape_copy_new(out.tape, sim.tape);
-    frame_fill(out, sim_blob(sim), selected, heavy, sim.fake_blob == nullptr);
+    frame_fill(out, sim_blob(sim), selected, heavy, sim.engine);
     sim_task_fill(sim, out.task, out.scores);
+    if (sim.task.on) {
+        out.readout = sim.task.readout.view;
+    } else {
+        out.readout = ReadoutView{};
+    }
+    if (sim.blob != nullptr) {
+        readout_fill_selected(sim.task.readout, *sim.blob, out.selected);
+    }
+    sim_probe_fill(sim, out);
 }
 
 static void sim_loop(Sim& sim) {
@@ -92,8 +121,17 @@ static void sim_loop(Sim& sim) {
     SimShared& sh = sim.shared;
     clock::time_point next_slow = clock::now();
     while (!sh.quit.load()) {
+        // a readability measurement asked for from the panel
+        const int measure = sh.measure.exchange(-1);
+        if (measure >= 0) {
+            sim_probe_ask(sim, measure);
+        }
+
         // tick or not, by the mode
-        const int mode = sh.mode.load();
+        // a measurement asked for runs flat out whatever the mode, so it never takes minutes
+        const bool measuring = (sim.probe.on || sim.probe.pending >= 0) && !sim.probe.live &&
+                               sim.settings.probe.feature < 0;
+        const int mode = measuring ? RUN_FULL : sh.mode.load();
         bool tick = false, task_step = false;
         if (mode == RUN_FULL || mode == RUN_TURBO) {
             tick = true;
@@ -165,7 +203,8 @@ bool sim_take(Sim& sim, ViewFrame& to) {
 bool sim_restart(Sim& sim, bool learning_on) {
     sim_stop(sim);
     SimSettings settings = sim.settings;
-    settings.genome.learning_on = learning_on ? 1 : 0;
+    settings.engine.genome.learning_on = learning_on ? 1 : 0;
+    settings.engine.table.learning_on = learning_on ? 1 : 0;
     sim_free(sim);
     sim.shared.steps = 0;
     sim.shared.task_steps = 0;
@@ -183,6 +222,10 @@ double sim_run_capture(Sim& sim, int64_t ticks) {
         twin_start(sim.twin);
     }
     for (int64_t i = 0; i < ticks; ++i) {
+        const int measure = sim.shared.measure.exchange(-1);
+        if (measure >= 0) {
+            sim_probe_ask(sim, measure);
+        }
         sim_tick(sim);
     }
     const double secs =

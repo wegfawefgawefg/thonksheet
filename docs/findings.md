@@ -8,14 +8,23 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
 
 ## The headline (2026-11-25)
 
-**A sheet that was never taught anything, plus a readout that adds up evidence, learns
-things no input line carries.** With every connection inside the sheet frozen as born, a
-rule at the motor cells learns exclusive-or of two cues (0.88), which cue came first (0.70,
+**The output can now learn online, from good and bad alone, things no input line carries.**
+In a test with the inside of the sheet held fixed as born (a way to find where learning
+happens, not a goal), a rule at the motor cells learns exclusive-or of two cues (0.88), which cue came first (0.70,
 0.84 with long delays), Echo with the cue three tiles from the button (0.85), four cues
 (1.00) and eight (0.84), and shuffled Echo with no locked lives (1.00 on eight seeds of
 eight). The same sheet with the old readout scored chance on all of these. The owner's
 thesis, that a rich enough sheet turns learning into selection, holds for everything a
 plain linear reader can get out of the sheet. docs/results-2026-11-24-readout.md
+
+**What this is not.** The goal is a brain that learns everywhere, all the time, on any task
+(the owner, 2026-11-25: "i didnt say it needs to be never taught ... the whole point is it
+should be able to learn new things right? run nonstop. online learning for any task"). The
+readout does learn that way: it never stops, it picks up a second task without losing the
+first. The inside does not yet. Held fixed, it can only offer what it was born with, which
+is why a shape in a new place, a long gap and sixteen cues fail. Letting the old inner rule
+run alongside helps reach and hurts the feature tasks. Making the inside learn usefully,
+online, is the open problem and the next target.
 
 The full suite on that rule (`blob-readout` in docs/scoreboard.md, 8 seeds, sheet frozen)
 agrees and adds: a second task is learned after the first (0.99) with the first still there
@@ -23,6 +32,20 @@ agrees and adds: a second task is learned after the first (0.99) with the first 
 nothing lost after being unplugged (1.00 before, 1.00 after); Echo five tiles away 0.59;
 catch 0.32 where chance is 0.25. Still failing: delayed echo (0.55), beat, gap (0.52),
 cartpole (below a coin), and a shape in a place it was never rewarded (0.25, below chance).
+
+**Where we stand against ordinary networks (2026-11-25).** A plain recurrent network (a
+GRU of 128 units trained by backprop through its last 8 steps), with one fixed setting,
+behind the same plug and told only good and bad, learns every world any of our engines
+learns, at the same or a higher score, and several that none of ours learn: sixteen cues
+(1.00 against our 0.31), delayed echo, beat, order and gap (all 1.00), catch (0.72 against
+0.32). Our only lead is speed on plain association (1,000 steps against 2,000 to 3,000).
+So nothing here beats standard methods yet, and the bar for "learns it" on these worlds is
+1.00, not "above chance". What the reference cannot do is as useful: a shape in a place
+never rewarded (0.16, below chance, same as ours), a hold longer than its window (fails at
+11 steps), and cartpole from good and bad alone (worse than a coin; shown the right press
+it balances for 1,000 steps). Those three are not our private walls. They are where a
+fixed ordinary network also stops, and where it would normally be redesigned per task.
+docs/results-2026-11-25-fixed-net-reference.md
 
 ## Principles that hold so far
 
@@ -108,7 +131,11 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
     where the cells sit.
 17. **Do not strengthen your own answer on good.** [likely] The rule above never does, and
     it has no locked lives: shuffled Echo is 1.00 on every seed, crossed ones included,
-    where the old rule averaged 0.56.
+    where the old rule averaged 0.56. *The literature says this is too strong* (Baldassi
+    and others 2007, binary synapses with hidden states like ours): never on a comfortable
+    good, but on a good that was barely won, deepen the hidden evidence of what helped.
+    Without that case learning time grows exponentially with size; with it, about twice as
+    many patterns are held. Being tested (the tags-and-margin run).
 
 18. **Size does not break it, so far.** [hint] Echo scores the same with the sheet grown 16
     times around the same task (minimal engine 0.94, 0.93, 0.92 at 4,096, 16,384 and 65,536
@@ -123,12 +150,49 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
     read order and gap three to four times better than the default and exclusive-or up to
     twice as well, on fresh seeds. No single number does it (best rank correlation 0.3):
     longer delays for time, denser local wiring, the dendrite-branch bonus for
-    exclusive-or, more inhibitory neurons. Whether richer sheets learn better through the
-    readout is being tested.
+    exclusive-or, more inhibitory neurons. Richer sheets do learn better through the
+    readout, some of them by a lot: the gap task, which nothing had learned (0.52), reaches
+    0.93 on one of them, and that same sheet gets order 0.85 and exclusive-or 0.94 with
+    nothing changed between the three. The fast screen is a rough guide only: two sheets
+    that read better in the probe learned worse in the task.
 21. **A mechanism can only be judged on a task that needs it, through a readout that can
     read.** [solid] Delays, far links and the branch bonus all measured as doing nothing on
     Echo. Delays turned out to carry time, far links reach, and the branch bonus
     exclusive-or.
+
+22. **Holding and mixing want different sheets.** [hint] A sheet tuned to keep ringing (few
+    and gentle inhibitory neurons, dense local wiring, a high activity target) keeps a cue
+    readable for 60 ticks, three times the default's limit, and tells cues apart a third
+    as well while they are on. Nothing found by tuning holds 150 ticks. So one region to
+    ring and one to mix, and a real mechanism for anything longer.
+
+23. **Where inhibition reaches is a lever; tidy structure is not.** [hint: four seeds, sheet
+    as born, ideal reader] Inhibition kept inside its own tile nearly triples how readable
+    a gap is (1.60 to 4.62) and lifts exclusive-or (1.76 to 2.84), at a cost to telling
+    cues apart and to order. Links that go both ways help a little everywhere. Layers
+    inside a tile, finer locality, fewer neighbour slots, hubs and topographic far links
+    make the sheet poorer or change nothing. A second sheet fed by the first, and a gentle
+    flow in one direction, add reach only.
+24. **Wiring laid down at birth does not last.** [hint: one seed] With learning on, growth
+    and pruning took mirror wiring from 0.80 reciprocal back to 0.15 within 100,000 ticks.
+    A wiring idea has to live in the growth rule to survive a life.
+
+## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
+
+- Finding 14's hidden counter is a known device (permanence in HTM; hidden states in binary
+  synapses), and the best number of hidden states is small. Our 6 bits fits.
+- Finding 15's "which action was taken" bit is what the attention-gated rules (AGREL,
+  AuGMEnT, BrainProp) send back from the chosen action to tag the neurons that fed it. It
+  is the most direct known route from our readout to the inside. Being tested.
+- Finding 13 has a stronger form: reward must be centred per situation, which takes a
+  critic, not one running average. An actor told only good and bad failed cartpole in 1983
+  too; it took a critic. Being tested.
+- Finding 12 stands (perturbing single neurons scales badly), with one open door:
+  perturbing connections, or every unit at once by its own code (idea 138).
+- Finding 1's budget has to act fast, and a trained readout wants a bigger budget than the
+  sheet (fits finding 16).
+- A warning for any holding region (Braitenberg): activity held while co-activity wiring
+  runs ties the held units together and loses their order.
 
 ## Walls
 
@@ -151,10 +215,14 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
   Any rule graded against its own average also freezes once every reward equals the
   average: an all-wrong life stops moving.
 - **A new place.** A shape learned in some places is answered wrongly in a place never
-  rewarded (0.25 where chance is 0.49). Nothing in the sheet shares what one patch learned
+  rewarded (0.25 where chance is 0.49). The reference networks fail it the same way (0.16),
+  so the wall is real and general, though the world itself needs a cell-by-cell check
+  (everything scores below chance, which smells of overlapping shapes). Nothing in the sheet shares what one patch learned
   with another. This is the missing prior the owner started from on day one (a convolution
   shares; this sheet does not).
-- **Acting in a world.** Nothing learns catch or cartpole. On cartpole learning makes the
-  full engine worse than a coin.
+- **Acting in a world.** Nothing of ours learns catch or cartpole. On cartpole learning
+  makes the full engine worse than a coin, and the reference networks too: the "lean"
+  reward grades the press before the one it follows (a fault in the world, being fixed),
+  and the sparse reward needs credit carried 25 steps back. The GRU learns catch (0.72).
 - **More than four things.** Eight cues are now learned (0.84) by the new readout on the
   full engine. Sixteen is untested with it.
