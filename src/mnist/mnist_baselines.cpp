@@ -3,6 +3,9 @@
 // by backprop for one pass, and a fixed random binary projection of the bits read by the
 // same linear classifier (the honest rival of a never-taught sheet plus a readout). The
 // linear classifier on grey pixels is there for the usual reference number.
+// --pair 1|2 [--pair-mix 1]: the same learners on pairs of half-size digits (mnist_data.hpp),
+// each digit paired with one drawn from its index; no grey pixels, no moved digits.
+// --net-passes N: the two-layer network's passes (default 1); --hidden N its units.
 
 #include "mnist/mnist_learn.hpp"
 #include "mnist/mnist_run.hpp"
@@ -22,6 +25,20 @@ static void encode_rows(const MnistSet& set, int first, int count, int code, int
     for (int i = first; i < first + count; i++) {
         mnist_encode(&set.pixels[(size_t)i * MNIST_PIXELS], code, dx, dy, bits.data());
         rows_add(rows, bits.data(), set.labels[(size_t)i]);
+    }
+}
+
+// pairs: digit i of [first, first + count) with a partner drawn from i
+static void pair_rows(const MnistSet& set, int first, int count, int pair, int mix, Rows& rows) {
+    rows = Rows{};
+    rows.d = MNIST_PIXELS;
+    std::vector<uint8_t> bits((size_t)MNIST_PIXELS);
+    for (int i = first; i < first + count; i++) {
+        int j = mnist_partner(set, first, count, i, pair, 0x7061697273ull ^ ((uint64_t)i << 20));
+        mnist_pair_encode(&set.pixels[(size_t)i * MNIST_PIXELS],
+                          &set.pixels[(size_t)j * MNIST_PIXELS], mix, bits.data());
+        rows_add(rows, bits.data(),
+                 mnist_pair_answer(set.labels[(size_t)i], set.labels[(size_t)j], pair));
     }
 }
 
@@ -126,18 +143,27 @@ int mnist_baselines(int argc, char** argv) {
     float lr = (float)int_flag(argc, argv, "--lr-1000", 3) / 1000.0f;
     float lr2 = (float)int_flag(argc, argv, "--lr2-1000", 3) / 1000.0f;
     uint64_t seed = (uint64_t)int_flag(argc, argv, "--seed", 1);
-    bool grey = int_flag(argc, argv, "--grey", 1) != 0;
+    int pair = int_flag(argc, argv, "--pair", 0), mix = int_flag(argc, argv, "--pair-mix", 0);
+    int net_passes = int_flag(argc, argv, "--net-passes", 1);
+    bool grey = int_flag(argc, argv, "--grey", 1) != 0 && pair == 0;
     const MnistSet& eval_set = val ? data->train : data->test;
     int eval_first = val ? 50000 : 0, eval_count = val ? 10000 : data->test.count;
 
-    std::printf("baselines  code %s  trained on %d training digits  scored on %s (%d digits)\n",
+    const char* pairs = pair == 1 ? "  pairs: parity of the sum" : "";
+    pairs = pair == 2 ? "  pairs: same class" : pairs;
+    std::printf("baselines  code %s  trained on %d training digits  scored on %s (%d digits)%s\n",
                 mnist_code_name(code), train_count, val ? "validation 50000-59999" : "test",
-                eval_count);
+                eval_count, pairs);
     std::printf("%-34s %8s %8s %8s %9s\n", "learner", "test", "moved 1", "moved 2", "train s");
     Rows train, test;
     std::vector<Rows> moved(2 * SHIFT_DIRECTIONS);
     // fills train, test and the moved tests with one encoding
     auto make = [&](bool as_grey) {
+        if (pair) {
+            pair_rows(data->train, 0, train_count, pair, mix, train);
+            pair_rows(eval_set, eval_first, eval_count, pair, mix, test);
+            return; // no moved digits
+        }
         if (as_grey) {
             grey_rows(data->train, 0, train_count, 0, 0, train);
             grey_rows(eval_set, eval_first, eval_count, 0, 0, test);
@@ -162,7 +188,7 @@ int mnist_baselines(int argc, char** argv) {
         double secs = now_seconds() - t0;
         double acc = score(test);
         double m[2] = {0, 0};
-        for (int s = 0; s < 2; s++) {
+        for (int s = 0; s < 2 && !pair; s++) {
             for (int dir = 0; dir < SHIFT_DIRECTIONS; dir++) {
                 m[s] += score(moved[(size_t)(s * SHIFT_DIRECTIONS + dir)]) / SHIFT_DIRECTIONS;
             }
@@ -198,8 +224,8 @@ int mnist_baselines(int argc, char** argv) {
         Scale s = scale_fit(train);
         TwoLayer net;
         double t0 = now_seconds();
-        two_layer_train(net, train, s, MNIST_CLASSES, hidden, 1, lr2, seed);
-        std::snprintf(name, sizeof name, "two-layer, %d hidden, 1 pass", hidden);
+        two_layer_train(net, train, s, MNIST_CLASSES, hidden, net_passes, lr2, seed);
+        std::snprintf(name, sizeof name, "two-layer, %d hidden, %d pass", hidden, net_passes);
         report(name, t0, [&](const Rows& r) { return two_layer_accuracy(net, r, s); });
     }
     {

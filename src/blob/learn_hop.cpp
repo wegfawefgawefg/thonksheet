@@ -13,6 +13,10 @@
 // were right (blob_hop_lines). on bad, a pressed line that was not right should have been
 // lower (-1); with hop_teach 2 a right line that was not pressed should have been higher (+1);
 // with hop_good, on good, the pressed line should have been higher. nothing else is known.
+// hop_teach 3 (docs/results-2026-11-25-hop-real.md): every verdict teaches from the answer
+// alone; a line's error is its target (1 right, 0 not) less its running rate of being right,
+// in 1/65536ths, so what the readout pressed plays no part (direct random target projection,
+// Frenkel et al. 2021, centred).
 //
 // one hop. each error line reaches a hidden excitatory cell with chance 2^-hop_wire_shift,
 // with a sign; both come from a hash of the cell and the line, so the wires cost no memory.
@@ -43,6 +47,7 @@ struct HopState {
     int lines = 0;
     int pending = 0;
     uint64_t counts[7] = {}; // see blob_hop_counts
+    int32_t rate[64] = {};   // hop_teach 3: each line's running rate of being right, x65536
 };
 
 enum { LOW_WIRED = 0, HIGH_UNWIRED = 2, LOW_STRONG = 4, HIGH_WEAK = 6 };
@@ -149,6 +154,7 @@ static uint64_t usable(const Blob& blob, int n, int k, uint32_t src) {
     uint64_t u = src == (uint32_t)blob.tile_count ? 0 : ~0ull;
     u &= k == 4 ? ~(1ull << (n % TILE_NEURONS)) : ~0ull;
     u &= k >= LOCAL_SLOTS ? ~blob.inhibitory[src] : ~0ull;
+    u &= ~deep_blocked(blob, n, src);
     return u;
 }
 
@@ -238,6 +244,26 @@ static bool step_slot(Blob& blob, int n, int k, uint32_t src, uint64_t up, uint6
     return cross;
 }
 
+// hop_teach 3: every line's error, target less its running rate (the coin control draws the
+// target line at random); then the rates move toward the targets
+static int target_errors(Blob& blob, HopState& h, int* line, int* sign) {
+    const Genome& g = blob.genome;
+    uint64_t right = h.right;
+    if (g.hop_coin) {
+        right = 1ull << rng_below(blob.rng, (uint32_t)h.lines);
+    }
+    int shift = g.hop_rate_shift < 1 ? 1 : (g.hop_rate_shift > 16 ? 16 : g.hop_rate_shift);
+    int count = 0;
+    for (int l = 0; l < h.lines; l++) {
+        int32_t target = (int32_t)((right >> l) & 1) << 16;
+        int32_t e = target - h.rate[l];
+        h.rate[l] += e / (1 << shift);
+        line[count] = l;
+        sign[count++] = e;
+    }
+    return count;
+}
+
 // one taught cell: its marked sources move toward firing more (more) or less. ages: the
 // bits of the window ticks on which the cell was near (bit a: a ticks before the newest map)
 static void move_cell(Blob& blob, int n, bool more, uint32_t ages) {
@@ -294,7 +320,10 @@ void learn_hop(Blob& blob) {
     int valence = blob.pending_valence;
     // the error lines
     int line[64], sign[64], count = 0;
-    for (int l = 0; l < h.lines; l++) {
+    if (g.hop_teach == 3) {
+        count = target_errors(blob, h, line, sign);
+    }
+    for (int l = 0; g.hop_teach != 3 && l < h.lines; l++) {
         bool pressed = (h.pressed >> l) & 1, right = (h.right >> l) & 1;
         int e = 0;
         if (valence < 0) {
@@ -310,9 +339,16 @@ void learn_hop(Blob& blob) {
     if (count == 0) {
         return;
     }
-    // the coin control: the same errors, each on a line drawn at random
-    for (int i = 0; g.hop_coin && i < count; i++) {
+    // the coin control: the same errors, each on a line drawn at random. hop_coin 2: on
+    // distinct lines, so errors never cancel on one line and as many cells are taught
+    for (int i = 0; g.hop_coin && g.hop_teach != 3 && i < count; i++) {
         line[i] = (int)rng_below(blob.rng, (uint32_t)h.lines);
+        for (int j = 0; g.hop_coin == 2 && j < i; j++) {
+            if (line[j] == line[i]) {
+                line[i] = (int)rng_below(blob.rng, (uint32_t)h.lines);
+                j = -1;
+            }
+        }
     }
     tag_store_make(blob);
     int window = g.hop_window < 1 ? 1 : (g.hop_window > HISTORY - 1 ? HISTORY - 1 : g.hop_window);

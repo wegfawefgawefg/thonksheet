@@ -11,6 +11,7 @@
 //                                     first (how the output gap job measures the lived
 //                                     sheet); --life-freeze 1 then turns competitive
 //                                     learning off, so the readout learns on a frozen inside
+//   --pair 1|2 --pair-mix 0|1         pairs of digits, two buttons (blobmnist ceiling)
 // the rest are blobrun's flags (--seed, --ticks, --motor-spread, --g.name value, ...).
 
 #include "mnist/mnist_run.hpp"
@@ -20,10 +21,9 @@
 #include <cstdlib>
 #include <vector>
 
-static const char* const online_own[] = {"--checks",   "--check-seconds", "--test-count",
-                                         "--pretrain", "--shift",         "--val",
-                                         "--gap",      "--diag",          "--life",
-                                         "--life-freeze"};
+static const char* const online_own[] = {
+    "--checks", "--check-seconds", "--test-count", "--pretrain",   "--shift", "--val",
+    "--gap",    "--diag",          "--life",       "--life-freeze", "--pair",  "--pair-mix"};
 
 static std::vector<int64_t> number_list(const char* text) {
     std::vector<int64_t> out;

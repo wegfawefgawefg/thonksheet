@@ -37,6 +37,9 @@ bool sheet_start(Sheet& s, int argc, char** argv, const char* const* own, int ow
         return false;
     }
     s.flags.task = TaskKind::mnist;
+    // --pair 1|2 [--pair-mix 1]: two half-size digits, two buttons (mnist_data.hpp)
+    s.flags.task_settings.mnist_pair = int_flag(argc, argv, "--pair", 0);
+    s.flags.task_settings.mnist_mix = int_flag(argc, argv, "--pair-mix", 0);
     s.flags.plug.rest_ticks = 0; // the gap is ours, after every digit
     s.gap = int_flag(argc, argv, "--gap", 0);
     bool val = int_flag(argc, argv, "--val", 0) != 0;
@@ -77,6 +80,9 @@ static int one_digit(Sheet& s, bool learn, Rows* counts, std::vector<uint8_t>& c
     }
     if (s.images) {
         s.images->push_back(tt.task.image);
+    }
+    if (s.partners) {
+        s.partners->push_back(tt.task.partner);
     }
     if (s.shuffle) {
         shuffle_draw(s);

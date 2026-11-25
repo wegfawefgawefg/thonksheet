@@ -204,6 +204,9 @@ static const GenomeField fields[] = {
     {"hop_window", &Genome::hop_window},
     {"hop_shift", &Genome::hop_shift},
     {"hop_coin", &Genome::hop_coin},
+    {"hop_rate_shift", &Genome::hop_rate_shift},
+    {"wire_pixel_shift", &Genome::wire_pixel_shift},
+    {"wire_deep_percent", &Genome::wire_deep_percent},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

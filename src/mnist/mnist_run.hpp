@@ -32,6 +32,7 @@ struct Sheet {
     int eval_first = 0, eval_count = 0;
     int64_t ticks = 0;
     std::vector<int>* images = nullptr;      // when set, each digit's index in its set is appended
+    std::vector<int>* partners = nullptr;    // and with --pair, the second digit's
     int64_t presses[MNIST_PRESS_KINDS] = {}; // per button, then "no move", since last cleared
     // idea 155, a control: the blob is told good or bad by a coin instead of the answer
     int coin_reward = 0;

@@ -9,7 +9,9 @@
 // wrong answer). digits come in a seeded random order, a fresh order each pass. with
 // mnist_test the digits are the 10,000 held-out ones and nothing is rewarded. score: right
 // answers over digits. the good and bad lines are left unattached: a step's answer would
-// otherwise be on the sheet while the next digit is shown.
+// otherwise be on the sheet while the next digit is shown. with mnist_pair two half-size
+// digits share the sheet and there are two buttons (mnist_data.hpp): the second digit is
+// drawn from the first's place in the order, so each pass pairs the digits afresh.
 
 static const MnistSet& digit_set(const Task& task) {
     const Mnist* m = mnist_data();
@@ -34,7 +36,15 @@ static void pick_digit(Task& task) {
     int pass = (int)(task.shown / count);
     int at = (int)(task.shown % count);
     task.image = first + mnist_order(at, count, task.order_seed + (uint64_t)pass);
-    task.cue = digit_set(task).labels[(size_t)task.image];
+    const MnistSet& set = digit_set(task);
+    task.cue = set.labels[(size_t)task.image];
+    int pair = task.settings.mnist_pair;
+    if (pair != MNIST_PAIR_OFF) {
+        uint64_t key =
+            task.order_seed ^ ((uint64_t)pass << 40) ^ ((uint64_t)at * 0x2545f4914f6cdd1dull);
+        task.partner = mnist_partner(set, first, count, task.image, pair, key);
+        task.cue = mnist_pair_answer(task.cue, set.labels[(size_t)task.partner], pair);
+    }
 }
 
 void mnist_reset(Task& task) {
@@ -62,6 +72,10 @@ TaskShape mnist_shape(const Task& task) {
     TaskShape shape;
     mnist_code_size(task.settings.mnist_code, shape.sheet_w, shape.sheet_h);
     shape.motors = MNIST_CLASSES;
+    if (task.settings.mnist_pair != MNIST_PAIR_OFF) {
+        shape.sheet_w = shape.sheet_h = MNIST_SIDE;
+        shape.motors = 2;
+    }
     shape.uses_reward = false;
     return shape;
 }
@@ -69,6 +83,12 @@ TaskShape mnist_shape(const Task& task) {
 void mnist_sense(const Task& task, TaskSense& sense) {
     const MnistSet& set = digit_set(task);
     const TaskSettings& s = task.settings;
+    if (s.mnist_pair != MNIST_PAIR_OFF) {
+        mnist_pair_encode(&set.pixels[(size_t)task.image * MNIST_PIXELS],
+                          &set.pixels[(size_t)task.partner * MNIST_PIXELS], s.mnist_mix,
+                          sense.sheet);
+        return;
+    }
     mnist_encode(&set.pixels[(size_t)task.image * MNIST_PIXELS], s.mnist_code, s.mnist_dx,
                  s.mnist_dy, sense.sheet);
 }

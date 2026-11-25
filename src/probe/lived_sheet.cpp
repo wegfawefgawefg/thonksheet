@@ -8,7 +8,9 @@
 // blobprobe transfer --life "<blobrun flags>" [--born 1] --then TASK [--then-k N]
 //     [--then-steps N] [--window N] [--g.name value ...]
 // lives the life (none with --born 1), then freezes the inside (learn mode 5, no tags, no
-// margin rule), puts every motor cell's wiring back as born and wipes the readout's counters,
+// margin rule, no one-hop or competitive rule; --then-inside 1 leaves those two on, which
+// is how docs/results-2026-11-25-hop.md measured its toys), puts every motor cell's wiring
+// back as born and wipes the readout's counters,
 // and lets that fresh readout learn TASK on the same plug. Prints the fresh readout's
 // windows, its mean over the first quarter and its late score (last tenth).
 //
@@ -19,11 +21,14 @@
 //                                   from the seed): the same cues, other cue-to-button pairs
 //   --then-move L                   cue line L (0 is the first) moves to the free sensor group
 //                                   nearest its own: a line the life never showed
+//   --life-scramble 1               the shuffled-input control: in the life each step shows
+//                                   another step's input lines (input_scramble.hpp)
 //   --mix "<blobrun flags>" --mix-every N   the life alternates its own task and this one
 //                                   every N steps on the same blob, each restart a fresh task
 //                                   (task seed + segment), the readout learning throughout
 
 #include "blob/blob.hpp"
+#include "probe/input_scramble.hpp"
 #include "run/run_flags.hpp"
 #include "run/task_ticker.hpp"
 
@@ -166,13 +171,15 @@ static void move_line(Plug& plug, Blob& blob, int cue) {
 // one task for `steps` steps on a blob already born, as blobrun's life loop does it.
 // returns the window scores
 static std::vector<double> live(Blob& blob, const RunFlags& flags, int64_t steps, int window,
-                                const PlugEdit& edit = PlugEdit{}) {
+                                const PlugEdit& edit = PlugEdit{}, int scramble = 0) {
     static TaskTicker tt;
     tt = TaskTicker{};
     std::vector<double> scores;
     if (!ticker_start(tt, blob, flags)) {
         return scores;
     }
+    static Scramble mixed;
+    scramble_start(mixed, scramble, flags.seed);
     if (edit.perm) {
         permute_buttons(tt.plug, edit.seed);
     }
@@ -182,6 +189,7 @@ static std::vector<double> live(Blob& blob, const RunFlags& flags, int64_t steps
     int64_t step = 0;
     while (step < steps) {
         ticker_before_tick(tt, blob);
+        scramble_tick(mixed, tt, blob);
         blob_tick(blob);
         if (!ticker_after_tick(tt, blob)) {
             continue;
@@ -243,7 +251,8 @@ Blob* probe_sheet(int argc, char** argv, const Genome& genome, uint64_t seed) {
         std::fprintf(stderr, "mix: last segment of the life's task %.3f, of the other %.3f\n",
                      mean_of(last[0], 0, last[0].size()), mean_of(last[1], 0, last[1].size()));
     } else {
-        s = live(*blob, flags, flags.steps, flags.window);
+        s = live(*blob, flags, flags.steps, flags.window, PlugEdit{},
+                 int_arg(argc, argv, "--life-scramble", 0));
     }
     size_t edge = s.size() / 10 > 0 ? s.size() / 10 : 1;
     std::fprintf(stderr,
@@ -294,6 +303,17 @@ static void fresh_readout(Blob& blob, uint64_t seed) {
     blob.genome.margin_percent = 0;
 }
 
+// the inside rules that run in any learn mode stop too, so the inside is frozen while the
+// fresh readout learns (docs/results-2026-11-25-hop-real.md); --then-inside 1 leaves them on,
+// as the one-hop doc's toy numbers had them
+static void freeze_inside(Blob& blob, int keep) {
+    if (keep) {
+        return;
+    }
+    blob.genome.hop_on = 0;
+    blob.genome.compete_on = 0;
+}
+
 int probe_transfer(int argc, char** argv) {
     Genome genome;
     apply_genome_args(argc, argv, genome);
@@ -326,6 +346,7 @@ int probe_transfer(int argc, char** argv) {
     edit.move = int_arg(argc, argv, "--then-move", -1);
     edit.seed = seed;
     fresh_readout(*blob, seed);
+    freeze_inside(*blob, int_arg(argc, argv, "--then-inside", 0));
     std::vector<double> s = live(*blob, then, steps, window, edit);
     size_t edge = s.size() / 10 > 0 ? s.size() / 10 : 1;
     std::printf("transfer %s %s seed %llu: first quarter %.4f late %.4f\n", task_name(then.task),

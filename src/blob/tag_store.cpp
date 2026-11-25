@@ -160,6 +160,7 @@ void tag_rewire(Blob& blob, int n) {
         uint64_t u = src == (uint32_t)blob.tile_count ? 0 : ~0ull;
         u &= k == 4 ? ~self : ~0ull;
         u &= k >= LOCAL_SLOTS ? ~blob.inhibitory[src] : ~0ull;
+        u &= ~deep_blocked(blob, n, src);
         uint64_t kind = slot_kind(blob, n, k);
         usable[0][k] = u & ~kind;
         usable[1][k] = u & kind;
