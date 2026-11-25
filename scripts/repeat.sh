@@ -6,7 +6,7 @@
 # the inside-learning test's reader, the firing rate and share of cell-digits with a spike.
 # Results in out/repeat/NAME/ (one file a run, kept: a line run again only runs what is
 # missing), the table in out/repeat/NAME/table.txt.
-#   scripts/repeat.sh arms                          every arm, seed 5 (about 110 runs)
+#   scripts/repeat.sh arms                          every arm, seed 5 (about 150 runs)
 #   scripts/repeat.sh arms --arms base,freeze --seeds 5-12      some arms, more seeds
 #   scripts/repeat.sh arms --tasks pair --kinds born            one test, the born sheet only
 #   scripts/repeat.sh arms --table-only             the table from what has run
@@ -17,6 +17,9 @@
 #                                                   wiring, for seeds whose file was not kept
 #   scripts/repeat.sh check arms --arms base --kinds born   idea 165's own measure of an arm:
 #                                                   two whole runs, rows written and compared
+#   scripts/repeat.sh time                          the time rows with each change on the best
+#                                                   setting (run first with scripts/oneset.sh,
+#                                                   lines in the results doc)
 #   JOBS=2 scripts/repeat.sh arms                   runs at once (default 3)
 # The transplant wirings are read from out/repeat/NAME/, out/repeat/wiring/ or REPEAT_WIRING
 # (default: the main checkout's out/from-agents/ladder2/full); MNIST from data/mnist or

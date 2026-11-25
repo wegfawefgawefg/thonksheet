@@ -6,8 +6,10 @@ docs/results-2026-11-26-repeatable.md). See repeat.sh.
             [--kinds born,transplant] [--jobs 3] [--settle 3000] [--table-only]
   repeat.py wide NAME [--seeds 5] [--tasks mnist,pair]   the wide cells' transplant wiring
   repeat.py wiring NAME [--seeds 8-12]   idea 165's transplant wiring for seeds without one
-  repeat.py check NAME [--arms base] [--kinds born] [--seeds 5] [--tasks mnist]   idea 165's
-            measure: two whole runs (3,000 and 3,001 digits of settling), rows compared
+  repeat.py time [--seeds 5-12]   the time rows of `scripts/oneset.sh` (cached there) for the
+            columns of TIME: each change on the best setting, beside the best setting
+  repeat.py check NAME [--arms base] [--kinds born,transplant] [--seeds 5] [--tasks mnist,pair]
+            idea 165's measure: two whole runs (3,000 and 3,001 digits of settling)
 
 Each arm is one `blobmnist ceiling --twice 1` run per task, kind and seed: the born sheet, or
 idea 165's transplanted wiring (`--wiring-load`), with the arm's change, 3,000 digits of
@@ -170,36 +172,38 @@ def parse(path):
 
 
 def cell(vals, key, fmt):
+    """mean, and the lowest and highest seed when there are several"""
     v = [x[key] for x in vals if x]
     if not v:
         return "-"
-    s = fmt % (sum(v) / len(v))
-    return s + (" (%d)" % len(v) if len(v) != len(vals) or len(v) > 1 else "")
+    text = fmt % (sum(v) / len(v))
+    if len(v) > 1:
+        text += (" (" + fmt + "-" + fmt + ")") % (min(v), max(v))
+    return text + ("" if len(v) == len(vals) else " [%d seeds]" % len(v))
 
 
 def table(outdir, opt):
     lines = []
     seeds = opt["seeds"]
     for task in opt["tasks"]:
-        lines.append("%s, seeds %s; per arm: born | transplant" % (
-            task, ",".join(map(str, seeds))))
-        lines.append("%-16s %-15s %-15s %-15s %-13s %-13s" % (
-            "arm", "self-corr", "reader", "rate/1000", "active", "cells kept"))
+        lines.append("%s, seeds %s" % (task, ",".join(map(str, seeds))))
+        lines.append("%-20s %-10s %-24s %-24s %-8s %-7s %-6s" % (
+            "arm", "kind", "self-corr", "reader", "rate", "active", "kept"))
         for arm in opt["arms"]:
-            row = {}
-            for kind in ("born", "transplant"):
-                row[kind] = [parse(run_file(outdir, arm, kind, task, s)) for s in seeds]
-            if not any(row["born"] + row["transplant"]):
-                continue
-
-            def two(key, fmt):
-                a = cell(row["born"], key, fmt).replace(" (%d)" % len(seeds), "")
-                b = cell(row["transplant"], key, fmt).replace(" (%d)" % len(seeds), "")
-                return "%s | %s" % (a, b)
-            lines.append("%-16s %-15s %-15s %-15s %-13s %-13s" % (
-                arm, two("corr", "%.3f"), two("reader", "%.4f"), two("rate", "%.1f"),
-                two("active", "%.2f"), two("kept", "%.2f")))
+            for kind in opt["kinds"]:
+                vals = [parse(run_file(outdir, arm, kind, task, s)) for s in seeds]
+                if not any(vals):
+                    continue
+                lines.append("%-20s %-10s %-24s %-24s %-8s %-7s %-6s" % (
+                    arm, kind, cell(vals, "corr", "%.3f"), cell(vals, "reader", "%.4f"),
+                    cell(vals, "rate", "%.1f").split(" ")[0],
+                    cell(vals, "active", "%.2f").split(" ")[0],
+                    cell(vals, "kept", "%.2f").split(" ")[0]))
         lines.append("")
+    lines.append("self-corr: a cell's counts on the test digits against its counts on the same "
+                 "digits read again (mean over cells); reader: the fresh reader on the test "
+                 "digits; rate: spikes per 1,000 cell-ticks counted; active: share of "
+                 "cell-digits with a spike; kept: share of cells that spiked in both passes")
     lines.append("arms: " + "; ".join("%s %s" % (a, ARM[a][1]) for a in opt["arms"]))
     return "\n".join(lines)
 
@@ -307,6 +311,40 @@ def one_check(outdir, opt, seed, task, arm, kind):
             os.remove(os.path.join(outdir, f))
 
 
+# the cost side: the time rows with a change on top of the one setting (scripts/oneset.sh,
+# docs/results-2026-11-26-one-setting.md); run with the oneset.sh lines in the results doc
+TIME_ROWS = "order,gap,delayed2,copy2,xor,far5"
+TIME = [("best + shown 80 ticks", ["--ticks", "80"]),
+        ("best + no threshold regulation, bias to 32",
+         ["--g.threshold_reg_on", "0", "--g.sector_bias_max", "32"])]
+
+
+def time_table(seeds):
+    import statistics
+    import oneset as O
+    rows, cols = O.read_map(O.MORE)
+    rows = O.pick_rows(rows, TIME_ROWS)
+    cache = O.load_cache()
+    best = cols["best"]
+    print("| row | best | " + " | ".join(n for n, _ in TIME) + " |")
+    print("|---" * (len(TIME) + 2) + "|")
+    for rname, rargs in rows:
+        ref = O.scores(cache, rargs, best, seeds, False)
+        cells = ["%.3f" % statistics.mean(ref) if None not in ref else "missing"]
+        for _, extra in TIME:
+            late = O.scores(cache, rargs, best + extra, seeds, False)
+            twin = O.scores(cache, rargs, best + extra, seeds, True)
+            if None in late or None in twin or None in ref:
+                cells.append("missing")
+                continue
+            chance, perfect = O.calib_of(cache, rargs)
+            _, ok = O.judge(late, twin, chance, perfect)
+            d, se = O.paired(late, ref)
+            cells.append("%.3f%s (%+.3f ±%.3f)" % (statistics.mean(late), "*" if ok else "", d, se))
+        print("| %s | %s |" % (rname, " | ".join(cells)))
+    print("\n`*` passes; in brackets the paired difference to best and its standard error")
+
+
 def seeds_arg(v):
     lo_hi = v.split("-")
     if len(lo_hi) == 2:
@@ -319,6 +357,9 @@ def main():
     if not args or args[0].startswith("-"):
         print(__doc__)
         return 1
+    if args[0] == "time":
+        time_table(seeds_arg(args[2]) if args[1:2] == ["--seeds"] else list(range(5, 13)))
+        return 0
     mode = args.pop(0) if args[0] in ("wide", "wiring", "check") else ""
     name = args.pop(0)
     opt = {"seeds": [5], "tasks": ["mnist", "pair"], "kinds": ["born", "transplant"],
