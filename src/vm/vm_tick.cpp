@@ -95,6 +95,9 @@ static void apply_operations(VmBlob& v) {
     for (int w = 0; w < mw; w++) {
         uint64_t s = 0, c = 0;
         for (int k = 0; k < v.vg.active; k++) {
+            if (v.vg.refract && !v.fresh[k]) {
+                continue;
+            }
             size_t at = (size_t)v.winners[k] * mw + w;
             s |= v.set[at];
             c |= v.clr[at];
@@ -207,6 +210,7 @@ void vm_tick(Blob& blob) {
     int bar = match_all(v, hist);
     pick_winners(v, bar);
     for (int k = 0; k < v.vg.active; k++) {
+        v.fresh[k] = v.last_fired[v.winners[k]] + 1 != v.now;
         v.last_fired[v.winners[k]] = v.now;
     }
     vm_events(v);

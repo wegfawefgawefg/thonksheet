@@ -74,6 +74,9 @@ struct VmGenome {
     // the last this-many words of M form a ring that slides one bit along every tick: a
     // permutation, so a mark keeps all its bits and its place tells how long ago it was made
     int m_slide_words = 0;
+    // refraction, as in production systems: an entry's operation acts only on the tick it
+    // starts to fire, not again while it keeps firing. 0: every tick it is a winner
+    int refract = 0;
 };
 
 struct VmStats {
@@ -108,6 +111,7 @@ struct VmBlob {
     uint16_t* x_size = nullptr;     // per entry: bits in the X part of its address
     uint64_t* x_last = nullptr;     // X on the previous tick
     int32_t* winners = nullptr;     // the active entries this tick, vg.active
+    uint8_t* fresh = nullptr;       // per winner: 1 if it did not fire on the tick before
     int16_t* vote = nullptr;        // per motor cell
     int8_t* delta = nullptr;        // per motor cell, scratch for an outcome
 

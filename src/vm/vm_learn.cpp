@@ -206,6 +206,7 @@ void vm_events(VmBlob& v) {
     vm_address_from_state(v, e, v.vg.event_m != 0);
     std::memset(v.ev + (size_t)e * v.motor_cells, 0, (size_t)v.motor_cells);
     vm_random_effect(v, e, v.vg.event_set_shift, v.vg.event_clr_shift);
-    v.last_fired[e] = v.now;
+    // counts as just used; with refraction not as firing on the tick before, so it acts
+    v.last_fired[e] = v.vg.refract && v.now > 2 ? v.now - 2 : v.now;
     v.stats.events++;
 }

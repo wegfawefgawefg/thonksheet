@@ -210,6 +210,7 @@ Blob* vm_birth(const Genome& genome, const VmGenome& vg_in, uint64_t seed) {
     v->x_size = (uint16_t*)alloc_lines(sizeof(uint16_t) * E);
     v->x_last = words((size_t)v->x_words);
     v->winners = (int32_t*)alloc_lines(sizeof(int32_t) * (size_t)vg.active);
+    v->fresh = (uint8_t*)alloc_lines((size_t)vg.active);
     v->vote = (int16_t*)alloc_lines(sizeof(int16_t) * (size_t)(v->motor_cells + 1));
     v->delta = (int8_t*)alloc_lines((size_t)(v->motor_cells + 1));
     for (int e = 0; e < vg.entries; e++) {
@@ -238,9 +239,10 @@ void vm_free(Blob* blob) {
     for (void* p : shell_arrays) {
         std::free(p);
     }
-    void* own[] = {v->sensor_cell, v->motor_cell, v->free_cell, v->x_code,     v->state, v->addr,
-                   v->set,         v->clr,        v->ev,        v->last_fired, v->match, v->winners,
-                   v->vote,        v->delta,      v->match_x,   v->x_size,     v->x_last};
+    void* own[] = {v->sensor_cell, v->motor_cell, v->free_cell, v->x_code, v->state,
+                   v->addr,        v->set,        v->clr,       v->ev,     v->last_fired,
+                   v->match,       v->winners,    v->vote,      v->delta,  v->match_x,
+                   v->x_size,      v->x_last,     v->fresh};
     for (void* p : own) {
         std::free(p);
     }
@@ -296,6 +298,7 @@ static const VmField fields[] = {
     {"event_clr_shift", &VmGenome::event_clr_shift},
     {"event_m", &VmGenome::event_m},
     {"m_slide_words", &VmGenome::m_slide_words},
+    {"refract", &VmGenome::refract},
 };
 
 void apply_vm_args(int argc, char** argv, VmGenome& vg) {

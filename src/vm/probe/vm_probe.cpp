@@ -82,10 +82,21 @@ static void alike_by_position(const Recording& r) {
     int len = trials[0].second - trials[0].first;
     int n = std::min<int>((int)trials.size(), 120);
     std::printf("\nhow alike trials are, by step in the trial (winners at the step's last tick; "
-                "M then)\n  step   winners same/diff   M same/diff\n");
+                "M then; M bits changed since the step before, same trial)\n"
+                "  step   winners same/diff   M same/diff   M changed\n");
     for (int p = 0; p < len; p++) {
-        double ws = 0, wd = 0, ms = 0, md = 0;
-        int ns = 0, nd = 0;
+        double ws = 0, wd = 0, ms = 0, md = 0, moved = 0;
+        int ns = 0, nd = 0, nm = 0;
+        for (int a = 0; a < n && p > 0; a++) {
+            const StepRecord& now = r.steps[trials[a].first + p];
+            const StepRecord& before = r.steps[trials[a].first + p - 1];
+            int changed = 0;
+            for (size_t w = 0; w < now.m.size() && w < before.m.size(); w++) {
+                changed += std::popcount(now.m[w] ^ before.m[w]);
+            }
+            moved += changed;
+            nm++;
+        }
         for (int a = 0; a < n; a++) {
             for (int b = a + 1; b < n; b++) {
                 if (trials[a].second - trials[a].first != len ||
@@ -110,13 +121,14 @@ static void alike_by_position(const Recording& r) {
                 }
             }
         }
-        std::printf("  %4d   %6.3f / %6.3f     %6.3f / %6.3f\n", p, ns ? ws / ns : 0,
-                    nd ? wd / nd : 0, ns ? ms / ns : 0, nd ? md / nd : 0);
+        std::printf("  %4d   %6.3f / %6.3f     %6.3f / %6.3f   %8.1f\n", p, ns ? ws / ns : 0,
+                    nd ? wd / nd : 0, ns ? ms / ns : 0, nd ? md / nd : 0, nm ? moved / nm : 0.0);
     }
 }
 
 // within each trial's blank ticks (after the first step, before the last): distinct winner
-// sets, and whether the last 20 ticks are one set, a short cycle, or a chain
+// sets (sets sharing 3/4 of their entries count as one: ties at the bar are broken by
+// chance), and whether the last 20 ticks are one set, a short cycle, or a chain
 static void hold_kind(const Recording& r) {
     auto trials = trials_of(r);
     int fixed = 0, cycle = 0, chain = 0, none = 0;
@@ -135,9 +147,9 @@ static void hold_kind(const Recording& r) {
         for (int t = 0; t < n; t++) {
             int found = -1;
             for (int s = 0; s < (int)seen.size(); s++) {
-                if (std::memcmp(&r.winners[(size_t)(t0 + t) * r.K],
-                                &r.winners[(size_t)(t0 + seen[s]) * r.K],
-                                sizeof(int32_t) * r.K) == 0) {
+                // the same set up to ties at the bar: at least 3/4 shared
+                if (jaccard_sets(&r.winners[(size_t)(t0 + t) * r.K],
+                                 &r.winners[(size_t)(t0 + seen[s]) * r.K], r.K) >= 0.75) {
                     found = s;
                     break;
                 }
