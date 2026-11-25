@@ -76,7 +76,7 @@ struct VmGenome {
     int m_slide_words = 0;
     // refraction, as in production systems: an entry's operation acts only on the tick it
     // starts to fire, not again while it keeps firing. 0: every tick it is a winner
-    int refract = 0;
+    int refract = 1;
 };
 
 struct VmStats {
