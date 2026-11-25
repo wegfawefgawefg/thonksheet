@@ -9,7 +9,12 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(warnings -Wall -Wextra -Wno-missing-field-initializers)
-set(speed -O3 -march=native)
+# x86 here, Apple silicon on the borrowed Mac (stevejobs): tune for whichever we are on
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+    set(speed -O3 -mcpu=native)
+else()
+    set(speed -O3 -march=native)
+endif()
 
 # Sources are picked up by folder, so adding a .cpp needs no edit here. Each target is only
 # built once its folder has sources.
@@ -50,7 +55,8 @@ if(run_sources AND TARGET blobworld)
 endif()
 
 # blobview: the viewer. Its block lives in its own file so the viewer owner can edit freely.
-if(EXISTS ${CMAKE_SOURCE_DIR}/src/view/view.cmake)
+# -DTHONK_NO_VIEW=1 leaves the viewer out (no Vulkan or SDL needed), for headless machines
+if(EXISTS ${CMAKE_SOURCE_DIR}/src/view/view.cmake AND NOT THONK_NO_VIEW)
     include(${CMAKE_SOURCE_DIR}/src/view/view.cmake)
 endif()
 

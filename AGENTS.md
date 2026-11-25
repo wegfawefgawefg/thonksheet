@@ -54,6 +54,17 @@ The owner uses this PC while agents work.
 - Do not use `pkill -f` or `pgrep -f` with text that is on your own command line.
 - Disk low or memory low: stop and report. Never delete things to make room.
 
+## The second machine
+
+stevejobs is a borrowed Mac mini (14 cores, Apple silicon) for heavy runs, so this PC stays
+usable. `scripts/mini.sh` copies the source there, builds it without the viewer, runs a
+command, and brings results back. An agent uses its own folder there
+(`MINI_DIR=thonk-<job> scripts/mini.sh push`) and at most 4 jobs at a time; someone else
+also uses that machine. Results are byte-identical between the two machines for all three
+engines. Speed is not: there the full engine is about 3.6 times slower (no AVX-512), the
+minimal engine about 0.7 times, table neurons about 1.3 times faster. Never quote a speed
+from there beside one from here.
+
 ## Scripts
 
 The owner runs scripts, not binaries. Anything he might want to run gets a script in
