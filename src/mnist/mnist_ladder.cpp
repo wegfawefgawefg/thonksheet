@@ -278,8 +278,12 @@ int mnist_ladder(int argc, char** argv) {
         ladder_print("2  float softmax, online", c);
     }
     if (wanted(rungs, "3")) {
-        rung3_integer_told(L, c = Curve{});
+        rung3_integer_told(L, 0, c = Curve{});
         ladder_print("3  integer, told the right button", c);
+    }
+    if (wanted(rungs, "3c")) {
+        rung3_integer_told(L, 1, c = Curve{});
+        ladder_print("3c 3, counts centred", c);
     }
     const char* r4key[8] = {"4n", "4u", "4g", "4o", "4og", "4r", "4up", "4gp"};
     const char* r4[8] = {"4n integer, good/bad, nothing on good",
@@ -293,9 +297,17 @@ int mnist_ladder(int argc, char** argv) {
     for (int g = 0; g < 8; g++) {
         if (wanted(rungs, r4key[g])) {
             int good = g < 6 ? g : (g == 6 ? GOOD_ALL : GOOD_ALL_CLOSE);
-            rung4_integer_good_bad(L, good, g >= 6, c = Curve{});
+            rung4_integer_good_bad(L, good, g >= 6, 0, c = Curve{});
             ladder_print(r4[g], c);
         }
+    }
+    if (wanted(rungs, "4gc")) {
+        rung4_integer_good_bad(L, GOOD_ALL_CLOSE, 0, 1, c = Curve{});
+        ladder_print("4gc 4g, counts centred", c);
+    }
+    if (wanted(rungs, "4rc")) {
+        rung4_integer_good_bad(L, GOOD_RIVAL_CLOSE, 0, 1, c = Curve{});
+        ladder_print("4rc 4r, counts centred", c);
     }
     const char* r5key[5] = {"5s", "5v", "5b", "5sg", "5vg"};
     const char* r5[5] = {"5s motor cells' fields, sum of drives",

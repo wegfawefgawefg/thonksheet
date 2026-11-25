@@ -62,7 +62,8 @@ void ladder_print(const char* name, const Curve& c);
 // rungs 1 to 4: readers of every non-sensor cell (mnist_ladder_linear.cpp)
 double rung1_offline(const Ladder& L);
 void rung2_online_float(const Ladder& L, Curve& c);
-void rung3_integer_told(const Ladder& L, Curve& c);
+// center 1: each cell's count less its running mean (in integers), as the float readers do
+void rung3_integer_told(const Ladder& L, int center, Curve& c);
 // what moves on a good (bad always: the pressed button loses, the others gain a sixteenth)
 enum GoodHalf {
     GOOD_NONE = 0,          // nothing
@@ -75,7 +76,7 @@ enum GoodHalf {
 // a close vote: the winner's lead under 20% of its own score (the engine's margin_percent 20)
 bool ladder_close(const double* score, int k, int pick, int& runner);
 // nonneg 1: weights never go below zero
-void rung4_integer_good_bad(const Ladder& L, int good, int nonneg, Curve& c);
+void rung4_integer_good_bad(const Ladder& L, int good, int nonneg, int center, Curve& c);
 
 // rungs 5 and 6: a button is the vote of its motor cells (mnist_ladder_cells.cpp)
 // vote: 0 the sum of the cells' drives, 1 each cell's drive over its threshold, in its own

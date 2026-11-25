@@ -40,6 +40,8 @@ struct LinReader {
     int kind = 2; // 2 float softmax, 3 integer told the answer, 4 integer told good or bad
     int good = 0; // kind 4: what moves on good (GoodHalf)
     int nonneg = 0; // 1: no weight goes below zero (a source can only speak for a button)
+    int center = 0; // 1: each count less its running mean (x16, over about 128 digits)
+    std::vector<int32_t> mean16;
     int d = 0;
     Scale sc;                // kind 2
     std::vector<float> wf;   // kind 2: (d + 1) x classes, the last row the bias
@@ -53,6 +55,9 @@ static void lin_scores(LinReader& R, const Ladder& L, const uint8_t* row, double
     int d = R.d;
     for (int j = 0; j < d; j++) {
         R.xi[(size_t)j] = row[L.inner[(size_t)j]];
+        if (R.center) {
+            R.xi[(size_t)j] = 16 * R.xi[(size_t)j] - R.mean16[(size_t)j];
+        }
     }
     if (R.kind == 2) {
         for (int j = 0; j < d; j++) {
@@ -178,6 +183,7 @@ static void lin_run(LinReader& R, const Ladder& L, Curve& c) {
     R.d = (int)L.inner.size();
     R.xf.assign((size_t)R.d, 0.0f);
     R.xi.assign((size_t)R.d, 0);
+    R.mean16.assign((size_t)R.d, 0);
     if (R.kind == 2) {
         Rows tr;
         inner_rows(L, L.train, tr);
@@ -205,6 +211,10 @@ static void lin_run(LinReader& R, const Ladder& L, Curve& c) {
         lin_scores(R, L, &L.train.c20[(size_t)r * L.train.d], s);
         int pick = ladder_pick(s, CLASSES);
         lin_learn(R, s, pick, L.train.label[(size_t)r]);
+        // the running means move only while learning (xi holds 16 x - mean)
+        for (int j = 0; R.center && j < R.d; j++) {
+            R.mean16[(size_t)j] += R.xi[(size_t)j] / 128;
+        }
     }
 }
 
@@ -214,15 +224,17 @@ void rung2_online_float(const Ladder& L, Curve& c) {
     lin_run(R, L, c);
 }
 
-void rung3_integer_told(const Ladder& L, Curve& c) {
+void rung3_integer_told(const Ladder& L, int center, Curve& c) {
     LinReader R;
     R.kind = 3;
+    R.center = center;
     lin_run(R, L, c);
 }
 
-void rung4_integer_good_bad(const Ladder& L, int good, int nonneg, Curve& c) {
+void rung4_integer_good_bad(const Ladder& L, int good, int nonneg, int center, Curve& c) {
     LinReader R;
     R.kind = 4;
+    R.center = center;
     R.good = good;
     R.nonneg = nonneg;
     lin_run(R, L, c);
