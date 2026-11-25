@@ -434,3 +434,29 @@ not known to do it.
      for the whole map. Today the readout runs use flags chosen per task (long delays for
      the time tasks, more motor cells here, smaller line groups there). *idea: the combined
      engine is the first to be held to it*
+
+### Outside the sheet (added 2026-11-25)
+
+The owner: "are we limiting ourselves with this sheet of connections idea or no". In some
+ways yes. A sheet commits us to learning as rewiring, to locality in two dimensions, to one
+rule everywhere, and to doing only what a brain could do, on a machine that can also copy
+exactly, hash and look things up in one step.
+
+123. **A memory, not a sheet.** [known: sparse distributed memory, hyperdimensional
+     computing; new here] An engine whose learning is storing and recalling bit patterns by
+     content: long random bit vectors, bound with XOR, compared with popcount, kept in a
+     table found by hashing. One-shot, no wiring to change, nothing to saturate. A brain has
+     an organ like this beside its sheets. *building*
+124. **Organs.** [known] Not one sheet with one rule: a sheet that mixes, a memory that
+     stores at once, a selector that picks actions and explores, a bank of clocks for time.
+     Each cheap, each with its own rule, behind one plug. *idea, after 123*
+125. **Use what the machine can do and a brain cannot.** [ours] Exact copying of what one
+     patch learned to all the others, hashing, sorting by evidence, global lookup. The
+     hardware rule was "even if it is a strange version of the biological equivalent".
+     Idea 100 is the first of these. *idea*
+126. **Worlds the search never sees.** [method] A held-out set of worlds used only to
+     confirm a design, never to choose one, so "works on any task" is tested on tasks the
+     design was not fitted to. *idea: split the map once the batteries land*
+127. **Someone to argue the other side.** [method] Now and then an agent whose only job is
+     to find the cheapest thing that beats our best design on the map, by any means, and to
+     say what that implies. *idea*
