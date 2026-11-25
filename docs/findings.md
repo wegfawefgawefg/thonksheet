@@ -97,6 +97,10 @@ plain linear reader can get out of the sheet. docs/results-2026-11-24-readout.md
     it has no locked lives: shuffled Echo is 1.00 on every seed, crossed ones included,
     where the old rule averaged 0.56.
 
+18. **Size does not break it, so far.** [hint] Echo scores the same with the sheet grown 16
+    times around the same task (minimal engine 0.94, 0.93, 0.92 at 4,096, 16,384 and 65,536
+    neurons). Three seeds, one task, input and output areas unchanged.
+
 ## Walls
 
 - **Reading a thin signal: broken at the output, standing inside.** An error rule moving

@@ -249,4 +249,9 @@ Status words: idea, building, tried (with result), kept, dropped.
     target with feedback each step), a small grid to forage in, mountain car, pendulum. And
     long lives: proper RL takes hundreds of thousands of steps on cartpole. *building*
 64. **Does it survive growing?** Everything was tuned at 4,096 neurons. Run the same tasks at
-    16,384 and 65,536. *running*
+    16,384 and 65,536. *tried on Echo with 2 cues, seeds 5 to 7, late score. Minimal engine:
+    0.94, 0.93, 0.92 at 4,096 / 16,384 / 65,536 neurons, every seed within 0.91 to 0.97.
+    Full engine: 0.84, 0.81, 0.82, with seeds anywhere from 0.63 to 0.99 at every size. So
+    neither falls apart when the sheet grows 16 times around the same task; the full
+    engine is erratic at every size. Only Echo, only 3 seeds, and the input and output
+    areas stayed the same size.*
