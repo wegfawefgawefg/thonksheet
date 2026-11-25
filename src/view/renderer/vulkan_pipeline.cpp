@@ -108,10 +108,12 @@ static VkPipeline make_pipeline(Context& g, const char* dir, const char* vert, c
     return pipeline;
 }
 
-// three storage buffers: the tape (0), the kinds (1), the marks (2)
+// four storage buffers: the tape (0), the kinds (1), the marks (2), the overlay (3)
+constexpr int binding_count = 4;
+
 static bool make_layouts(Context& g) {
-    VkDescriptorSetLayoutBinding bindings[3];
-    for (int i = 0; i < 3; ++i) {
+    VkDescriptorSetLayoutBinding bindings[binding_count];
+    for (int i = 0; i < binding_count; ++i) {
         bindings[i] = VkDescriptorSetLayoutBinding{};
         bindings[i].binding = static_cast<uint32_t>(i);
         bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -119,7 +121,7 @@ static bool make_layouts(Context& g) {
         bindings[i].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     }
     VkDescriptorSetLayoutCreateInfo set_info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-    set_info.bindingCount = 3;
+    set_info.bindingCount = binding_count;
     set_info.pBindings = bindings;
     VkPushConstantRange push{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                              sizeof(ViewPush)};
@@ -128,7 +130,7 @@ static bool make_layouts(Context& g) {
     layout_info.pSetLayouts = &g.set_layout;
     layout_info.pushConstantRangeCount = 1;
     layout_info.pPushConstantRanges = &push;
-    VkDescriptorPoolSize size{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 * slot_count};
+    VkDescriptorPoolSize size{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, binding_count * slot_count};
     VkDescriptorPoolCreateInfo pool_info{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
     pool_info.maxSets = slot_count;
     pool_info.poolSizeCount = 1;

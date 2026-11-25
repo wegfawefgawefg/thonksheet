@@ -55,6 +55,9 @@ static void task_marks(std::vector<Mark>& marks, const ViewFrame& f) {
                            : l.kind == TASK_LINE_BAD   ? RED
                            : l.kind == TASK_LINE_MOTOR ? PINK
                                                        : WHITE;
+        if (l.kind == TASK_LINE_MOTOR && l.spread) {
+            continue; // spread cells have their own colours (overlay.cpp), not a ring
+        }
         if (l.on && l.kind == TASK_LINE_MOTOR) {
             push(marks, l.x0, l.y0, l.x1, l.y1, answer, 0.35f, 0, 0.0f);
             push(marks, l.x0, l.y0, l.x1, l.y1, answer, 1.0f, 1, 3.0f);
@@ -74,21 +77,43 @@ static void task_marks(std::vector<Mark>& marks, const ViewFrame& f) {
     }
 }
 
+// the picked cell's last change: a small dot on each source whose evidence moved, white for
+// up and black for down
+static void moved_marks(std::vector<Mark>& marks, const Selected& s) {
+    static const float BLACK[3] = {0.0f, 0.0f, 0.0f};
+    for (const EvidenceCell& e : s.evidence) {
+        if (e.moved != 0) {
+            push(marks, e.x + 0.32f, e.y + 0.32f, e.x + 0.68f, e.y + 0.68f,
+                 e.moved > 0 ? WHITE : BLACK, 0.95f, 0, 0.0f);
+        }
+    }
+}
+
 void build_marks(std::vector<Mark>& marks, const ViewFrame& f, const ViewSettings& v) {
     marks.clear();
     if (f.task.on && v.task_marks) {
         task_marks(marks, f);
     }
+    // the readability tint's cue tile
+    if (v.tint >= 0 && v.tint < READ_FEATURES && !f.readable[v.tint].tile.empty()) {
+        const int t = f.readable[v.tint].cue_tile;
+        const float x = static_cast<float>((t % std::max(1, f.tiles_w)) * 8);
+        const float y = static_cast<float>((t / std::max(1, f.tiles_w)) * 8);
+        push(marks, x, y, x + 8.0f, y + 8.0f, WHITE, 0.9f, 1, 2.0f);
+    }
     const Selected& s = f.selected;
     if (s.neuron < 0) {
         return;
+    }
+    if (v.evidence) {
+        moved_marks(marks, s);
     }
     const float cx = s.x + 0.5f;
     const float cy = s.y + 0.5f;
 
     // far lines first, so rings and dots sit on top of them
     for (const Link& l : s.sources) {
-        if (v.sources && l.far) {
+        if (v.sources && l.far && l.strength > 0) {
             push(marks, l.x + 0.5f, l.y + 0.5f, cx, cy, VIOLET,
                  0.25f + 0.5f * strength_alpha(l.strength), 2, strength_width(l.strength));
         }
@@ -106,6 +131,9 @@ void build_marks(std::vector<Mark>& marks, const ViewFrame& f, const ViewSetting
     }
     if (v.sources) {
         for (const Link& l : s.sources) {
+            if (l.strength == 0) {
+                continue; // a table input off the sheet
+            }
             const float* rgb = l.far ? VIOLET : l.inhibitory ? BLUE : WHITE;
             push(marks, l.x, l.y, l.x + 1.0f, l.y + 1.0f, rgb, strength_alpha(l.strength), 1,
                  strength_width(l.strength));
