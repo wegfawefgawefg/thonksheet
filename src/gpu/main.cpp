@@ -105,6 +105,7 @@ static bool memory_supported(const std::vector<GpuLifeSpec>& lives) {
 static bool memory_open(GpuContext& g, GpuBatch& b, const GpuFlags& f,
                         std::vector<HostWorld>& worlds, const std::vector<GpuLifeSpec>& lives,
                         std::vector<CpuLife>& cpu) {
+    host_fill_in_allowed(false); // its predictions stay on the GPU
     if (!gpu_memory_open(g, b, f, worlds, lives, BLOBGPU_SHADER_DIR "/memory_life.comp.spv") ||
         !gpu_memory_upload(g, b, f, worlds, lives)) {
         return false;

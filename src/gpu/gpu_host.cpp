@@ -41,6 +41,11 @@ bool host_worlds_parse(const std::string& tasks, const std::vector<std::string>&
         w.name = task_name(base.task);
         w.flags = base;
         worlds.push_back(w);
+        if (babble_on(base.babble)) {
+            std::fprintf(stderr, "blobgpu: babbling and balance (ideas 60, 61) are not in the "
+                                 "host worlds\n");
+            return false;
+        }
         return true;
     }
     for (const std::string& entry : split(tasks, ',')) {
@@ -62,6 +67,13 @@ bool host_worlds_parse(const std::string& tasks, const std::vector<std::string>&
         HostWorld w;
         w.name = entry;
         if (!parse_world(args, w.flags)) {
+            return false;
+        }
+        if (babble_on(w.flags.babble)) {
+            std::fprintf(stderr,
+                         "blobgpu: %s: babbling and balance (ideas 60, 61) are not in "
+                         "the host worlds\n",
+                         entry.c_str());
             return false;
         }
         w.flags.genome = base.genome; // one sheet for the batch
@@ -151,10 +163,18 @@ void host_scratch_open(HostScratch& s, const std::vector<HostWorld>& worlds, int
     }
     s.sense_in.assign((size_t)tiles + 1, 0);
     s.attached.assign((size_t)tiles + 1, 0);
+    s.predicted.assign((size_t)tiles + 1, 0);
     s.shell = Blob{};
     s.shell.tile_count = tiles;
     s.shell.sense_in = s.sense_in.data();
     s.shell.sense_attached = s.attached.data();
+    s.shell.predicted = s.predicted.data(); // the minimal engine never predicts: all off
+}
+
+static bool fill_in_allowed = true;
+
+void host_fill_in_allowed(bool allowed) {
+    fill_in_allowed = allowed;
 }
 
 static double since(std::chrono::steady_clock::time_point& t) {
@@ -195,6 +215,11 @@ void host_exchange(const std::vector<HostWorld>& worlds, std::vector<HostLife>& 
             in.move = plug_choice(p);
             in.surprise = s.xout[i].surprise;
             in.sensed_neurons = p.sensed_neurons;
+            // fill-in: the ticker counts the hidden lines' predictions after every tick of
+            // the step; the minimal engine's predictions are all off
+            for (int k = 0; h.hidden && k < w.flags.plug.ticks_per_step; k++) {
+                plug_count_hidden(p, s.shell, h.hidden, h.hidden_on, in);
+            }
             h.move = in.move;
             h.valence = task_step(h.task, in);
             h.step++;
@@ -212,6 +237,15 @@ void host_exchange(const std::vector<HostWorld>& worlds, std::vector<HostLife>& 
         // the next step's first tick: what the task shows, as the plug writes it (good and
         // bad are the GPU's, so they are off here)
         task_sense(h.task, s.sense);
+        h.hidden = s.sense.hidden;
+        h.hidden_on = s.sense.hidden_on;
+        if (h.hidden && !fill_in_allowed) {
+            std::fprintf(stderr,
+                         "blobgpu: world %s hides lines (fill-in), which the memory "
+                         "engine on the GPU cannot answer yet\n",
+                         w.name.c_str());
+            std::exit(1);
+        }
         plug_set_lines(p, s.sense);
         p.good_left = 0;
         p.bad_left = 0;

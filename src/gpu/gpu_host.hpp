@@ -39,7 +39,8 @@ struct HostLife {
     int64_t step = 0;
     int valence = 0, move = -1; // the step just answered
     bool done = false;
-    std::vector<double> scores; // one per window
+    std::vector<double> scores;         // one per window
+    uint32_t hidden = 0, hidden_on = 0; // fill-in worlds: the step's hidden lines
 };
 
 // time spent per part, summed over the life of the batch
@@ -65,13 +66,17 @@ void host_life_start(HostLife& h, int world, uint64_t seed, const HostWorld& w);
 struct HostScratch {
     std::vector<Plug> plugs;
     Blob shell;
-    std::vector<uint64_t> sense_in, attached;
+    std::vector<uint64_t> sense_in, attached, predicted;
     TaskSense sense;
     std::vector<uint64_t> words; // lives x (tiles + 1)
     std::vector<GpuExchangeIn> xin;
     std::vector<GpuExchangeOut> xout;
 };
 void host_scratch_open(HostScratch& s, const std::vector<HostWorld>& worlds, int tiles);
+// true if this engine's lives can answer fill-in worlds (hidden lines are scored from the
+// sheet's own predictions: the minimal engine's are always off, the memory engine's are not
+// read back from the GPU)
+void host_fill_in_allowed(bool allowed);
 
 // the host's half of one exchange for lives [from, to) of a group (indices into the group):
 // read the counts, answer the step (answer false: the first exchange, nothing to answer),
