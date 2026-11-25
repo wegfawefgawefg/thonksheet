@@ -247,32 +247,46 @@ def hopcomp_table(opt, outdir):
 # ---- the time rows of the suite, rule on against off ----
 
 def time_run(opt):
-    names = ("compete2-time-off", "compete2-time-on")
-    for name, extra in zip(names, ("", COMP)):
+    """the suite's time rows, rule off and on, as the sheet fires and with the rate held at
+    target (cap 1000) in both; and the churn control as it fires"""
+    cards = [("compete2-time-off", ""), ("compete2-time-on", COMP),
+             ("compete2-time-off-cap", CAP.strip()), ("compete2-time-on-cap", COMP + CAP),
+             ("compete2-time-churn", COMP + " --g.compete_churn 1")]
+    for name, extra in cards:
         cmd = ["python3", os.path.join(ROOT, "scripts", "suite.py"), name, "--only", TIME_JOBS,
                "--resume"] + (["--quick"] if opt["quick"] else []) + (TIME_BASE + " " + extra).split()
         if not opt["table_only"]:
             subprocess.run(cmd, cwd=ROOT, stdout=subprocess.DEVNULL)
-    return time_table([n + ("-quick" if opt["quick"] else "") for n in names])
+    return time_table([n + ("-quick" if opt["quick"] else "") for n, _ in cards],
+                      [5, 6] if opt["quick"] else list(range(5, 13)))
 
 
-def time_table(names):
+def time_table(names, seeds):
+    """per seed late score and the rate, from each run's -sum.csv"""
     import csv
-    rows = {}
-    for col, name in enumerate(names):
-        path = os.path.join(ROOT, "out", "scorecards", name + ".csv")
-        if not os.path.exists(path):
-            continue
-        for r in csv.DictReader(open(path)):
-            if r["property"] != "about" and r["mean"]:
-                rows.setdefault(r["test"], [None, None])[col] = r
-    lines = ["the suite's time rows (late score, mean ± spread over its seeds; learning-off twin in brackets), "
-             "readout of blob-readout + tile winners 4; on adds " + COMP,
-             "%-58s %-22s %-22s" % ("test", "off", "on")]
-    for test, (off, on) in rows.items():
-        cell = lambda r: ("%.3f ±%.3f (%.3f)" % (float(r["mean"]), float(r["spread"] or 0), float(
-            r["learn_off"] or "nan")) if r else "-")
-        lines.append("%-58s %-22s %-22s" % (test[:58], cell(off), cell(on)))
+    jobs = TIME_JOBS.split(",")
+    lines = ["the suite's time rows, whole blob learns: late score per seed (the mean of the last "
+             "tenth of the life), its mean, and the life's rate (spikes per 1024 neuron-ticks); "
+             "readout of blob-readout + " + TW + "; on adds " + COMP + "; cap adds" + CAP,
+             "%-26s %s   mean   rate  (learning off)" % ("", " ".join("%-5d" % s for s in seeds))]
+    for job in jobs:
+        lines.append(job)
+        for name in names:
+            late, rate, off = [], [], []
+            for s in seeds:
+                path = os.path.join(ROOT, "out", "suite", name, "%s-s%d-sum.csv" % (job, s))
+                d = {}
+                if os.path.exists(path):
+                    for r in csv.reader(open(path)):
+                        if len(r) == 3:
+                            d[r[0], r[1]] = r[2]
+                late.append(float(d["blob", "late"]) if ("blob", "late") in d else None)
+                rate.append(float(d["blob", "rate_per_1024"]) if ("blob", "rate_per_1024") in d
+                            else None)
+                off.append(float(d["learn_off", "late"]) if ("learn_off", "late") in d else None)
+            lines.append("  %-24s %s   %s  %s  (%s)" % (
+                name.replace("compete2-time-", ""), " ".join(fmt(v, 2) + " " for v in late),
+                fmt(mean(late), 3), fmt(mean(rate), 1), fmt(mean(off), 3)))
     return "\n".join(lines)
 
 

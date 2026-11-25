@@ -28,6 +28,37 @@ wiring), so skipping re-picks that change nothing cannot save much on its own.
 6. Time rows (delayed echo, order, gap; whole blob learns): rule on against off moves none
    of them by 0.03 or more: 0.6.
 
+## Short version
+
+- **The claim, rate-matched, is small.** MNIST, seeds 5-12, every sheet held at its target
+  rate in the life and the read: lived minus a life on shuffled digits is **+0.0029** with
+  the tile's winners (5 of 8 seeds above) and **+0.0021** without (6 of 8). Under 0.005
+  both. As the sheet fires it is +0.0134 (8 of 8), but there the learned cells fire at 64
+  and the shuffled ones at 43. The stroke structure is there either way (pixel likeness 0.25
+  against 0.05); a linear reader gets little from it beyond "cells that listen to pixels".
+- **Churn is not the gain.** The churn control (as many counter moves and re-picks, toward
+  sources drawn at random) reads at or under born in every setting (0.920 to 0.922 against
+  0.921 to 0.926). Lived minus churn: +0.030 as it fires, +0.015 at matched rate, 8 of 8
+  seeds. So the lift over born is all about the input (moving toward what is on), but only
+  a sliver of it is about which pixels go together. Finding 47 holds for rewiring toward
+  active sources, not for rewiring as such.
+- **Calc:** held-out xor4 +0.11 to +0.15 and add4 +0.06 to +0.09 over born and over churn,
+  8 of 8 seeds, at either rate. The shuffled control reads the same as lived, because in
+  xor4 and add4 every input line is an independent coin flip: shuffling them changes
+  nothing. The gain is generic (cells become detectors of lines on together), not fake.
+- **Beside the one-hop rule, competitive learning takes the counters:** held-out xor4 0.794
+  both against 0.878 the one-hop rule alone (4 seeds, every seed lower). Not the rate (both
+  read at 36), not mainly the tile's winners (0.836 with them, no competition); a quarter of
+  the competitive moves brings it back to 0.836.
+- **Cheap read-off, same wiring:** full 60,000-digit B5 lives of seeds 5-8 byte-identical to
+  the compete job's old runs; MNIST life at target rate 1.32 -> **1.17** times the rule-off
+  tick; at the rule's own rate 1.93 -> 1.64, of which the doubled spike rate alone is 1.2.
+- **The time rows: a big lift, not from the rate.** Rule on for the whole life beside the
+  readout, seeds 5-12: delayed echo 0.59 -> **0.91**, gap 0.54 -> **0.94**, order 0.66 ->
+  0.73; with the rate held at target 0.58 -> 0.87, 0.53 -> 0.93, 0.71 -> 0.81. The churn
+  control is under rule-off on all three. Half of each cell's inputs becoming input lines
+  does not cost time; the rule makes time features.
+
 ## What was built
 
 - **The churn control** (`--g.compete_churn 1`, `learn_compete.cpp`): a winner moves as many
@@ -251,3 +282,163 @@ this PC, one job at a time, load about 7 from other agents; rough). "before" is 
   from the last one, each step one 64-byte compare per slot.
 - `select_top` is shared: the tags and the one-hop rule re-pick faster too, with the same
   picks (they call plain `tag_rewire`, which halves the range instead of stepping).
+
+## 5. The time rows
+
+`scripts/compete2.sh time` (`out/compete2/time.txt`): the suite's delayed echo (2 steps),
+order and gap rows, whole blob learns, 40,000 steps, seeds 5-12, through `scripts/suite.py`
+(cards `out/scorecards/compete2-time-*.csv`, runs in `out/suite/compete2-time-*/`). The
+readout is the scoreboard's blob-readout column (`--g.learn_mode 5 --g.readout_evidence 1
+--g.readout_shift 4 --g.readout_balance 1 --motor-spread 128`) with `--g.tile_winners 4` in
+every card; "on" adds `--g.compete_on 1 --g.compete_shift 5` for the whole life, "cap" adds
+`--g.threshold_cap 1000`. Late score (mean of the last tenth), per seed:
+
+| row | card | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | mean | rate |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| delayed echo | off | 0.63 | 0.60 | 0.55 | 0.55 | 0.61 | 0.56 | 0.60 | 0.59 | 0.587 | 31 |
+| | **on** | 0.98 | 0.95 | 0.98 | 0.93 | 0.88 | 0.84 | 0.82 | 0.92 | **0.913** | 34 |
+| | off, cap | 0.60 | 0.56 | 0.57 | 0.56 | 0.57 | 0.56 | 0.61 | 0.58 | 0.576 | 31 |
+| | **on, cap** | 0.99 | 0.76 | 0.87 | 0.97 | 0.83 | 0.84 | 0.81 | 0.93 | **0.874** | 31 |
+| order | off | 0.61 | 0.70 | 0.70 | 0.63 | 0.69 | 0.61 | 0.71 | 0.66 | 0.664 | 32 |
+| | **on** | 0.72 | 0.63 | 0.68 | 0.71 | 0.76 | 0.78 | 0.67 | 0.87 | **0.728** | 40 |
+| | off, cap | 0.66 | 0.73 | 0.71 | 0.69 | 0.73 | 0.64 | 0.77 | 0.72 | 0.707 | 32 |
+| | **on, cap** | 0.94 | 0.86 | 0.87 | 0.81 | 0.76 | 0.76 | 0.78 | 0.68 | **0.809** | 32 |
+| gap | off | 0.56 | 0.57 | 0.53 | 0.48 | 0.54 | 0.56 | 0.59 | 0.52 | 0.544 | 31 |
+| | **on** | 0.92 | 0.85 | 0.96 | 0.99 | 0.91 | 0.97 | 0.96 | 0.95 | **0.938** | 39 |
+| | off, cap | 0.54 | 0.48 | 0.51 | 0.51 | 0.51 | 0.56 | 0.59 | 0.50 | 0.525 | 31 |
+| | **on, cap** | 0.89 | 0.95 | 0.94 | 0.93 | 0.97 | 0.87 | 0.95 | 0.94 | **0.929** | 31 |
+
+(Learning-off twins 0.48 to 0.49, coin flips 0.47 to 0.48. "rate": the life's spikes per
+1,024 neuron-ticks, the suite's own measure.)
+
+The churn control (`--g.compete_churn 1` with the rule on, as it fires): delayed echo 0.52,
+0.57, 0.55, 0.54, 0.52, 0.53, 0.56, 0.51 (mean 0.537), order 0.606, gap 0.503, at rate 31 to
+32: under the rule-off card on all three. The moves have to go toward what was on.
+
+- **It helps, a lot, and not through the rate.** Delayed echo +0.33 (every seed), gap +0.39
+  (every seed), order +0.06 (5 of 8); held at target rate +0.30, +0.40 and +0.10 (7 of 8).
+  The scoreboard for comparison: blob-readout 0.55 / 0.69 / 0.52, the richest sheet
+  (blob-rich2) 0.89 / 0.86 / 0.89, the GRU 1.00 on all three. With the rule, the plain
+  sheet reaches blob-rich2 on delayed echo and gap. On these worlds the rule does not leave
+  the cells firing much faster (34 to 40 against 31) and the cap changes little.
+- Why, a reading, not tested: a winner's counters gain for sources that were on *at the
+  delay of the slot that reads them*, so a cell comes to wire the sources that, at their
+  own delays, line up on its spike: a cue now and the same cue some ticks ago, or a cue
+  and a hidden cell still carrying an older one. That is a detector of a time pattern,
+  learned with no reward, which a readout of 2 buttons can use. Delayed echo and gap are
+  both "what was on so many ticks ago".
+- This is the first reward-free inner rule that moves a time row of the suite. It was
+  measured here only on these three rows (as asked); the rest of the suite with the rule
+  on is not run.
+
+## What is real, what is suspect
+
+Real (8 seeds, every number from a script line below):
+
+- At matched rate, what competitive learning learns about the *shapes* of digits is worth
+  +0.002 to +0.003 to a fresh linear reader (5 and 6 of 8 seeds). What it learns about
+  *which inputs are on* is worth +0.014 to +0.015 over churn. The headline 0.952 is mostly
+  "cells listen to pixels" plus a higher rate that the learned cells use better.
+- Random rewiring at born counts does not lift the reader (churn at or under born, every
+  setting). Finding 47 should say "rewiring toward active sources".
+- On calc the rule lifts held-out xor4 by 0.11 to 0.15 and add4 by 0.06 to 0.09 over born and
+  churn; the shuffled control matches it because these inputs have no structure to shuffle.
+- Competitive learning sharing counters with the one-hop rule outvotes it (0.794 against
+  0.878 on xor4; a quarter of the moves gives 0.836).
+- The rule lifts delayed echo and gap by 0.3 to 0.4 at either rate.
+- The read-off gives the same wiring and the same lives, faster.
+
+Suspect:
+
+- The time rows are 3 rows of one readout, 40,000 steps, and the reading of why is a guess.
+  Its controls are the cap and churn; there is no shuffled-input control for them yet.
+- Calc's shuffled control is uninformative on these two members (above). A calc member
+  with structured inputs (lines that tend to be on together) would test what this cannot.
+- The hop decomposition is 4 seeds and one life length. Whether the outvoting is the
+  number of moves or the order of moves (competition every tick, errors at verdicts) is
+  not separated beyond `compete_shift 7`.
+- Speeds are from a shared machine (load about 7). The ratios held within a few percent
+  across repeats; the absolute numbers did not.
+- The time suite's "off" card ran on stevejobs, the others here; results are
+  byte-identical between machines (AGENTS.md). Two "on" runs started there were killed
+  mid-write, left empty summaries, and were rerun here.
+
+## Not done
+
+- The rest of the suite (and the scoreboard) with the rule on. Given the time rows, this is
+  the next thing to run: `scripts/suite.sh compete-on --g.learn_mode 5
+  --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128
+  --g.tile_winners 4 --g.compete_on 1 --g.compete_shift 5`.
+- A shuffled control for the time rows (cue lines moved per trial), and the time rows on a
+  frozen sheet after a reward-free life (does the inside carry the time feature, or does it
+  need the rule on beside the readout?).
+- A real-data test that needs products (idea 163's branch builds it).
+- The read-off could drop further only by firing less: at the rule's own rate the tick
+  itself (more spikes) is most of the remaining cost.
+- Nothing was tuned; the 4 settings are the compete doc's B5 and A5 with and without cap.
+
+## Predictions, scored
+
+1. B5 at cap, lived minus shuffled 0.005 or more (0.3): no, +0.0029. A5 at cap (0.65): no,
+   +0.0021. Wrong on A5: the 2-seed +0.012 did not hold.
+2. Lived minus churn 0.005 or more, as it fires (0.85): yes, +0.030. At cap (0.75): yes,
+   +0.015.
+3. Held-out xor4 survives its shuffled control (0.55): no (-0.008); add4 (0.4): no
+   (+0.006, 5 of 8). The control turned out to be no test on these members.
+4. Under 1.2 times at the rule's own rate (0.1): no, 1.64. At target rate (0.6): yes, 1.17.
+5. Both rules worse than the one-hop rule alone by 0.03 or more on xor4 (0.75): yes, -0.084.
+   The tile's winners most of it (0.4): no; the competition for the counters is.
+6. No time row moves by 0.03 or more (0.6): wrong. Delayed echo +0.33, gap +0.39, order
+   +0.06.
+
+## Script lines
+
+```
+scripts/compete2.sh mnist                  section 1 and 2 (128 runs; B5 seeds 9-12 born/lived/shuffled copied from the compete job)
+scripts/compete2.sh calc                   section 3 (256 runs)
+scripts/compete2.sh hopcomp                the one-hop rule beside competitive learning (88 runs, on stevejobs)
+scripts/compete2.sh time                   section 5 (5 suite cards, 3 rows each)
+COMPETE2_BEFORE=build-old scripts/compete2.sh speed     section 4 (build-old: cmake build of 6bc8130)
+scripts/compete2.sh all --quick            smoke check, 2 seeds, short lives (ran end to end)
+scripts/compete2.sh mnist --table-only     print a table from what is there
+bash out/compete2/proof/quick.sh 6000      byte-identity, MNIST (needs build-old)
+bash out/compete2/proof/calc.sh            byte-identity, calc xor4 (needs build-old)
+bash out/compete2/refcheck.sh              the four reference lives against out/merge-ref
+```
+
+## What should change elsewhere (for the coordinator; not edited here)
+
+- `docs/findings.md` 43: the 0.952 holds, but at matched rate lived beats a shuffled-digit
+  life by only +0.003 (tile winners, 5 of 8 seeds) and +0.002 (without, 6 of 8); lived beats
+  random churn by +0.015 at matched rate (8 of 8). "Teaches the inside" is true of moving
+  toward active inputs; what it learns about digit shapes is worth little to a linear
+  reader.
+- `docs/findings.md` 44: confirmed, and the rate-matched control is decisive on MNIST. Add
+  churn (moves toward random sources) as the third control for a rewiring rule.
+- `docs/findings.md` 47: rewiring at born counts toward sources drawn at random lowers the
+  reader (churn 0.922 against born 0.926). The common part of the three rules is moving
+  toward sources that were just active.
+- New finding (likely, 8 seeds, 3 rows, one readout): **reward-free competitive learning
+  makes time features.** Delayed echo 0.59 -> 0.91, gap 0.54 -> 0.94 with the rule on beside
+  the readout, at either rate; churn does not. First inner rule that moves the time rows.
+- New finding (hint, 4 seeds): two rules on one counter store: the one that moves every
+  tick outvotes the one that moves at verdicts.
+- `docs/plan.md`: item 2a done. Next: the whole suite with the rule on (script line under
+  "Not done"); a time-row shuffled control and a frozen read after a reward-free life on a
+  time world; one-hop and competitive learning on separate counters.
+- `docs/predictions.md`: the six above.
+- `docs/design.md`: compete_churn, compete_full, and the read-off (bounds + stepped line in
+  `select_top`, `tag_rewire_hinted`); compete's numbers were not in design.md before, so
+  nothing was added there.
+
+## Files that may collide with other branches
+
+- `src/blob/tag_store.cpp` (`select_top`, `tag_rewire_hinted`; one line marking compete
+  stale) and `tag_store.hpp`: the one-hop rule calls `tag_rewire` and is otherwise
+  untouched; `learn_hop.cpp` not edited.
+- `src/blob/blob.hpp` (one pointer), `genome.hpp`, `genome_args.cpp` (two numbers each),
+  `tick_steps.hpp`, `birth.cpp` (one free line).
+- `src/probe/linear_calc.cpp` (life shuffle flag, read rate, a `rate` line in the csv), new
+  `src/probe/calc_shuffle.cpp`. `probe/main.cpp`, `linear_fit.*`, `mnist_*`, `run_flags.cpp`,
+  `life*.cpp`, `plug*.cpp`, `learn_readout.cpp` not touched.
+- `scripts/inside.py` (kinds churn and calc shuffled), `scripts/inside.sh` (one comment).
