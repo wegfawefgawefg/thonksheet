@@ -149,3 +149,58 @@ upright-and-centred than they began, bad if further). Numbers also had a flaw: l
 from the left as the value rose, so "leaning left" was only an absence of activity.
 `--number-code place` lights the one line whose band holds the value. The scripts use
 `lean` and `place` for cartpole. `sparse` stays as the harder version for slow-credit ideas.
+
+## Long memory (idea 129, 2026-11-25)
+
+Two different things: holding something in mind across a gap (activity), and keeping what
+was learned for a lifetime while learning more (wiring). `hold` is the first; the other
+four are the second. Code: `src/world/task_long.cpp`. Run with `blobrun --long` (the
+long-life protocol, `src/run/life_long.cpp`) or `scripts/longlife.sh WORLD ENGINE`.
+
+Every step is scored into a bucket (an age, teaching, common or rare, kept or changed).
+`--long` writes one csv row per window per driver with each bucket's right answers over
+asks, and a summary with each bucket over the whole life and before and after a split
+(`drift_at` for drift, half the life otherwise). Coin flips and the perfect player always
+run beside it; the learning-off twin only without `--no-baselines`.
+
+Patterns. The pattern worlds draw cues from a universe of `on` lit lines out of `lines`
+(defaults 6 of 28: 376,740 patterns), in a fixed shuffle per task seed, so no pattern comes
+twice until the universe is used up. The button of a pattern is a fixed hash of it, so a
+pattern means the same thing whenever it comes back, and nothing about a new pattern can be
+guessed from old ones. 28 lines plus good and bad need 2x2-cell lines (`--sensor-side 2`);
+`hold` fits at 3x3.
+
+- **Hold.** Lines: `hold_cues` cues (2), ask. A trial is one blank step, one step with one
+  cue on, `--hold-steps N` blank steps, then the ask step. The press on the ask counts:
+  the cue's button good, another bad. At 20 ticks a step, N from 1 to 5,000 is a gap of 20
+  to 100,000 ticks. `--hold-noise 1`: two more lines per cue that flash in the gap (each
+  gap step one of them with chance 2^-`noise_shift`, 1/4). `--hold-noise 2`: the cue lines
+  themselves flash in the gap, and the real cue comes with a mark line; holding the right
+  one needs a gate. Score: right asks over asks.
+- **Pairs.** A never-ending stream of pairs. Pair i starts at step 400 i (`--pair-every`);
+  on every other step one of the newest 4 pairs (`--pair-live`) is taught (shown, pressed,
+  good or bad), so each pair gets about 400 teaching steps over 1,600 steps. Each pair is
+  asked once more at each of five ages, 100, 1,000, 10,000, 100,000 and 1,000,000 steps
+  after it started (`--age-base` times 1, 10, ... 10,000; the probe for age j lands j + 1
+  steps later so none collide). Probes are not rewarded (`--probe-reward 1` makes them
+  re-teach). Buckets: `age0` to `age4`, `teach`. The score is the forgetting curve, right
+  answers by age, and "pairs held at once": the curve above chance, rescaled so chance is 0
+  and perfect 1, integrated over age (flat before the first age, straight between) and
+  divided by the steps per pair. A machine that keeps every pair forever would hold
+  2,500 per million steps of life.
+- **Once.** Patterns as in pairs, plus one hint line per button. Every 400 steps a new
+  pattern is shown a single time with its button's hint line on (the "answer"); it is
+  asked once, without the hint, at one of the five ages (pair i at age i mod 5), and that
+  ask is rewarded. Every other step is a hint-only step (hint line b, press b), which keeps
+  "hint b means button b" learned. Buckets: `age0` to `age4`, `show`, `hint`. A learner
+  that only learns on bad gets nothing from a showing it answered right.
+- **Rare.** 8 common patterns (`--rare-common`) and 4 rare ones (`--rare-count`); a step
+  is a rare one with chance 1 in 1,000 (`--rare-every`). Every step rewarded. Buckets:
+  `common`, `rare`.
+- **Drift.** 8 pairs (`--drift-pairs`), one asked per step, rewarded. At `--drift-at`
+  (100,000) the odd pairs move to the next button. Buckets: `kept` (even pairs, never
+  changed) and `changed` (odd pairs). Read before and after the split.
+
+Check scores (stand-in, 4 buttons unless said; coin ties are no move, so coin sits below
+1/k): coin `hold` 0.46 (2 buttons), pairs every age 0.22 to 0.27, once 0.20 to 0.33 on few
+asks, rare 0.20 to 0.23, drift 0.23. Perfect 1.00 on every bucket of every world.

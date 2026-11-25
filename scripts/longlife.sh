@@ -9,7 +9,11 @@
 #   scripts/longlife.sh hold table --hold-steps 50 --steps 200000
 #   scripts/longlife.sh hold table --hold-steps 50 --hold-noise 1   distractors in the gap
 #   scripts/longlife.sh once table ; scripts/longlife.sh rare table ; scripts/longlife.sh drift table
-#   scripts/longlife.sh pairs table --t.lock_levels 3              the freezer
+#   scripts/longlife.sh hold blob --hold-steps 250 --g.time_percent 10 --g.hold_percent 10
+#                                  time cells and integrator cells (the holding pair)
+#   scripts/longlife.sh pairs blob --g.readout_decay 8             decay makes room
+#   scripts/longlife.sh pairs blob --g.readout_lock_levels 3       the freezer
+#   scripts/longlife.sh pairs table --t.lock_levels 3              the freezer, table neurons
 #   scripts/longlife.sh hold table --t.timeline_levels 10 --t.timeline_percent 10
 # Engines: table (default), blob (full engine: --g.learn_mode 5 with the evidence readout),
 # blob-plain (the full engine as born, learn_mode 0), minimal. Add --baselines for the

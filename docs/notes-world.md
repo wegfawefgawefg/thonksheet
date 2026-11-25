@@ -265,6 +265,30 @@ linking against a throwaway stub core; it builds and runs.
 - Score per window is 0 when a window holds no try (a window shorter than one delayed-echo
   trial). Keep windows well above the trial length.
 
+## Long memory worlds and `--long` (2026-11-25)
+
+`world/task_long.cpp` (hold, pairs, once, rare, drift; settings in `task_long.hpp`, flags in
+`task_long_flags.cpp`) and `run/life_long.cpp` (the protocol). Definitions:
+`docs/curriculum.md`, "Long memory". Shared edits were kept to the enum, the name table, one
+case group per switch in `task.cpp`, one `LongSettings` in `TaskSettings`, one `LongState`
+in `Task`, one flag hook in `run_flags.cpp` and one protocol entry.
+
+- `blobrun --long --task pairs ...` runs the engine, coin flips and the perfect player (the
+  learning-off twin only without `--no-baselines`), one life each, and writes per window
+  per driver a row of each bucket's right answers over asks (`score` is the headline:
+  probes for pairs and once, the rare patterns for rare, all pairs for drift, asks for
+  hold). The summary has `<bucket>_all`, `_before`, `_after` (split at `drift_at` for
+  drift, half the life otherwise), `_asked`, and `held` for pairs and once.
+- `held` is the forgetting curve above chance rescaled to 0..1, integrated over age (flat
+  before age 100, straight lines between ages), over steps per pair; an age within two
+  standard errors of chance counts as 0.
+- For the full engine the end of a life also prints button cells with no connection and the
+  share of evidence counters at an end of their range or not zero.
+- Speed: a step is 20 ticks, so 10M steps is 200M ticks. On this PC under load the full
+  engine ran 20k to 38k ticks/s, table neurons about 14k; on stevejobs under load table
+  neurons about 19k, the minimal engine about 58k (a 10M-step life about 1 hour).
+- Ticks per step stay 20 as everywhere; a hold gap is given in steps (`--hold-steps`).
+
 ## Reading a scorecard run with a readout rule in its flags (2026-11-25)
 
 The suite's "frozen sheet, readout learns" rows force `learn_mode 1`, the old readout, so in
