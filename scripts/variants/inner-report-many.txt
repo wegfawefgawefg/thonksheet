@@ -5,3 +5,4 @@
 readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 256
 tags: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 256 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4
 walk d1: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 256 --g.replay_depth 1
+inner: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 256 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1

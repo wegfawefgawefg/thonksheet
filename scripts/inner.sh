@@ -20,7 +20,7 @@
 # after the same life with the readout alone, and after one where good and bad were a coin:
 #   scripts/inner.sh mnist
 # The tables in the results doc (sweeps of 2 runs at a time under nice; hours):
-#   scripts/inner.sh tune                  choosing the setting, seeds 1-4
+#   scripts/inner.sh tune                  choosing the setting, seeds 1-4 (tune2: round 2)
 #   scripts/inner.sh tables                against both parents, seeds 5-12
 #   scripts/inner.sh pieces                each piece switched off, and the two controls
 #   ROWS="xor echo5" JOBS=2 scripts/inner.sh tables      some rows only
@@ -90,6 +90,13 @@ tune)
     for r in ${ROWS:-xor order echo2 echo5 k8}; do
         SEEDS="${SEEDS:-1-4}" row "$r" scripts/variants/inner-tune.txt \
             scripts/variants/inner-tune-many.txt
+    done
+    ;;
+tune2)
+    # the second round: the walk's verdict and growable drive on top of spike-exact credit
+    for r in ${ROWS:-xor order echo2 echo5 k8}; do
+        SEEDS="${SEEDS:-1-4}" row "$r" scripts/variants/inner-tune2.txt \
+            scripts/variants/inner-tune2-many.txt
     done
     ;;
 tables)
