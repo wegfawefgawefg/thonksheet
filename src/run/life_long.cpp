@@ -9,6 +9,7 @@
 #include "run/task_ticker.hpp"
 
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <filesystem>
 #include <string>
@@ -137,8 +138,12 @@ static double pairs_held(const Task& task, const LongTotals& all) {
         if (all.asked[j] == 0) {
             break;
         }
-        double r = ((double)all.right[j] / (double)all.asked[j] - chance) / (1.0 - chance);
-        r = r < 0 ? 0 : r;
+        double n = (double)all.asked[j];
+        double above = (double)all.right[j] / n - chance;
+        // an age counts only when it is more than two standard errors above chance, so a
+        // wide age band does not turn noise into hundreds of pairs
+        double noise = 2.0 * std::sqrt(chance * (1.0 - chance) / n);
+        double r = above > noise ? above / (1.0 - chance) : 0.0;
         double age = (double)long_age(ls, j);
         // flat before the first age, straight lines between the ones measured
         held += (age - last_age) * (last_r < 0 ? r : (r + last_r) / 2.0);
