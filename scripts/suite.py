@@ -32,6 +32,21 @@ QUICK = {"steps": 4000, "window": 200, "phase_window": 200, "retest": 1000,
          "idle": 40000, "reach": ["--reach-settle", "4000", "--reach-blocks", "400"],
          "speed_ms": 300, "alive": 4096, "seeds": [5, 6]}
 
+# the invariance battery (scripts/invariance.sh has its three levels): held-out versions are
+# never rewarded and are the score; the rewarded versions' score is the second row
+INVARIANCE = [("position", "1", "a shape at a place never rewarded"),
+              ("scale", "1", "a shape at a size never rewarded (1x)"),
+              ("rotation", "1", "a shape turned in a way never rewarded"),
+              ("bright", "1", "a shape dimmer than ever rewarded (control)"),
+              ("clutter", "1", "a shape in more clutter than ever rewarded"),
+              ("mixed", "1", "a size at a place never rewarded together"),
+              ("view", "1", "a 3D object from angles never rewarded"),
+              ("shift", "3", "a tune starting at a time never rewarded"),
+              ("tempo", "3", "a tune faster than ever rewarded"),
+              ("pitch", "1", "a tune at a pitch never rewarded")]
+INVARIANCE_MOTION = ["position", "scale", "rotation", "bright", "clutter", "mixed", "view"]
+MOTION = ["--inv-motion", "50", "--inv-motion-steps", "8"]
+
 FEATURES = [("order", "order: which of two cues came on first"),
             ("both-not-either", "both-not-either: exactly one of two cues"),
             ("gap", "gap: short or long gap between two blinks"),
@@ -70,6 +85,11 @@ def jobs_for(life, readout):
     if readout:
         # the control: a readout that can learn at all, where the input hands over the answer
         jobs["readout-echo"] = (["--task", "echo", "--frozen-readout"] + plain, 1)
+    for kind, side, _ in INVARIANCE:
+        jobs["inv-" + kind] = (["--task", "inv-" + kind, "--sensor-side", side] + plain, 1)
+    for kind in INVARIANCE_MOTION:
+        jobs["inv-%s-motion" % kind] = (["--task", "inv-" + kind, "--sensor-side", "1"] +
+                                        MOTION + plain, 1)
     return jobs
 
 
@@ -141,6 +161,13 @@ def rows_for():
                      "ticks_per_s_" + size))
     rows.append(("fits the machine", "bytes per neuron (32x32 tiles)", "speed",
                  "bytes_per_neuron_32x32"))
+    for kind, _, label in INVARIANCE:
+        rows.append(("invariance", "%s: %s" % (kind, label), "inv-" + kind, "late"))
+        rows.append(("invariance", "%s: on the rewarded versions" % kind, "inv-" + kind,
+                     "taught_late"))
+    for kind in INVARIANCE_MOTION:
+        rows.append(("invariance", "%s + motion (half the life drifting), held out" % kind,
+                     "inv-%s-motion" % kind, "late"))
     return rows
 
 
