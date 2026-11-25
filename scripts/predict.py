@@ -19,13 +19,17 @@ PLUG = "--ticks 20 --sensor-side 2 --motor-side 3 --motor-spread 64 --window 100
 GENOME = ("--g.sensor_w 64 --g.motor_stride 1 --g.learn_mode 5 --g.readout_evidence 1 "
           "--g.readout_shift 4 --g.readout_balance 1").split()
 PRED = "--predict 1,2,4,8 --predict-shift 2".split()
+# per-world sheet changes, in every arm: catch's 38 lines x 4 horizons need a wider motor
+# quadrant for 4 cells a group (2 at the default width)
+WORLD_GENOME = {"catch": "--g.motor_w 48".split()}
 ERR = "--predict-errors 1".split()
 PRESS = "--predict-press 1".split()
 COMPETE = "--g.compete_on 1 --g.tile_winners 4 --g.compete_shift 5".split()
 
+# track is left out: on this readout it locks against a wall (pressing into the end earns
+# nothing, and the rule only learns on bad), at sensor side 2 in every arm; see the doc
 WORLDS = {
     "catch": [],
-    "track": [],
     "forage": [],
     "cartpole": "--cart-reward lean --number-code place".split(),
     "pendulum": "--number-code place".split(),
@@ -41,7 +45,7 @@ WORLDS = {
 # order 2 it needs the symbol before too
 READ_FLAGS = {"predict-next": "--k 4 --markov-order 2".split()}
 # worlds the inside read asks something of (probe/predict_labels.hpp)
-READ_WORLDS = ["catch", "track", "cartpole", "chain", "delayed-echo", "beat", "predict-next",
+READ_WORLDS = ["catch", "cartpole", "chain", "delayed-echo", "beat", "predict-next",
                "echo"]
 
 # blobrun arms: flags, and whether the learning-off twin (and coin) run too
@@ -64,6 +68,9 @@ READ_ARMS = {
     "compete": (COMPETE, True, False),
     "pred_compete": (PRED + COMPETE, True, False),
     "pred_err_compete": (PRED + ERR + COMPETE, True, False),
+    # the time-shuffled control of each competitive arm
+    "shuffled_compete": (COMPETE, True, True),
+    "shuffled_pred_err_compete": (PRED + ERR + COMPETE, True, True),
 }
 
 
@@ -118,7 +125,8 @@ def parse(argv):
 def task_job(world, arm, seed, opt, folder):
     flags, baselines = TASK_ARMS[arm]
     base = os.path.join(folder, f"{world}-{arm}-s{seed}")
-    cmd = (["nice", "-n", "19", RUN, "--task", world] + PLUG + WORLDS[world] + GENOME + flags +
+    cmd = (["nice", "-n", "19", RUN, "--task", world] + PLUG + WORLDS[world] + GENOME +
+           WORLD_GENOME.get(world, []) + flags +
            ["--steps", str(opt["steps"]), "--seed", str(seed), "--out", base + ".csv"])
     if not baselines:
         cmd.append("--no-baselines")
@@ -139,7 +147,7 @@ def read_job(world, arm, seed, opt, folder):
     base = os.path.join(folder, f"read-{world}-{arm}-s{seed}")
     cmd = (["nice", "-n", "19", PROBE, "predict", "--task", world] + PLUG +
            READ_FLAGS.get(world, WORLDS[world]) +
-           GENOME + flags + ["--seed", str(seed), "--trials", str(opt["trials"]),
+           GENOME + WORLD_GENOME.get(world, []) + flags + ["--seed", str(seed), "--trials", str(opt["trials"]),
                              "--life", str(opt["steps"] if lived else 0), "--label", arm,
                              "--out", base + ".csv"])
     if shuffled:
@@ -156,7 +164,7 @@ def future_job(world, arm, seed, opt, folder):
     flags, lived = FUTURE_ARMS[arm]
     base = os.path.join(folder, f"future-{world}-{arm}-s{seed}")
     cmd = (["nice", "-n", "19", PROBE, "predict", "--task", world] + PLUG + WORLDS[world] +
-           GENOME + flags + ["--seed", str(seed), "--trials", str(opt["trials"]),
+           GENOME + WORLD_GENOME.get(world, []) + flags + ["--seed", str(seed), "--trials", str(opt["trials"]),
                              "--life", str(opt["steps"] if lived else 0), "--label", arm,
                              "--future", "1,8", "--out", base + ".csv"])
     return cmd + opt["extra"], base + ".txt", base + ".csv"
@@ -327,53 +335,88 @@ def tables(opt, folder):
 
     # 5. the inside read
     out.append("\n## 5. The inside read: a fresh linear reader on the frozen sheet\n")
-    out.append("Share right on the test quarter. sheet: every non-sensor cell; hidden: no sensor "
-               "or motor cell. now / two: the same reader on the task's lines of this step / of "
-               "this and the last step. all lines: on every line the arm's sheet sees this step "
-               "(good, bad, and the press and error lines where the arm has them). maj: the most common answer. rate: spikes per 1,000 "
-               "cell-ticks of the non-sensor cells in the read.\n")
-    rarms = list(READ_ARMS)
-    out.append("| world | question | " + " | ".join(rarms) + " | now | two | maj |")
-    out.append("|---|---|" + "---|" * (len(rarms) + 3))
+    out.append(f"Seeds {','.join(map(str, seeds))}. Share right on the read's test quarter. "
+               "Each cell: whole sheet (every non-sensor cell) / hidden cells only (no sensor or "
+               "motor cell) / firing rate of the non-sensor cells (spikes per 1,000 cell-ticks). "
+               "lines now / two: the same reader on the task's lines of this step / of this and "
+               "the last step; all lines (err): on every line the error-line arm sees this step, "
+               "error lines included; maj: the most common answer. Under the working output "
+               "rule only motor cells learn, so only the arms with competitive learning can "
+               "change the hidden cells' wiring.\n")
     csv = ["world,question,arm,sheet,sheet_sd,hidden,hidden_sd,rate_sheet,rate_hidden,n"]
-    rates = {}
+
+    def read_table(arms, extra):
+        out.append("| world | question | " + " | ".join(arms) + " | " +
+                   " | ".join(k for k, _ in extra) + " |")
+        out.append("|---|---|" + "---|" * (len(arms) + len(extra)))
+        for w in READ_WORLDS:
+            if w not in worlds:
+                continue
+            data = {(arm, s): read_csv(os.path.join(folder, f"read-{w}-{arm}-s{s}.csv"))
+                    for arm in READ_ARMS for s in seeds}
+            questions = sorted({q for d in data.values() for (q, k) in d if q != "future"})
+            for q in questions:
+                cells = []
+                for arm in arms:
+                    sv = [data[(arm, s)].get((q, "sheet")) for s in seeds]
+                    hv = [data[(arm, s)].get((q, "hidden")) for s in seeds]
+                    rv = [data[(arm, s)].get((q, "rate_sheet")) for s in seeds]
+                    n = len([x for x in sv if x is not None])
+                    cells.append(f"{fmt(mean(sv), 5)} / {fmt(mean(hv), 5)} / "
+                                 f"{fmt(mean(rv), 4, 1)}" + (f" (n={n})" if n != len(seeds)
+                                                            else "") if n else "-")
+                ex = []
+                for _, (key, arm) in extra:
+                    pool = [data[(a, s)] for a in ([arm] if arm else READ_ARMS) for s in seeds]
+                    ex.append(fmt(mean([d.get((q, key)) for d in pool if d]), 5))
+                out.append(f"| {w} | {q} | " + " | ".join(cells) + " | " + " | ".join(ex) + " |")
+
+    centre = ["born", "compete", "shuffled_compete", "pred_err_compete",
+              "shuffled_pred_err_compete"]
+    out.append("### 5a. The arms that can change the inside\n")
+    read_table(centre, [("now", ("lines_now", None)), ("two", ("lines_two", None)),
+                        ("all lines (err)", ("lines_all", "pred_err_compete")),
+                        ("maj", ("majority", None))])
+    # paired: pred_err_compete against compete, per seed, on the hidden cells
+    out.append("\nPaired, hidden cells: pred_err_compete less compete, and each less its "
+               "shuffled control (mean over seeds; seeds higher / lower):\n")
+    out.append("| world | question | err+pred+compete - compete | compete - its shuffled | "
+               "err+pred+compete - its shuffled |")
+    out.append("|---|---|---|---|---|")
     for w in READ_WORLDS:
         if w not in worlds:
             continue
         data = {(arm, s): read_csv(os.path.join(folder, f"read-{w}-{arm}-s{s}.csv"))
-                for arm in rarms for s in seeds}
-        questions = sorted({q for d in data.values() for (q, _) in d})
+                for arm in READ_ARMS for s in seeds}
+        questions = sorted({q for d in data.values() for (q, k) in d if q != "future"})
         for q in questions:
             cells = []
-            for arm in rarms:
-                sv = [data[(arm, s)].get((q, "sheet")) for s in seeds]
-                hv = [data[(arm, s)].get((q, "hidden")) for s in seeds]
-                rv = [data[(arm, s)].get((q, "rate_sheet")) for s in seeds]
-                rh = [data[(arm, s)].get((q, "rate_hidden")) for s in seeds]
-                cells.append(f"{fmt(mean(sv), 5)} / {fmt(mean(hv), 5)}" if mean(sv) is not None
-                             else "-")
-                rates[(w, arm)] = mean(rv)
+            for x, y in (("pred_err_compete", "compete"), ("compete", "shuffled_compete"),
+                         ("pred_err_compete", "shuffled_pred_err_compete")):
+                d = [data[(x, s)].get((q, "hidden")) - data[(y, s)].get((q, "hidden"))
+                     for s in seeds if data[(x, s)].get((q, "hidden")) is not None and
+                     data[(y, s)].get((q, "hidden")) is not None]
+                cells.append(f"{mean(d):+.3f} ({sum(v > 0 for v in d)}/{sum(v < 0 for v in d)})"
+                             if d else "-")
+            out.append(f"| {w} | {q} | " + " | ".join(cells) + " |")
+    out.append("\n### 5b. The other arms (only motor cells learn in these)\n")
+    read_table(["born", "task", "pred", "pred_err", "shuffled", "pred_compete"],
+               [("now", ("lines_now", None)), ("all lines (err)", ("lines_all", "pred_err")),
+                ("maj", ("majority", None))])
+    for w in READ_WORLDS:
+        if w not in worlds:
+            continue
+        for arm in READ_ARMS:
+            ds = [read_csv(os.path.join(folder, f"read-{w}-{arm}-s{s}.csv")) for s in seeds]
+            for q in sorted({q for d in ds for (q, k) in d if q != "future"}):
+                sv = [d.get((q, "sheet")) for d in ds]
+                hv = [d.get((q, "hidden")) for d in ds]
+                rv = [d.get((q, "rate_sheet")) for d in ds]
+                rh = [d.get((q, "rate_hidden")) for d in ds]
                 if mean(sv) is not None:
                     csv.append(f"{w},{q},{arm},{mean(sv):.5f},{sd(sv):.5f},{mean(hv):.5f},"
                                f"{sd(hv):.5f},{mean(rv):.3f},{mean(rh):.3f},"
                                f"{len([x for x in sv if x is not None])}")
-            base = [data[(a, s)] for a in rarms for s in seeds if data[(a, s)]]
-            now = mean([d.get((q, "lines_now")) for d in base])
-            # every line of the step: differs by arm (good, bad, the extra lines)
-            lall = {a: mean([data[(a, s)].get((q, "lines_all")) for s in seeds]) for a in rarms}
-            two = mean([d.get((q, "lines_two")) for d in base])
-            maj = mean([d.get((q, "majority")) for d in base])
-            out.append(f"| {w} | {q} | " + " | ".join(cells) +
-                       f" | {fmt(now, 5)} | {fmt(two, 5)} | {fmt(maj, 5)} |")
-            out.append(f"| | all lines | " + " | ".join(fmt(lall[a], 5) for a in rarms) +
-                       " | | | |")
-    out.append("\nEach cell: sheet / hidden. Firing rates (sheet, spikes per 1,000 cell-ticks):\n")
-    out.append("| world | " + " | ".join(rarms) + " |")
-    out.append("|---|" + "---|" * len(rarms))
-    for w in READ_WORLDS:
-        if w in worlds:
-            out.append(f"| {w} | " + " | ".join(fmt(rates.get((w, a)), 5, 1) for a in rarms) +
-                       " |")
     open(os.path.join(ROOT, "out", "predict", opt["name"] + "-read.csv"), "w").write(
         "\n".join(csv) + "\n")
     # 6. the ceiling
