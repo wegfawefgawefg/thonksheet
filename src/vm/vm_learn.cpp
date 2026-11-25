@@ -178,6 +178,18 @@ void vm_reward(Blob& blob, int valence) {
     v.last_outcome = v.now;
 }
 
+// an entry whose operation sets at least one bit: only such an entry counts as an input's
+// detector, so an answer entry covering the same input does not stop the event's mark
+static bool writes_something(const VmBlob& v, int e) {
+    const uint64_t* s = v.set + (size_t)e * v.m_words;
+    for (int w = 0; w < v.m_words; w++) {
+        if (s[w]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // events: the input changed, and no firing entry is a detector of it (an entry whose address
 // covers this input: at least 3/4 of its X part is on now, and that part is at least half
 // of what is on). a quiet entry becomes one, with a fresh code as its operation.
@@ -195,7 +207,7 @@ void vm_events(VmBlob& v) {
     for (int k = 0; k < v.vg.active; k++) {
         int e = v.winners[k];
         int size = v.x_size[e];
-        if (4 * v.match_x[e] >= 3 * size && 2 * size >= on) {
+        if (4 * v.match_x[e] >= 3 * size && 2 * size >= on && writes_something(v, e)) {
             return; // already known
         }
     }
