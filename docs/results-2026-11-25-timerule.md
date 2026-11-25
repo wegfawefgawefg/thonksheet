@@ -30,6 +30,29 @@ there with or without the rule.
 5. Of point 5's 15 rows, the number that move by 0.05 or more with the rule: 6 (4 to 8 with
    probability 0.6).
 
+## Short version
+
+- **What decides: the delay, then the sheet.** On the suite's sheet the rule's gain on
+  delayed echo is +0.33 at 2 steps, +0.07 at 3, +0.02 at 4 and nothing at 8 or 16 (8 seeds).
+  The prediction battery asked at 4 steps, past that edge, where its rule-off arm was at the
+  coin too. Its sheet also fails at 2 steps: sensor groups of side 2 together with the
+  sensor lattice across the top half, where the rule pushes the rate from 29 to 50 (either
+  change alone keeps two thirds of the gain or more).
+- **The inside carries it, and it is not time.** After a life with the rule, a frozen sheet
+  and a fresh readout get all of the gain (delayed echo 0.56 born, 0.92 lived; gap 0.54,
+  0.95). A life on the same frames in shuffled order gives nearly as much (0.89, 0.96), so
+  does a life with no reward (0.86, 0.92); churn gives nothing (0.56, 0.52).
+- **What the cells wired: loops per cue.** The cells that hold a cue through the blanks take
+  28 of their 49 excitatory inputs from other cells holding the same cue (born: 3), plus
+  that cue's own sensor cells. Slot delays are unchanged (about 2 ticks; a step is 20).
+  These are Hebbian cell assemblies: what a cue lights stays lit for about two steps. The
+  compete2 guess ("this cue now and that one some ticks ago" through slot delays) is wrong.
+- **How far:** 10 of 16 memory and time rows move by 0.05 or more, all of them ones a trace
+  of one or two steps answers: 1-back 0.73 to 0.98 (the GRU 0.97), same-or-different in turn
+  0.53 to 0.83, copy of 2 0.69 to 0.89, gap 0.54 to 0.94. Beat falls, sequence stays, delayed
+  echo past 3 steps stays. With the output-gap readout most rows gain a little more and
+  1-back loses 0.14 (its exclusive-or cost).
+
 ## What was built
 
 - `scripts/timerule.sh NAME [--quick]` (`timerule.py`, `timerule_lib.py`, `timerule_probe.py`):
@@ -239,7 +262,7 @@ What the cells wired, plainly:
 
 - **Not time detectors. Cell assemblies that hold the cue.** The compete2 guess was wrong.
   After a life with the rule, the hidden cells that carry a cue through the blanks take 28 of
-  their ~60 excitatory connections from other carriers of the *same* cue and 2.5 from
+  their 49 excitatory connections from other carriers of the *same* cue and 2.5 from
   carriers of the other (born: 3.1 and 2.3), plus the sensor cells of their own cue (2.3
   against 0.08). That is a self-exciting loop per cue: what a cue lights stays lit after
   it goes off. At 2 steps it lasts to the ask (360 cells still carry the cue there, born
@@ -257,3 +280,178 @@ What the cells wired, plainly:
 - **They come from co-activity, not order.** The shuffled life wires the same loops (30
   against 2.5) in the same cells (the reader's top cells carry at |d'| 0.98 after a shuffled
   life, 1.74 after the real one, 0.18 as born).
+
+## 5. How far it goes
+
+`scripts/timerule.sh reach` (`out/timerule/reach.md`), seeds 5-12, the suite's sheet and life
+(the setting that works), rule off / on / churn / on at target rate. Late score, rate in
+brackets; the GRU reference is `docs/scoreboard.md`'s gru-fixed column where it has the row.
+
+| row | off | on | churn | on, cap | on - off | seeds up | GRU |
+|---|---|---|---|---|---|---|---|
+| delayed echo, 2 steps | 0.587 (31) | **0.913** (34) | 0.537 (31) | 0.874 (31) | +0.326 | 8/8 | 1.00 |
+| delayed echo, 3 steps | 0.498 (31) | 0.572 (32) | 0.481 (31) | 0.657 (31) | +0.074 | 8/8 | - |
+| delayed echo, 4 steps | 0.480 (31) | 0.499 (32) | 0.480 (31) | 0.486 (31) | +0.019 | 7/8 | - |
+| delayed echo, 8 steps | 0.487 (30) | 0.482 (31) | 0.492 (30) | 0.479 (31) | -0.004 | 3/8 | - |
+| delayed echo, 16 steps | 0.494 (30) | 0.517 (44) | 0.484 (30) | 0.494 (31) | +0.024 | 6/8 | - |
+| beat, every 4 steps | 0.479 (31) | 0.451 (58) | 0.482 (30) | 0.480 (31) | -0.028 | 2/8 | 1.00 |
+| sequence, 8 lines x 4 | 0.569 (40) | 0.589 (58) | 0.572 (40) | 0.572 (39) | +0.021 | 8/8 | 0.50 |
+| copy 2 of 2 | 0.688 (32) | **0.894** (39) | 0.596 (32) | 0.854 (32) | +0.206 | 8/8 | 1.00 |
+| copy 2 to 3 of 2 | 0.526 (32) | 0.626 (40) | 0.499 (32) | 0.589 (32) | +0.100 | 8/8 | - |
+| recall, 1 between | 0.698 (32) | 0.799 (37) | 0.611 (32) | **0.865** (32) | +0.101 | 7/8 | 1.00 |
+| recall, 2 between | 0.510 (32) | 0.532 (38) | 0.496 (32) | **0.682** (33) | +0.022 | 7/8 | - |
+| 1-back, 4 symbols | 0.726 (33) | **0.978** (40) | 0.591 (33) | 0.864 (33) | +0.252 | 8/8 | 0.97 |
+| 2-back, 4 symbols | 0.501 (33) | 0.611 (39) | 0.483 (33) | 0.553 (33) | +0.111 | 8/8 | 0.94 |
+| same or different in turn | 0.531 (32) | **0.825** (34) | 0.509 (32) | 0.782 (32) | +0.294 | 8/8 | 0.96 |
+| order | 0.664 (32) | 0.728 (40) | 0.606 (32) | 0.809 (32) | +0.064 | 5/8 | 1.00 |
+| gap | 0.544 (31) | **0.938** (39) | 0.503 (31) | 0.929 (31) | +0.394 | 8/8 | 1.00 |
+
+- **10 of 16 rows move by 0.05 or more** (9 of the 15 asked for; 3 steps added), every one
+  of them on 7 or 8 seeds of 8 except order (5/8). Churn is under off on 13 of 16.
+- **The rows that move are the ones a one-to-two-step trace answers**: what was there one
+  or two steps ago (1-back 0.73 to 0.98, the GRU's 0.97; same-or-different in turn 0.53 to
+  0.83; copy of 2; gap; delayed echo at 2). Where the answer is three or more steps back
+  (delayed echo at 4, 8, 16; recall with 2 between, except at target rate; 2-back only to
+  0.61) the gain shrinks or goes.
+- **Rhythm does not move**: beat falls (0.48 to 0.45, rate 31 to 58) and sequence stays at
+  its baseline. A loop that holds what was on carries no phase.
+- At target rate recall gains more (1 between 0.87, 2 between 0.68 against 0.51), 1-back
+  and copy a little less. The cap is not tuned here.
+
+## 6. With the output-gap readout
+
+`scripts/timerule.sh readout` (`out/timerule/readout.md`), seeds 5-12, the rule on, the readout
+`--g.readout_evidence 2 --g.readout_good 2 --g.margin_percent 20 --g.margin_win 2` (one arm,
+as asked; seeds 9-12 ran on stevejobs). Beside it the working readout off and on from point 5.
+
+| row | off | on | on, new readout | new - on | seeds up | GRU |
+|---|---|---|---|---|---|---|
+| delayed echo, 2 steps | 0.587 | 0.913 | **0.937** | +0.024 | 5/8 | 1.00 |
+| delayed echo, 3 steps | 0.498 | 0.572 | 0.669 | +0.097 | 6/8 | - |
+| delayed echo, 4 steps | 0.480 | 0.499 | 0.518 | +0.019 | 5/8 | - |
+| delayed echo, 8 steps | 0.487 | 0.482 | 0.515 | +0.032 | 6/8 | - |
+| delayed echo, 16 steps | 0.494 | 0.517 | 0.496 | -0.021 | 4/8 | - |
+| beat, every 4 steps | 0.479 | 0.451 | 0.434 | -0.017 | 0/8 | 1.00 |
+| sequence, 8 lines x 4 | 0.569 | 0.589 | 0.589 | +0.000 | 0/8 | 0.50 |
+| copy 2 of 2 | 0.688 | 0.894 | **0.920** | +0.026 | 5/8 | 1.00 |
+| copy 2 to 3 of 2 | 0.526 | 0.626 | 0.733 | +0.107 | 8/8 | - |
+| recall, 1 between | 0.698 | 0.799 | 0.801 | +0.002 | 4/8 | 1.00 |
+| recall, 2 between | 0.510 | 0.532 | 0.550 | +0.017 | 6/8 | - |
+| 1-back, 4 symbols | 0.726 | **0.978** | 0.838 | -0.140 | 0/8 | 0.97 |
+| 2-back, 4 symbols | 0.501 | 0.611 | 0.646 | +0.035 | 7/8 | 0.94 |
+| same or different in turn | 0.531 | 0.825 | **0.862** | +0.036 | 6/8 | 0.96 |
+| order | 0.664 | 0.728 | 0.784 | +0.056 | 5/8 | 1.00 |
+| gap | 0.544 | 0.938 | **0.946** | +0.008 | 4/8 | 1.00 |
+
+- Small gains on most rows (copy of up to 3 +0.11, delayed echo at 3 steps +0.10, order
+  +0.06), one large loss: 1-back 0.978 to 0.838 on every seed. 1-back is "same as the last
+  one or not", an exclusive-or of two items, which is what the output-gap job said this
+  readout costs with two buttons.
+- With either readout the rule leaves the GRU's numbers out of reach except on 1-back
+  (0.978 against 0.97) and gap (0.946 against 1.00).
+
+## What is real, what is suspect
+
+Real (8 seeds, every number from a script line below):
+
+- Delayed echo's gain is bounded by the delay: +0.33 at 2 steps, +0.07 at 3, +0.02 at 4,
+  nothing at 8 and 16, on the sheet where the rule works best. The prediction battery tested
+  at 4 steps, past the edge, and its off arm was at the coin there too.
+- The prediction battery's sheet fails a second way: sensor side 2 with the top-half sensor
+  lattice. Either alone keeps two thirds of the gain or more; together the rule doubles the
+  firing rate and the gain is gone (part of it back at target rate).
+- The inside carries the gain: a frozen sheet after a life with the rule gives a fresh
+  readout all of it; the rule need not keep running.
+- It is not the task's time order and not the reward: a time-shuffled life and a quiet life
+  give nearly the same gain. Churn gives none. The rate is not it.
+- What the cells wired: cue-specific self-exciting loops (carriers take 28 of 49 excitatory
+  inputs from same-cue carriers against 3 as born), in the same cells after a shuffled life.
+  Slot delays do not change. Finding 50 holds on the prediction sheet (the rule shortens the
+  trace there) and is false on the suite's sheet.
+- Ten of sixteen memory and time rows move by 0.05 or more: the ones a trace of one or two
+  steps answers (1-back to 0.978, the GRU's 0.97). Rhythm rows do not move.
+
+Suspect:
+
+- "Time feature" is the wrong name for it. What the rule makes is a longer trace of what was
+  on, a cell-assembly memory, learned from which lines are on together. It knows nothing of
+  order or intervals beyond what a fading trace carries; gap and order are answered by how
+  the trace of one blink meets the next.
+- The trace lasts about two steps of 20 ticks. Whether that is a fixed property of these
+  loops (fatigue, the threshold's handicap, inhibition) or a number one setting moves was not
+  looked at: nothing was tuned.
+- The wiring report is 4 seeds and one world (delayed echo, k 2). The "carrier" cut (|d'| >=
+  0.5 over the blanks) is a choice; the top-cell table follows cells chosen by one reader.
+- The whole-sheet ridge reader reads the cue perfectly at the first blank even on the born
+  sheet (2,000 trials, ~3,600 cells): the difference is in how long it lasts, not in whether
+  it is there. The near reader (what the readout can hear) behaves the same, so the readout's
+  reach is not what limits these rows.
+- Point 6's readout is the plain gate on these two-button rows, with its known exclusive-or
+  cost; the 1-back loss is that cost, not something about the rule.
+- The 3-step row was added beside the asked delays (2, 4, 8, 16), and the 4 settings from
+  "pred at 2 steps" on are extra walk rows; nothing else was added or tuned.
+
+## Not done
+
+- Why the loops fade after about two steps, and whether anything (a slower threshold
+  handicap, fatigue off on carriers, longer life) lengthens them. No tuning was asked.
+- Why side 2 with the wide sensor lattice makes the rule run the rate up: not looked at
+  beyond the cap arm.
+- The wiring report on gap, order, 1-back (only delayed echo is supported by `timewire`).
+- A shuffled-in-time control for a life the readout learns on at the same time (the
+  shuffled arm here freezes the inside after a shuffled life).
+- The rest of the suite (and the scoreboard) with the rule on, as compete2 left it.
+
+## Predictions, scored
+
+1. What decides. Delay alone (0.4): half right; the delay decides on the suite's sheet, but
+   the prediction sheet at 2 steps lacks the gain too. Shape (0.35): half right the other
+   way. Life length (0.1), tile winners in the off arm (0.05): no. "Something else or a mix"
+   (0.1) is the outcome: delay and the side-2-plus-wide-lattice shape, each enough alone.
+2. The frozen sheet carries at least half the gain (0.55): yes, all of it.
+3. Gain under 0.05 by 4 steps (0.3): yes, +0.019 (+0.074 at 3). Still 0.05 or more at 16
+   (0.1): no.
+4. The time-shuffled life within 0.05 of the real-order life (0.5): yes on delayed echo
+   (-0.030) and gap (+0.007); order is outside it the other way (+0.10).
+5. Six of the fifteen rows move by 0.05 or more, 4 to 8 at 0.6: wrong, 9 of the 15 asked for
+   (10 of 16 with 3 steps).
+
+## Script lines
+
+```
+scripts/timerule.sh repro            section 1 (16 runs)
+scripts/timerule.sh walk             section 2, seeds 5-8 (312 runs)
+scripts/timerule.sh walk8            section 2, the deciding cells on seeds 5-12
+scripts/timerule.sh controls         section 3 (96 lives, 240 transfers)
+scripts/timerule.sh wiring           section 4, seeds 5-8 (44 probes; ran on stevejobs)
+scripts/timerule.sh reach            section 5 (512 lives, those of section 3 reused)
+scripts/timerule.sh readout          section 6 (128 lives; seeds 9-12 on stevejobs with
+                                     --seeds 9-12 --arms goodon)
+scripts/timerule.sh all --quick      smoke check, 2 seeds, short lives (ran end to end)
+scripts/timerule.sh reach --table-only   print a table from what is there
+bash out/timerule/refcheck.sh        the four reference lives against out/merge-ref: same
+```
+
+## What should change elsewhere (for the coordinator; not edited here)
+
+- `docs/findings.md` 50: on the prediction battery's sheet (side 2, wide sensor lattice) the
+  rule shortens the trace (true); on the suite's sheet it lengthens it to about two steps.
+  The difference is the shape and the delay. Replace "costs them the recent past" with
+  "builds cue loops that hold what was on for about two steps, where the sheet's shape lets
+  them form".
+- New finding (likely, 8 seeds, controls): **reward-free competitive learning builds cell
+  assemblies that hold a cue for about two steps.** It is learned from co-activity (a
+  time-shuffled life gives it), stays when the rule stops, needs no reward, and moves 10 of
+  16 memory rows (1-back 0.73 to 0.98). It is not a time feature: past three steps and on
+  rhythm rows it does nothing.
+- `docs/ideas.md` 166: done; next questions are the fade (what sets two steps) and a
+  latch (a loop that does not fade until the ask).
+- `docs/predictions.md`: the five above.
+
+## Files that may collide with other branches
+
+- `src/probe/lived_sheet.cpp` (`parse_life` no longer static; `live()` takes a quiet flag;
+  `--life-quiet`, `--then-keep`; header comment), `src/probe/main.cpp` (one line and one
+  declaration), new `src/probe/time_wiring.cpp`.
+- New `scripts/timerule.sh`, `timerule.py`, `timerule_lib.py`, `timerule_probe.py`. None of
+  `learn_hop.cpp`, `src/run/predict.*`, `scripts/predict.*`, `src/mnist/*` was touched.

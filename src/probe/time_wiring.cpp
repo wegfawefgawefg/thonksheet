@@ -35,16 +35,25 @@ bool parse_life(const char* text, const Genome& genome, uint64_t seed, RunFlags&
 Blob* probe_sheet(int argc, char** argv, const Genome& genome, uint64_t seed);
 
 // where a connection comes from, seen from the cell it feeds
-enum Source { CUE_SAME, CUE_OTHER, ASK, LINE_OTHER, MOTOR, CARRY_SAME, CARRY_OTHER, HIDDEN,
-              INHIBIT, SOURCES };
-static const char* const source_names[SOURCES] = {"cue+",    "cue-",    "ask",    "line",
-                                                  "motor",   "carry+",  "carry-", "hidden",
-                                                  "inhib"};
+enum Source {
+    CUE_SAME,
+    CUE_OTHER,
+    ASK,
+    LINE_OTHER,
+    MOTOR,
+    CARRY_SAME,
+    CARRY_OTHER,
+    HIDDEN,
+    INHIBIT,
+    SOURCES
+};
+static const char* const source_names[SOURCES] = {"cue+",   "cue-",   "ask",    "line", "motor",
+                                                  "carry+", "carry-", "hidden", "inhib"};
 
 struct Counts {
-    int phases = 0;                // steps per trial: cue, blanks, ask
-    std::vector<int> cue;          // per trial
-    std::vector<uint8_t> spikes;   // trial x phase x neuron
+    int phases = 0;              // steps per trial: cue, blanks, ask
+    std::vector<int> cue;        // per trial
+    std::vector<uint8_t> spikes; // trial x phase x neuron
 };
 
 // delayed echo with every rule stopped, from a fresh task seed; spikes per cell per step
@@ -239,7 +248,8 @@ static void print_wiring(const char* label, const std::vector<CellWiring>& cells
     }
     std::printf("\n%-12s mean slot delay:     ", label);
     for (int k = 0; k < SOURCES; k++) {
-        std::printf(" %s %.2f", source_names[k], sum.count[k] > 0 ? sum.delay[k] / sum.count[k] : 0);
+        std::printf(" %s %.2f", source_names[k],
+                    sum.count[k] > 0 ? sum.delay[k] / sum.count[k] : 0);
     }
     std::printf("\n");
 }
@@ -360,8 +370,8 @@ int probe_timewire(int argc, char** argv) {
             top_cells.push_back(cw);
         }
         if (std::fabs(carry[(size_t)i]) >= carry_min) {
-            CellWiring cc = wiring_of(*blob, plug, i, carry[(size_t)i] > 0 ? 1 : -1, line_of, carry,
-                                      carry_min);
+            CellWiring cc =
+                wiring_of(*blob, plug, i, carry[(size_t)i] > 0 ? 1 : -1, line_of, carry, carry_min);
             carry_cells.push_back(cc);
         }
         all_cells.push_back(cw);
