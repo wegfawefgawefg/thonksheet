@@ -700,3 +700,15 @@ co-activity runs ties the held units together and loses their order.
      motor cells hear only nearby cells, with one-bit connections and a vote. Candidates:
      a weighted vote (147), motor cells that hear the whole sheet, the drift (146, 157).
      *queued with the output item*
+162. **Every line is a target.** [predictive coding; Sutton's many predictions at many
+     horizons ("Horde"); in bits] Owner, 2026-11-25: "in all of our envs we should extract
+     rich signal. thonksheet shouldnt just output policy right. shouldnt it predict current
+     state, next state, future states ... a real brain extracts much more info from the
+     environment. and that info aids the goal and feature learning." Good or bad is at
+     most one bit a step; the input is hundreds of lines a step and each one, a step
+     later, is a free right answer. So: the sheet predicts every input line 1, 2, 4, 8
+     steps ahead, always on, in every world; its own last press comes back in as input so
+     the next state can depend on it; each line's error teaches its predictor, and the
+     errors go to the inside (as lines, and one hop to every hidden cell once idea 159 is
+     in). The critic is then just the predictor of the reward line. Takes in queue item 3
+     and idea 137. *building*

@@ -43,7 +43,9 @@ when one hands back, its result is merged and recorded and the next item starts.
 are ordered by the one question above. An item is struck when done, with where the result
 is.
 
-Running (four), as of 2026-11-25 night:
+Running (four, plus item B which has no jobs left and has been asked to hand back), as
+of 2026-11-25 afternoon:
+- Queued item 3 (idea 162): every line is a target.
 - Item B below (idea 155).
 - Queued item 2c (idea 161): why our output cannot read what the inside learned.
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
@@ -113,8 +115,15 @@ Queued, in order:
    cells with a spike path into the action; this reaches every cell and carries a signed
    error per output. Run it both ways: told only good or bad, and told the right button.
    Scored by the inside-learning test, MNIST 0.924 to beat.
-3. Predicting the input: every unit learns to predict a neighbour or the next tick from
-   the rest; what is mispredicted is what gets learned. Moved up (owner, 2026-11-25: "do
+3. *(running, as idea 162: every line is a target; `scripts/predict.sh`,
+   docs/results-2026-11-25-predict.md)* Predicting the input: every unit learns to predict a neighbour or the next tick from
+   the rest; what is mispredicted is what gets learned. Widened by the owner, 2026-11-25
+   ("in all of our envs we should extract rich signal ... predict current state, next
+   state, future states"): every input line is a target at 1, 2, 4, 8 steps ahead, in
+   every world, with the sheet's own last press fed back in; scored by prediction skill
+   against "same as last step", by a fresh reader of things not on the lines at one
+   instant (which way the ball moves, time since the cue), and by whether the task score
+   rises with it on. Its errors join idea 159's error lines when that merges. Moved up (owner, 2026-11-25: "do
    we need pretraining step lol. its not like llms start off with general features"):
    there is no stage before the life. Every inner rule is always on, in the one life, and
    "a life, then freeze and read" is only how we measure. A language model's features
