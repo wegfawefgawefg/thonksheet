@@ -406,7 +406,10 @@ not known to do it.
 111. **A place that holds.** [known: persistent activity] The default sheet keeps a cue
      readable for 20 ticks and has lost it by 60. Search for sheets, or regions of a sheet,
      that hold it: slow leak, dense local excitation with wider inhibition, up and down
-     states. Aimed at the time wall. *running: a 500-sheet search on how long a cue is held*
+     states. Aimed at the time wall. *tried by search over the existing numbers: 60 ticks can
+     be held (readable at 3.4 to 3.9 on fresh seeds, default 0.23) by a sheet that keeps
+     ringing, at a third of the sharpness; nothing holds 150. Longer needs a mechanism and a
+     region of its own. docs/results-2026-11-25-richness-search.md*
 112. **Different regions, different rules.** [known] The owner: "grid cells have a different
      winner take all kind of activity bias too. that we wouldnt want everywhere in the brain
      but in somewhere probably?" Give each sector its own genome numbers, so one region can

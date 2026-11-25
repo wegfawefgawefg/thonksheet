@@ -142,6 +142,12 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
     Echo. Delays turned out to carry time, far links reach, and the branch bonus
     exclusive-or.
 
+22. **Holding and mixing want different sheets.** [hint] A sheet tuned to keep ringing (few
+    and gentle inhibitory neurons, dense local wiring, a high activity target) keeps a cue
+    readable for 60 ticks, three times the default's limit, and tells cues apart a third
+    as well while they are on. Nothing found by tuning holds 150 ticks. So one region to
+    ring and one to mix, and a real mechanism for anything longer.
+
 ## Walls
 
 - **Reading a thin signal: broken at the output, standing inside.** An error rule moving
