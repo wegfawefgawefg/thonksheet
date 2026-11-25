@@ -402,41 +402,37 @@ In plain words:
 
 ## What this suggests for docs/findings.md (not edited here)
 
-- The wall "Reading a thin signal" should say it is partly breached for reach and capacity:
-  summing evidence per source over many rewards, with every spiking neuron graded, reads the
-  cue at 3 tiles (0.60, right on 0.68 of presses) and holds 4 cues (0.63) and lifts 8 and 16
-  cues above chance; it does not breach time (delayed echo with a gap stays at chance among
-  presses). And it trades away 0.2 of the one-tile reflex.
-- Finding 11 ("more bits of evidence per thing learned helps", hint) can move up to likely,
-  with the caveat that the bits only help when the credit feeding them is broad (every
-  spike); with noise-spike credit they change nothing measurable, and 8 bits is no better
-  than 6.
-- Finding 12 ("one neuron's experiment almost never changes the answer") gets a second
-  engine: here too credit from noise spikes alone, even summed in counters, moves nothing
-  past one tile; credit given to every neuron that spiked is what moves reach and capacity.
-- "Reach" should say the minimal engine now learns a little at 2 and 3 tiles with far slots
-  and counters (0.62, 0.60; right on 0.68 of presses at 3), at the reflex's expense.
-- "More than four things" should no longer say nothing is above chance at 8 cues: 0.19-0.21
-  against 0.125 (counters), still far from held.
-- "Locking on": in the minimal engine no life, with or without counters, ends pressing one
-  button; crossed shuffled lives answer 55-80% right. The lock as described is a full-engine
-  and table-engine thing.
-- A first feature task above coin: exclusive-or 0.575 (coin 0.476), right on 0.66 of
-  presses, with motor counters. One result, 8 seeds: a hint.
+Main's findings moved while this ran (the readout work, idea 58, landed findings 14 and 15
+and a new headline). Against that version:
 
-## What to try next
-
-- **Get the reach without losing the reflex.** The two families each have one half. Cheapest
-  tries: counters graded by every spike only on far slots (the thin source), by noise spikes
-  on local slots; or a neuron's update weighted by whether its spikes agreed with the press
-  (needs no task knowledge if "agreed" is read as "spiked more than its own recent average").
-- **The moving line** was as good as the exact top 48 on reach and kinder on echo2; it is
-  also cheaper (no binary search). Worth making the default read-off if this goes on.
-- **Speed of C**: all of its cost is in the reward path (the quiet mirror touches about half
-  the sheet every reward and each touched neuron re-reads its mask). Re-reading only when a
-  counter crosses the line would cut most of it.
-- Check exclusive-or with more seeds and at 2 tiles; it is the result most worth a second,
-  different experiment.
+- **Finding 14 (evidence before commitment), "a second test is running":** this is that
+  test, and it agrees in a second engine and a different setting: the whole minimal sheet
+  learning from reward (no error rule, no frozen sheet), with counters, reads the cue at 3
+  tiles (0.39 to 0.60), holds 4 cues (0.41 to 0.63), gets exclusive-or above coin (0.26 to
+  0.58), and lifts 8 and 16 cues above chance. It can go to solid for reach and capacity,
+  with two limits worth writing in: counters fed only by noise-spike credit change nothing
+  measurable (the credit feeding them has to be broad), and in this engine the gain costs
+  the one-tile reflex 0.2 (0.94 to 0.73).
+- **Finding 15 (the output must know which action was taken):** consistent. My best guess
+  for the reflex cost is exactly that the reward rule here grades every motor neuron that
+  spiked, including the losing button's; the readout's error rule does not have that
+  problem. Not tested here.
+- **Finding 11 (more bits of evidence, hint):** 6 bits is best, 4 close, 8 worse on reach
+  (slower to cross the birth offset), and width does nothing when credit is noise-only.
+  Width is not the main lever; summing at all is.
+- **Finding 12 (one neuron's experiment almost never changes the answer):** a second engine
+  agrees: noise-spike credit, even summed in counters, moves nothing past one tile.
+- **Wall "Reading a thin signal: broken at the output, standing inside":** counters on every
+  neuron (inside the sheet too) are what lift echo k=4 (+0.22, against -0.02 with counters
+  on the motor neurons only), so evidence counters inside the sheet do help capacity under a
+  reward rule. They do not help time.
+- **Wall "Time":** unchanged and now tested with counters: delayed echo with a gap is right
+  on 0.49 of ask presses with delays and counters on.
+- **Wall "Locking on":** in the minimal engine no life, with or without counters, ends
+  pressing one button while punished; crossed shuffled lives answer 55-80% right, and
+  counters do not change them (0.69 off, 0.71-0.73 on).
+- **Cartpole:** counters on the motor neurons (B) fall less often than off (20.7 against
+  17.3 steps) but stay under coin flips (22.4).
 
 ## Rough
 
