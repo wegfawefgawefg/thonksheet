@@ -13,6 +13,9 @@
 #          pred on time-shuffled frames (the control), compete, pred + compete,
 #          pred + error lines + compete. Firing rates beside them.
 #   old    predict-next with the old guess (blob.predicted, learn mode 0), for comparison.
+#   future the ceiling (blobprobe predict --future 1,8): a fresh ridge reader per line of
+#          its value 1 and 8 steps on, from the frozen sheet as born and after the pred
+#          life; what the predictor cells could reach with a better output.
 #   scripts/predict.sh main                    everything, seeds 5-12, 3 runs at a time
 #   scripts/predict.sh smoke --quick           1 seed, short lives: a smoke check
 #   scripts/predict.sh main --only task --worlds catch,chain --seeds 1,2

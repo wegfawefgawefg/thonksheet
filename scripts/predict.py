@@ -87,7 +87,7 @@ def parse(argv):
     if not argv or argv[0].startswith("-"):
         usage()
     opt = {"name": argv[0], "seeds": [5, 6, 7, 8, 9, 10, 11, 12], "jobs": 3, "steps": 20000,
-           "trials": 3000, "only": ["task", "read", "old"], "worlds": list(WORLDS),
+           "trials": 3000, "only": ["task", "read", "old", "future"], "worlds": list(WORLDS),
            "table_only": False, "extra": []}
     i = 1
     while i < len(argv):
@@ -144,6 +144,21 @@ def read_job(world, arm, seed, opt, folder):
                              "--out", base + ".csv"])
     if shuffled:
         cmd += ["--shuffle", "1"]
+    return cmd + opt["extra"], base + ".txt", base + ".csv"
+
+
+# the ceiling (blobprobe predict --future): how much of each line's future a fresh linear
+# reader finds in the frozen sheet, born and after a life with the predictor cells
+FUTURE_ARMS = {"born": ([], False), "pred": (PRED, True)}
+
+
+def future_job(world, arm, seed, opt, folder):
+    flags, lived = FUTURE_ARMS[arm]
+    base = os.path.join(folder, f"future-{world}-{arm}-s{seed}")
+    cmd = (["nice", "-n", "19", PROBE, "predict", "--task", world] + PLUG + WORLDS[world] +
+           GENOME + flags + ["--seed", str(seed), "--trials", str(opt["trials"]),
+                             "--life", str(opt["steps"] if lived else 0), "--label", arm,
+                             "--future", "1,8", "--out", base + ".csv"])
     return cmd + opt["extra"], base + ".txt", base + ".csv"
 
 
@@ -361,6 +376,32 @@ def tables(opt, folder):
                        " |")
     open(os.path.join(ROOT, "out", "predict", opt["name"] + "-read.csv"), "w").write(
         "\n".join(csv) + "\n")
+    # 6. the ceiling
+    rows = []
+    for w in worlds:
+        for h in (1, 8):
+            vals = {}
+            for arm in FUTURE_ARMS:
+                d = [read_csv(os.path.join(folder, f"future-{w}-{arm}-s{s}.csv")) for s in seeds]
+                for k in ("sheet", "lines", "same", "common"):
+                    vals[(arm, k)] = mean([x.get(("future", f"h{h}_{k}")) for x in d])
+            if vals[("pred", "sheet")] is None and vals[("born", "sheet")] is None:
+                continue
+            p = mean(got(w, "pred", "blob", f"pred_h{h}_right"))
+            rows.append(f"| {w} | {h} | {fmt(p)} | {fmt(vals[('born', 'sheet')])} | "
+                        f"{fmt(vals[('pred', 'sheet')])} | {fmt(vals[('pred', 'lines')])} | "
+                        f"{fmt(vals[('pred', 'same')])} | {fmt(vals[('pred', 'common')])} |")
+    if rows:
+        out.append("\n## 6. The ceiling: a fresh linear reader of each line's future\n")
+        out.append("Share of line-steps right on the read's test quarter (moves from the coin, "
+                   "so not the life's own steps). cells: the predictor cells in the life "
+                   "(section 1); born / lived: a ridge reader per line of the frozen sheet's "
+                   "counts, as born and after the pred life; lines: the same reader on this "
+                   "step's lines; same, common: on the read's rows.\n")
+        out.append("| world | h | cells (life) | born sheet | lived sheet | lines | same | "
+                   "common |")
+        out.append("|---|---|---|---|---|---|---|---|")
+        out += rows
     text = "\n".join(out) + "\n"
     open(os.path.join(ROOT, "out", "predict", opt["name"] + ".md"), "w").write(text)
     print(text)
@@ -378,6 +419,8 @@ def main():
                     jobs += [task_job(w, arm, s, opt, folder) for arm in TASK_ARMS]
                 if "read" in opt["only"] and w in READ_WORLDS:
                     jobs += [read_job(w, arm, s, opt, folder) for arm in READ_ARMS]
+                if "future" in opt["only"]:
+                    jobs += [future_job(w, arm, s, opt, folder) for arm in FUTURE_ARMS]
             if "old" in opt["only"] and "predict-next" in opt["worlds"]:
                 jobs.append(old_job(s, opt, folder))
         with ThreadPoolExecutor(max_workers=opt["jobs"]) as pool:

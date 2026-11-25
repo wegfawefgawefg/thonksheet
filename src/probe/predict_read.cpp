@@ -15,10 +15,14 @@
 //                  order, with no task and no reward; it is that sheet that is read
 //   --trials N     steps kept in the read (default 3000), after --settle N (default 300)
 //   --label text, --out csv (label,question,key,value lines, appended)
+//   --future 1,8   also the ceiling: a ridge reader per predicted line, h steps on, from the
+//                  sheet's counts and from the lines themselves (predict_future.hpp); question
+//                  "future", keys h<h>_sheet, h<h>_lines, h<h>_same, h<h>_common
 // Docs: docs/results-2026-11-25-predict.md; the battery is scripts/predict.sh.
 
 #include "blob/blob.hpp"
 #include "probe/linear_fit.hpp"
+#include "probe/predict_future.hpp"
 #include "probe/predict_labels.hpp"
 #include "run/predict.hpp"
 #include "run/run_flags.hpp"
@@ -33,8 +37,8 @@
 int int_arg(int argc, char** argv, const char* name, int fallback);
 const char* text_arg(int argc, char** argv, const char* name, const char* fallback);
 
-static const char* const own_flags[] = {"--life",   "--shuffle", "--trials",
-                                        "--settle", "--label",   "--out"};
+static const char* const own_flags[] = {"--life",  "--shuffle", "--trials", "--settle",
+                                        "--label", "--out",     "--future"};
 
 static TaskTicker ticker;
 static Predictor predictor;
@@ -238,6 +242,14 @@ int probe_predict(int argc, char** argv) {
         is_hidden[(size_t)c] = 1;
     }
     int kept = 0;
+    // --future: every read step's counts and predicted lines (good, bad, then the task's)
+    const char* future = text_arg(argc, argv, "--future", nullptr);
+    std::vector<int> fut_line;
+    for (int l = plug.attached[PLUG_GOOD_LINE] ? 0 : plug.first_single; l < plug.first_extra; l++) {
+        fut_line.push_back(l);
+    }
+    std::vector<uint8_t> fut_x, fut_lines;
+    int fut_rows = 0;
     for (int64_t step = 0; kept < trials; step++) {
         ReadLabels labels;
         bool asked = read_labels(tt.task, memory, labels);
@@ -247,6 +259,7 @@ int probe_predict(int argc, char** argv) {
         TaskSense sense;
         task_sense(tt.task, sense);
         plug_set_lines(plug, sense);
+        uint8_t good_start = plug.good_left > 0, bad_start = plug.bad_left > 0;
         if (predictor.on) {
             predict_step_begin(predictor, plug, *blob);
         }
@@ -297,6 +310,17 @@ int probe_predict(int argc, char** argv) {
             r.label.push_back(labels.value[q]);
         }
         kept += keep;
+        if (future && step >= settle) {
+            for (int c : sheet_cells) {
+                fut_x.push_back(count[(size_t)c]);
+            }
+            for (int l : fut_line) {
+                fut_lines.push_back(l == PLUG_GOOD_LINE  ? good_start
+                                    : l == PLUG_BAD_LINE ? bad_start
+                                                         : plug.line_on[l]);
+            }
+            fut_rows++;
+        }
         for (int l = 0; l < task_lines; l++) {
             last_lines[(size_t)l] = plug.line_on[plug.first_single + l];
         }
@@ -331,6 +355,26 @@ int probe_predict(int argc, char** argv) {
             }
         }
         std::printf("\n");
+    }
+    // the ceiling: the predicted lines h steps on, from the sheet and from the lines
+    for (const char* at = future; at && *at;) {
+        int h = std::atoi(at);
+        int count = (int)fut_line.size();
+        FutureScore sheet =
+            future_fit(fut_x, (int)sheet_cells.size(), fut_lines, count, fut_rows, h);
+        FutureScore lines = future_fit(fut_lines, count, fut_lines, count, fut_rows, h);
+        double values[4] = {sheet.right, lines.right, sheet.same, sheet.common};
+        static const char* const keys[4] = {"sheet", "lines", "same", "common"};
+        std::printf("%-24s future h=%d", label, h);
+        for (int k = 0; k < 4; k++) {
+            std::printf(" %s %.4f", keys[k], values[k]);
+            if (csv) {
+                std::fprintf(csv, "%s,future,h%d_%s,%.6g\n", label, h, keys[k], values[k]);
+            }
+        }
+        std::printf("\n");
+        const char* comma = std::strchr(at, ',');
+        at = comma ? comma + 1 : nullptr;
     }
     if (csv) {
         std::fclose(csv);
