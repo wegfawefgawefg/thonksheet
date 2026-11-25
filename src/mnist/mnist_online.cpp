@@ -7,6 +7,10 @@
 //   --shift 1                         at the end, the test digits moved 1 and 2 pixels
 //   --val 1                           train on 0-49,999, score on the validation slice
 //   --gap N                           quiet ticks after every digit (default 0)
+//   --life N                          N digits with no reward under the genome's own rules
+//                                     first (how the output gap job measures the lived
+//                                     sheet); --life-freeze 1 then turns competitive
+//                                     learning off, so the readout learns on a frozen inside
 // the rest are blobrun's flags (--seed, --ticks, --motor-spread, --g.name value, ...).
 
 #include "mnist/mnist_run.hpp"
@@ -18,7 +22,8 @@
 
 static const char* const online_own[] = {"--checks",   "--check-seconds", "--test-count",
                                          "--pretrain", "--shift",         "--val",
-                                         "--gap",      "--diag"};
+                                         "--gap",      "--diag",          "--life",
+                                         "--life-freeze"};
 
 static std::vector<int64_t> number_list(const char* text) {
     std::vector<int64_t> out;
@@ -122,6 +127,17 @@ int mnist_online(int argc, char** argv) {
         sheet_pretrain(s, pretrain);
         std::printf("pretrain: %lld digits of reward-free wiring, %.1f s\n", (long long)pretrain,
                     now_seconds() - t0);
+    }
+    int64_t life = int_flag(argc, argv, "--life", 0);
+    if (life > 0) {
+        double a = now_seconds();
+        sheet_train(s, life, false, nullptr);
+        bool freeze = int_flag(argc, argv, "--life-freeze", 0) != 0;
+        if (freeze) {
+            s.blob->genome.compete_on = 0;
+        }
+        std::printf("life: %lld digits with no reward, %.1f s%s\n", (long long)life,
+                    now_seconds() - a, freeze ? ", then competition off" : "");
     }
     std::printf("%10s %10s %10s %10s %10s\n", "digits", "train s", scored, "stream", "ticks/s");
     std::fflush(stdout);
