@@ -44,6 +44,9 @@ static void sanitize(MemoryGenome& mg) {
     mg.level_span = clamp_int(mg.level_span, 1, MEM_LEVELS);
     mg.fade_shift = clamp_int(mg.fade_shift, 0, 30);
     mg.predict_bits = clamp_int(mg.predict_bits, 4, 20);
+    mg.sheet = clamp_int(mg.sheet, 0, 2);
+    mg.sheet_reach = clamp_int(mg.sheet_reach, 0, 8);
+    mg.sheet_ticks = clamp_int(mg.sheet_ticks, 1, HISTORY);
 }
 
 // every stride-th cell of a rectangle, as the other engines lay sensor and motor cells
@@ -173,6 +176,10 @@ Blob* memory_birth(const Genome& genome, const MemoryGenome& mg, uint64_t seed) 
     rng_seed(m->rng, seed ^ 0x4d656d6f72790000ull); // "Memory"
     shell_birth(m->shell, genome);
     make_rows(*m);
+    if (m->mg.sheet && !memory_sheet_birth(*m, genome, seed)) {
+        std::fprintf(stderr, "memory: --y.sheet needs the minimal engine in this build\n");
+        std::exit(1);
+    }
     make_levels(*m);
     make_tables(*m);
     list_motors(*m);
@@ -212,6 +219,9 @@ void memory_free(Blob* blob) {
     std::free(m.frame_slot);
     std::free(m.predict_tag);
     std::free(m.predict_in);
+    if (m.inner) {
+        memory_sheet_free(m);
+    }
     m.~MemoryBlob();
     std::free(&m);
 }
@@ -226,6 +236,9 @@ size_t memory_bytes(const MemoryBlob& m) {
     if (m.predict_tag) {
         size_t entries = (size_t)1 << m.mg.predict_bits;
         bytes += sizeof(uint64_t) * entries * (1 + (size_t)m.in_words);
+    }
+    if (m.inner) {
+        bytes += memory_sheet_bytes(m);
     }
     return bytes;
 }
@@ -259,6 +272,9 @@ static const MemoryField fields[] = {
     {"fade_shift", &MemoryGenome::fade_shift},
     {"predict", &MemoryGenome::predict},
     {"predict_bits", &MemoryGenome::predict_bits},
+    {"sheet", &MemoryGenome::sheet},
+    {"sheet_reach", &MemoryGenome::sheet_reach},
+    {"sheet_ticks", &MemoryGenome::sheet_ticks},
 };
 
 void apply_memory_args(int argc, char** argv, MemoryGenome& mg) {

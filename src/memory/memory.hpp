@@ -60,7 +60,7 @@ struct MemoryGenome {
     int tables = 256;
     int table_bits = 10; // bits a table reads: its slots are 2^this
     int past_bits = 5;   // of those, how many from the table's other field (none for now-only)
-    int depth = 3;       // past events in the address (1..4)
+    int depth = 4;       // past events in the address (1..4)
     int now_only = 1;    // share of now-only tables, in 1 + 2 * depth + now_only parts
     int counter_max = 31; // counters run -max..max
     int good_step = 1;
@@ -79,6 +79,13 @@ struct MemoryGenome {
     int fade_shift = 0;    // 0 off; else a touched slot halves its counters with 2^-this
     int predict = 1;       // the next-input store
     int predict_bits = 12; // its entries, 2^this
+    // the combination (memory_sheet.cpp): 0 the code is made from the sensor cells; 1 from
+    // the spikes of a minimal-engine sheet held fixed, 2 from one that learns, read from
+    // the tiles within sheet_reach of the sensor tiles, a cell counting as on if it fired
+    // in the last sheet_ticks ticks. events are still cut where the sensed input changes.
+    int sheet = 0;
+    int sheet_reach = 1;
+    int sheet_ticks = 4;
 };
 
 struct MemoryStats {
@@ -148,6 +155,13 @@ struct MemoryBlob {
     uint64_t predict_key = 0; // key of the previous tick
     bool predict_have = false;
 
+    // the sheet in front (sheet > 0): its blob, the tiles read, their recent spikes, rows
+    Blob* inner = nullptr;
+    int sheet_words = 0;
+    int sheet_tile[MEM_IN_WORDS] = {};
+    uint64_t sheet_now[MEM_IN_WORDS] = {};
+    uint64_t* sheet_rows = nullptr;
+
     uint64_t rng[4] = {};
     MemoryStats stats;
 };
@@ -171,3 +185,10 @@ inline MemoryBlob& memory_of(Blob& blob) {
 void memory_code_of_input(MemoryBlob& m, uint64_t* out);
 int memory_level(int64_t ticks);
 void memory_new_frame(MemoryBlob& m);
+// the sheet in front (memory_sheet.cpp): false if this build has no minimal engine
+bool memory_sheet_birth(MemoryBlob& m, const Genome& genome, uint64_t seed);
+void memory_sheet_tick(MemoryBlob& m);
+void memory_sheet_code(MemoryBlob& m, uint64_t* out);
+void memory_sheet_reward(MemoryBlob& m, int valence);
+void memory_sheet_free(MemoryBlob& m);
+size_t memory_sheet_bytes(const MemoryBlob& m);

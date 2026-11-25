@@ -136,6 +136,9 @@ void memory_reward(Blob& blob, int valence) {
     m.good_avg += (good - m.good_avg) >> mg.avg_shift;
     if (mg.learning_on) {
         credit(m, pressed, valence);
+        if (m.inner && mg.sheet == 2) {
+            memory_sheet_reward(m, valence);
+        }
     }
     m.last_reward_tick = m.tick;
 

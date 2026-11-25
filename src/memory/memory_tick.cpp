@@ -66,6 +66,10 @@ void memory_tick(Blob& blob) {
         map[t] = 0;
     }
 
+    if (m.inner) {
+        memory_sheet_tick(m);
+    }
+
     // what is sensed, and how much of it the last prediction got wrong
     uint64_t in[MEM_IN_WORDS];
     bool changed = false;
@@ -81,7 +85,9 @@ void memory_tick(Blob& blob) {
     if (changed) {
         push_event(m);
         std::memcpy(m.in_now, in, sizeof(uint64_t) * m.in_words);
-        memory_code_of_input(m, m.code_now);
+        if (!m.inner) {
+            memory_code_of_input(m, m.code_now);
+        }
         m.now_start = m.tick;
     }
 
@@ -91,6 +97,9 @@ void memory_tick(Blob& blob) {
     if (changed || level != m.level_now || m.frame_count == 0 || m.frame_due) {
         m.level_now = level;
         m.frame_due = false;
+        if (m.inner) {
+            memory_sheet_code(m, m.code_now); // the sheet moves on inside an event
+        }
         memory_new_frame(m);
     } else {
         m.frames[(m.frame_count - 1) & (MEM_FRAMES - 1)].last_tick = m.tick;
