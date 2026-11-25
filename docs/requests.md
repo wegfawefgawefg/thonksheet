@@ -79,3 +79,9 @@ A request that becomes work also gets a line in `docs/plan.md`.
 - The method: "we should be perhaps running more bots, giving them each less of this full
   machine. you ideate some things. they implement. they run a suite of tests. you analyze,
   see if anything comes of it, and keep exploring other experiments." -> `docs/bench.md`.
+- "come up with a real suite / curriculum of these envs ... as we solve basic ones we need to
+  graduate ... beat mnist ... the general goal here is, to find a set of rules that works on
+  any task" -> `docs/task-map.md` (kinds of task, tiers, milestones, holes); ideas 115, 116.
+- "i didnt say it needs to be never taught wtf? the whole point is it should be able to learn
+  new things right? run nonstop. online learning for any task" -> frozen-sheet runs are a
+  diagnostic only; `docs/bench.md` "Nothing frozen"; the findings headline reworded.

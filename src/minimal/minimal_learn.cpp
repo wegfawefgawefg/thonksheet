@@ -22,7 +22,7 @@ static int nth_bit(uint64_t word, int r) {
 }
 
 // one set bit, uniformly, over a neuron's slot words. false if all are empty.
-static bool pick_one(uint64_t* rng, const uint64_t* words, int slots, int& slot, int& bit) {
+bool min_pick_one(uint64_t* rng, const uint64_t* words, int slots, int& slot, int& bit) {
     int counts[MIN_SLOTS_MAX];
     int total = 0;
     for (int k = 0; k < slots; k++) {
@@ -70,7 +70,7 @@ static void drop_one(MinimalBlob& m, int n, int age) {
         }
     }
     int slot = 0, bit = 0;
-    if (pick_one(m.rng, idle, slots, slot, bit)) {
+    if (min_pick_one(m.rng, idle, slots, slot, bit)) {
         m.mask[min_index(m, n, slot)] &= ~(1ull << bit);
         m.stats.lost++;
     }
@@ -83,7 +83,7 @@ bool min_gain_active(MinimalBlob& m, int n, int age) {
         fresh[k] = min_heard(m, age, n, k) & ~m.mask[min_index(m, n, k)] & min_allowed(m, n, k);
     }
     int slot = 0, bit = 0;
-    if (!pick_one(m.rng, fresh, slots, slot, bit)) {
+    if (!min_pick_one(m.rng, fresh, slots, slot, bit)) {
         return false;
     }
     m.mask[min_index(m, n, slot)] |= 1ull << bit;
@@ -101,7 +101,7 @@ bool min_lose_active(MinimalBlob& m, int n, int age) {
         wired[k] = min_heard(m, age, n, k) & m.mask[min_index(m, n, k)];
     }
     int slot = 0, bit = 0;
-    if (!pick_one(m.rng, wired, slots, slot, bit)) {
+    if (!min_pick_one(m.rng, wired, slots, slot, bit)) {
         return false;
     }
     m.mask[min_index(m, n, slot)] &= ~(1ull << bit);
@@ -114,7 +114,7 @@ bool min_lose_active(MinimalBlob& m, int n, int age) {
     for (int k = 0; k < slots; k++) {
         other[k] = ~min_heard(m, age, n, k) & ~m.mask[min_index(m, n, k)] & min_allowed(m, n, k);
     }
-    if (pick_one(m.rng, other, slots, slot, bit)) {
+    if (min_pick_one(m.rng, other, slots, slot, bit)) {
         m.mask[min_index(m, n, slot)] |= 1ull << bit;
         m.stats.gained++;
     }
@@ -152,6 +152,9 @@ static void grade(MinimalBlob& m, bool better, int shift) {
                 // in the window, at the noise chance, moved the other way
                 uint64_t quiet = ~spikes & ~seen & not_sensor & sparse_word(m.rng, mg.noise_shift) &
                                  sparse_word(m.rng, shift);
+                if (m.ev_tiles) {
+                    quiet &= ~m.ev_tiles[t]; // counter neurons learn through their counters
+                }
                 while (quiet) {
                     int n = t * TILE_NEURONS + __builtin_ctzll(quiet);
                     quiet &= quiet - 1;
@@ -167,6 +170,9 @@ static void grade(MinimalBlob& m, bool better, int shift) {
                 continue;
             }
             pick &= sparse_word(m.rng, shift);
+            if (m.ev_tiles) {
+                pick &= ~m.ev_tiles[t]; // counter neurons learn through their counters
+            }
             while (pick) {
                 int n = t * TILE_NEURONS + __builtin_ctzll(pick);
                 pick &= pick - 1;
@@ -196,4 +202,7 @@ void minimal_reward(Blob& blob, int valence) {
     int width = 32 - __builtin_clz((unsigned)size); // 9 or 10 for a gap of a whole reward
     int extra = width >= 9 ? 0 : 9 - width;         // each halving of the gap halves the chance
     grade(m, (delta > 0) == (m.mg.noise_sign >= 0), m.mg.learn_shift + extra);
+    if (m.ev_tiles) {
+        min_evidence_reward(m, delta > 0, m.mg.learn_shift + extra);
+    }
 }

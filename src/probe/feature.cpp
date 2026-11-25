@@ -7,6 +7,8 @@
 //   xor     A and B each on or off; exactly one, against both or neither
 //   gap     the tile blinks twice with a short or a long gap; read after the second blink,
 //           the same number of ticks after it either way
+//   hold    cue A or cue B for six ticks, then nothing; read --hold-gap ticks later. How
+//           long the sheet keeps a thing in mind
 // For every neuron: the gap between its mean spikes in the reading window under the two
 // classes, in units of its try-to-try spread. A tile's number combines its 64 neurons, less
 // what chance alone gives. 1.0 is easy to read, under 0.3 is lost. It is what an ideal
@@ -24,7 +26,10 @@
 int int_arg(int argc, char** argv, const char* name, int fallback);
 const char* text_arg(int argc, char** argv, const char* name, const char* fallback);
 
-enum class Feature { which, order, order_xor, gap };
+enum class Feature { which, order, order_xor, gap, hold };
+
+// hold: how many quiet ticks pass between the cue going off and the reading
+static int hold_gap = 20;
 
 // cue A is every other sensor cell of the tile, cue B the rest
 static void set_cues(Blob& blob, int cue_tile, bool a_on, bool b_on) {
@@ -69,6 +74,12 @@ static Try draw_try(Feature feature, uint64_t random) {
         t.read_from = 6;
         t.read_to = 20;
         break;
+    case Feature::hold:
+        t.label = t.a;
+        t.read_from = 6 + hold_gap;
+        t.read_to = t.read_from + 8;
+        t.length = t.read_to;
+        break;
     case Feature::gap: {
         t.label = t.a;
         int gap = t.a ? 9 : 3;
@@ -98,6 +109,10 @@ static void lines_at(Feature feature, const Try& t, int tick, bool& a_on, bool& 
         a_on = t.a != 0;
         b_on = t.b != 0;
         break;
+    case Feature::hold:
+        a_on = t.label == 0 && tick < 6;
+        b_on = t.label == 1 && tick < 6;
+        break;
     case Feature::gap: {
         int gap = t.a ? 9 : 3;
         bool blink = tick < 3 || (tick >= 3 + gap && tick < 6 + gap);
@@ -118,8 +133,11 @@ int probe_feature(int argc, char** argv) {
         feature = Feature::order_xor;
     } else if (std::strcmp(name, "gap") == 0) {
         feature = Feature::gap;
+    } else if (std::strcmp(name, "hold") == 0) {
+        feature = Feature::hold;
+        hold_gap = int_arg(argc, argv, "--hold-gap", 20);
     } else if (std::strcmp(name, "which") != 0) {
-        std::fprintf(stderr, "blobprobe feature: --feature is which, order, xor or gap\n");
+        std::fprintf(stderr, "blobprobe feature: --feature is which, order, xor, gap or hold\n");
         return 1;
     }
     int tries = int_arg(argc, argv, "--tries", 4000);

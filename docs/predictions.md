@@ -117,6 +117,9 @@ inner neurons measurably better for a task than unsupervised wiring already make
 19. **They also raise how much it holds:** echo with 4 cues from 0.41 to above 0.6, and
     something above chance at 8 cues. (45%)
 20. **They let it use the delay trace:** delayed echo above 0.6 with delays on. (35%)
+    - *Scored: 18 wrong as stated, right in direction (0.54 to 0.60, every seed up). 19
+      right with counters on every neuron (0.63; 8 cues above chance), wrong for motor
+      cells only. 20 wrong: at chance among presses.*
 
 ## 2026-11-24, before decision-sized experiments and balanced reward
 
@@ -134,4 +137,14 @@ inner neurons measurably better for a task than unsupervised wiring already make
     (60%)
 25. **Longer lives alone do not rescue cartpole** for the old rules: a million steps ends
     no better than 40,000. (70%)
+
+## 2026-11-25, before putting the winners together
+
+26. **The combined engine keeps the reflex and the reach together:** Echo at one tile above
+    0.9 and at three tiles above 0.8, in the minimal engine. (55%)
+27. **It reads the features too:** exclusive-or above 0.8 and order above 0.65 with the sheet
+    frozen. (50%) The minimal sheet has no delays or far links by default, so it may be a
+    poorer sheet to read than the full one.
+28. **It stays fast:** within 2x of the plain minimal engine's ticks per second in an Echo
+    life. (60%)
 

@@ -40,6 +40,13 @@ static void sanitize(MinimalGenome& mg) {
     // the oldest map learning reads is credit_ticks - 1 + delay_max ticks back
     mg.credit_ticks = clamp_int(mg.credit_ticks, 1, MIN_HISTORY - 1 - mg.delay_max);
     mg.avg_shift = clamp_int(mg.avg_shift, 0, 16);
+    mg.ev_on = clamp_int(mg.ev_on, 0, 2);
+    mg.ev_bits = clamp_int(mg.ev_bits, 2, 8);
+    mg.ev_init = clamp_int(mg.ev_init, 0, 255);
+    mg.ev_read = clamp_int(mg.ev_read, 0, 2);
+    mg.ev_fired_min = clamp_int(mg.ev_fired_min, 1, 8);
+    mg.ev_shift = clamp_int(mg.ev_shift, 0, 30);
+    mg.ev_quiet_shift = clamp_int(mg.ev_quiet_shift, 0, 30);
 }
 
 // sensor and motor lattices and inhibitory senders, as the full engine lays them out
@@ -218,6 +225,21 @@ Blob* minimal_birth(const Genome& genome, const MinimalGenome& mg, uint64_t seed
     set_local_tiles(*m);
     set_far_and_delays(*m);
     wire(*m);
+    if (m->mg.ev_on) {
+        // evidence counters: rows for every neuron that might have them, filled from the wiring
+        m->ev_tiles = (uint64_t*)alloc_lines(map_bytes);
+        m->ev_row = (int32_t*)alloc_lines(sizeof(int32_t) * n);
+        int rows = 0;
+        for (int t = 0; t < b.tile_count; t++) {
+            uint64_t kind = m->mg.ev_on == 2 ? ~0ull : b.motor[t];
+            rows += __builtin_popcountll(kind & ~b.sensor[t]);
+        }
+        m->ev_rows = rows;
+        m->ev_planes =
+            (uint64_t*)alloc_lines(sizeof(uint64_t) * (size_t)rows * slots * m->mg.ev_bits);
+        m->ev_line = (uint8_t*)alloc_lines((size_t)rows);
+        min_evidence_birth(*m);
+    }
     return &b;
 }
 
@@ -232,7 +254,8 @@ void minimal_free(Blob* blob) {
     void* arrays[] = {blob->recent,   blob->inhibitory,     blob->sensor,    blob->motor,
                       blob->sense_in, blob->sense_attached, blob->predicted, m->spikes,
                       m->noise,       m->local_tile,        m->mask,         m->used,
-                      m->threshold,   m->far_tile,          m->delay};
+                      m->threshold,   m->far_tile,          m->delay,        m->ev_tiles,
+                      m->ev_row,      m->ev_planes,         m->ev_line};
     for (void* p : arrays) {
         std::free(p);
     }
@@ -257,6 +280,12 @@ size_t minimal_bytes(const MinimalBlob& m) {
     bytes += n;                                                    // thresholds
     // the per-tile words the engine reads from the shell: sensor, inhibitory, sense_in
     bytes += 3 * sizeof(uint64_t) * (size_t)(m.shell.tile_count + 1);
+    if (m.ev_planes) {
+        // evidence: the counters (packed: bits per source), a line per row, the row index
+        bytes += sizeof(uint64_t) * (size_t)m.ev_rows * (size_t)m.slots * (size_t)m.mg.ev_bits;
+        bytes += (size_t)m.ev_rows + sizeof(uint32_t) * n;
+        bytes += sizeof(uint64_t) * (size_t)(m.shell.tile_count + 1);
+    }
     return bytes;
 }
 
@@ -292,6 +321,17 @@ static const MinimalField fields[] = {
     {"delay_percent", &MinimalGenome::delay_percent},
     {"noise_sign", &MinimalGenome::noise_sign},
     {"noise_pair", &MinimalGenome::noise_pair},
+    {"ev_on", &MinimalGenome::ev_on},
+    {"ev_bits", &MinimalGenome::ev_bits},
+    {"ev_init", &MinimalGenome::ev_init},
+    {"ev_read", &MinimalGenome::ev_read},
+    {"ev_spikes", &MinimalGenome::ev_spikes},
+    {"ev_fired_min", &MinimalGenome::ev_fired_min},
+    {"ev_quiet", &MinimalGenome::ev_quiet},
+    {"ev_quiet_shift", &MinimalGenome::ev_quiet_shift},
+    {"ev_shift", &MinimalGenome::ev_shift},
+    {"ev_inh", &MinimalGenome::ev_inh},
+    {"ev_cowire", &MinimalGenome::ev_cowire},
 };
 
 void apply_minimal_args(int argc, char** argv, MinimalGenome& mg) {

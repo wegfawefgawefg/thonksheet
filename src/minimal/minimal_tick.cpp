@@ -163,6 +163,10 @@ static void cowire(MinimalBlob& m, const uint64_t* fired) {
         while (pick) {
             int n = t * TILE_NEURONS + __builtin_ctzll(pick);
             pick &= pick - 1;
+            if (m.ev_tiles && m.mg.ev_cowire && m.ev_row[n] >= 0) {
+                min_evidence_cowire(m, n); // evidence: a counter goes up, the mask follows
+                continue;
+            }
             m.stats.cowired += min_gain_active(m, n, 0) ? 1 : 0;
         }
     }

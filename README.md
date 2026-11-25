@@ -5,7 +5,8 @@ locally, learning without backprop, built to suit an ordinary CPU and GPU. Priva
 
 - `docs/design.md`: the mechanisms and how each is laid out for the machine
 - `docs/diagram.html`: the same as a picture
-- `docs/curriculum.md`: what it is asked to learn, in order
+- `docs/task-map.md`: every kind of task, the worlds that stand for it, the tiers
+- `docs/curriculum.md`: the exact definition of each world
 - `docs/findings.md`: what we think we know so far, with the evidence
 - `docs/ideas.md`: every idea tried or waiting, numbered
 - `docs/plan.md`: the work queue

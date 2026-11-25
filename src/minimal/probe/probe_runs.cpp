@@ -43,9 +43,15 @@ int probe_alive(ProbeArgs& args) {
     return 0;
 }
 
+// presses over a stretch: [0] no move, [1 + b] button b (up to 16), and how many were bad
+struct Presses {
+    int64_t move[17] = {};
+    int64_t bad = 0, steps = 0;
+};
+
 // run `steps` task steps; record the last `tail` ticks; return the task's score over them
 static double run_steps(const ProbeArgs& args, Blob& blob, TaskTicker& tt, int64_t steps,
-                        Recorder* rec, int64_t tail) {
+                        Recorder* rec, int64_t tail, Presses* presses = nullptr) {
     task_window_score(tt.task);
     int64_t ticks_total = steps * (tt.ticks_per_step + 0);
     int64_t tick = 0, step = 0;
@@ -58,6 +64,12 @@ static double run_steps(const ProbeArgs& args, Blob& blob, TaskTicker& tt, int64
         tick++;
         if (!ticker_after_tick(tt, blob)) {
             continue;
+        }
+        if (presses) {
+            int b = tt.move < 0 ? 0 : (tt.move < 16 ? 1 + tt.move : 16);
+            presses->move[b]++;
+            presses->bad += tt.valence < 0 ? 1 : 0;
+            presses->steps++;
         }
         if (tt.valence != 0) {
             probe_reward(args, blob, tt.valence);
@@ -78,10 +90,20 @@ int probe_life(ProbeArgs& args) {
     run_steps(args, *blob, tt, f.steps - late, nullptr, 0);
     Recorder rec;
     recorder_start(rec, *blob);
-    double score = run_steps(args, *blob, tt, late, &rec, args.tail_ticks);
+    Presses presses;
+    double score = run_steps(args, *blob, tt, late, &rec, args.tail_ticks, &presses);
     std::printf("life: task %s, %lld steps of %d ticks, seed %llu, late score %.3f\n",
                 task_name(f.task), (long long)f.steps, f.plug.ticks_per_step,
                 (unsigned long long)f.seed, score);
+    // the last tenth: which buttons it pressed, and how often it was told bad
+    double all = (double)(presses.steps ? presses.steps : 1);
+    std::printf("  late presses: none %.2f", presses.move[0] / all);
+    for (int b = 1; b < 17; b++) {
+        if (presses.move[b]) {
+            std::printf("  button %d %.2f", b - 1, presses.move[b] / all);
+        }
+    }
+    std::printf("  bad %.2f\n", presses.bad / all);
     recorder_print(rec, args, *blob, "end of life");
     print_wiring(args, *blob, "end of life");
     probe_free(args, blob);

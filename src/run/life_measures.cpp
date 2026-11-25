@@ -5,7 +5,11 @@
 #include "run/life_protocols.hpp"
 
 #include <chrono>
+#if defined(__APPLE__)
+#include <malloc/malloc.h>
+#else
 #include <malloc.h>
+#endif
 #include <string>
 
 static Plug no_plug; // nothing attached; the stand-in tick only looks at its motor lines
@@ -106,8 +110,14 @@ int protocol_reach(const RunFlags& flags) {
 
 // heap bytes in use, from the allocator
 static double heap_bytes() {
+#if defined(__APPLE__)
+    malloc_statistics_t stats;
+    malloc_zone_statistics(nullptr, &stats);
+    return (double)stats.size_in_use;
+#else
     struct mallinfo2 info = mallinfo2();
     return (double)info.uordblks + (double)info.hblkhd;
+#endif
 }
 
 static uint64_t speed_random(uint64_t& state) {

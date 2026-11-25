@@ -49,6 +49,9 @@ inline uint64_t min_allowed(const MinimalBlob& m, int n, int k) {
     return k == 4 ? ~(1ull << (n % TILE_NEURONS)) : ~0ull;
 }
 
+// one set bit, uniformly, over `slots` words. false if all are empty.
+bool min_pick_one(uint64_t* rng, const uint64_t* words, int slots, int& slot, int& bit);
+
 // connect n to one source it heard at its spike `age` ticks ago that is not yet wired;
 // under the budget, pay with one connection whose source was quiet then. true if it connected.
 bool min_gain_active(MinimalBlob& m, int n, int age);
@@ -57,3 +60,13 @@ bool min_gain_active(MinimalBlob& m, int n, int age);
 bool min_lose_active(MinimalBlob& m, int n, int age);
 // drop_mode 1: mark the connections heard by each neuron that fired on the newest tick
 void min_mark_used(MinimalBlob& m, const uint64_t* fired);
+
+// evidence counters (minimal_evidence.cpp)
+// allocate and set them from the birth wiring: wired sources ev_init above zero
+void min_evidence_birth(MinimalBlob& m);
+// a reward better (or worse) than average, at chance shift: move the counters, read the masks
+void min_evidence_reward(MinimalBlob& m, bool better, int shift);
+// co-activity on counter neuron n (ev_cowire 1): one source heard last tick goes up one
+void min_evidence_cowire(MinimalBlob& m, int n);
+// counters at their lowest and highest value, over every counter neuron (for the probes)
+void min_evidence_ends(const MinimalBlob& m, double& low, double& high);
