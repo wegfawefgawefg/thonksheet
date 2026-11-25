@@ -28,6 +28,12 @@
 //   --mix "<blobrun flags>" --mix-every N   the life alternates its own task and this one
 //                                   every N steps on the same blob, each restart a fresh task
 //                                   (task seed + segment), the readout learning throughout
+// idea 166 (docs/results-2026-11-25-timerule.md) adds:
+//   --life-quiet 1                  a reward-free life: good and bad are worked out but not
+//                                   given (no valence, the good and bad lines stay quiet)
+//   --then-keep 1                   the inside frozen as before, but the life's readout is
+//                                   kept and goes on learning (the rule on for the first part
+//                                   of one life, then off)
 
 #include "blob/blob.hpp"
 #include "probe/input_scramble.hpp"
@@ -44,7 +50,7 @@ int int_arg(int argc, char** argv, const char* name, int fallback);
 const char* text_arg(int argc, char** argv, const char* name, const char* fallback);
 
 // blobrun flags from one string, split on spaces; the blob and task seed are the probe's
-static bool parse_life(const char* text, const Genome& genome, uint64_t seed, RunFlags& flags) {
+bool parse_life(const char* text, const Genome& genome, uint64_t seed, RunFlags& flags) {
     static std::vector<std::string> words;
     words.clear();
     std::string w;
@@ -173,13 +179,15 @@ static void move_line(Plug& plug, Blob& blob, int cue) {
 // one task for `steps` steps on a blob already born, as blobrun's life loop does it.
 // returns the window scores
 static std::vector<double> live(Blob& blob, const RunFlags& flags, int64_t steps, int window,
-                                const PlugEdit& edit = PlugEdit{}, int scramble = 0) {
+                                const PlugEdit& edit = PlugEdit{}, int scramble = 0,
+                                bool quiet = false) {
     static TaskTicker tt;
     tt = TaskTicker{};
     std::vector<double> scores;
     if (!ticker_start(tt, blob, flags)) {
         return scores;
     }
+    tt.withhold = quiet;
     static Scramble mixed;
     scramble_start(mixed, scramble, flags.seed);
     if (edit.perm) {
@@ -254,7 +262,8 @@ Blob* probe_sheet(int argc, char** argv, const Genome& genome, uint64_t seed) {
                      mean_of(last[0], 0, last[0].size()), mean_of(last[1], 0, last[1].size()));
     } else {
         s = live(*blob, flags, flags.steps, flags.window, PlugEdit{},
-                 int_arg(argc, argv, "--life-scramble", 0));
+                 int_arg(argc, argv, "--life-scramble", 0),
+                 int_arg(argc, argv, "--life-quiet", 0) != 0);
     }
     size_t edge = s.size() / 10 > 0 ? s.size() / 10 : 1;
     std::fprintf(stderr,
@@ -349,7 +358,9 @@ int probe_transfer(int argc, char** argv) {
     edit.perm = int_arg(argc, argv, "--then-perm", 0);
     edit.move = int_arg(argc, argv, "--then-move", -1);
     edit.seed = seed;
-    fresh_readout(*blob, seed, int_arg(argc, argv, "--keep-output", 0) != 0);
+    if (!int_arg(argc, argv, "--then-keep", 0)) {
+        fresh_readout(*blob, seed, int_arg(argc, argv, "--keep-output", 0) != 0);
+    }
     freeze_inside(*blob, int_arg(argc, argv, "--then-inside", 0));
     std::vector<double> s = live(*blob, then, steps, window, edit);
     size_t edge = s.size() / 10 > 0 ? s.size() / 10 : 1;
