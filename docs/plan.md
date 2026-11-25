@@ -3,7 +3,39 @@
 The work queue, in order. Status is updated as things land. Detail for the current effort is
 in its own dated doc.
 
-## Now: first blob (docs/effort-2026-11-24-first-blob.md)
+## Where we stand and the one question (2026-11-25, late)
+
+The owner: "are we shooting in the dark. are we actually making any progress? that shifted
+memory thing sounds more like a hack than a genuine general learning mechanic."
+
+Honest position. What works here so far is known science under new names: a fixed random
+sheet with a trained output is reservoir computing with a perceptron on top; the memory
+engine is a lookup table (tabular learning), and falls to 0.20 on MNIST. A plain GRU
+beats every sheet on every row. Nothing we have learns *inside*, and nothing generalises
+to cases it was not shown. What two days did buy is the ability to tell: a bench, a
+backprop reference, a lookup-table reference, real data, held-out cases, a search loop
+and a GPU path. Until today a result could not be told from an easy test.
+
+So the work narrows to one question, with one test:
+
+**Can local rules make the inside learn features?** The test: after a life, freeze the
+machine, give it a fresh output, and compare with a fresh output on (a) the machine as
+born and (b) a plain random projection of the input. If the lived machine reads better
+than both, on cases it was not shown, the inside learned something. On MNIST the numbers
+to beat are 0.924 (sheet as born) and 0.943 (random projection); on the batteries, the
+held-out columns.
+
+Order of work:
+1. Finish what is running; record it; cut what did nothing.
+2. Every new idea is scored by that test first. Mechanisms that only tune the fixed sheet
+   or the output wait.
+3. Start from rules already known to learn features without backprop and put them in
+   bits: feedback from the chosen action (running), competitive learning with local
+   inhibition, local "is this real" goodness per layer, prediction of the input, random
+   fixed feedback of the error. Then the stranger ones (credit by code, payment).
+4. The memory stays as a reference and as a possible organ, not as the answer.
+
+## Earlier: first blob (docs/effort-2026-11-24-first-blob.md)
 
 1. Core: birth, tick, regulation, learning, speed test. *done*
 2. Viewer: the sheet, raster, sector bars, histograms, neuron picker. *done, shown on a fake blob; not yet driving a task*
