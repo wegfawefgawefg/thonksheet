@@ -78,8 +78,14 @@ static int one_digit(Sheet& s, bool learn, Rows* counts, std::vector<uint8_t>& c
     if (s.images) {
         s.images->push_back(tt.task.image);
     }
+    if (s.shuffle) {
+        shuffle_draw(s);
+    }
     for (;;) {
         ticker_before_tick(tt, b);
+        if (s.shuffle) {
+            shuffle_apply(s);
+        }
         blob_tick(b);
         s.ticks++;
         for (int t = 0; counts && t < b.tile_count; t++) {

@@ -10,7 +10,11 @@
 //   --settle N     digits shown before any are kept (default 200)
 //   --test-count N test digits (default 10000)
 //   --passes N     reader passes (default 3); --lr-1000 N step size in thousandths (10)
-//   --pretrain N   N digits of reward-free wiring by co-activity before freezing
+//   --pretrain N   a reward-free life of N digits under the genome's own learning rules
+//                  (learn mode as given; the default, 0, is wiring by co-activity) before
+//                  freezing, with a line on activity and wiring every tenth of it
+//   --pretrain-shuffle 1   that life on digits whose pixels are shuffled, a fresh
+//                  permutation per digit (the control); the reader still sees real digits
 //   --shift 1      the reader also scored on test digits moved 1 and 2 pixels
 //   --val 1        validation slice instead of the test set
 //   --scale M      how the reader scales features (mnist_learn.hpp; default 0)
@@ -23,7 +27,8 @@
 
 static const char* const ceiling_own[] = {"--fit",     "--settle",   "--test-count", "--passes",
                                           "--lr-1000", "--pretrain", "--shift",      "--val",
-                                          "--gap",     "--views",    "--scale"};
+                                          "--gap",     "--views",    "--scale",
+                                          "--pretrain-shuffle"};
 
 // a copy of rows with only the given columns
 static void pick_columns(const Rows& in, const std::vector<int>& cols, Rows& out) {
@@ -99,8 +104,13 @@ int mnist_ceiling(int argc, char** argv) {
     const Mnist* data = mnist_data();
 
     double t0 = now_seconds();
+    std::vector<uint64_t> born;
+    wiring_snapshot(s, born);
+    wiring_report(s, born, "as born");
     if (pretrain > 0) {
-        sheet_pretrain(s, pretrain);
+        s.shuffle = int_flag(argc, argv, "--pretrain-shuffle", 0);
+        life_run(s, pretrain, 10, born);
+        s.shuffle = 0;
     }
     s.blob->genome.learning_on = 0; // frozen from here on
     sheet_train(s, settle, false, nullptr);
@@ -181,6 +191,7 @@ int mnist_ceiling(int argc, char** argv) {
         std::printf("%-34s %7d %8.4f %8s %8s %9.1f\n", "the bits alone (same digits)", w * h,
                     linear_accuracy(lin, te, sc), "-", "-", now_seconds() - r0);
     }
+    activity_report(s, train, "frozen, fit digits");
     std::printf("total wall %.1f s\n", now_seconds() - t0);
     sheet_free(s);
     return 0;

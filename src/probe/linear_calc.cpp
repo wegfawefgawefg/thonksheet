@@ -10,7 +10,10 @@
 // for the lines of the step before it: is the last instruction still there.
 // blobrun's task, plug, seed and --g. flags all work. Own flags: --trials N (ask steps
 // kept, default 3000), --settle N (ticks before keeping any, default 30000), --learning
-// 0|1, --label text, --out csv (reader,key,value lines).
+// 0|1, --label text, --out csv (reader,key,value lines), --life N (N ticks of a
+// reward-free life under the genome's own learning rules before the frozen read: the
+// inside-learning test, docs/results-2026-11-25-compete.md; held-out cases are shown in it
+// too, never with an answer).
 
 #include "blob/blob.hpp"
 #include "probe/linear_fit.hpp"
@@ -27,7 +30,7 @@ int int_arg(int argc, char** argv, const char* name, int fallback);
 const char* text_arg(int argc, char** argv, const char* name, const char* fallback);
 
 static const char* const calc_only[] = {"--trials", "--settle", "--learning", "--label",
-                                        "--out"};
+                                        "--out",    "--life"};
 
 struct CalcRows {
     int d = 0;                 // features per row
@@ -323,7 +326,9 @@ int probe_calc(int argc, char** argv) {
     int64_t settle = int_arg(argc, argv, "--settle", 30000);
     const char* label = text_arg(argc, argv, "--label", "run");
     std::string out_path = text_arg(argc, argv, "--out", "");
-    if (!int_arg(argc, argv, "--learning", 0)) {
+    int64_t life = int_arg(argc, argv, "--life", 0);
+    bool learn_read = int_arg(argc, argv, "--learning", 0) != 0;
+    if (!learn_read && life == 0) {
         flags.genome.learning_on = 0;
     }
 
@@ -336,6 +341,15 @@ int probe_calc(int argc, char** argv) {
     }
     int out_bits = tt.task.calc.out_bits, lines = tt.task.calc.lines;
     int steps = tt.task.calc.steps;
+    // the life: the world as usual, its verdicts never delivered
+    for (int64_t i = 0; i < life; i++) {
+        ticker_before_tick(tt, *blob);
+        blob_tick(*blob);
+        ticker_after_tick(tt, *blob);
+    }
+    if (!learn_read) {
+        blob->genome.learning_on = 0;
+    }
     CalcRows sheet, inputs;
     // the answer, and the lines of the step before the ask (multi-step trials: can the
     // sheet still read the last instruction when it is asked)
