@@ -2,23 +2,29 @@
 """The ladder of worlds (idea 63): every world for every engine and rule, beside its
 learning-off twin and coin flips, at the standard life or a long one.
 
-    scripts/ladder.py run   [--long] [--rules R,...] [--worlds W,...] [--seeds 5-12]
+    scripts/ladder.py run   [--life 400k|long] [--rules R,...] [--worlds W,...] [--seeds 5-12]
     scripts/ladder.py table [--rules R,...] [--worlds W,...] [--seeds 5-12]
+    scripts/ladder.py run --rules critic,readout,gru,memory        the critic's report
+    scripts/ladder.py run --seeds 1-4 --rules wide --define wide='--g.learn_mode 5 ...'
 
 run: one blobrun call per world, rule and seed, 2 at a time under nice, into
 out/ladder/<life>/ (or --out-dir). A call whose -sum.csv exists is skipped, so a stopped
 run picks up where it was. The standard life is 40,000 steps with windows of 1,000 and
-runs the twin and coin flips in the same call; --long is 1,000,000 steps in 100 windows
-with no baselines (the twin cannot change with learning off, so the long table uses the
-standard life's twin and coin on the same seed).
+runs the twin, coin flips and the scripted player in the same call; --life 400k is
+400,000 steps and --long (--life long) 1,000,000 steps in 100 windows, both with no
+baselines (the twin cannot change with learning off, so the long tables use the standard
+life's twin and coin on the same seed).
 
 table: one markdown table per life length found: late score (mean of the last tenth of
-the windows) over the seeds, the twin's, coin's, the paired gain over the twin with its
-t, and episodes per life.
+the windows) over the seeds, the twin's, coin's, the scripted player's, the paired gain
+over the twin with its t, and episodes per life; for the long lives also the score in
+ten slices of the life.
 
-Rules: minimal (--engine minimal), table (--table), blob (the full engine as it is), and
+Rules: minimal (--engine minimal), table (--table), blob (the full engine as it is),
 readout (the full engine with idea 58's rule: learn_mode 5, evidence counters, balance,
-128 spread motor cells per button).
+128 spread motor cells per button), critic (readout taught by the critic's surprise:
+docs/results-2026-11-25-critic.md), gru and memory (the fixed references, their own plug).
+The default is the first four. --define adds a rule by name for one call.
 """
 
 import argparse
@@ -57,24 +63,38 @@ WORLDS = {
     "cartpole": (CART + ["--cart-reward", "lean"], "cartpole, lean reward"),
     "cartpole-wide": (CART + ["--cart-reward", "lean", "--cart-start", "wide"],
                       "cartpole, lean reward, wide starts"),
+    "cartpole-alive": (CART + ["--cart-reward", "alive"], "cartpole, alive reward"),
+    "cartpole-sparse": (CART + ["--cart-reward", "sparse"], "cartpole, sparse reward"),
     "cartpole-rel": (CART + ["--cart-reward", "relative"], "cartpole, relative reward"),
     # semi is cartpole's default since 2026-11-25: this row now repeats "cartpole"
     "cartpole-semi": (CART + ["--cart-reward", "lean", "--cart-integrator", "semi"],
                       "cartpole, lean reward, semi-implicit (a step's reward judges its press)"),
 }
 
+READOUT = ["--g.learn_mode", "5", "--g.readout_evidence", "1", "--g.readout_shift", "4",
+           "--g.readout_balance", "1", "--motor-spread", "128"]
 RULES = {
     "minimal": ["--engine", "minimal"],
     "table": ["--table"],
     "blob": [],
-    "readout": ["--g.learn_mode", "5", "--g.readout_evidence", "1", "--g.readout_shift", "4",
-                "--g.readout_balance", "1", "--motor-spread", "128"],
+    "readout": READOUT,
+    # actor and critic (docs/results-2026-11-25-critic.md): the readout taught by a critic's
+    # surprise, its good half on
+    "critic": READOUT + ["--g.critic_on", "1", "--g.readout_good", "1"],
+    # the fixed references, their own plug (no spread motor cells)
+    "gru": ["--engine", "gru"],
+    "memory": ["--engine", "memory"],
 }
 # rough cost of one life against the minimal engine's, for ordering the work
-COST = {"minimal": 1, "table": 5.5, "blob": 5, "readout": 6.5}
+COST = {"minimal": 1, "table": 5.5, "blob": 5, "readout": 6.5, "critic": 9, "gru": 2,
+        "memory": 1}
 
+# windows of 1,000 steps in every life, so a window's score means the same at any length;
+# the long lives have no baselines (learning off cannot change), and the table reports them
+# in ten slices
 LIVES = {
     "standard": ["--steps", "40000", "--window", "1000"],
+    "400k": ["--steps", "400000", "--window", "1000", "--no-baselines"],
     "long": ["--steps", "1000000", "--windows", "100", "--no-baselines"],
 }
 
@@ -110,7 +130,7 @@ def stem(out_dir, life, world, rule, seed):
 
 
 def run(opt, worlds, rules, seeds):
-    life = "long" if opt.long else "standard"
+    life = opt.life
     os.makedirs(os.path.join(opt.out_dir, life), exist_ok=True)
     todo = []
     for world in worlds:
@@ -119,7 +139,7 @@ def run(opt, worlds, rules, seeds):
                 s = stem(opt.out_dir, life, world, rule, seed)
                 # a finished call has the blob's late score in its summary
                 if "late" not in read_sum(s + "-sum.csv").get("blob", {}):
-                    todo.append((COST[rule], world, rule, seed, s))
+                    todo.append((COST.get(rule, 9), world, rule, seed, s))
     # cheap engines first, so the first answers come early
     todo.sort(key=lambda t: t[0])
     print("ladder %s: %d runs, %d at a time" % (life, len(todo), opt.jobs), flush=True)
@@ -157,17 +177,49 @@ def fmt(v):
     return "%.1f" % v if abs(v) >= 10 else "%.3f" % v
 
 
+def window_scores(path):
+    """the blob's score per window from a life's csv (either layout), or []"""
+    if not os.path.exists(path):
+        return []
+    with open(path) as f:
+        head = next(f, "").strip().split(",")
+        rows = [line.strip().split(",") for line in f if line.strip()]
+    if "driver" in head:
+        return [float(r[3]) for r in rows if r[2] in ("blob", "table")]
+    col = head.index("blob") if "blob" in head else head.index("table")
+    return [float(r[col]) for r in rows]
+
+
+def slices(opt, life, worlds, rules, seeds):
+    """mean score over seeds in ten equal slices of the life"""
+    print("ten slices of the life (mean of the windows in each, over the seeds):\n")
+    print("| world | rule | " + " | ".join(str(i + 1) for i in range(10)) + " |")
+    print("|---|---|" + "---|" * 10)
+    for world in worlds:
+        for rule in rules:
+            per_seed = []
+            for seed in seeds:
+                w = window_scores(stem(opt.out_dir, life, world, rule, seed) + ".csv")
+                if len(w) >= 10:
+                    k = len(w) // 10
+                    per_seed.append([statistics.mean(w[i * k:(i + 1) * k]) for i in range(10)])
+            if per_seed:
+                cells = [fmt(statistics.mean(s[i] for s in per_seed)) for i in range(10)]
+                print("| %s | %s | %s |" % (world, rule, " | ".join(cells)))
+    print()
+
+
 def table(opt, worlds, rules, seeds):
-    for life in ("standard", "long"):
+    for life in LIVES:
         if not os.path.isdir(os.path.join(opt.out_dir, life)):
             continue
         print("## %s life (%s), seeds %s\n" % (life, " ".join(LIVES[life]), opt.seeds))
-        print("| world | rule | late | twin | coin | late - twin | t | late - early | "
+        print("| world | rule | late | twin | coin | scripted | late - twin | t | late - early | "
               "episodes | n |")
-        print("|---|---|---|---|---|---|---|---|---|---|")
+        print("|---|---|---|---|---|---|---|---|---|---|---|")
         for world in worlds:
             for rule in rules:
-                late, twin, coin, rise, eps = [], [], [], [], []
+                late, twin, coin, perfect, rise, eps = [], [], [], [], [], []
                 for seed in seeds:
                     s = read_sum(stem(opt.out_dir, life, world, rule, seed) + "-sum.csv")
                     if "blob" not in s:
@@ -179,6 +231,7 @@ def table(opt, worlds, rules, seeds):
                     eps.append(s["blob"].get("episodes", 0))
                     twin.append(b.get("learn_off", {}).get("late"))
                     coin.append(b.get("coin", {}).get("late"))
+                    perfect.append(b.get("perfect", {}).get("late"))
                 if not late:
                     continue
                 pairs = [(a, b) for a, b in zip(late, twin) if b is not None]
@@ -190,11 +243,13 @@ def table(opt, worlds, rules, seeds):
                     t = gain / se if se > 0 else 0.0
                 twin = [v for v in twin if v is not None]
                 coin = [v for v in coin if v is not None]
+                perfect = [v for v in perfect if v is not None]
                 sd = statistics.stdev(late) if len(late) > 1 else 0.0
-                print("| %s | %s | %s ±%s | %s | %s | %s | %s | %s | %.0f | %d |" % (
+                print("| %s | %s | %s ±%s | %s | %s | %s | %s | %s | %s | %.0f | %d |" % (
                     world, rule, fmt(statistics.mean(late)), fmt(sd),
                     fmt(statistics.mean(twin) if twin else None),
                     fmt(statistics.mean(coin) if coin else None),
+                    fmt(statistics.mean(perfect) if perfect else None),
                     "-" if gain is None else ("%+.3f" % gain if abs(gain) < 10 else
                                               "%+.1f" % gain),
                     "-" if t is None else "%+.1f" % t, fmt(statistics.mean(rise)),
@@ -210,14 +265,19 @@ def table(opt, worlds, rules, seeds):
                 if any(c != "-" for c in cells):
                     print("    %-14s %-8s %s" % (world, rule, " ".join(cells)))
         print()
+        if life != "standard":
+            slices(opt, life, worlds, rules, seeds)
     return 0
 
 
 def main():
     ap = argparse.ArgumentParser(usage=__doc__)
     ap.add_argument("what", choices=["run", "table"])
-    ap.add_argument("--long", action="store_true")
-    ap.add_argument("--rules", default=",".join(RULES))
+    ap.add_argument("--long", action="store_true", help="the same as --life long")
+    ap.add_argument("--life", choices=list(LIVES), default="standard")
+    ap.add_argument("--define", action="append", default=[], metavar="NAME=FLAGS",
+                    help="a rule of your own, e.g. critic-wide='<critic flags> --g.critic_wide 1'")
+    ap.add_argument("--rules", default="minimal,table,blob,readout")
     ap.add_argument("--worlds", default=",".join(WORLDS))
     ap.add_argument("--seeds", default="5-12")
     ap.add_argument("--jobs", type=int, default=2)
@@ -225,6 +285,11 @@ def main():
     ap.add_argument("--blobrun", default=BLOBRUN, help="a frozen copy, to rebuild meanwhile")
     opt = ap.parse_args()
     opt.out_dir = os.path.abspath(opt.out_dir)
+    if opt.long:
+        opt.life = "long"
+    for d in opt.define:
+        name, _, flags = d.partition("=")
+        RULES[name] = flags.split()
     worlds = opt.worlds.split(",")
     rules = opt.rules.split(",")
     for w in worlds:
