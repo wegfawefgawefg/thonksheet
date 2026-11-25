@@ -36,6 +36,12 @@
 // crossed the line between wired and unwired, or strong and weak: each cell keeps bounds on
 // its counters (lowest wired, highest unwired, lowest strong, highest weak, per kind), so a
 // re-pick happens only when it can change something.
+//
+// idea 164: the input lines' prediction errors as more error lines (blob_hop_errors, from
+// run/predict.cpp), lines HOP_PRED_FIRST and on, taught on the next tick beside the buttons'
+// (or alone: hop_teach 0 sends no button errors). with places (blob_hop_error_places) a
+// prediction line reaches only the cells within `reach` cells of its sensor group, still with
+// a hashed sign (the predictive-coding form); without, the hashed wires as for the buttons.
 
 struct HopState {
     uint64_t* near = nullptr; // HISTORY x (tile_count + 1) words, at the spike ring's index
@@ -48,7 +54,13 @@ struct HopState {
     int pending = 0;
     uint64_t counts[7] = {}; // see blob_hop_counts
     int32_t rate[64] = {};   // hop_teach 3: each line's running rate of being right, x65536
+    // idea 164: the prediction errors waiting for the next tick, and the lines' places
+    int8_t pred_error[HOP_MAX_PRED] = {};
+    int pred_lines = 0, pred_pending = 0, pred_reach = 0;
+    int16_t pred_x[HOP_MAX_PRED] = {}, pred_y[HOP_MAX_PRED] = {};
 };
+
+enum { HOP_PRED_FIRST = 64 }; // prediction error line l is wire line HOP_PRED_FIRST + l
 
 enum { LOW_WIRED = 0, HIGH_UNWIRED = 2, LOW_STRONG = 4, HIGH_WEAK = 6 };
 
@@ -89,6 +101,27 @@ void blob_hop_lines(Blob& blob, uint64_t pressed, uint64_t right, int lines) {
     h.right = right;
     h.lines = lines < 64 ? lines : 64;
     h.pending = 1;
+}
+
+void blob_hop_errors(Blob& blob, const int8_t* error, int count) {
+    if (!blob.genome.hop_on || !blob.genome.learning_on) {
+        return;
+    }
+    HopState& h = hop_make(blob);
+    h.pred_lines = count < HOP_MAX_PRED ? count : HOP_MAX_PRED;
+    std::memcpy(h.pred_error, error, (size_t)h.pred_lines);
+    h.pred_pending = 1;
+}
+
+void blob_hop_error_places(Blob& blob, const int16_t* x, const int16_t* y, int count, int reach) {
+    if (!blob.genome.hop_on || !blob.genome.learning_on) {
+        return;
+    }
+    HopState& h = hop_make(blob);
+    count = count < HOP_MAX_PRED ? count : HOP_MAX_PRED;
+    std::memcpy(h.pred_x, x, (size_t)count * sizeof(int16_t));
+    std::memcpy(h.pred_y, y, (size_t)count * sizeof(int16_t));
+    h.pred_reach = reach;
 }
 
 void blob_hop_counts(const Blob& blob, uint64_t out[7]) {
@@ -137,8 +170,17 @@ void hop_after_fire(Blob& blob) {
     out[blob.tile_count] = 0;
 }
 
-// a fixed random wire from error line `line` to cell n: +1, -1 or 0 (none)
-static int wire(const HopState& h, int shift, int n, int line) {
+// a fixed random wire from error line `line` to cell n: +1, -1 or 0 (none). a prediction
+// line with places reaches the cells within pred_reach of its group (any sign)
+static int wire(const Blob& blob, const HopState& h, int shift, int n, int line) {
+    if (line >= HOP_PRED_FIRST && h.pred_reach > 0) {
+        int dx = blob_neuron_x(blob, n) - h.pred_x[line - HOP_PRED_FIRST];
+        int dy = blob_neuron_y(blob, n) - h.pred_y[line - HOP_PRED_FIRST];
+        if (dx > h.pred_reach || -dx > h.pred_reach || dy > h.pred_reach || -dy > h.pred_reach) {
+            return 0;
+        }
+        shift = 0;
+    }
     uint64_t z = h.salt ^ ((uint64_t)n * 0x9e3779b97f4a7c15ull) ^ ((uint64_t)(line + 1) << 40);
     z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull;
     z = (z ^ (z >> 27)) * 0x94d049bb133111ebull;
@@ -313,17 +355,18 @@ static void move_cell(Blob& blob, int n, bool more, uint32_t ages) {
 void learn_hop(Blob& blob) {
     const Genome& g = blob.genome;
     HopState& h = hop_make(blob);
-    if (!h.pending || blob.pending_valence == 0) {
+    bool buttons = h.pending && blob.pending_valence != 0;
+    if (!buttons && !h.pred_pending) {
         return;
     }
-    h.pending = 0;
+    h.pending = buttons ? 0 : h.pending;
     int valence = blob.pending_valence;
-    // the error lines
-    int line[64], sign[64], count = 0;
-    if (g.hop_teach == 3) {
+    // the error lines: the buttons' (hop_teach 0: none), then the predictions'
+    int line[HOP_PRED_FIRST + HOP_MAX_PRED], sign[HOP_PRED_FIRST + HOP_MAX_PRED], count = 0;
+    if (buttons && g.hop_teach == 3) {
         count = target_errors(blob, h, line, sign);
     }
-    for (int l = 0; g.hop_teach != 3 && l < h.lines; l++) {
+    for (int l = 0; buttons && g.hop_teach != 0 && g.hop_teach != 3 && l < h.lines; l++) {
         bool pressed = (h.pressed >> l) & 1, right = (h.right >> l) & 1;
         int e = 0;
         if (valence < 0) {
@@ -336,11 +379,9 @@ void learn_hop(Blob& blob) {
             sign[count++] = e;
         }
     }
-    if (count == 0) {
-        return;
-    }
-    // the coin control: the same errors, each on a line drawn at random. hop_coin 2: on
-    // distinct lines, so errors never cancel on one line and as many cells are taught
+    // the coin control: the same errors, each on a line of its kind drawn at random.
+    // hop_coin 2: on distinct lines, so errors never cancel on one line and as many cells
+    // are taught
     for (int i = 0; g.hop_coin && g.hop_teach != 3 && i < count; i++) {
         line[i] = (int)rng_below(blob.rng, (uint32_t)h.lines);
         for (int j = 0; g.hop_coin == 2 && j < i; j++) {
@@ -349,6 +390,20 @@ void learn_hop(Blob& blob) {
                 j = -1;
             }
         }
+    }
+    int from_pred = count;
+    for (int l = 0; h.pred_pending && l < h.pred_lines; l++) {
+        if (h.pred_error[l] != 0) {
+            line[count] = HOP_PRED_FIRST + l;
+            sign[count++] = h.pred_error[l];
+        }
+    }
+    for (int i = from_pred; g.hop_coin && i < count; i++) {
+        line[i] = HOP_PRED_FIRST + (int)rng_below(blob.rng, (uint32_t)h.pred_lines);
+    }
+    h.pred_pending = 0;
+    if (count == 0) {
+        return;
     }
     tag_store_make(blob);
     int window = g.hop_window < 1 ? 1 : (g.hop_window > HISTORY - 1 ? HISTORY - 1 : g.hop_window);
@@ -369,7 +424,7 @@ void learn_hop(Blob& blob) {
             int n = t * TILE_NEURONS + b;
             int sum = 0;
             for (int i = 0; i < count; i++) {
-                sum += sign[i] * wire(h, g.hop_wire_shift, n, line[i]);
+                sum += sign[i] * wire(blob, h, g.hop_wire_shift, n, line[i]);
             }
             if (sum == 0) {
                 continue;

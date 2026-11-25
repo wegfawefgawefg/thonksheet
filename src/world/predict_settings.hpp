@@ -19,6 +19,11 @@ struct PredictSettings {
     int cells = 4;  // --predict-cells: most motor cells per group
     int shift = -1; // --predict-shift: chance of a verdict's move, 2^-shift; -1 the readout's
     int64_t score_from = -1; // --predict-score-from: first step tallied; -1 the last quarter
+    // idea 164: --predict-hop 1 sends the shortest horizon's errors (which must be 1) to every
+    // hidden cell as error lines of the one-hop rule (needs --g.hop_on 1); --predict-hop-reach
+    // R > 0: each line's error reaches only cells within R cells of its sensor group
+    int hop = 0;
+    int hop_reach = 0;
 };
 
 inline bool predict_wanted(const PredictSettings& s) {

@@ -15,7 +15,12 @@ const char* const predict_flags_usage =
     "                       predicted line (said on and was off, said off and was on)\n"
     "  --predict-cells N    most motor cells per answer group (default 4)\n"
     "  --predict-shift S    chance of a verdict's move 2^-S (default: the readout's)\n"
-    "  --predict-score-from N   first step the skill is tallied over (default: last quarter)\n";
+    "  --predict-score-from N   first step the skill is tallied over (default: last quarter)\n"
+    "  --predict-hop 1      idea 164: the horizon-1 errors teach every hidden cell as error\n"
+    "                       lines of the one-hop rule (with --g.hop_on 1; --g.hop_teach 0\n"
+    "                       for no button errors)\n"
+    "  --predict-hop-reach R   those lines reach only cells within R cells of their sensor\n"
+    "                       group (0: hashed random wires, default)\n";
 
 static int parse_horizons(const char* value, PredictSettings& s) {
     s.horizons = 0;
@@ -64,7 +69,9 @@ int predict_parse_flag(const char* flag, const char* value, PredictSettings& s) 
     const Number numbers[] = {{"--predict-press", &s.press},
                               {"--predict-errors", &s.errors},
                               {"--predict-cells", &s.cells},
-                              {"--predict-shift", &s.shift}};
+                              {"--predict-shift", &s.shift},
+                              {"--predict-hop", &s.hop},
+                              {"--predict-hop-reach", &s.hop_reach}};
     for (const Number& n : numbers) {
         if (std::strcmp(flag, n.flag) == 0) {
             *n.field = std::atoi(value);

@@ -339,6 +339,8 @@ struct Genome {
                             // 3: every verdict, good or bad, teaches from the answer alone:
                             // a line's error is its target (1 right, 0 not) less its running
                             // rate of being right, so what the readout pressed plays no part
+                            // 0: the buttons send nothing (idea 164: prediction errors only,
+                            // blob_hop_errors)
     int hop_good = 0;       // 1: on good, the pressed line should have been higher
     int hop_wire_shift = 1; // each error line reaches a cell with chance 2^-this
     int hop_near = 2;       // "near": potential within this many eighths of the bar under it
