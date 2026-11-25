@@ -118,8 +118,12 @@ seeds and, above all, together under one setting):
 
 ## Milestones worth naming
 
-- **Every row of tiers 1 to 4 on one set of rules.** Not yet: nothing holds a cue past 20
-  ticks.
+- **Every row of tiers 1 to 4 on one set of rules.** Met on the quick map's tier 1 to 4
+  rows except parity of 3 (0.64), by a sheet with one setting (`scripts/oneset.sh best`,
+  docs/results-2026-11-26-one-setting.md, seeds 5 to 12): 16 cues 0.955, exclusive-or
+  0.936, order 0.994, gap 0.897, delayed echo 1.000, a 1,000-tick hold 0.998. The
+  holding comes from hold cells built for it, not from anything learned inside. (Was:
+  not yet, nothing holds a cue past 20 ticks.)
 - **MNIST.** A linear classifier on the raw pixels gets about 92% and a small two-layer
   network about 97%, each in well under a minute on a CPU. The first target is to pass the
   linear classifier with a sheet that was never taught and a readout that only ever hears

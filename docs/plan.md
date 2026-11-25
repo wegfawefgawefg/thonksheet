@@ -47,7 +47,8 @@ Running (four), as of 2026-11-25 afternoon:
 - Queued item 3b (idea 164): prediction errors down the one-hop wires.
 - Queued item 2g (idea 167): the rule's ladder, which step from backprop down to our
   one-hop rule loses the features.
-- Item A below: one setting with everything that worked (`scripts/oneset.sh`).
+- Queued item 2h (idea 168): why the sheet does not answer the same digit the same way
+  twice, and the two cheap levers (lower target rate, wider cells) with the transplant.
 - Queued item 2f (idea 166): why competitive learning lifts the time rows, and how far.
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
 153, 154), both merged; their slots went to items B and C. The calculation battery
@@ -73,7 +74,15 @@ critic. The unattended search is stopped on this PC and still runs on stevejobs.
 
 Added after the wind-up, ahead of the rest (these are the first rules that move a wall,
 so they come first):
-- A. *(running)* One setting with everything that worked: the readout, one step of reverse replay,
+- A2. *(running unattended, coordinator)* The one setting with what merged after it:
+  the runner-up output rule in place of the close-vote gate, competitive learning beside
+  or in place of time and hold cells, on the quick map (`scripts/oneset.sh`). Takes in
+  the first part of item 9 and the "whole suite with the rule on" left by item 2a.
+- A. *(done, merged: docs/results-2026-11-26-one-setting.md, `scripts/oneset.sh best`;
+  one setting passes 15 of 22 worlds on seeds 5 to 12, the output rule alone 6, the GRU
+  16; the critic does not combine; 12 in 100 neurons end silent after a long life. Left:
+  the silent 12, a 40,000-step pass, MNIST test-set accuracy for the setting, rich2 and
+  the slow potential in combination, the chain without the critic)* One setting with everything that worked: the readout, one step of reverse replay,
   tiring neurons (or time and hold cells), winners in the tile, the critic. Does it hold
   together on the whole map, and does the replay runaway stop under it? Scored with the
   references beside it.
@@ -121,7 +130,7 @@ Queued, in order:
    one at a time, random fixed feedback wires, a few wires a cell, sign only, good or
    bad only, counter steps on marked inputs, the sheet's own output). The rung where the
    score falls is what our rule is missing.
-2h. *(next, idea 168)* Why the sheet does not answer the same digit the same way twice
+2h. *(running, idea 168)* Why the sheet does not answer the same digit the same way twice
    (a cell's counts correlate 0.61 with themselves from another starting state), and the
    two cheap levers idea 165 left: a lower per-cell target rate, wider cells, each tried
    with the transplant (`blobmnist ceiling --wiring-load`).

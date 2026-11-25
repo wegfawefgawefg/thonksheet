@@ -238,6 +238,39 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   - Suspect: the model's absolute pair numbers run 0.08 to 0.10 high (the transplant is
     the number to quote); the 0.02 to 0.03 rung steps rest on 3 seeds; the 12 passes of
     60,000 digits the teacher had are 36 times what our lives show a rule (idea 167).
+- **The mechanisms hold together: one setting passes 15 of 22 worlds** (queue item A,
+  docs/results-2026-11-26-one-setting.md, `scripts/oneset.sh best`,
+  `scripts/variants/best.txt`). One setting, unchanged on a quick map of 22 worlds, seeds
+  5 to 12; a row passes when it is at least halfway from chance to perfect and above its
+  learning-off twin by 2 standard errors. The output rule alone passes 6, the GRU 16, the
+  memory engine 16, the vm engine 14. The setting: the output rule with the close-vote
+  gate, time and hold cells, tiring neurons, two winners per tile, one step of the
+  backward walk on bad steps only. I re-ran three rows on two seeds from the merged
+  build: far5 0.933, xor 0.910, delayed echo 1.000, as reported.
+  - Against the GRU: 16 cues 0.955 (0.99), reach to 5 tiles 0.933 (1.00), exclusive-or
+    0.936 (0.99), order 0.994, gap 0.897, delayed echo 1.000, a 1,000-tick hold 0.998
+    (GRU 0.50), bandit 0.995, catch 0.671 (0.72), copy of 2 0.897 (1.00), MNIST online
+    0.714 (0.73).
+  - Still failing: cartpole (17 steps per fall, a coin 21, GRU 703), the chain (0.15;
+    only the critic learns it), parity of 3 (0.64), noisy lines (0.31), keeping pairs
+    (0.53), held-out scale and place (nothing passes those).
+  - Each piece alone: time and hold cells are by far the largest (6 rows to 12), then
+    rich2 (10), tiring neurons (9), the walk, tags, the slow potential and the close-vote
+    gate (8 each). The critic alone still passes 6: it is the only thing that learns the
+    chain (0.96) and it costs exclusive-or 0.27 and reach 0.19.
+  - The critic does not combine. With it on, the world's good and bad never reach the
+    walk or the hold cells; with glue that lets the verdict through, its surprise is
+    noise on steps where nothing is at stake (exclusive-or -0.3, order -0.4).
+  - What this is and is not: most of the 9 rows gained come from cell kinds built by
+    hand (time and hold cells, tiring) and from the output rule. The inside-learning
+    read under this setting is small: a fresh output on the lived sheet 0.933 against
+    0.891 as born at 5 tiles (+0.042 ±0.012), 0.941 against 0.915 on exclusive-or
+    (borderline), same task, no transfer or random-projection arm.
+  - Health after 160,000 steps: no runaway (0.89 of the target rate), but 12 in 100
+    neurons end silent (the base: none), undiagnosed; the setting runs at half the
+    base's speed.
+  - Made before the runner-up output rule, the one-hop rule, competitive learning and
+    prediction lines were merged; lives are 20,000 steps, half the standard.
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -561,12 +594,20 @@ docs/results-2026-11-25-mnist.md
     potential, or non-leaking cells each make delayed echo learnable. The ringing sheet
     from finding 22 holds too but the output reads it worse. Each costs exclusive-or about
     0.1; a winner-in-the-tile rule lifts exclusive-or to 0.98 and may pay that back.
+    Confirmed on 8 seeds in the one setting: tiring neurons with two winners per tile
+    take exclusive-or 0.80 to 0.93. Time and hold cells are the largest single piece on
+    the quick map (6 rows passed to 12) and also lift reach (5 tiles +0.34), because a
+    hold cell keeps the cue's identity on for the whole trial.
 31. **An actor needs a critic, and the critic's surprise must teach on good as well as
     bad.** [likely: 17 worlds, seeds 5 to 12; a slower actor helps (cartpole 89 to 107,
     chain 0.97 to 0.99); a wider critic costs (chain 0.84, cartpole 33); the close-vote
     gate that helps raw good does not carry over to a critic's good (bandit 0.84, chain
     0.79); an actor trace shorter than 4 steps costs] Finding 17 holds only when the world's own verdict is the
     teacher. A critic made of spiking cells needs an opponent half so common swings cancel.
+    It does not combine (item A): with the critic on, the world's verdict reaches no
+    other rule, and its surprise is noise where nothing is at stake. A critic that could
+    join the rest would have to stay quiet unless its level moved more than its usual
+    noise. The critic is parked (the owner, 2026-11-25).
 32. **Wiring by co-activity is the inner rule that pays beside an error-rule output.**
     [likely: third result for principle 3] In the minimal engine it adds 0.05 to 0.25 on
     every row that learns and loses none; the noise-graded reward rule and inner counters

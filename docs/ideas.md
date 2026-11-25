@@ -809,4 +809,15 @@ co-activity runs ties the held units together and loses their order.
      cheap change gives a repeatable code without killing the time rows (which need
      state), every rule that counts spikes gains. With it: the two cheap levers idea
      165 left, a lower per-cell target rate and wider cells, tried with the transplant.
-     *queued*
+     *building*
+169. **Hold cells fed by inner neurons.** Hold cells today copy sensor cells only, which
+     is why they lift reach and delayed echo and nothing that needs a computed thing
+     held (from the one-setting job). Let a share of them hold a hidden cell's state
+     instead. *queued*
+170. **Winners per tile set from the rate target.** Two winners per tile caps firing at
+     the target and may be why 12 in 100 neurons end silent in the one setting; let the
+     count follow the sector's rate error instead of being fixed. First diagnose the
+     silent cells (`out/from-agents/oneset/health.sh`). *queued*
+171. **A critic that speaks only when something is at stake.** The critic teaches every
+     press by a surprise that is noise on cue and blank steps; teach only when its level
+     moved by more than its own usual swing. Parked with the critic. *parked*
