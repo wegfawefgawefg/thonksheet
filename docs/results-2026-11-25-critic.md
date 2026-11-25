@@ -243,6 +243,20 @@ that earned it. The critic is the standard answer. From the report table and the
 | pendulum, upright only | 0.08 | 0.01 | barely (twin 0.06, t 2.5) | the critic sees it (8% of steps good) and its level moves earlier (10-20 spikes far off, 55-64 two steps before; rank -0.38, -0.45), and the surprise is good on the way in (+0.13 to +0.19 three to eight steps before). The chain breaks at the actor: even told the right press every step it gets 0.08-0.14 (the readout 0.16-0.19, scripted 0.86) |
 | chain, no stage cue | 0.09 | 0.00 | no | not a credit problem: the stage is not on any line and nothing holds the last press, so the same input asks for A and for B. It settles on one button (stage 2 is reached 2-8% of steps) |
 
+## How the setting was chosen
+
+The first agent's tuning (seeds 1-4, 40,000 steps, its own plug: catch 6x6, the bandit
+before the merge) chose the form of the rule:
+
+- The error rule driven by the surprise with nothing on good (as the readout does on raw
+  reward) stalls: bandit 0.61, chain 0.49. With the good half on (`readout_good 1`) both
+  reach 1.00 and 0.97. The plain reinforce form (pressed button only, both ways) ties on
+  the bandit and chain and is far worse on cartpole lean (26 against 89).
+- A random press 1 step in 16 lowers the bandit (0.97) and the chain (0.88). Off.
+- A one-group critic (no opponent half) breaks the chain on 2 of 4 seeds. The opponent
+  half stays on.
+- Critic reward 32 spikes instead of 16: lean 70 against 89; margin 0: 73; margin 12: 92.
+
 ## Making it better (seeds 1-4, 40,000 steps, the ladder's worlds)
 
 Each change against the first agent's setting (`readout_shift 4`), kept only if it helps
