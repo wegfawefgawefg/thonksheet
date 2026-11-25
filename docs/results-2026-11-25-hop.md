@@ -220,6 +220,21 @@ the last row is marks from near-but-not-fired cells only (`scripts/hop.sh calc c
   case's nearest seen case has the opposite answer, so a reader that learned more of the
   seen cases gets these more wrong. Nothing about parity 4 is generalised, as on the toy.
 
+**Together with competitive learning on calc** (`scripts/hop.sh calc calc-comp --seeds 5,6
+--life 400000 --settings born,off,m2,m2coin --g.compete_on 1 --g.tile_winners 4
+--g.compete_shift 5`; "off" is competitive learning alone in the taught life). Held-out
+bits, mean of seeds 5 and 6:
+
+| | born (tile winners) | competitive alone | both | both, coin | the one-hop rule alone (above) |
+|---|---|---|---|---|---|
+| xor4 | 0.666 | 0.768 | 0.778 | 0.795 | 0.871 |
+| add4 | 0.565 | 0.628 | 0.660 | 0.646 | 0.660 |
+
+With competition in the tile on, the error rule adds nothing on xor4 (both 0.778, its coin
+0.795) and the pair is worse than the error rule alone (0.871). A guess, not tested: the
+two rules move the same counters, and the reward-free one moves them on every winning
+spike while the error rule moves them only at verdicts, so competition sets the wiring.
+
 ## Step 3: MNIST (`scripts/inside.sh NAME --teach 1|2 ...`)
 
 All numbers: test set, fresh linear reader of the non-sensor cells fit on 60,000 training
