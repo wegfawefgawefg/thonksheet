@@ -42,6 +42,33 @@ Reasons for the low numbers: one bit of error, only on bad steps (about a third 
 the readout is at 0.7), sparse random wires, a counter step with chance 1/8, a fixed budget;
 float DFA needs a full error vector on every example and many epochs to reach 0.98.
 
+## Short version
+
+- **Built:** the output's error, as -1/0/+1 per button line, sent one hop to every hidden
+  excitatory cell through fixed random signed wires (a hash, no memory); each cell's
+  teaching bit moves the hidden counters of the sources that were on while it was near its
+  bar, under its born budget. Nothing goes backwards, nothing is stored per connection
+  (one "near" word per tile per tick), a cell re-picks its wiring only when a counter
+  crosses a wired one. `src/blob/learn_hop.cpp`, all off by default.
+- **Toys: yes, strongly.** A fresh output on the lived sheet: xor 0.855 to 0.998, parity of
+  3 0.552 to 0.816 (0.897 when only cells that came near and did not fire are marked),
+  seeds 5-12, every seed far above the same rule with its errors on random lines (0.930,
+  0.587). The live readout in that life learns them too (xor 0.997, parity 3 0.80; off 0.88,
+  0.54). Parity of 4: no.
+- **Calc held-out cases: yes.** xor4 0.63 to 0.87 (coin 0.67), add4 0.57 to 0.66 (coin
+  0.55), seeds 5 and 6: products of lines that sit apart, which the born sheet lacks.
+- **MNIST: no, beyond what churn gives.** Told the answer: lived 0.9355 against born 0.9251
+  and shuffled digits 0.9244, but the coin control gets 0.9346 (+0.0009); told good or bad:
+  0.9341 against coin 0.9311 (+0.0030); seeds 5-12. With the rate held at target the margin
+  over the coin is +0.0033 (lived 0.9349, coin 0.9316, born 0.9214, all read at 31). With competitive learning on: 0.9530 against
+  0.9523 for competitive learning alone. The online readout: not helped. Competitive
+  learning (0.952) and the two-layer net (0.955) are not reached.
+- **Cost:** 7% on the tick (the near maps), 2 to 5% on a taught MNIST life.
+- **Why the toys and not MNIST** (a reading, not tested): a toy answer is a conjunction of a
+  few nearby lines, which one cell with 34 inputs can become; a digit class is a sum over
+  hundreds of pixels, of which a cell hears about 6. And MNIST's 20,000 verdicts churn the
+  counters unless the rule is slowed 16 times.
+
 ## What was built
 
 **The rule** (`src/blob/learn_hop.cpp`, 300 lines; genome numbers, all off by default):
@@ -311,13 +338,29 @@ two-layer net 0.955; competitive learning (compete doc, seeds 5-12) 0.952.
   shuffled life has no co-active pixels to drift toward and stays at born.
 - **What the errors add on MNIST is a few thousandths**: +0.001 told the answer, +0.003
   told good or bad (7 of 8 seeds).
-- With the rate held at target (below) the errors' share is larger.
+- With the rate held at target (below) the errors' share is the same size: +0.003.
 
 **The rate held at target** (`--g.threshold_cap 1000`, as the compete doc's D and E). Seeds
 1 and 2 (`scripts/inside.sh hop2s7cap --teach 2 --g.hop_on 1 --g.hop_shift 7
 --g.threshold_cap 1000 --only mnist --kinds lived,coin`, run on stevejobs): lived 0.9358 and
 0.9374, coin 0.9280 and 0.9339, both reading at 31 spikes per 1,000 cell-ticks (born
-sheets at this cap read 0.9201, compete doc). REPORT_CAP
+sheets at this cap read 0.9201, compete doc).
+
+Seeds 5-12 (`scripts/inside.sh hop2s7cap-report --teach 2 --g.hop_on 1 --g.hop_shift 7
+--g.threshold_cap 1000 --only mnist --seeds 5-12`), every sheet read at 31.1 to 31.3:
+
+| seed | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | mean |
+|---|---|---|---|---|---|---|---|---|---|
+| born (cap 1000) | 0.9239 | 0.9238 | 0.9191 | 0.9217 | 0.9222 | 0.9181 | 0.9222 | 0.9206 | 0.9214 |
+| **lived** | 0.9329 | 0.9342 | 0.9366 | 0.9350 | 0.9367 | 0.9361 | 0.9350 | 0.9325 | **0.9349** |
+| coin | 0.9335 | 0.9306 | 0.9313 | 0.9333 | 0.9305 | 0.9291 | 0.9321 | 0.9325 | 0.9316 |
+| shuffled digits | 0.9234 | 0.9218 | 0.9214 | 0.9207 | 0.9219 | 0.9224 | 0.9181 | 0.9202 | 0.9212 |
+
+Lived minus born +0.0134, minus shuffled +0.0136 (every seed), minus coin +0.0033 (6 of 8
+above, one tie). Told good or bad at the cap, seeds 1 and 2 (`hop1s7cap`, stevejobs): lived
+0.9359 and 0.9337, coin 0.9296 and 0.9314 (+0.0043). So at matched rate the errors are worth
+about 0.003 to 0.004 on MNIST, in both modes; the rest of the lift over born is the churn
+that the coin also gives.
 
 **Fewer wires a cell** (each error line reaches a cell with chance 1/8, so most cells hear
 one line or none and their target is one class against the rest; `scripts/inside.sh
