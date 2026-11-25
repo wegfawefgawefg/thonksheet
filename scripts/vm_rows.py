@@ -34,7 +34,20 @@ ROWS = {
     "order": ["--task", "order"],
     "gap": ["--task", "gap"],
     "both": ["--task", "both-not-either"],
-    "two-step": ["--task", "two-step"],
+    "chain": ["--task", "chain"],
+    "chain-nocue": ["--task", "chain", "--chain-cue", "0"],
+    "copy-easy": ["--task", "copy", "--k", "2", "--length", "2"],
+    "copy-hard": ["--task", "copy", "--k", "4", "--length", "6"],
+    "recall-easy": ["--task", "recall", "--k", "2", "--fill", "1"],
+    "recall-hard": ["--task", "recall", "--k", "4", "--fill", "4"],
+    "nback1": ["--task", "n-back", "--k", "4", "--back", "1"],
+    "nback2": ["--task", "n-back", "--k", "4", "--back", "2"],
+    "grammar": ["--task", "grammar", "--length", "8"],
+    "brackets": ["--task", "brackets", "--length", "8"],
+    "parity3": ["--task", "points", "--fn", "parity", "--fn-lines", "3"],
+    "parity4": ["--task", "points", "--fn", "parity", "--fn-lines", "4"],
+    # the cue shown with a mark line; distractors flash the cue lines themselves
+    "hold-mark": ["--long", "--task", "hold", "--hold-steps", "10", "--hold-noise", "2"],
     "beat": ["--task", "beat", "--period", "4"],
     "dist1": ["--task", "distract", "--distract", "1"],
     "dist2": ["--task", "distract", "--distract", "2"],
@@ -44,10 +57,15 @@ ROWS = {
     "majority": ["--task", "majority"],
     "place": ["--task", "place"],
 }
+# the score read from a row's -sum.csv: "late" unless named here (--long writes its own)
+KEY = {"hold-mark": "hold_after"}
 GROUPS = {
     "hold": ["delay0", "delay1", "delay2", "delay5", "delay20", "delay2k8"],
     "cues": ["echo2", "echo8", "echo16", "echo32", "shuffled"],
-    "steps": ["order", "gap", "both", "two-step"],
+    "steps": ["order", "gap", "both", "chain", "chain-nocue"],
+    # main's map worlds that need several things held in order (docs/curriculum.md)
+    "map": ["copy-easy", "copy-hard", "recall-easy", "recall-hard", "nback1", "nback2",
+            "grammar", "brackets", "parity3", "parity4", "hold-mark", "chain", "chain-nocue"],
     "time": ["beat"],
     # what a lookup of the recent past cannot do: distractors in the gap, a computed held
     # value, cases never rewarded
@@ -112,9 +130,10 @@ def main():
         v, o, c = [], [], []
         for s in seeds:
             d = read_sum(os.path.join(outdir, "%s-s%d-sum.csv" % (r, s)))
-            v.append(d.get("blob", {}).get("late", float("nan")))
-            o.append(d.get("learn_off", {}).get("late", float("nan")))
-            c.append(d.get("coin", {}).get("late", float("nan")))
+            key = KEY.get(r, "late")
+            v.append(d.get("blob", {}).get(key, float("nan")))
+            o.append(d.get("learn_off", {}).get(key, float("nan")))
+            c.append(d.get("coin", {}).get(key, float("nan")))
         sd = statistics.stdev(v) if len(v) > 1 else 0.0
         print("%-10s %7.3f %6.3f %7.3f %7.3f   %s" % (
             r, statistics.mean(v), sd, statistics.mean(o), statistics.mean(c),

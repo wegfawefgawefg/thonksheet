@@ -13,7 +13,9 @@
 #   scripts/vm.sh suite                             the whole bench suite (scripts/suite.sh vm)
 #
 # Groups for rows: hold (delayed echo, gaps 0 1 2 5 20, and 8 cues at gap 2), cues (echo with
-# 2 8 16 32 cues, shuffled), steps (order, gap, both-not-either, two-step), time (beat),
+# 2 8 16 32 cues, shuffled), steps (order, gap, both-not-either, chain with and without its
+# cue), map (copy, recall, n-back, grammar, brackets, parity of 3 and 4, hold with marks),
+# time (beat),
 # beyond (distract 1 2 4 8, serial-add, majority, place: what a lookup cannot do).
 # Another engine on the same rows: add --engine memory or --engine gru at the end.
 set -euo pipefail
@@ -41,7 +43,7 @@ suite)
     exec scripts/suite.sh vm --engine vm "$@"
     ;;
 *)
-    sed -n '2,18p' "$0"
+    sed -n '2,20p' "$0"
     exit 1
     ;;
 esac
