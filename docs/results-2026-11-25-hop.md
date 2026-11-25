@@ -319,6 +319,12 @@ two-layer net 0.955; competitive learning (compete doc, seeds 5-12) 0.952.
 0.9374, coin 0.9280 and 0.9339, both reading at 31 spikes per 1,000 cell-ticks (born
 sheets at this cap read 0.9201, compete doc). REPORT_CAP
 
+**Fewer wires a cell** (each error line reaches a cell with chance 1/8, so most cells hear
+one line or none and their target is one class against the rest; `scripts/inside.sh
+hop2s7w3 --teach 2 --g.hop_on 1 --g.hop_shift 7 --g.hop_wire_shift 3 --only mnist --kinds
+lived,coin`, seeds 1, 2, stevejobs): lived 0.9341 and 0.9348, coin 0.9304 and 0.9326 (+0.003),
+read rate 36.5 and 37.1. No better than half the lines.
+
 **Together with competitive learning** (both on in the one taught life;
 `scripts/inside.sh hopcomp5 --teach 2 --g.hop_on 1 --g.hop_shift 5 --g.compete_on 1
 --g.tile_winners 4 --g.compete_shift 5 --only mnist`, and `hopcomp5-report ... --seeds 5-12
@@ -381,3 +387,169 @@ re-pick at every verdict (370 per verdict at 4 microseconds each, about 75 micro
 tick, several times the tick itself). Memory: the tag store (704 bytes a neuron, shared
 with competitive learning and tags), 9 bytes a neuron of bounds, and 16 x 65 words of near
 maps.
+
+## Reading
+
+- **One hop of error, in bits, is enough to teach the inside a product.** On the toys and
+  the calculation battery, where the answer is an exclusive-or or parity of a few lines,
+  every hidden cell hearing the error through a fixed random wire, with no chain backwards
+  and nothing stored per connection, makes the sheet carry what it did not: xor 0.86 to
+  0.998, parity of 3 0.55 to 0.82 (0.90 with near-not-fired marks), xor4 held-out cases
+  0.63 to 0.87, add4 0.57 to 0.66, each far above the same rule fed random lines. That is
+  the owner's "truncated" backprop, truncated to one hop, and on these worlds it is enough.
+  It ties tags on the one test both have run (xor fresh output 0.998 / 0.96 first quarter
+  for both), and unlike tags it reaches cells with no spike path into the button.
+- **It does not lift MNIST beyond what churn gives.** Lived beats born by 0.009 to 0.010 and
+  the shuffled-digit life by 0.011 on every seed, but the coin control, with the errors on
+  random lines, gets nearly as much (+0.001 told the answer, +0.003 told good or bad). With
+  competitive learning on, it adds nothing. The online readout is not helped.
+- **What differs between the toys and MNIST.** Three things, in the order I would bet on:
+  1. *What one cell can compute.* A toy answer is a conjunction of 2 to 3 lines that sit in
+     one tile's reach; a hidden cell with 34 inputs can become that detector, and a linear
+     reader of a few such cells has the answer. A digit class is a weighted sum of hundreds
+     of pixels; a cell has about 6 pixel inputs (of 34), local, at one strength. Its
+     teaching target on MNIST is a random split of the ten classes (or with fewer wires,
+     one class against the rest), which one such cell can only approximate weakly, and a
+     linear reader of the pixels already gets 0.92. The error says "be a 3-detector"; the
+     cell cannot be one.
+  2. *How much the counters move.* A toy life has 500 to 4,000 verdicts; an MNIST life
+     20,000, each teaching a third of the cells. At the toys' rate the counters churn
+     (90% of born inputs replaced) and the errors lose to their own coin by 0.01; slowed
+     16 times they barely win. On the toys, slowing costs a third of the parity 3 gain.
+  3. *What the errors are about.* On MNIST the readout is right two times in three, so the
+     errors are mostly about its own confusions (and its dead buttons), not about digits.
+- **Near threshold matters, a little.** Marking only cells that came within a quarter of
+  their bar and did not fire is the best form on parity 3 (0.90 against 0.82 with the fired
+  cells in, 0.85 with fired cells only) and on xor4 held-out (0.90 against 0.87). The
+  Hebbian-with-a-sign form (fired cells only) works too: on these toys the sign of the
+  error, not the band, is most of it.
+- **Good should not teach.** Every form of "on good, the pressed line should have been
+  higher" made things worse, on toys and MNIST: finding 39 for the inside.
+- **It is cheap.** 7% on the tick for the near maps, 2 to 5% on a taught MNIST life, rare
+  re-picks because each cell keeps bounds on its counters. Competitive learning's 1.9 times
+  came from re-picking on every update; here a re-pick happens for one taught cell in 30
+  (shift 7) to 6 (shift 3).
+
+## Predictions, scored
+
+| prediction | p | outcome |
+|---|---|---|
+| MNIST, told the answer, lived beats born by 0.005 or more | 0.55 | right (+0.0104) |
+| best guess +0.010 (range -0.005 to +0.025) | | +0.0104, inside |
+| told the answer beats its coin by 0.005 or more | 0.45 | wrong (+0.0009) |
+| told the answer reaches 0.952 / 0.955 | 0.10 / 0.05 | no (0.9355) |
+| MNIST, told good or bad, lived beats born by 0.005 or more | 0.35 | right (+0.0090) |
+| best guess +0.004 (range -0.010 to +0.015) | | +0.0090, inside |
+| told good or bad beats its coin by 0.005 or more | 0.30 | wrong (+0.0030) |
+| told good or bad reaches 0.952 / 0.955 | 0.05 / 0.03 | no (0.9341) |
+| with competitive learning, beats it alone by 0.003 or more | 0.30 | wrong (+0.0003 on seeds 1, 2; +0.0007 against the compete doc's 8 seeds) |
+| xor lifted by 0.05 or more (told the answer) | 0.6 | right (+0.14) |
+| parity of 3 lifted by 0.05 or more | 0.35 | right (+0.26) |
+| parity of 4 lifted by 0.05 or more | 0.2 | right that it would not (+0.02) |
+| calc held-out rises 0.03 or more over born | 0.5 | right (xor4 +0.24, add4 +0.10) |
+| ... and over the coin by 0.03 | 0.3 | right (xor4 +0.20, add4 +0.11) |
+| online readout 0.02 or more above off at some checkpoint | 0.25 | wrong (never above by 0.02) |
+| the rule adds under 20% to a taught life's cost | 0.7 | right (2 to 5% on MNIST; 14% on a parity 3 life at the fast setting) |
+
+I underrated the toys and the held-out calc columns badly and overrated the errors on
+MNIST.
+
+## Script lines
+
+```
+scripts/hop.sh toy toys                                         toys, seeds 5-8 (add --seeds 9-12)
+scripts/hop.sh toy toys --settings born,off,m2,m1,m2coin,m1coin --tasks xor,parity3 --seeds 9-12
+scripts/hop.sh toy toys-nofired --settings m2 --tasks xor,parity3 --seeds 5-12 --g.hop_fired 0
+scripts/hop.sh toy toys-near0 --settings m2 --tasks xor,parity3 --g.hop_near 0
+scripts/hop.sh toy toys-s7 --settings m2,m2coin,m1 --tasks xor,parity3 --g.hop_shift 7
+scripts/hop.sh toy toys-long --settings off,m2,m2coin --tasks parity4 --seeds 5,6 --steps 160000 --window 4000
+scripts/hop.sh calc calc --seeds 5,6 --life 400000
+scripts/hop.sh calc calc-nf --seeds 5,6 --life 400000 --settings m2,m2coin --g.hop_fired 0
+scripts/hop.sh calc calc-comp --seeds 5,6 --life 400000 --settings born,off,m2,m2coin --g.compete_on 1 --g.tile_winners 4 --g.compete_shift 5
+scripts/inside.sh teachoff --teach 2 --only mnist --kinds lived           the off check
+scripts/inside.sh hop2 --teach 2 --g.hop_on 1 --only mnist                tuning, seeds 1, 2
+scripts/inside.sh hop2s7 --teach 2 --g.hop_on 1 --g.hop_shift 7 --only mnist --kinds lived,coin
+scripts/inside.sh hop2s7-report --teach 2 --g.hop_on 1 --g.hop_shift 7 --only mnist --seeds 5-12
+scripts/inside.sh hop1s7-report --teach 1 --g.hop_on 1 --g.hop_shift 7 --only mnist --seeds 5-12
+scripts/inside.sh hop2s7cap-report --teach 2 --g.hop_on 1 --g.hop_shift 7 --g.threshold_cap 1000 --only mnist --seeds 5-12
+scripts/inside.sh hopcomp5-report --teach 2 --g.hop_on 1 --g.hop_shift 5 --g.compete_on 1 --g.tile_winners 4 --g.compete_shift 5 --only mnist --seeds 5-12 --kinds lived,coin
+scripts/inside.sh comp5teach --teach 2 --g.compete_on 1 --g.tile_winners 4 --g.compete_shift 5 --only mnist --kinds lived
+scripts/mnist.sh online --seed 5 --checks 1000,5000,20000,60000,120000 --g.hop_on 1 --g.hop_teach 2 --g.hop_shift 7
+scripts/bench.sh --g.learn_mode 5 --g.hop_on 1
+```
+
+A toy line is 30 to 60 seconds a run (3 at a time); an MNIST `inside.sh` run 4 to 5 minutes
+here (a taught life is 6,000 ticks a second, the readout's re-picks), 10 to 15 on stevejobs.
+
+## Rough, and what is unfinished
+
+- MNIST settings were picked on seeds 1 and 2 of the test set (no validation pass), then
+  reported on 5-12, as the compete job did.
+- The coin control sends errors to random lines; the readout in that life still learns the
+  real labels (and is reset before the read). Labels replaced at the world would give the
+  readout nothing to learn and the rule three times the verdicts in mode 1, which is why it
+  was not done that way.
+- Calc and the toys: 2 and 4 to 8 seeds, untuned defaults, no shuffled-input control (the
+  coin is there).
+- Born reads in the tuning runs (seeds 1, 2) were made with the rule's salt drawn from the
+  blob's random stream on the first tick, which moves the born number by noise (0.9255
+  against 0.9245 for the off life); the 8-seed reports use the later binary, where a frozen
+  sheet never touches the rule. Lived runs are byte-identical between the two (checked).
+- The hop rule and the inner rule of idea 155 (main, merged here) both use the tag store;
+  they were not run together.
+- Not tried: a second hop; per-tick marks with a fade longer than the step (the ring holds
+  16 ticks); errors on every step from a graded vote instead of only on bad; letting the
+  rule move inhibitory cells; the rule in the time suite.
+- Parity of 4 is not learned by anything here.
+
+## What should change elsewhere (for the coordinator; not edited here)
+
+- `docs/findings.md`, "Where it stands": **the error sent one hop to every hidden cell
+  teaches the inside a product** (idea 159). Direct feedback alignment in bits: hashed
+  random signed wires from the output's error lines, marks read off a ring of "near the bar"
+  maps, hidden counters under the born budget. A fresh output on the lived sheet: xor 0.998
+  (born 0.855, coin control 0.930), parity of 3 0.816 (0.552, coin 0.587; 0.897 with
+  near-not-fired marks), seeds 5-12; calc held-out xor4 0.63 to 0.87, add4 0.57 to 0.66
+  (coin 0.67, 0.55; seeds 5, 6). Parity of 4: no. On MNIST it lifts the lived inside 0.925
+  to 0.936 (seeds 5-12) but the coin control gets 0.935: the errors add 0.001 (told the
+  answer) to 0.003 (told good or bad); with competitive learning on it adds nothing; the
+  online readout is not helped. [likely on toys and calc, two worlds; MNIST 8 seeds]
+- Finding 29 ("credit one step back reaches the inside; further back does not") gains a
+  third rule and a sharper reading: credit need not follow the wiring back at all; a fixed
+  random hop from the error to every cell works where the answer is a product of a few
+  nearby lines. Tags, reverse replay and this one all pass the toy fresh-output test.
+- Finding 39 (do not strengthen on good unconditionally) holds for the inside too: "on good
+  the pressed line should have been higher" costs toys (xor 0.98 to 0.92) and MNIST (0.922
+  to 0.916).
+- Finding 44 gains a third control kind: **the coin control** (the same errors on random
+  lines). On MNIST it explains nearly all of a supervised inner rule's gain; any
+  error-driven inside rule should be run against it.
+- New principle candidate: **an error-driven inner rule must move slowly when verdicts are
+  many.** At a step chance of 1/8 the MNIST life's 20,000 verdicts churned 90% of the born
+  inputs and the lived sheet fell under born and 0.01 under its coin; at 1/128 it is above
+  both. [hint: one rule, one world]
+- New principle candidate: **"near threshold and not fired" is the useful mark** for the
+  error-driven rule on the toys (parity 3 0.90 against 0.82 with fired cells in). The bit
+  form of the pseudo-derivative is one word per tile per tick. [hint]
+- `docs/plan.md`: item 2b done (this doc). Follow-ups worth a slot: (a) why one cell
+  cannot carry a class: the error rule with wider cells (more pixel inputs, far slots aimed
+  at the image), or a layer of cells that hear the hop cells; (b) the hop rule with the
+  inner rule of idea 155 (both use the tag store); (c) the rule as the teacher of the
+  readout's own cells' sources, since the live readout on the toys learns from it (xor
+  0.997, parity 3 0.80, against 0.88 and 0.54 off).
+- `docs/predictions.md`: the predictions above and their scores.
+- `docs/design.md` and `genome.hpp` (core owner; edited here because the rule needed
+  them): `hop_on`, `hop_teach`, `hop_good`, `hop_wire_shift`, `hop_near`, `hop_fired`,
+  `hop_window`, `hop_shift`, `hop_coin`; `learn_hop.cpp`, `motor_reborn.cpp`; one line in
+  `tag_store.cpp` (`hop_stale`), two hooks in `tick.cpp`, `Blob::hop`,
+  `blob_hop_lines`, `blob_hop_counts`, `blob_motor_reborn` in `blob.hpp`. Default all
+  off; the four reference lives are byte-identical. A sensible default if it is kept:
+  `--g.hop_fired 0`, and `hop_shift` 3 on small worlds, 7 when verdicts are many.
+- `docs/notes-world.md`: `plug_hop_lines` (world tells the lines pressed and right, also
+  for pattern answers), `blobmnist ceiling --life-teach 1|2`, `blobprobe calc --life-teach
+  1|2`, `scripts/inside.sh --teach`, `scripts/hop.sh`.
+- The other agent's `--live` / `--live-coin` (idea 155) and this `--life-teach` are both in
+  `mnist_ceiling.cpp` now; they do similar things (a rewarded life, then motor cells back
+  to born). One of them could go: `--live N --live-coin 1` puts good and bad by a coin at
+  the readout; `--life-teach` with `--g.hop_coin 1` keeps the readout's verdicts and moves
+  only the hop errors. They answer different questions; both are kept.
