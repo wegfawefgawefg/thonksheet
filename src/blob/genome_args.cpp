@@ -115,6 +115,16 @@ static const GenomeField fields[] = {
     {"wire_far_jitter", &Genome::wire_far_jitter},
     {"wire_inhib_reach", &Genome::wire_inhib_reach},
     {"wire_two_sheets", &Genome::wire_two_sheets},
+    {"replay_depth", &Genome::replay_depth},
+    {"replay_shift", &Genome::replay_shift},
+    {"replay_thin", &Genome::replay_thin},
+    {"replay_new", &Genome::replay_new},
+    {"replay_quiet", &Genome::replay_quiet},
+    {"replay_until", &Genome::replay_until},
+    {"replay_reset", &Genome::replay_reset},
+    {"replay_shuffle", &Genome::replay_shuffle},
+    {"replay_strong_budget", &Genome::replay_strong_budget},
+    {"rule_on", &Genome::rule_on},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

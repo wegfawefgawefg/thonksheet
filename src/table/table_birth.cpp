@@ -189,6 +189,7 @@ Blob* table_birth(const Genome& genome, const TableGenome& tg_in, uint64_t seed)
     b.sense_in = (uint64_t*)zeroed(map_bytes);
     b.sense_attached = (uint64_t*)zeroed(map_bytes);
     b.predicted = (uint64_t*)zeroed(map_bytes);
+    b.urge = (uint64_t*)zeroed(map_bytes);
     mark_lattice(b, b.sensor, genome.sensor_x, genome.sensor_y, genome.sensor_w, genome.sensor_h,
                  genome.sensor_stride);
     mark_lattice(b, b.motor, genome.motor_x, genome.motor_y, genome.motor_w, genome.motor_h,
@@ -253,6 +254,7 @@ void table_free(Blob* blob) {
     std::free(b.sense_in);
     std::free(b.sense_attached);
     std::free(b.predicted);
+    std::free(b.urge);
     std::free(tb.input);
     std::free(tb.table);
     std::free(tb.address);

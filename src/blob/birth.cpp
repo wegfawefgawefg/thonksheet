@@ -278,6 +278,7 @@ Blob* blob_birth(const Genome& genome, uint64_t seed) {
     blob->sense_in = (uint64_t*)alloc_lines(map_bytes);
     blob->sense_attached = (uint64_t*)alloc_lines(map_bytes);
     blob->predicted = (uint64_t*)alloc_lines(map_bytes);
+    blob->urge = (uint64_t*)alloc_lines(map_bytes);
     blob->local_tile = (uint32_t*)alloc_lines(sizeof(uint32_t) * blob->tile_count * LOCAL_SLOTS);
     blob->far_tile = (uint32_t*)alloc_lines(sizeof(uint32_t) * n * FAR_SLOTS);
     blob->slot_delay = (uint8_t*)alloc_lines(n * SLOTS);
@@ -318,10 +319,13 @@ void blob_free(Blob* blob) {
         blob->noise_ring,  blob->noise_trace,     blob->active_trace,
         blob->motor_attached, blob->motor_acted, blob->readout_last,
         blob->readout_row,    blob->readout_evidence, blob->readout_keep,
+        blob->rule_words,
+        blob->noise_ring,  blob->noise_trace,     blob->active_trace,    blob->urge,
     };
     for (void* p : arrays) {
         std::free(p);
     }
+    std::free(blob->replay); // one block (blob/replay.hpp)
     delete blob;
 }
 

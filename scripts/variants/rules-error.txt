@@ -1,0 +1,4 @@
+# idea 120: the error rule of learn_readout.cpp (evidence counters, balance) against the same
+# rule written as a table (rules/error.rule), button cells only. run with --motor-spread 128
+error rule (hand): --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1
+error rule (table): --g.rule_on 3 --rule-file rules/error.rule

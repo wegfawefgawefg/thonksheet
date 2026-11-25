@@ -36,6 +36,8 @@ struct FlipTrial {
     uint32_t kept = 0, undone = 0;
 };
 
+struct ReplayState; // idea 62, blob/replay.hpp
+
 struct Blob {
     Genome genome;
     int tiles_w = 0, tiles_h = 0;
@@ -127,6 +129,25 @@ struct Blob {
     int32_t* readout_row = nullptr;
     int8_t* readout_evidence = nullptr;
     uint16_t* readout_keep = nullptr;
+    // reverse replay (idea 62): one block, made on first use, freed with the blob
+    // (blob/replay.hpp)
+    ReplayState* replay = nullptr;
+
+    // damage and being shown the answer (docs/task-map.md, tiers 8 and 9), written by the
+    // world like sense_in; null (the default) is off. a set bit in silenced keeps that
+    // neuron from firing, a set bit in forced makes it fire; sensor cells ignore both.
+    // tile_count + 1 words each. every engine's fire step reads them.
+    uint64_t* silenced = nullptr;
+    uint64_t* forced = nullptr;
+
+    // idea 120, the rule table (learn_rule.cpp): the sign of the last reward, and a scratch
+    // map (tile_count + 1 words) made on first use
+    int rule_last_valence = 0;
+    uint64_t* rule_words = nullptr;
+    // written by the world before each tick (idea 60): cells it urges to fire this tick, on
+    // top of what their inputs say. one word per tile (tile_count + 1), zero when unused;
+    // every engine allocates it. a stand-in may leave it null.
+    uint64_t* urge = nullptr;
 };
 
 // birth and death

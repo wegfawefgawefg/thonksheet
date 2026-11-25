@@ -1,0 +1,123 @@
+# The full engine's search space (src/blob/genome.hpp). Format: scripts/search/space.py.
+# Frozen-inside modes are left out ("Nothing frozen", docs/bench.md): learn_mode 1 and 5
+# (only the readout learns) and flip_scope 1 (flips only into motor cells).
+engine blob
+flags
+twin   --g.learning_on 0
+order  --g.threshold_min --g.threshold_max
+order  --g.leak_shift_min --g.leak_shift_max
+order  --g.cooldown_min --g.cooldown_max
+order  --g.pacemaker_period_min --g.pacemaker_period_max
+order  --g.local_delay_min --g.local_delay_max
+
+# the plug: one setting for every world (a world's own layout flags still win)
+--ticks              choice 12,16,20,24,28   20   plug always
+--sensor-side        choice 2,3              3    plug always
+--motor-side         choice 2,3,4            3    plug always
+--reward-ticks       int    1..4             2    plug
+--rest-ticks         choice 0,2,4,8          0    plug
+--motor-spread       choice 0,16,32,64,128   0    plug
+--motor-spread-even  switch 0..1             0    plug
+
+# the sheet and its regions: listed, not searched
+--g.tiles_w        fixed 8  8
+--g.tiles_h        fixed 8  8
+--g.sensor_x       fixed 0  0
+--g.sensor_y       fixed 0  0
+--g.sensor_w       fixed 32 32
+--g.sensor_h       fixed 32 32
+--g.sensor_stride  fixed 2  2
+--g.motor_x        fixed 0  0
+--g.motor_y        fixed 32 32
+--g.motor_w        fixed 32 32
+--g.motor_h        fixed 32 32
+--g.motor_stride   fixed 2  2
+
+# kinds and spreads
+--g.inhibitory_percent    int    0..50    25
+--g.threshold_min         int    1..10    4
+--g.threshold_max         int    4..24    12
+--g.leak_shift_min        int    1..4     1
+--g.leak_shift_max        int    1..8     4
+--g.cooldown_min          int    0..3     1
+--g.cooldown_max          int    0..8     4
+--g.pacemakers_per_1024   int    0..16    4
+--g.pacemaker_period_min  int    2..16    4
+--g.pacemaker_period_max  int    4..32    16
+# wiring at birth
+--g.local_connect_shift   shift  0..5     3
+--g.strong_shift          shift  0..4     2
+--g.far_percent           int    0..60    15
+--g.far_reach_tiles       int    1..6     3
+--g.far_delay_per_tile    int    0..3     1
+--g.far_connect_shift     shift  0..4     2
+--g.local_delay_min       int    1..8     1
+--g.local_delay_max       int    1..15    4
+--g.fan_in_max            int    32..160  96
+# integration
+--g.inhibit_gain          int    1..10    5
+--g.branch_threshold      int    1..8     3
+--g.branch_bonus          int    0..8     2
+--g.noise_shift           shift  6..14    10
+# regulation
+--g.sector_tiles          choice 1,2,4,8  2
+--g.sector_target_per_1024 int   8..128   32
+--g.sector_bias_max       int    0..32    16
+--g.threshold_up_shift    shift  1..8     4
+--g.threshold_down_shift  shift  5..13    9
+--g.threshold_cap         int    16..128  64
+--g.sector_smooth_shift   shift  1..8     4
+--g.sector_reg_on         switch 0..1     1
+--g.threshold_reg_on      switch 0..1     1
+--g.noise_on              switch 0..1     1
+--g.strong_log            int    1..3     2
+# learning
+--g.learning_on           fixed  1        1     learn
+--g.recent_ticks          int    1..8     6     learn
+--g.predict_shift         shift  0..8     3     learn
+--g.reward_shift          shift  0..8     4     learn
+--g.reward_ticks          int    1..12    4     learn
+--g.grow_shift            shift  2..10    5     learn
+--g.prune_shift           shift  2..10    6     learn
+--g.prune_bit_shift       shift  0..8     4     learn
+--g.far_redraw_shift      shift  8..20    14    learn
+--g.surprise_boost        int    0..3     1     learn
+--g.surprise_high_per_1024 int   16..256  80    learn
+--g.predict_on            switch 0..1     1     learn
+--g.good_on               switch 0..1     1     learn
+--g.bad_on                switch 0..1     1     learn
+--g.grow_on               switch 0..1     1     learn
+--g.prune_on              switch 0..1     1     learn
+--g.far_redraw_on         switch 0..1     1     learn
+# learning modes (0 the design; 2 flips; 3, 4 noise graded; 6 readout plus the design)
+--g.learn_mode            choice 0,2,3,4,6  0   learn
+--g.flip_count            int    1..16    4     learn  when=--g.learn_mode:2
+--g.flip_scope            fixed  0        0     learn
+--g.flip_window_ticks     choice 250,500,1000,2000,4000  1000  learn  when=--g.learn_mode:2
+--g.flip_average_shift    int    1..6     3     learn  when=--g.learn_mode:2
+--g.noise_learn_shift     shift  0..6     2     learn  when=--g.learn_mode:3,4
+--g.noise_trace_ticks     int    1..16    16    learn  when=--g.learn_mode:3,4
+--g.reward_average_shift  int    1..8     5     learn  when=--g.learn_mode:3,4
+--g.noise_learn_sign      choice -1,1     1     learn  when=--g.learn_mode:3,4
+--g.noise_learn_pair      switch 0..1     0     learn  when=--g.learn_mode:3,4
+--g.readout_shift         shift  1..10    6     learn  when=--g.learn_mode:6
+--g.readout_trace_ticks   int    1..15    15    learn  when=--g.learn_mode:6
+--g.readout_counts        switch 0..1     1     learn  when=--g.learn_mode:6
+--g.readout_know_button   switch 0..1     1     learn  when=--g.learn_mode:6
+--g.readout_good          switch 0..1     0     learn  when=--g.learn_mode:6
+--g.readout_new           switch 0..1     1     learn  when=--g.learn_mode:6
+--g.readout_budget        switch 0..1     0     learn  when=--g.learn_mode:6
+--g.readout_far           switch 0..1     0     learn  when=--g.learn_mode:6
+--g.readout_center        switch 0..1     0     learn  when=--g.learn_mode:6
+--g.readout_balance       switch 0..1     0     learn  when=--g.learn_mode:6
+--g.readout_evidence      switch 0..1     0     learn  when=--g.learn_mode:6
+--g.readout_evidence_bits int    2..8     6     learn  when=--g.learn_mode:6
+--g.readout_evidence_strong switch 0..1   1     learn  when=--g.learn_mode:6
+--g.lose_shift_steps      int    0..4     0     learn
+--g.win_stay_steps        int    0..4     0     learn
+--g.lose_shift_fires      int    1..3     1     learn
+--g.bad_cut_on            switch 0..1     0     learn
+
+# the learning rule as data (docs/results-2026-11-25-rule-tables.md): 1,024 4-bit entries,
+# one hex digit each, entry 0 first. Uncomment once blobrun takes --rule-file.
+# --rule-file             rule   1024     none  learn  seeds=rules/*.hex

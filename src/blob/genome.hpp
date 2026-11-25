@@ -158,6 +158,26 @@ struct Genome {
     // fed from the same place on the near half; the far half sends back to 1 in 8 of the near
     // half's far links
     int wire_two_sheets = 0;
+    // reverse replay (idea 62, learn_replay.cpp), on top of learn mode 5 or 6. on each error
+    // step the readout's sign walks back through the spike ring along edges that carried a
+    // spike, moving hidden evidence counters of inner neurons. 0 everywhere is off.
+    int replay_depth = 0; // steps back (layers of inner neurons taught), 0 off
+    int replay_shift = 4; // chance per active source per walked spike of a counter step
+    int replay_thin = 1;  // each step past the first keeps a walked spike with 2^-this
+    int replay_new = 1;   // 1: active sources not yet connected gain too (the walk can grow)
+    int replay_quiet = 0; // 1: cells that should have fired more walk from every tick of the
+                          // window, not only from their spikes
+    int replay_until = 0; // tick at which the walk stops for good (0: never)
+    int replay_reset = 0; // at replay_until: 1 the motor cells go back to born wiring and the
+                          // readout's counters are cleared; 2 the same, then all learning stops
+    int replay_shuffle = 0; // control: 1 gives each motor spike walked a random sign
+    int replay_strong_budget = 0; // 1: a walked neuron keeps its count of strong connections
+                                  // too, and none goes to 5 (replay_wire.cpp)
+    // idea 120: the learning rule as a table, loaded with --rule-file (learn_rule.hpp).
+    // 0 off. 1 the table is the only learning, on every neuron but sensor cells. 2 the learn
+    // mode runs as usual and the table too, on neurons that are not button cells (the inside).
+    // 3 the table is the only learning, on button cells only (the sheet frozen)
+    int rule_on = 0;
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

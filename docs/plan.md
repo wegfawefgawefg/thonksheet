@@ -3,7 +3,106 @@
 The work queue, in order. Status is updated as things land. Detail for the current effort is
 in its own dated doc.
 
-## Now: first blob (docs/effort-2026-11-24-first-blob.md)
+## Where we stand and the one question (2026-11-25, late)
+
+The owner: "are we shooting in the dark. are we actually making any progress? that shifted
+memory thing sounds more like a hack than a genuine general learning mechanic."
+
+Honest position. What works here so far is known science under new names: a fixed random
+sheet with a trained output is reservoir computing with a perceptron on top; the memory
+engine is a lookup table (tabular learning), and falls to 0.20 on MNIST. A plain GRU
+beats every sheet on every row. Nothing we have learns *inside*, and nothing generalises
+to cases it was not shown. What two days did buy is the ability to tell: a bench, a
+backprop reference, a lookup-table reference, real data, held-out cases, a search loop
+and a GPU path. Until today a result could not be told from an easy test.
+
+So the work narrows to one question, with one test:
+
+**Can local rules make the inside learn features?** The test: after a life, freeze the
+machine, give it a fresh output, and compare with a fresh output on (a) the machine as
+born and (b) a plain random projection of the input. If the lived machine reads better
+than both, on cases it was not shown, the inside learned something. On MNIST the numbers
+to beat are 0.924 (sheet as born) and 0.943 (random projection); on the batteries, the
+held-out columns.
+
+Order of work:
+1. Finish what is running; record it; cut what did nothing.
+2. Every new idea is scored by that test first. Mechanisms that only tune the fixed sheet
+   or the output wait.
+3. Start from rules already known to learn features without backprop and put them in
+   bits: feedback from the chosen action (running), competitive learning with local
+   inhibition, local "is this real" goodness per layer, prediction of the input, random
+   fixed feedback of the error. Then the stranger ones (credit by code, payment).
+4. The memory stays as a reference and as a possible organ, not as the answer.
+
+## The queue (2026-11-25)
+
+The owner: "how many bots do you have going can you cut to like 4. a big queue of tasks is
+better." So: four agents at a time, each a short scoped job from the top of this list;
+when one hands back, its result is merged and recorded and the next item starts. Items
+are ordered by the one question above. An item is struck when done, with where the result
+is.
+
+Running (four):
+- Inside learning: feedback tags from the chosen action, and the barely-correct margin
+  rule.
+- The vvm route (a state that is the address of its next operation).
+- The calculation battery, with answers that are patterns and held-out inputs.
+- The GPU: any world, the evidence counters, the memory engine, one call per table of
+  designs.
+
+Wound up and recorded (six merged, five being merged by an integration agent): the combined
+core, reverse replay, nudges and balance, more worlds, the invariance battery, the
+function battery, the dynamics family, the rest of the map, rule tables, long memory, the
+critic. The unattended search is stopped on this PC and still runs on stevejobs.
+
+Added after the wind-up, ahead of the rest (these are the first rules that move a wall,
+so they come first):
+- A. One setting with everything that worked: the readout, one step of reverse replay,
+  tiring neurons (or time and hold cells), winners in the tile, the critic. Does it hold
+  together on the whole map, and does the replay runaway stop under it? Scored with the
+  references beside it.
+- B. Reverse replay made safe: zero-sum steps per neuron or a threshold that rises with
+  gain; the unsigned half separated from the signed half; the inside-learning test on
+  MNIST (0.924 and 0.943 to beat) and on held-out rows.
+- C. The critic on report seeds and long lives, on the fixed cartpole, with the wide
+  critic.
+- D. Integration check: after the merges, re-run the suite for the readout, the GRU and
+  the memory engine, so the scoreboard is on the fixed cartpole and has the new rows.
+
+Queued, in order:
+1. The inside-learning test as one script: after a life, freeze, wipe the output, fit a
+   fresh output, and compare with the machine as born and a random projection, on MNIST
+   and on the held-out columns. Every item below is scored with it.
+2. Competitive learning with local inhibition, no reward: units that win on an input
+   move toward it (in bits: gain the input's bits, lose others, under a budget).
+3. A local "is this real" score per region: real input against shuffled or self-made
+   input, each region raising its activity for one and lowering it for the other.
+4. Predicting the input: every unit learns to predict a neighbour or the next tick from
+   the rest; what is mispredicted is what gets learned.
+5. Fixed random feedback of the output's error to the inside (the bits form of direct
+   feedback alignment), beside the tags result.
+6. Credit by code (idea 138).
+7. Units pay the units that set them up (idea 139).
+8. A memory that knows near from far (idea 152), scored on MNIST.
+9. The output: a weighted vote (147) and the drift on long lives (146).
+10. Finish the critic: cartpole with the reward lag fixed, against the memory engine's 109
+    and 279 steps per fall.
+11. The suite a lookup table cannot pass (149) and the held-out split (126): fold every
+    battery's never-shown rows into the scoreboard as their own columns.
+12. The seeing battery (136): shapes, tracking, counting, behind a cover.
+13. The behaviour battery (145).
+14. Two regions, one tuned to ring and one to mix (112), on delayed echo and hold.
+15. A bank of predictors at history lengths 2, 4, 8, ... (137).
+16. Copy, vary, keep a frozen copy; never erase (140, 141).
+17. Look one step ahead (144), on the acting worlds.
+18. Position tolerance learned from motion (idea 104) on the invariance battery.
+19. A red-team agent: beat the best design by any means that keeps the rules (127).
+20. Loop audit: cut mechanisms and suite rows that have earned nothing; one page.
+21. Long memory, whatever its wind-up leaves unfinished: the forgetting curve to a
+    million steps, the freezer.
+
+## Earlier: first blob (docs/effort-2026-11-24-first-blob.md)
 
 1. Core: birth, tick, regulation, learning, speed test. *done*
 2. Viewer: the sheet, raster, sector bars, histograms, neuron picker. *done, shown on a fake blob; not yet driving a task*

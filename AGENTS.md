@@ -47,6 +47,12 @@ The owner uses this PC while agents work.
 
 - Builds: `nice -n 19 cmake --build build -j4`. Runs: `nice -n 19`, one run at a time per
   agent, on at most 2 cores unless the job is a measured speed test.
+- The CPU stays at or under 90C (the owner, 2026-11-25). `scripts/coolcpu.sh` runs for the
+  whole session and pins every nice-19 job to fewer cores when the chip is hot, so jobs
+  on this PC share about half the cores and run slower than their flags suggest. Always
+  use `nice -n 19` (that is how it finds your jobs), never set CPU affinity yourself, and
+  treat any ticks-per-second number taken here as rough. Long or many-seed runs belong on
+  the second machine, which does not overheat.
 - Never open a window on the real display. The viewer is tested with
   `scripts/offscreen.sh` (private Xvfb) or its own headless capture mode. New or changed
   shaders go through lavapipe first (`LP_NUM_THREADS=2`), then the real GPU only briefly

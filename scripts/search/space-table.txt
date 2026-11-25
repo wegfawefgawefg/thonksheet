@@ -1,0 +1,47 @@
+# The table engine's search space (src/table/table.hpp). Format: scripts/search/space.py.
+engine table
+flags  --table
+twin   --t.learning_on 0
+order  --t.local_delay_min --t.local_delay_max
+
+# the plug: one setting for every world (a world's own layout flags still win)
+--ticks              choice 12,16,20,24,28   20   plug always
+--sensor-side        choice 2,3              3    plug always
+--motor-side         choice 2,3,4            3    plug always
+--reward-ticks       int    1..4             2    plug
+--rest-ticks         choice 0,2,4,8          0    plug
+--motor-spread       choice 0,16,32,64,128   0    plug
+--motor-spread-even  switch 0..1             0    plug
+
+--g.tiles_w             fixed  8   8
+--g.tiles_h             fixed  8   8
+
+# TableGenome
+--t.inputs              int    2..8     8
+--t.counter_bits        choice 1,2,4    4
+--t.reach               int    1..16    8
+--t.far_percent         int    0..40    5
+--t.far_reach_tiles     int    1..6     3
+--t.far_delay_per_tile  int    0..3     1
+--t.local_delay_min     int    1..8     1
+--t.local_delay_max     int    1..15    4
+--t.init_fire_shift     shift  0..6     3
+--t.noise_shift         shift  4..12    7
+--t.rate_mode           choice 0,1,2    1
+--t.sector_tiles        choice 1,2,4,8  2
+--t.target_per_1024     int    8..128   32  when=--t.rate_mode:1,2
+--t.bar_period_shift    shift  1..8     4  when=--t.rate_mode:1,2
+--t.rate_fire_shift     shift  3..11    7  when=--t.rate_mode:0,2
+--t.rate_quiet_shift    shift  8..16    12  when=--t.rate_mode:0,2
+--t.rate_rest_only      switch 0..1     0
+--t.learning_on         fixed  1        1    learn
+--t.learn_mode          choice 0,1,2,3  0    learn
+--t.grade               choice 0,1,2,3  2    learn  when=--t.learn_mode:0
+--t.baseline            switch 0..1     0    learn  when=--t.learn_mode:0
+--t.reward_shift        shift  0..8     4    learn
+--t.rise_extra_shift    shift  0..4     0    learn
+--t.bad_rise_shift      shift  0..6     2    learn
+--t.recent_ticks        int    1..16    16   learn
+--t.average_shift       int    1..8     4    learn
+--t.grow_shift          choice 0,4,6,8,10,12  0  learn
+--t.report              fixed  0        0

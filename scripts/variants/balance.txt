@@ -1,0 +1,6 @@
+# idea 61 on report seeds: drop the commoner of good and bad until they arrive equally
+# (running rates forget at 2^-6 per step), alone and with idea 60's fading babble.
+baseline: --signal-report 1
+balance: --balance 1
+fade: --babble 256 --babble-fade 1
+balance + fade: --balance 1 --babble 256 --babble-fade 1

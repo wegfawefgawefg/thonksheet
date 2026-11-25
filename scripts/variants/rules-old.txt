@@ -1,0 +1,4 @@
+# idea 120: the old good/bad rule alone (learn_signal.cpp learn_reward; prediction, growth,
+# pruning and far redraw off) against the same rule as a table (rules/old.rule)
+old rule (hand): --g.predict_on 0 --g.grow_on 0 --g.prune_on 0 --g.far_redraw_on 0
+old rule (table): --g.rule_on 1 --rule-file rules/old.rule

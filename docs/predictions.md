@@ -125,26 +125,32 @@ inner neurons measurably better for a task than unsupervised wiring already make
 
 21. **Nudging a whole button now and then breaks the lock.** Crossed shuffled-echo lives go
     from about 0.55 to above 0.8 in at least two of the three engines. (50%)
+   - *Scored 2026-11-25: wrong. No engine takes crossed lives above 0.8: minimal 0.77, full 0.65; table neurons never had the lock.*
 22. **Balancing good and bad lets something beat a coin on cartpole.** At least one engine
     ends above 25 steps per fall under the lean reward. (35%)
 
 ## 2026-11-25, before reverse replay and more worlds
-
+   - *Scored 2026-11-25: wrong. Best with balance is 17.4 steps per fall against a coin's 23.*
 23. **Walking credit backward teaches the inside.** With the readout from idea 58, letting
     its error move counters on inner neurons along the recorded ticks beats the frozen
     sheet on order or exclusive-or by more than 0.05, and does not make reach worse. (40%)
+   - *Scored 2026-11-25: right, with a caveat. Exclusive-or 0.88 to 0.985 and reach better, not worse; random signs give about half the gain, and the walk runs away on reach tasks in long lives.*
 24. **The new readout learns the bandit and the two-step chain, and still fails cartpole.**
     (60%)
+   - *Scored 2026-11-25: half right. Bandit learned (0.77); of the chain only the cued second press; cartpole still fails (on a world later found faulty).*
 25. **Longer lives alone do not rescue cartpole** for the old rules: a million steps ends
     no better than 40,000. (70%)
 
 ## 2026-11-25, before putting the winners together
-
+   - *Scored 2026-11-25: right for the minimal engine (17.4 against 17.2 after a million steps); unrun for the others.*
 26. **The combined engine keeps the reflex and the reach together:** Echo at one tile above
     0.9 and at three tiles above 0.8, in the minimal engine. (55%)
+   - *Scored 2026-11-25: right. 0.994 at one tile and 0.859 at three.*
 27. **It reads the features too:** exclusive-or above 0.8 and order above 0.65 with the sheet
     frozen. (50%) The minimal sheet has no delays or far links by default, so it may be a
     poorer sheet to read than the full one.
+   - *Scored 2026-11-25: wrong. Sheet frozen: exclusive-or 0.56, order 0.48. Whole sheet learning: 0.72 and 0.49.*
 28. **It stays fast:** within 2x of the plain minimal engine's ticks per second in an Echo
     life. (60%)
+   - *Scored 2026-11-25: probably wrong, not measured on a quiet machine: one loaded life ran at 31,000 ticks a second against about 200,000.*
 
