@@ -27,3 +27,227 @@ wiring), so skipping re-picks that change nothing cannot save much on its own.
    competition for counters, are most of that: 0.4.
 6. Time rows (delayed echo, order, gap; whole blob learns): rule on against off moves none
    of them by 0.03 or more: 0.6.
+
+## What was built
+
+- **The churn control** (`--g.compete_churn 1`, `learn_compete.cpp`): a winner moves as many
+  counters up as it had sources on, but the sources are drawn at random (none twice) among
+  the excitatory sources it may wire, over all its slots; the silent-source steps down and
+  the re-pick are as before. Same number of moves and re-picks, nothing about the input in
+  which. Winners are still the cells that fired, so which cells move still follows the input.
+- **A shuffled control for calc** (`blobprobe calc --life N --life-shuffle 1`,
+  `src/probe/calc_shuffle.cpp`): each trial of the life shows its input lines moved by a
+  permutation drawn fresh for that trial (the ask line stays). As many lines on, at the same
+  steps; which lines are on together carries nothing that comes back. The read is on real
+  cases. `blobprobe calc` now also prints and keeps (`rate,hidden_per_1000`) the hidden
+  cells' rate while read.
+- **The cheap read-off** (`learn_compete.cpp`, `tag_store.cpp`), in three parts:
+  1. Bounds, as the one-hop rule keeps them: per cell the lowest wired, highest unwired,
+     lowest strong and highest weak counter (excitatory sources; the rule never moves the
+     inhibitory ones). A step that crosses none cannot change the pick, so no re-pick. A
+     re-pick that changes nothing still draws chance for its ties (one draw per pick that
+     wants any sources), so the cheap path draws the same number: lives stay
+     byte-identical. A hash of the cell's wiring makes the bounds stale if any other rule
+     rewired it; `tag_rewire` marks them stale too; with the one-hop rule on or
+     `tag_counts` set, every update re-picks as before.
+  2. The re-pick itself (`select_top`, used by every rule on the tag store): the line (the
+     value the top counters reach down to) is found by stepping from the last re-pick's
+     line, counting with one 64-byte compare per slot, instead of a 256-bucket histogram
+     filled one counter at a time. Same picks, same draws (`tag_rewire_hinted`; plain
+     `tag_rewire` halves the range instead).
+  3. The bounds after a re-pick come from where its lines fell (no pass over the counters).
+  `--g.compete_full 1` re-picks on every update (for comparing speed); `--g.compete_full 2`
+  does that and stops the program if the bounds ever said "no change" when the re-pick
+  changed the wiring.
+- `scripts/compete2.sh mnist|calc|hopcomp|time|speed|all [--quick]` and `inside.py` kinds
+  `churn` (MNIST and calc) and `shuffled` (calc).
+
+## 1. The rate-matched control (MNIST)
+
+`scripts/compete2.sh mnist` (tables in `out/compete2/mnist.txt`). Test digits, a fresh linear
+reader of the non-sensor cells fit on 60,000 training digits after a 60,000-digit life with
+no reward; seeds 5-12. "cap": `--g.threshold_cap 1000` in the life and the read, so every
+sheet fires at its target (31 spikes per 1,000 cell-ticks). "read at": the hidden cells'
+rate while the reader's digits are shown. B5 is `--g.learn_mode 5 --g.compete_on 1
+--g.tile_winners 4 --g.compete_shift 5`; A5 the same without `--g.tile_winners 4`.
+
+| setting | born | lived | shuffled | churn | read at (born / lived / shuffled / churn) |
+|---|---|---|---|---|---|
+| B5, as it fires | 0.9264 | **0.9523** | 0.9389 | 0.9222 | 33 / 64 / 43 / 32 |
+| B5, cap | 0.9217 | **0.9351** | 0.9322 | 0.9201 | 31 / 31 / 31 / 31 |
+| A5, as it fires | 0.9251 | **0.9447** | 0.9398 | 0.9224 | 33 / 75 / 47 / 32 |
+| A5, cap | 0.9214 | **0.9335** | 0.9314 | 0.9195 | 31 / 31 / 31 / 31 |
+
+Random projection of the same bits (`blobmnist baselines --seed S`, seeds 5-12): 0.9418
+(0.9396 to 0.9432). It has no firing rate to hold: each unit is on for half the digits.
+
+**The claim, lived minus shuffled, per seed:**
+
+| | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | mean | seeds above |
+|---|---|---|---|---|---|---|---|---|---|---|
+| B5, as it fires | +0.0107 | +0.0135 | +0.0157 | +0.0173 | +0.0146 | +0.0134 | +0.0103 | +0.0114 | +0.0134 | 8 of 8 |
+| **B5, cap** | +0.0047 | -0.0010 | +0.0060 | -0.0014 | +0.0051 | +0.0076 | +0.0027 | -0.0009 | **+0.0029** | 5 of 8 |
+| A5, as it fires | +0.0081 | +0.0048 | +0.0068 | +0.0026 | +0.0045 | +0.0045 | +0.0049 | +0.0033 | +0.0049 | 8 of 8 |
+| **A5, cap** | +0.0013 | +0.0005 | +0.0072 | +0.0029 | -0.0010 | +0.0040 | +0.0025 | -0.0007 | **+0.0021** | 6 of 8 |
+
+**That number is the claim, and it is small: at matched rate the lived sheet beats a life on
+shuffled digits by 0.003 with tile winners (5 of 8 seeds) and 0.002 without (6 of 8).** Both
+are under the 0.005 that would count. The 2-seed numbers of the compete doc were +0.002 and
++0.012; the second does not hold on 8 seeds (and at shift 5, not 3).
+
+What this says, plainly:
+
+- The stroke structure is real and the same either way: pixel likeness 0.25 lived against
+  0.05 shuffled, at both rates (wiring lines of each run; below). But a fresh linear reader
+  gets almost all of its lift from cells that listen to pixels at all, related or not: the
+  shuffled life turns 27 of a cell's 34 inputs into pixels and lifts the reader from 0.922 to
+  0.932 at target rate; the related pixels add 0.003 more.
+- The 0.952 headline is mostly two things a random-pixel life also gives, plus rate. As the
+  sheet fires, B5 reads 0.013 over shuffled, but its cells fire 64 against 43. Held at the
+  same rate, 0.003. The rate is not the gain by itself (born pushed to 63 reads 0.910,
+  compete doc), but the learned cells use the higher rate better than random-pixel cells do,
+  and the reader sees that.
+- Neither lived sheet beats the random projection at target rate (0.935 and 0.934 against
+  0.942).
+
+Wiring at the end of the life (means of seeds 5-12; pixel inputs of 34, pixel likeness,
+share of born inputs still wired):
+
+| | lived | shuffled | churn |
+|---|---|---|---|
+| B5 | 17.6, 0.252, 0.23 | 26.5, 0.047, 0.24 | 6.9, 0.047, 0.23 |
+| B5, cap | 21.5, 0.245, 0.23 | 27.5, 0.047, 0.25 | 6.9, 0.047, 0.23 |
+| A5 | 15.3, 0.251, 0.23 | 26.4, 0.048, 0.24 | 7.0, 0.047, 0.23 |
+| A5, cap | 21.6, 0.250, 0.23 | 27.5, 0.048, 0.24 | 7.0, 0.046, 0.23 |
+
+(Born: 7.2 pixel inputs, likeness 0.052.)
+
+## 2. The churn control
+
+The same table's churn column, and per seed (`out/compete2/mnist.txt`):
+
+| lived minus churn | mean | seeds above | churn minus born |
+|---|---|---|---|
+| B5, as it fires | +0.0301 | 8 of 8 | -0.0042 |
+| B5, cap | +0.0150 | 8 of 8 | -0.0016 |
+| A5, as it fires | +0.0223 | 8 of 8 | -0.0027 |
+| A5, cap | +0.0140 | 8 of 8 | -0.0019 |
+
+- **Churn alone buys nothing; it costs a little.** The same number of moves and re-picks,
+  three quarters of the born inputs replaced, toward sources drawn at random: the reader
+  falls 0.002 to 0.004 under born, every setting. Finding 47 ("rewiring busy cells at their
+  born counts lifts a linear reader whatever drives it") does not hold for rewiring that is
+  truly random. In the three rules behind finding 47 the moves still went toward sources
+  that had just been on (marks, coin errors on the same marks); what they share is "move
+  toward what is active", not "move".
+- So **all of the lift over born is about the input, but only a sliver of it is about the
+  digits' shapes.** Lived minus churn at matched rate is 0.014 to 0.015; lived minus shuffled
+  is 0.002 to 0.003. Moving toward pixels that are on is the active part; which pixels go
+  together matters little to a linear reader.
+
+## 3. Calculation, held-out cases
+
+`scripts/compete2.sh calc` (`out/compete2/calc.txt`): `blobprobe calc`'s ridge reader of the
+frozen sheet after a 200,000-tick life with no verdicts; bits right on held-out cases (never
+answered; shown in the life). Seeds 5-12. Means:
+
+| member, setting | born | lived | shuffled | churn | lived - shuffled (seeds above) | lived - churn (seeds above) | read at (lived / shuffled) |
+|---|---|---|---|---|---|---|---|
+| xor4, B5 | 0.667 | 0.779 | 0.786 | 0.649 | -0.008 (3 of 8) | +0.130 (8 of 8) | 38 / 38 |
+| xor4, B5 cap | 0.644 | 0.765 | 0.768 | 0.645 | -0.003 (3 of 8) | +0.120 (8 of 8) | 32 / 32 |
+| xor4, A5 | 0.630 | 0.743 | 0.745 | 0.615 | -0.002 (3 of 8) | +0.128 (8 of 8) | 62 / 62 |
+| xor4, A5 cap | 0.613 | 0.767 | 0.776 | 0.636 | -0.009 (3 of 8) | +0.130 (8 of 8) | 31 / 31 |
+| add4, B5 | 0.577 | 0.646 | 0.640 | 0.572 | +0.006 (5 of 8) | +0.074 (8 of 8) | 38 / 38 |
+| add4, B5 cap | 0.565 | 0.630 | 0.645 | 0.584 | -0.015 (2 of 8) | +0.043 (8 of 8) | 32 / 32 |
+| add4, A5 | 0.562 | 0.647 | 0.641 | 0.567 | +0.006 (4 of 8) | +0.080 (8 of 8) | 62 / 62 |
+| add4, A5 cap | 0.563 | 0.621 | 0.618 | 0.584 | +0.004 (5 of 8) | +0.037 (8 of 8) | 31 / 31 |
+
+- **The held-out gain is real and large against born and churn** (xor4 +0.11 to +0.15, add4
+  +0.06 to +0.09; churn is at born), on every seed, at either rate. The rule makes the
+  inside carry what a linear reader needs for cases it never saw answered.
+- **It does not survive its shuffled control, and on these members it could not:** a life
+  on lines moved by a fresh permutation each trial reads the same (xor4 -0.002 to -0.009,
+  add4 -0.015 to +0.006). xor4 and add4 show two random numbers: every input line is an
+  independent coin flip, so permuting the lines does not change what the life sees at all.
+  There is no structure in these inputs beyond "which lines are on", and the rule turns
+  cells into detectors of lines that are on together (AND of a few lines), which is what a
+  linear reader lacks for exclusive-or. The control says the gain is generic, not that it
+  is fake: the lines being on is the information, and churn (moves toward lines drawn at
+  random) gets none of it.
+- The rate does not explain calc: at target rate the gain is the same size.
+
+## Competitive learning beside the one-hop rule (calc, taught life)
+
+The hop doc saw competitive learning plus the one-hop rule read worse on held-out xor4 than
+the one-hop rule alone (0.778 against 0.871, 2 seeds). `scripts/compete2.sh hopcomp` splits
+it: the hop doc's taught life (400,000 ticks, a verdict per bit, its readout learning,
+motor cells put back as born), seeds 5-8, run on stevejobs (`out/compete2/hopcomp.txt`).
+Held-out bits right, mean of 4 seeds (per seed in the file), and the read rate:
+
+| life | xor4 | add4 | read at |
+|---|---|---|---|
+| born / born with tile winners | 0.627 / 0.661 | 0.569 / 0.573 | 33 / 32 |
+| readout alone / with tile winners | 0.633 / 0.658 | 0.544 / 0.567 | 32 / 32 |
+| competitive learning, tile winners (hop doc's "competitive alone") | 0.782 | 0.634 | 37 |
+| competitive learning, no tile winners | 0.754 | 0.646 | 59 |
+| **one-hop rule** (hop doc 0.871 on seeds 5, 6) | **0.878** | 0.654 | 33 |
+| one-hop rule, tile winners | 0.836 | **0.679** | 32 |
+| one-hop + competitive, no tile winners | 0.775 | 0.647 | 52 to 60 |
+| **one-hop + competitive, tile winners** (hop doc's "both", 0.778) | **0.794** | 0.654 | 36 |
+| one-hop + competitive at a quarter of its moves (`compete_shift 7`), tile winners | 0.836 | 0.663 | 35 |
+
+- **Reproduced:** both together 0.794 against the one-hop rule alone 0.878 on xor4, every
+  seed lower (0.783, 0.773, 0.818, 0.803 against 0.889, 0.854, 0.893, 0.876).
+- **Why: competitive learning takes the counters.** Without the tile's winners the pair is
+  just as bad (0.775), so the winners are not the cause; they cost the one-hop rule 0.04 by
+  themselves (0.878 to 0.836). The rate is not the cause either: with winners the pair reads
+  at 36, near target, and is still 0.794. Slowing the competitive rule to a quarter of its
+  moves brings the pair back to the one-hop rule with winners (0.836 = 0.836). Both rules
+  move the same counters in the tag store and re-pick from them; competitive learning moves
+  them on every winning spike (about 6 updates a tick), the one-hop rule only at a verdict
+  (once a trial), so the reward-free rule sets the wiring and the teaching steps are
+  outvoted. On add4 the one-hop rule gains less and the pair costs nothing.
+- If the two are to share a cell, they should not share its counters, or the competitive
+  rule must move much more slowly than every winning spike.
+
+## 4. The cheap read-off
+
+**Same wiring, proven by lives.** With the new read-off (the default, `compete_full 0`):
+
+- The full B5 MNIST lives of seeds 5, 6, 7 and 8 (born, lived, shuffled: 60,000-digit life,
+  60,000-digit fit) give output byte-identical, every wiring and activity line and the test
+  score, to the compete job's runs of the same lines with the old read-off
+  (`out/from-agents/compete/inside/b5-report/`, run before this job's code existed). Seeds
+  9-12 of B5 in `out/compete2/mnist/b5/` are those old runs, copied.
+- `out/compete2/proof/quick.sh` (a 3,000- and a 6,000-digit B5 life, and A5 at cap 1000) and
+  `out/compete2/proof/calc.sh` (calc xor4, seed 5, B5 and B5 at cap 1000): byte-identical to a
+  build of 6bc8130 (the commit before this job), and to `--g.compete_full 2`, which re-picks
+  on every update and aborts if the bounds ever said "no change" when the re-pick changed
+  anything (it never aborted).
+- The four reference lives: byte-identical to `out/merge-ref/` (`out/compete2/refcheck.sh`).
+
+**Speed** (`COMPETE2_BEFORE=build-old scripts/compete2.sh speed`, `out/compete2/speed.txt`;
+this PC, one job at a time, load about 7 from other agents; rough). "before" is a build of
+6bc8130:
+
+| | before | now | rule off | cost before | cost now |
+|---|---|---|---|---|---|
+| `blobbench speed --tiles 8 --learn 1`, rule shift 5 | 42,279 | 52,698 | 69,326 | 1.64 | 1.32 |
+| the same, shift 3 | 19,579 | 36,156 | 69,326 | 3.54 | 1.92 |
+| MNIST life, B5 (fires at 63) | 27,330 | 32,295 | 52,843 (33) | 1.93 | 1.64 |
+| MNIST life, B5 at cap 1000 (fires at 33) | 40,438 | 45,449 | 53,214 | 1.32 | **1.17** |
+
+- At target rate the rule now costs 1.17 times per tick (it was 1.32). At its own rate it
+  costs 1.64, and most of that is the rate, not the rule: the born sheet pushed to the same
+  63 with the rule off runs 44,091, so the rule's own work there is 1.37 times. The read-off
+  cannot reach under 1.2 while the rule doubles the spikes the tick must carry.
+- Where it went: re-picking on every update with the new select (`compete_full 1`) runs
+  29,784, so on MNIST the faster re-pick gives +9 % and the bounds +8 %. 81 % of updates cross a
+  bound (an unwired counter climbs past the lowest wired one at the top of the 6-bit range,
+  or a wired one is stepped down), so most updates really do change the wiring; the rule
+  churns among sources that are on about equally often. What was slow was the re-pick
+  itself: a 256-bucket histogram filled one counter at a time, where most counters sit at
+  the same value (a chain of increments on one bucket). Now the line is found by stepping
+  from the last one, each step one 64-byte compare per slot.
+- `select_top` is shared: the tags and the one-hop rule re-pick faster too, with the same
+  picks (they call plain `tag_rewire`, which halves the range instead of stepping).

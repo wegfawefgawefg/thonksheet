@@ -266,7 +266,7 @@ def time_table(names):
         for r in csv.DictReader(open(path)):
             if r["property"] != "about" and r["mean"]:
                 rows.setdefault(r["test"], [None, None])[col] = r
-    lines = ["the suite's time rows (late score; seeds 5-12; learning-off twin in brackets), "
+    lines = ["the suite's time rows (late score, mean ± spread over its seeds; learning-off twin in brackets), "
              "readout of blob-readout + tile winners 4; on adds " + COMP,
              "%-58s %-22s %-22s" % ("test", "off", "on")]
     for test, (off, on) in rows.items():
@@ -278,34 +278,46 @@ def time_table(names):
 
 # ---- speed ----
 
-def speed_run(opt, outdir):
-    d = os.path.join(outdir, "speed")
-    os.makedirs(d, exist_ok=True)
-    bench = os.path.join(BUILD, "blobbench")
-    lines = ["blobbench speed --tiles 8 (default genome, random input), ticks per second, this "
-             "machine, one job at a time"]
-    for label, flags in (("learn mode 5, rule off", ""), ("rule on, shift 3", COMP.replace(
-            " --g.compete_shift 5", "")), ("rule on, shift 5", COMP),
-                         ("rule on, shift 5, re-pick every update", COMP + " --g.compete_full 1")):
-        out = subprocess.run(["nice", "-n", "19", bench, "speed", "--tiles", "8",
+def speed_one(build, kind, flags):
+    """ticks per second of blobbench (8x8 tiles) or of an MNIST life (6,000 digits, seed 5)"""
+    if kind == "bench":
+        out = subprocess.run(["nice", "-n", "19", os.path.join(build, "blobbench"), "speed",
+                              "--tiles", "8", "--learn", "1", "--seconds-ms", "3000",
                               "--g.learn_mode", "5"] + flags.split(), capture_output=True,
-                             text=True, cwd=ROOT).stdout
-        m = re.search(r"([0-9.]+) ticks/s", out) or re.search(r"([0-9][0-9.]*)\s*$", out.strip())
-        lines.append("  %-42s %s" % (label, m.group(1) if m else out.strip()[-60:]))
-    lines.append("MNIST life, 6,000 digits, seed 5 (life ticks per second; rate while living)")
-    for label, flags in (("tile winners, rule off", TW), ("B5", B5),
-                         ("B5, re-pick every update", B5 + " --g.compete_full 1"),
-                         ("tile winners, rule off, cap 1000", TW + CAP), ("B5, cap 1000", B5 + CAP),
-                         ("B5, cap 1000, re-pick every update", B5 + CAP + " --g.compete_full 1"),
-                         ("tile winners, rule off, born hot (63)", TW +
-                          " --g.sector_target_per_1024 64 --g.threshold_down_shift 8")):
-        cmd = ["nice", "-n", "19", inside.MNIST, "ceiling"] + inside.SHEET + inside.READER + [
-            "--fit", "1000", "--test-count", "1000", "--seed", "5", "--life", "6000",
-            "--g.learn_mode", "5"] + flags.split()
-        out = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT).stdout
-        life = [l for l in out.splitlines() if l.startswith("life 6000")]
-        m = re.search(r"\(([0-9]+) t/s\).*?([0-9.]+) spikes", life[0]) if life else None
-        lines.append("  %-42s %s" % (label, "%s t/s at %s" % m.groups() if m else "-"))
+                             text=True, cwd=ROOT).stdout.strip().splitlines()
+        return out[-1].split()[2] if len(out) > 1 else "-"
+    cmd = ["nice", "-n", "19", os.path.join(build, "blobmnist"), "ceiling"] + inside.SHEET + \
+        inside.READER + ["--fit", "300", "--test-count", "300", "--seed", "5", "--life", "6000",
+                         "--g.learn_mode", "5"] + flags.split()
+    out = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT).stdout
+    life = [l for l in out.splitlines() if l.startswith("life 6000")]
+    m = re.search(r"\(([0-9]+) t/s\).*?([0-9.]+) spikes", life[0]) if life else None
+    return "%s (rate %s)" % m.groups() if m else "-"
+
+
+def speed_run(opt, outdir):
+    """one job at a time; COMPETE2_BEFORE=DIR adds a column from another build (the read-off
+    before this job: a build of commit 6bc8130)"""
+    before = os.environ.get("COMPETE2_BEFORE")
+    full = " --g.compete_full 1"
+    rows = [("bench", "rule off", ""), ("bench", "rule on, shift 3", COMP.replace(
+        " --g.compete_shift 5", "")), ("bench", "rule on, shift 5", COMP),
+            ("bench", "rule on, shift 5, re-pick every update", COMP + full),
+            ("mnist", "tile winners, rule off", TW), ("mnist", "B5", B5),
+            ("mnist", "B5, re-pick every update", B5 + full),
+            ("mnist", "tile winners, rule off, born hot", TW +
+             " --g.sector_target_per_1024 64 --g.threshold_down_shift 8"),
+            ("mnist", "tile winners, rule off, cap 1000", TW + CAP), ("mnist", "B5, cap 1000", B5 + CAP),
+            ("mnist", "B5, cap 1000, re-pick every update", B5 + CAP + full)]
+    lines = ["ticks per second, this machine, nice 19, one job at a time (rough: shared machine)",
+             "bench: blobbench speed --tiles 8 --learn 1 --g.learn_mode 5 (random input); mnist: "
+             "the life of a 6,000-digit MNIST life, seed 5, scripts/inside.sh's sheet",
+             "%-6s %-42s %-22s %s" % ("", "", "now", "before" if before else "")]
+    for kind, label, flags in rows:
+        now = speed_one(BUILD, kind, flags)
+        was = speed_one(os.path.join(ROOT, before), kind, flags) if before and full not in flags \
+            else ""
+        lines.append("%-6s %-42s %-22s %s" % (kind, label, now, was))
     return "\n".join(lines)
 
 

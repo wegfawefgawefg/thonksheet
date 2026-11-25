@@ -20,7 +20,8 @@
 #   scripts/compete2.sh calc                     (256 runs, about 40 min)
 #   scripts/compete2.sh hopcomp
 #   scripts/compete2.sh time
-#   scripts/compete2.sh speed
+#   scripts/compete2.sh speed                    COMPETE2_BEFORE=build-old adds a column from
+#                                                a build of the commit before (6bc8130)
 #   scripts/compete2.sh all --quick              2 seeds, short lives: a smoke check
 #   scripts/compete2.sh mnist --settings b5cap,a5cap --seeds 5-8    part of it
 #   scripts/compete2.sh mnist --table-only       print what is there
