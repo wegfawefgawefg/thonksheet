@@ -48,7 +48,38 @@ probe)
         --g.replay_until 800000 --g.replay_reset 2 --settle 801000 --label "$task" "$@"
     ;;
 tables)
-    exec scripts/replay_tables.sh
+    sw() { python3 scripts/sweep.py --jobs 2 --seeds 5-12 --out-dir out/replay/sweep "$@"; }
+    DELAYS="--g.local_delay_min 4 --g.local_delay_max 8"
+    f=scripts/variants/replay.txt
+    sw --name "order" --variants $f -- --task order $LIFE
+    sw --name "both-not-either" --variants $f -- --task both-not-either $LIFE
+    sw --name "gap" --variants $f -- --task gap $LIFE
+    sw --name "order, delays 4-8" --variants $f -- --task order $LIFE $DELAYS
+    sw --name "gap, delays 4-8" --variants $f -- --task gap $LIFE $DELAYS
+    sw --name "echo k=2, 2 tiles" --variants $f -- --task echo --distance 2 $LIFE
+    sw --name "echo k=2, 3 tiles" --variants $f -- --task echo --distance 3 $LIFE
+    sw --name "echo k=2, 5 tiles" --variants $f -- --task echo --distance 5 $LIFE
+    sw --name "echo k=4" --variants $f -- --task echo --k 4 $LIFE
+    f=scripts/variants/replay-many.txt
+    sw --name "echo k=8" --variants $f -- --task echo --k 8 $LIFE
+    sw --name "echo k=16" --variants $f -- --task echo --k 16 $LIFE
+    f=scripts/variants/replay.txt
+    sw --name "shuffled echo" --variants $f -- --task shuffled-echo $LIFE
+    f=scripts/variants/replay-depth.txt
+    sw --name "order" --variants $f -- --task order $LIFE
+    sw --name "both-not-either" --variants $f -- --task both-not-either $LIFE
+    sw --name "echo k=2, 3 tiles" --variants $f -- --task echo --distance 3 $LIFE
+    sw --name "echo k=2, 5 tiles" --variants $f -- --task echo --distance 5 $LIFE
+    # a fresh readout on the walked sheet, same task and another one (windows 40-79)
+    f=scripts/variants/replay-relearn.txt
+    sw --windows 40:80 --name "order, then order" --variants $f -- --task order \
+        --retention order --retest 1000 $LIFE
+    sw --windows 40:80 --name "both-not-either, then both-not-either" --variants $f -- \
+        --task both-not-either --retention both-not-either --retest 1000 $LIFE
+    sw --windows 40:80 --name "order, then both-not-either" --variants $f -- --task order \
+        --retention both-not-either --retest 1000 $LIFE
+    sw --windows 40:80 --name "echo 3 tiles, then order" --variants $f -- --task echo \
+        --distance 3 --retention order --retest 1000 $LIFE
     ;;
 *)
     echo "scripts/replay.sh life|diag|probe|tables ..." >&2

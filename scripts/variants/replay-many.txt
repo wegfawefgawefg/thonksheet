@@ -1,0 +1,9 @@
+# idea 62, 8 and 16 cues: 256 motor cells (docs/results-2026-11-25-reverse-replay.md), report on seeds 5-12: reverse replay
+# on top of the best frozen-sheet readout, which is the first line and the thing to beat.
+# settings from seeds 1-4: depth 2, a counter step with chance 2^-4 per active source per
+# walked spike, each step past the first thinned by half, growing allowed. the shuffled row
+# walks the same spikes with random signs: the control for whether the credit carries
+# information.
+frozen sheet + readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 256
+walk depth 2: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 256 --g.replay_depth 2
+depth 2, signs shuffled: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 256 --g.replay_depth 2 --g.replay_shuffle 1
