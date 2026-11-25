@@ -45,6 +45,8 @@ is.
 
 Running (four), as of 2026-11-25 afternoon:
 - Queued item 3b (idea 164): prediction errors down the one-hop wires.
+- Queued item 2e (idea 165): the inside's ladder, what these cells can hold under the
+  best possible teacher.
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
 - Queued item 2a: the competitive-learning follow-ups (rate-matched and churn controls,
   held-out calculation columns on 8 seeds, a cheap read-off, the time suite).
@@ -110,6 +112,11 @@ Queued, in order:
    linear reader gets 0.95 from the lived sheet, the sheet's own readout 0.72 and falling.
    Takes in item 9 (the weighted vote, the drift). This gap is now the largest number on
    the board.
+2e. *(running, idea 165)* The inside's ladder: a backprop-trained net given our cells'
+   constraints one rung at a time (fan-in 34, top-counter wiring, one-bit strengths, fixed
+   signs, nearby candidates, 3 in 100 firing), on MNIST and the pair test; then that
+   wiring loaded into the real sheet. Backprop as a measuring stick only. It decides
+   whether the shortfall on real data is the rule or the cell.
 2d. *(done, merged: docs/results-2026-11-25-hop-real.md; not MNIST being easy; errors
    from the answer on every step are the best lever, +0.006 over the coin; depth helps a
    little; the pair test `blobmnist --pair 1` is the new real-data yardstick, born 0.677,

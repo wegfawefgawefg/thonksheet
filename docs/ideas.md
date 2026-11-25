@@ -756,3 +756,15 @@ co-activity runs ties the held units together and loses their order.
      the buttons. Scored by the inside read on the control worlds against a time-shuffled
      life and the coin control, by the held-out calculation columns, and by whether the
      task improves. The critic's surprise is then one more such line. *building*
+165. **The inside's ladder: what can these cells hold under the best possible teacher?**
+     The output-gap ladder (idea 161) found its fault in one day by walking from a free
+     reader down to our motor cells. Do the same for the inside. Start from a two-layer
+     net trained by backprop (0.955 to 0.98 on MNIST, 0.80 to 0.85 on the pair test) and
+     add our constraints one rung at a time: 34 inputs a cell; inputs chosen as the top
+     counters among a cell's candidates (which is exactly a score per candidate with the
+     top K wired); one-bit strengths (then 1, 4, 5); a fixed sign per source cell; only
+     nearby candidates; about 3 cells in 100 firing; a threshold. Backprop here is a
+     measuring stick, not the method. If the bottom rung still reads 0.97, the cells are
+     fine and every shortfall is the teaching rule. If it reads 0.93, no local rule can
+     do better and the cell has to change. Either answer decides where the work goes.
+     Then load the best teacher's wiring into the real sheet and read it. *building*
