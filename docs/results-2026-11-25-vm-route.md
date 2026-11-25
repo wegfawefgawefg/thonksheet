@@ -5,52 +5,63 @@ Idea 135. 2026-11-25. Engine `src/vm/`, `blobrun --engine vm`, `scripts/vm.sh`.
 ## The answer first
 
 **Does it converge on anything? Yes.** The bit version, taught by local rules and no
-gradient, learns and stays learned with one setting: delayed echo across 20 silent steps
+gradient, learns and stays learned with one setting. Delayed echo across 20 silent steps
 (400 ticks) goes from 0.71 in the first 1,000 steps to 1.00 in every window after, on all 8
-report seeds; echo with 16 cues, both-not-either, delayed echo at every gap, serial
-addition 0.88, a cue held through 8 distracting events 0.76. With the input held still it
-settles on one set of entries (a fixed point); trials with the same cue walk the same path
-through the bank; different cues walk disjoint ones.
+report seeds. Also with that one setting: echo with 16 cues 1.00 (capacity 16 on every
+seed), a second task learned with the first kept, nothing lost after 400,000 ticks
+unplugged, order 0.87, both-not-either 0.96, serial addition 0.88, a cue held through 8
+distracting events 0.76, parity of 3 lines 0.85.
 
-**Why his did not, in his words "stuck in minor loops".** It reproduces from his code: with
-256 ops and nearest-op lookup the state sits on one op forever, with or without input, at
-birth and after training; with his refractory lockout of 4 or 8 ticks it cycles through
-exactly 5 or 9 ops, whatever the input does. The op added each tick is as large as the
-state, so the state becomes its nearest op, and that op is again the nearest. There is no
-"do nothing", the input is a small part of what chooses the op, and no loss reaches which
-op is chosen.
+**The cycle lengths.** His machine, 256 ops: nearest-op lookup sits on **one op forever**
+(cycle length 1), with no input, with the input held, and with two inputs taking turns
+every 8 ticks, at birth and after training; with his refractory lockout of 4 or 8 ticks it
+cycles through **exactly 5 or 9 ops**, whatever the input does. That is his "loop 7-15".
+Sampling from the top 8 turns the cycle into a random walk over 20 to 40 ops that does not
+depend on the input either. The bit version: with the input held still it also settles
+at once, on one set of 16 winners, period 1 up to ties (16 to 25 entries in all): a fixed
+point, which is the hold. The difference is that when the input changes, the winners
+change with it: two inputs taking turns get two sets that share 0 to 14% of their entries,
+and the walk has no cycle of its own. Same cue, same path; different cues, disjoint paths.
+Over a life 1,100 to 2,048 of the 2,048 entries fire.
+
+**Why his did not.** The op added each tick is as large as the state, so within two ticks
+the state is its nearest op, and that op is again the nearest; there is no "do nothing";
+the input is a small part of what chooses the op; and no loss reaches which op is chosen.
 
 **What made the bit version converge**, each checked by switching it off: an operation
-leaves untouched bits alone (so a still state is a fixed point, which is the hold); the
-input is overwritten into half of the address every tick (with the input weighing little,
-as in his machine, everything is at a coin); and the input writes into the state through
-the bank, by events written in one go with no reward (without them everything is at a
-coin and the walk hardly depends on the input). One winner per tick, as in his machine, is
-enough once those hold (delayed echo 0.94 and 0.95, order 0.77 and 0.86, choice seeds). The refractory lockout is not what
-prevents loops.
+leaves untouched bits alone (so a still state is a fixed point); the input is written into
+half of the address every tick (with the input weighing little, as in his machine,
+everything is at a coin and the bank churns); and the input writes into the state through
+the bank, by event entries written in one go with no reward (without them everything is at
+a coin and the walk hardly depends on the input). One winner per tick, as in his machine,
+is enough once those hold (delayed echo 0.94 and 0.95, order 0.77 and 0.86, choice seeds).
+His lockout is not what prevents loops.
 
-**What it does that the sheets cannot**: hold a thing over any silence (the sheets hold
-about 20 ticks; this holds 400 and more, exactly: 0 bits of the state change in the gap),
-and learn a pair in one go. **What it does that the memory engine (a hashed lookup of the
-last four events) cannot**: keep a cue through more distracting events than a fixed depth
-(4 events 0.86 against 0.50; 8 events 0.76 against 0.50), carry a computed value further
-back (serial addition 0.88 against 0.69), answer patterns never rewarded by nearness
-(0.78 against 0.45), and hold through input noise (0.94 against 0.50 at 3% of cells
-flipped). At 8 distractors it also beats the reference GRU (0.58), and at a 20-step gap
-(GRU 0.49).
+**What it does that the sheets cannot**: hold a thing over any silence (the sheets about 20
+ticks; this 400 and more, with 0 bits of the state changing in the gap) and learn a pair in
+one go. **What it does that the memory engine (a hashed lookup of the last four events)
+cannot**: hold a cue through more distracting events than a fixed depth (4 events 0.86
+against 0.50, 8 events 0.76 against 0.50), through distractors on the cue lines themselves
+(0.97 against 0.63), and through input noise (0.94 against 0.50 at 3% of cells flipped);
+carry a computed value further back (serial addition 0.88 against 0.69); answer patterns
+never rewarded by nearness (majority 0.78 against 0.45). Against the reference GRU it wins
+at 8 distractors (0.76 against 0.58), distractors on the cue lines (0.97 against 0.50), a
+20-step gap (1.00 against 0.49) and parity of 3 and 4 lines (0.85 and 0.75 against 0.68 and
+0.52).
 
-**What it cannot do**: count time (a still state cannot tell a short gap from a long one;
-gap and beat at a coin), credit a press judged a step later (two-step at a coin; the
-memory gets 0.99), learn a gate on what to keep (so 8 distractors is 0.76 and serial
-addition 0.88, not 1.00), handle 32 buttons and fine holds with one setting, generalise to
-a shape in a new place, or run fast (about a fifth of the memory engine's speed). The GRU
-beats it on most rows.
+**What it cannot do**: count time (a still state cannot tell a short gap from a long one:
+gap and beat at a coin); credit a press that is paid a step later (the chain, and my
+two-step world, at a coin; the GRU and the memory fail the chain too); keep several items
+in order (copy of up to 6 at a coin, 2-back 0.62, recall with 4 between 0.31; brackets at a
+coin); learn a gate on what to keep (so 8 distractors is 0.76 and serial addition 0.88, not
+1.00); have many buttons and fine holds with one setting (32 cues needs good to move
+evidence, which costs order); a shape in a new place; speed (a quarter of the memory
+engine's ticks per second). The GRU beats it on most other rows, catch and cartpole among
+them; the memory beats it on most rows where storing what was seen is enough.
 
 **Does it belong with a sheet?** Not in front of one: its events want an input that looks
-the same every time it comes. Beside one, offering the sheet a held value, maybe; untested
-(section 7).
-
-SUITE-SUMMARY
+the same each time it comes (settling makes it tolerate cell noise, not a sheet's mixing).
+Beside one, offering the sheet a held value, maybe; untested (section 7).
 
 ## 1. Why the original did not learn
 
@@ -273,7 +284,8 @@ cases never rewarded. New worlds in `src/world/task_beyond_lookup.cpp`; place is
 - Order, gap and both-not-either: the suite (below).
 - **Echo with 32 cues fails** (0.03, a coin), and so does the memory (0.05); the GRU 0.80.
   At 2x2 line groups (needed to fit 32 lines) a cue is 4 cells. See section 5.
-- **Two-step fails** (0.20, a coin 0.23): the first press is only credited by an outcome
+- **Two-step fails** (0.20, a coin 0.23; my own world, written before main's chain landed
+  and since dropped from the code in favour of it; the chain is below): the first press is only credited by an outcome
   one step later, and the vm's credit window is one step. The memory, which credits the
   frames of the whole trial with the buttons they drove, gets 0.99; the GRU 0.15.
 
@@ -303,9 +315,9 @@ scorecards. Late scores; chance is coin flips.
 
 | row | vm | vm, learning off | chance | memory | gru-fixed | best sheet |
 | --- | --- | --- | --- | --- | --- | --- |
-| echo k=2, 4, 8, 16 | 1.00, 1.00, 1.00, 1.00 | 0.46, 0.22, 0.10, 0.05 | 0.47 ... 0.05 | 0.99 ... 0.98 | ... 1.00 | 1.00, 1.00, 0.84, 0.31 |
-| capacity, largest k held | **16** (all seeds) | 0 | 0 | 16 | | 8 |
-| shuffled echo | 1.00 | 0.46 | 0.48 | 0.99 | | 1.00 |
+| echo k=2, 4, 8, 16 | 1.00, 1.00, 1.00, 1.00 | 0.46, 0.22, 0.10, 0.05 | 0.47 to 0.05 | 0.99, 0.99, 0.99, 0.98 | 1.00, 1.00, 1.00, 1.00 | 1.00, 1.00, 0.84, 0.31 |
+| capacity, largest k held | **16** (all seeds) | 0 | 0 | 16 | 16 | 8 |
+| shuffled echo | 1.00 | 0.46 | 0.48 | 0.99 | 1.00 | 1.00 |
 | delayed echo, 2 steps | **1.00** | 0.45 | 0.48 | 0.99 | 1.00 | 0.55 |
 | beat, every 4 steps | 0.42 ±0.01 | 0.50 | 0.51 | 0.99 | 1.00 | 0.50 |
 | sequence (prediction) | 0.50 (no predictor) | 0.50 | 0.50 | | | 0.57 |
@@ -317,7 +329,7 @@ scorecards. Late scores; chance is coin flips.
 | both-not-either | 0.96 ±0.02 | 0.46 | 0.48 | 0.99 | 0.97 | 0.88 |
 | gap | 0.48 | 0.45 | 0.47 | 0.99 | 1.00 | 0.52 |
 | place (never-rewarded places) | 0.21 ±0.10 | 0.46 | 0.47 | 0.63 ±0.34 | 0.16 | 0.25 |
-| echo B after A | 1.00 | 0.21 | 0.23 | | | 0.99 |
+| echo B after A | 1.00 | 0.21 | 0.23 | 0.99 | 1.00 | 0.99 |
 | echo A retested after B, first window / end | 0.96 / 1.00 | 0.45 | 0.46 | 1.00 | 1.00 | 0.98 / 1.00 |
 | echo after 400,000 ticks unplugged, first window | **1.00** | 0.43 | 0.47 | 0.99 | 1.00 | 1.00 |
 | ticks/s in the echo life (loaded machine) | 47,000 | | | 187,000 | 36,000 | 63,000 |
@@ -330,7 +342,46 @@ does not exist for it (echo is 1.00 at 5 tiles). Its "stays alive" rows likewise
 bits on the sheet (77% of cells silent: X and the bank are not on the sheet). Beat is below
 a coin: with no input between beats the state is a fixed point and cannot count steps.
 
-MAP-PLACEHOLDER
+### Main's map worlds: several things held in order, parity, marks, chains
+
+The worlds the coordinator named as ones nothing on this bench learns (on main since
+2026-11-25; definitions in docs/curriculum.md, "The rest of the map"). Same life and seeds;
+`scripts/vm.sh rows TAG map 5-12`. Seeds 5 to 8 of the vm were run on the second machine
+(byte-identical engine), 9 to 12 here. "hold 10 steps, distractors on the cue lines" is
+`--long --task hold --hold-steps 10 --hold-noise 2` over a 40,000-step life (the cue is
+shown with a mark line; the distractors flash the cue lines themselves), scored on the
+second half of the life.
+
+| world | vm | vm, learning off | coin | memory | gru |
+| --- | --- | --- | --- | --- | --- |
+| copy 2 cues | 0.96 ±0.04 | 0.45 | 0.48 | 0.87 ±0.01 | 1.00 ±0.00 |
+| copy 2 to 6 cues of 4 | 0.27 ±0.01 | 0.22 | 0.22 | 0.25 ±0.01 | 0.54 ±0.02 |
+| recall, 1 between | 1.00 ±0.01 | 0.46 | 0.47 | 0.99 ±0.00 | 1.00 ±0.00 |
+| recall, 4 between | 0.31 ±0.08 | 0.20 | 0.24 | 0.65 ±0.02 | 0.96 ±0.08 |
+| 1-back | 0.79 ±0.04 | 0.46 | 0.48 | 0.99 ±0.00 | 0.98 ±0.04 |
+| 2-back | 0.62 ±0.02 | 0.45 | 0.48 | 0.99 ±0.00 | 0.92 ±0.18 |
+| grammar, up to 8 | 0.72 ±0.02 | 0.46 | 0.48 | 0.66 ±0.03 | 0.70 ±0.05 |
+| brackets, 8 | 0.47 ±0.02 | 0.47 | 0.49 | 0.85 ±0.03 | 0.99 ±0.01 |
+| parity of 3 lines | 0.85 ±0.02 | 0.46 | 0.48 | 0.99 ±0.00 | 0.68 ±0.09 |
+| parity of 4 lines | 0.75 ±0.03 | 0.46 | 0.47 | 0.99 ±0.00 | 0.52 ±0.06 |
+| hold 10 steps, distractors on the cue lines | 0.97 ±0.03 | 0.46 | 0.48 | 0.63 ±0.01 | 0.50 ±0.01 |
+| chain, stage shown | 0.00 ±0.00 | 0.28 | 0.31 | 0.00 ±0.00 | 0.01 ±0.00 |
+| chain, stage not shown | 0.00 ±0.00 | 0.28 | 0.31 | 0.00 ±0.00 | 0.01 ±0.00 |
+
+- **Hold with distractors on the cue lines: the vm 0.97, the memory 0.63, the GRU 0.50.**
+  The cue-with-mark is one event and a bare cue line another, so a distractor writes its
+  own mark and halves the held one, and the held one is still the strongest at the ask.
+  This and 8 distracting events are the two rows where the vm is the best of the three.
+- **Parity of 3 and 4 lines: 0.85 and 0.75, above the GRU (0.68, 0.52).** The memory does
+  it by lookup (0.99): these patterns are all rewarded, so storing them is enough.
+- Grammar (Reber strings up to 8): 0.72, level with the GRU (0.70), above the memory (0.66).
+- Copy of 2 cues 0.96, recall with 1 between 1.00: the two held in order are there. But
+  anything longer is not: copy of up to 6 cues 0.27 (a coin 0.22), recall with 4 between
+  0.31, 2-back 0.62, brackets at a coin. Several items held in order need more than marks
+  that halve per event: the fourth item back has 1/16 of its mark left.
+- The chain (A then B, paid only after B) is 0.00 for all three: each learns to press B,
+  never A at stage 0, which is never paid; the press that starts a chain needs credit one
+  step back. The learning-off twin, pressing at random, scores 0.28.
 
 ## 4. Inside it
 
@@ -457,7 +508,8 @@ reaches further back than the memory engine's four events.
    ring of M that slides one bit a tick (a permutation, so nothing is lost) was tried and
    did not help: the slid copies were too faint for the answer entries' match.
 3. **Late credit.** Evidence moves only on the entries that fired in the last 20 ticks (one
-   step). Two-step (the first press judged one step later) stays at a coin. A 40-tick
+   step). Two-step (the first press judged one step later) stays at a coin, and so does
+   main's chain (0.00: it learns B and never the unpaid A). A 40-tick
    window with refraction off learned it to 0.54 on three seeds of four, and cost order.
 4. **Many buttons.** The error rule never raises the pressed button and raises all the
    others on every bad, so with 32 buttons the right one never stands out: echo 32 at a
@@ -466,12 +518,16 @@ reaches further back than the memory engine's four events.
    shuffled echo (no lock-in) and delayed echo at 1.00, serial-add 0.83 and majority 0.81,
    but drops order from 0.77 to 0.60 and distract 4 from 0.81 to 0.65 (seeds 1-4, 10,000
    steps). So there is no one setting yet with both many buttons and the fine holds.
-5. **Order is the weakest hold** (0.74 to 0.85 on choice seeds; the suite row below). "A
+5. **Several items in order.** Copy of up to 6 cues, recall with 4 between, 2-back and
+   brackets are at or near a coin: each later event halves the earlier marks, so the
+   fourth item back is 1/16 of its mark. Copy of 2 and recall with 1 between are fine.
+6. **Order is the weakest hold** (0.74 to 0.85 on choice seeds; the suite row below). "A
    then A+B" leaves a small share of A's mark against the shared A+B mark. Under input
    noise it is lost.
-6. **A new place.** Place is below a coin (0.21), like the sheets and the GRU: what is
+7. **A new place.** Place is below a coin (0.21), like the sheets and the GRU: what is
    learned about a shape in the rewarded places does not carry, and points the wrong way.
-7. **Speed.** About a fifth of the memory engine's ticks per second: every entry is compared
+8. **Speed.** About a quarter of the memory engine's ticks per second (47,000 against
+   187,000 in the suite's echo life): every entry is compared
    with the state every tick (section 6).
 
 ## 6. Speed, bytes, hardware
@@ -479,14 +535,16 @@ reaches further back than the memory engine's four events.
 Memory, default sheet (4,096 cells), from `vm_bytes`: addresses 2,048 x 72 words (1.18 MB),
 set and clear masks 2 x 2,048 x 56 words (1.84 MB), evidence 2,048 x 256 bytes (0.52 MB),
 stamps and match counts 20 KB, the state 608 bytes. 3.57 MB in all, about 870 bytes per
-sheet cell. The suite's heap measure is in the scorecard.
+sheet cell on the default sheet.
 
 Work per tick: 147,000 ANDs and popcounts (every entry against the state), one histogram of
 2,048 small numbers, 16 x 56 x 2 word ORs for the operations, 16 x 256 byte adds for the vote.
 The match is nearly all of it, and it reads the whole address table every tick, so the
-engine is bound by how fast 1.2 MB can be streamed: about 26,000 to 31,000 ticks a second
-per life here under load (other agents' runs, CPU capped; not a quiet figure), against
-about 110,000 to 145,000 for the memory engine and the GRU on the same lives. Learning costs
+engine is bound by how fast 1.2 MB can be streamed. The suite's figures (one core, nice 19,
+other agents' runs on the machine, CPU capped; not quiet figures): 47,000 ticks a second in
+the echo life (the memory engine 187,000, the GRU 36,000, the best sheet 63,000); with
+random input 49,100, 17,900 and 4,900 at 8x8, 16x16 and 32x32 tiles (M grows with the sheet,
+the bank stays at 2,048 entries); 782 bytes per sheet cell at 32x32. Learning costs
 almost nothing: an outcome scans 2,048 stamps and moves a few hundred evidence rows; an
 event rewrites one entry.
 
@@ -544,11 +602,19 @@ For the coordinator (I have not edited them):
     [hint] Majority of 5 on held-out patterns: 0.78 against 0.45. Place: both fail.
   - "An exact-change event detector is broken by input noise; settling by nearness fixes
     it for holds." [hint] Delayed echo at 3% cell noise 0.48 -> 0.94; the memory 0.50.
+  - Rows where a walking state is the best of vm, memory and GRU (each with one setting):
+    hold with distractors on the cue lines (0.97 / 0.63 / 0.50), 8 distracting events
+    (0.76 / 0.50 / 0.58). Above the GRU: a 20-step silent gap (1.00 / 0.49), parity of 3
+    and 4 lines (0.85, 0.75 / 0.68, 0.52).
 - **docs/findings.md, walls**: time (a still state cannot count; gap and beat at a coin for
-  the vm), late credit (two-step), a learned gate on what to keep (serial addition 0.88,
+  the vm), late credit (two-step; main's chain is 0.00 for the vm, the memory and the GRU
+  alike), several items in order (copy of 6, recall with 4 between, 2-back, brackets), a learned gate on what to keep (serial addition 0.88,
   8 distractors 0.76, where a gate would be 1.00), and the trade-off between many buttons
   (good must move evidence) and fine holds.
-- **docs/task-map.md**: tier 4's "a cue is still held only about 20 ticks" is out of date
+- **docs/task-map.md**: tier 4's best-so-far could read "delayed echo 1.00 at every gap to 20
+  steps, order 0.87, gap 0.48 (vm, one setting)"; tier 8: "capacity 16, second task 1.00
+  with the first at 0.96 at once, idle 400,000 ticks loses nothing (vm)". Tier 4's "a cue
+  is still held only about 20 ticks" is out of date
   (the memory and the vm both hold delayed echo 400 silent ticks). Add the three new
   worlds: distract (tier 4, holding against distraction), serial-add (a held value that is
   computed, not shown; tier 3 or the calculation battery), majority with held-out patterns
