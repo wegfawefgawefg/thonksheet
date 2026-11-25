@@ -84,6 +84,39 @@ fixed are a diagnostic, for finding where learning happens; they are never the d
 Scorecards say which they are. The reference numbers that matter are with everything
 learning.
 
+## Keep the loop fast
+
+The owner, 2026-11-25: "take a step back and regularly look for limitations in the hot loop
+to see if our iteration speed is slowing and to get rid of what isnt needed. we want this
+search to be fast we dont want to slowly accumulate infinity tests and then have search
+slow to a crawl."
+
+The thing being protected is how many designs get a fair look per hour. Rules:
+
+- **Two speeds of test.** The quick map is what the search runs on every candidate: a short
+  list of worlds, short lives, few seeds, the cheapest first so weak candidates die in
+  seconds. The full suite is for the few candidates that survive, and for the scoreboard.
+  A new world goes into the full suite freely. It goes into the quick map only by taking
+  the place of something or by showing it tells us what nothing else there does.
+- **A budget.** The quick map has a time budget per candidate on one core, written at the
+  top of `scripts/search/quick-map.txt`. Adding to it means raising the budget on purpose
+  or cutting something.
+- **The audit.** After every few merges, and at least once a day while a search runs, the
+  coordinator stops and measures: candidates per hour per core for each engine; seconds per
+  quick map and per full suite; ticks per second of each engine against its last recorded
+  figure; where the time goes (the tick, the reward path, the world, starting processes).
+  The numbers go in `docs/speed-log.md` with the date, so a slowdown shows as a line going
+  the wrong way.
+- **Cut, do not only switch off.** A world whose score across candidates tells us nothing
+  another world does not, or that everything passes, or that nothing can pass (not even the
+  offline reader), leaves the quick map. A mechanism that has earned no place after a fair
+  test and a search leaves the engine's code, not just its defaults: every switch left in
+  the hot path costs a little, and every number left in the search space costs a lot.
+  What is cut is listed in `docs/findings.md` with the evidence, so it is not tried again
+  by accident.
+- **Speed work counts as progress.** Making a life, a probe or a batch of lives cheaper is
+  worth as much as a new mechanism, because it buys every later experiment.
+
 ## Honesty
 
 - Predictions before results. Nulls and failures stay on the list.
