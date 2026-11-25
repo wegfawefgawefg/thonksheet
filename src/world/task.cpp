@@ -6,6 +6,10 @@
 static const char* const task_names[(int)TaskKind::count] = {
     "echo",  "shuffled-echo", "delayed-echo", "go-no-go",        "beat", "sequence",
     "catch", "cartpole",      "order",        "both-not-either", "gap",  "place",
+    // tiers 9 and 10
+    "same", "same-then", "odd-one", "bigger", "analogy", "how-many", "more-fewer", "grammar",
+    "brackets", "parts", "noisy-echo", "rare-cue", "noisy-lines", "context", "switch-rule",
+    "copy", "recall", "n-back", "predict-next", "fill-in", "odd-event",
 };
 
 const char* task_name(TaskKind kind) {
@@ -27,6 +31,10 @@ void task_reset(Task& task, TaskKind kind, const TaskSettings& settings, uint64_
     task.kind = kind;
     task.settings = settings;
     world_random_seed(task.random, seed);
+    if (script_kind(kind)) {
+        script_reset(task);
+        return;
+    }
     switch (kind) {
     case TaskKind::echo:
     case TaskKind::shuffled_echo:
@@ -51,11 +59,15 @@ void task_reset(Task& task, TaskKind kind, const TaskSettings& settings, uint64_
         feature_reset(task);
         break;
     case TaskKind::count:
+    default:
         break;
     }
 }
 
 TaskShape task_shape(const Task& task) {
+    if (script_kind(task.kind)) {
+        return script_shape(task);
+    }
     switch (task.kind) {
     case TaskKind::echo:
     case TaskKind::shuffled_echo:
@@ -75,6 +87,7 @@ TaskShape task_shape(const Task& task) {
     case TaskKind::place:
         return feature_shape(task);
     case TaskKind::count:
+    default:
         break;
     }
     return TaskShape{};
@@ -82,6 +95,10 @@ TaskShape task_shape(const Task& task) {
 
 void task_sense(const Task& task, TaskSense& sense) {
     sense = TaskSense{};
+    if (script_kind(task.kind)) {
+        script_sense(task, sense);
+        return;
+    }
     switch (task.kind) {
     case TaskKind::echo:
     case TaskKind::shuffled_echo:
@@ -106,11 +123,15 @@ void task_sense(const Task& task, TaskSense& sense) {
         feature_sense(task, sense);
         break;
     case TaskKind::count:
+    default:
         break;
     }
 }
 
 int task_perfect_move(const Task& task) {
+    if (script_kind(task.kind)) {
+        return script_perfect_move(task);
+    }
     switch (task.kind) {
     case TaskKind::echo:
     case TaskKind::shuffled_echo:
@@ -130,6 +151,7 @@ int task_perfect_move(const Task& task) {
     case TaskKind::place:
         return feature_perfect_move(task);
     case TaskKind::count:
+    default:
         break;
     }
     return -1;
@@ -137,6 +159,11 @@ int task_perfect_move(const Task& task) {
 
 int task_step(Task& task, const TaskStepIn& in) {
     int valence = 0;
+    if (script_kind(task.kind)) {
+        valence = script_step(task, in);
+        task.steps++;
+        return valence;
+    }
     switch (task.kind) {
     case TaskKind::echo:
     case TaskKind::shuffled_echo:
@@ -161,6 +188,7 @@ int task_step(Task& task, const TaskStepIn& in) {
         valence = feature_step(task, in);
         break;
     case TaskKind::count:
+    default:
         break;
     }
     task.steps++;
@@ -172,6 +200,9 @@ static double ratio(int64_t num, int64_t den) {
 }
 
 double task_window_score(Task& task) {
+    if (script_kind(task.kind)) {
+        return script_window_score(task);
+    }
     const int64_t* t = task.tally;
     double score = 0.0;
     switch (task.kind) {
@@ -197,6 +228,7 @@ double task_window_score(Task& task) {
         score = (double)t[0] / (double)(t[1] > 0 ? t[1] : 1);
         break;
     case TaskKind::count:
+    default:
         break;
     }
     for (int i = 0; i < 4; i++) {

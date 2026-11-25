@@ -107,3 +107,9 @@ inline int plug_sensor_group(const Plug& plug) {
 inline int plug_motor_group(const Plug& plug) {
     return plug.settings.motor_side * plug.settings.motor_side;
 }
+
+// fill-in (tier 10): for single lines a task shows off but whose truth it knows, count the
+// lines' sensor neurons whose own prediction (blob.predicted) was on, split by the truth.
+// call once after each tick of the step (plug_hidden.cpp)
+void plug_count_hidden(const Plug& plug, const Blob& blob, uint32_t hidden, uint32_t hidden_on,
+                       TaskStepIn& in);

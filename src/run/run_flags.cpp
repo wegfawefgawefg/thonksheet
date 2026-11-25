@@ -60,6 +60,30 @@ static const char* usage =
     "  --frozen-readout   only connections into motor neurons learn (genome learn_mode 1)\n"
     "  --alive-ticks N    end of life: ticks counted for rate, silent, stuck (default 16384)\n"
     "  --rhythm-ticks N   end of life: idle ticks recorded for the rhythm (default 16384)\n"
+    "tiers 9 and 10 (docs/curriculum.md, \"The rest of the map\"; scripts/map.sh):\n"
+    "  --task NAME        also same, same-then, odd-one, bigger, analogy, how-many, more-fewer,\n"
+    "                     grammar, brackets, parts, noisy-echo, rare-cue, noisy-lines, context,\n"
+    "                     switch-rule, copy, recall, n-back, predict-next, fill-in, odd-event\n"
+    "  --item-lines N     lines per item; levels for bigger (default 4)\n"
+    "  --item-on N        relation: lines lit per item (default 1)\n"
+    "  --hold N           relation, analogy: items never rewarded, the scored ones (default 0)\n"
+    "  --varied 1         how-many, more-fewer: mixed sizes, matched area; parts: anywhere\n"
+    "  --length N         grammar, brackets: string length; copy: most cues (default 8)\n"
+    "  --right-pct N      noisy-echo: chance in 100 the reward is true (default 80)\n"
+    "  --rare N           rare-cue: one try in N; odd-event: one step in N (default 10)\n"
+    "  --flip-pct N       noisy-lines: chance in 100 a line flips (default 10)\n"
+    "  --context-early 1  context: shown a step before the cue\n"
+    "  --switch-every N   switch-rule: tries between changes (default 500)\n"
+    "  --fill N           recall: cues between the marked one and the ask (default 1)\n"
+    "  --back N           n-back: how far back (default 1)\n"
+    "  --markov-order N   predict-next: next depends on the last 1 or 2 (default 1)\n"
+    "  --diff-max N       bigger: largest difference shown (default any)\n"
+    "  --shown N          protocol: the right button's cells are made to fire for the last N\n"
+    "                     ticks of each answer step, no good or bad, for --steps; then\n"
+    "                     --retest steps with no help and no good or bad\n"
+    "  --damage P         protocol: --steps, then P in 100 of the non-sensor neurons\n"
+    "                     silenced, then --retest steps\n"
+    "  --damage-tile 1    protocol: the same, silencing the tile of the first cue line\n"
     "Each life also writes <csv stem>-sum.csv: driver,key,value for every number printed.\n";
 
 static bool read_int(const char* text, int64_t& out) {
@@ -71,6 +95,53 @@ static bool read_int(const char* text, int64_t& out) {
     }
     out = v;
     return true;
+}
+
+// tiers 9 and 10 and their two protocols; false if the flag is not one of them
+static bool parse_map_flag(const char* flag, int64_t v, RunFlags& flags) {
+    TaskSettings& t = flags.task_settings;
+    struct Named {
+        const char* name;
+        int* field;
+    };
+    const Named ints[] = {
+        {"--item-lines", &t.item_lines},
+        {"--item-on", &t.item_on},
+        {"--hold", &t.hold},
+        {"--varied", &t.varied},
+        {"--length", &t.length},
+        {"--right-pct", &t.right_pct},
+        {"--rare", &t.rare},
+        {"--flip-pct", &t.flip_pct},
+        {"--context-early", &t.context_early},
+        {"--switch-every", &t.switch_every},
+        {"--fill", &t.fill},
+        {"--back", &t.back},
+        {"--markov-order", &t.markov_order},
+        {"--diff-max", &t.diff_max},
+    };
+    for (const Named& n : ints) {
+        if (std::strcmp(flag, n.name) == 0) {
+            *n.field = (int)v;
+            return true;
+        }
+    }
+    if (std::strcmp(flag, "--shown") == 0) {
+        flags.shown_ticks = (int)v;
+        flags.protocol = Protocol::shown;
+        return true;
+    }
+    if (std::strcmp(flag, "--damage") == 0) {
+        flags.damage_pct = (int)v;
+        flags.protocol = Protocol::damage;
+        return true;
+    }
+    if (std::strcmp(flag, "--damage-tile") == 0) {
+        flags.damage_tile = (int)v;
+        flags.protocol = Protocol::damage;
+        return true;
+    }
+    return false;
 }
 
 bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
@@ -239,7 +310,7 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.alive_ticks = (int)v;
         } else if (std::strcmp(flag, "--rhythm-ticks") == 0) {
             flags.rhythm_ticks = (int)v;
-        } else {
+        } else if (!parse_map_flag(flag, v, flags)) {
             std::fprintf(stderr, "blobrun: unknown flag %s\n%s", flag, usage);
             return false;
         }

@@ -37,6 +37,9 @@ bool ticker_after_tick(TaskTicker& tt, const Blob& blob) {
         tt.in.surprise = (int)blob.stats.surprise;
     }
     plug_count(tt.plug, blob);
+    if (tt.sense.hidden) {
+        plug_count_hidden(tt.plug, blob, tt.sense.hidden, tt.sense.hidden_on, tt.in);
+    }
     tt.tick_in_step++;
     if (tt.tick_in_step < tt.ticks_per_step) {
         return false;
@@ -48,6 +51,10 @@ bool ticker_after_tick(TaskTicker& tt, const Blob& blob) {
     tt.right_move = tt.perfect_move;
     tt.move = tt.in.move;
     tt.valence = task_step(tt.task, tt.in);
+    tt.scored_valence = tt.valence;
+    if (tt.withhold) {
+        tt.valence = 0; // scored as usual, but nothing reaches the blob
+    }
     tt.tick_in_step = 0;
     if (tt.valence != 0) {
         plug_reward(tt.plug, tt.valence);

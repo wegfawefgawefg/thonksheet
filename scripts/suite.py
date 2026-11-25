@@ -19,6 +19,9 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from map_worlds import PROTOCOL_KEYS, PROTOCOLS, WORLDS  # noqa: E402  the rest of the map
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLOBRUN = os.path.join(ROOT, "build", "blobrun")
 JOBS_AT_ONCE = 2
@@ -70,6 +73,12 @@ def jobs_for(life, readout):
     if readout:
         # the control: a readout that can learn at all, where the input hands over the answer
         jobs["readout-echo"] = (["--task", "echo", "--frozen-readout"] + plain, 1)
+    # the rest of the map (scripts/map_worlds.py): tiers 9 and 10, being shown, damage
+    for name, kind, _, args in WORLDS:
+        jobs["map-" + name] = (args + plain, 1)
+    for name, kind, _, args in PROTOCOLS:
+        jobs["map-" + name] = (args + ["--steps", s, "--window", str(life["phase_window"]),
+                                       "--retest", str(life["retest"])], 1.3)
     return jobs
 
 
@@ -141,6 +150,13 @@ def rows_for():
                      "ticks_per_s_" + size))
     rows.append(("fits the machine", "bytes per neuron (32x32 tiles)", "speed",
                  "bytes_per_neuron_32x32"))
+    # the rest of the map: the window score late in the life (no-teacher worlds: the sheet's
+    # own predictions; meaningless for engines that keep none, such as the minimal one)
+    for name, kind, what, _ in WORLDS:
+        rows.append(("map: " + kind, "%s: %s" % (name, what), "map-" + name, "late"))
+    for name, kind, what, _ in PROTOCOLS:
+        for key in PROTOCOL_KEYS[kind]:
+            rows.append(("map: " + kind, "%s: %s, %s" % (name, what, key), "map-" + name, key))
     return rows
 
 
