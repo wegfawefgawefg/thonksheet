@@ -57,7 +57,7 @@ alone: a design may pass tier 4 before tier 3.
 | 2 | combination | exclusive-or; the function battery's N-point patterns, counting | exclusive-or 0.88; the rest being built |
 | 3 | magnitude | functions of a number: step, tent, sine, cosine, sums, products | being built |
 | 4 | time | order; gap; delayed echo; beat; sequence; functions of the last few cues | on one richer sheet (rich2) with nothing changed between them: order 0.85, gap 0.93; a cue is still held only about 20 ticks, so delayed echo and beat fail |
-| 5 | space and what stays the same | the invariance battery: place, scale, turn, thickness, clutter, viewpoint | place fails (0.25); the rest being built |
+| 5 | space and what stays the same | the invariance battery: place, scale, turn, thickness, clutter, viewpoint; the seeing battery: name the shape, track a moving thing, count, a thing behind a cover | place fails (0.25); the rest being built |
 | 6 | sound | the invariance battery's tune, tempo and pitch rows | being built |
 | 7 | acting | bandit; switching bandit; chain; track; catch; forage; mountain car; pendulum; cartpole; snake | catch 0.32 (chance 0.25); cartpole below a coin; the rest being built |
 | 8 | keeping and adding | second task after the first; retest; idle; capacity; a changed rule; damage | second task 0.99 with the first kept at 0.98; idle loses nothing |

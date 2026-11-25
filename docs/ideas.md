@@ -509,3 +509,11 @@ would be cool if we can arbitrarily learn calculations."
      operations written in one go. Aimed at holding, at multi-step calculation, at acting.
      The owner: "i suspect it can actually work. but idk how. its a whole other route to a
      general learner i think." *building*
+136. **Seeing battery.** The owner: "shape identification. square. triangle. lines. dot.
+     object tracking." Name the shape (dot, line, square, triangle, cross, ring) wherever
+     it is and whatever its size; which way a line points; how many things there are; where
+     a moving thing is now (which part of the sheet), and where it will be in a few steps;
+     follow one thing among others that look the same; a thing that passes behind a cover
+     and comes out the other side. Answers by button, by pointing (a motor line per region),
+     and by moving a marker onto it. *queued: starts when the invariance battery lands,
+     since it reuses that battery's shape drawing*
