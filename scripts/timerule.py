@@ -39,6 +39,15 @@ def walk_rows():
     for d in (8, 16):
         rows.append(("suite, delay %d" % d, delayed(d), dict(SUITE, delay=d)))
         rows.append(("pred, delay %d" % d, delayed(d), dict(PRED, delay=d)))
+    # at 2 steps the prediction sheet fails too: which part of its shape. one factor back
+    # from it, and two factors changed from the suite's
+    p2 = dict(PRED, delay=2)
+    for k, _ in one:
+        if k != "delay":
+            rows.append(("pred d2, %s %s" % (k, SUITE[k]), delayed(2), dict(p2, **{k: SUITE[k]})))
+    for a, b in (("side", "lattice"), ("side", "spread"), ("lattice", "spread")):
+        rows.append(("suite, %s %s + %s %s" % (a, PRED[a], b, PRED[b]), delayed(2),
+                     dict(SUITE, **{a: PRED[a], b: PRED[b]})))
     return rows
 
 
@@ -52,10 +61,11 @@ def walk(opt):
 def walk8(opt):
     """the cells that carry the conclusion, on 8 seeds; and 3 steps, between 2 and 4"""
     keep = ["suite (side 3, std, spread 128, d2, off+tw, 40k)", "suite, delay 4",
-            "pred (side 2, pred, spread 64, d4, off bare, 20k)", "pred, delay 2"]
+            "pred (side 2, pred, spread 64, d4, off bare, 20k)", "pred, delay 2",
+            "pred d2, side 3", "suite, side 2 + lattice pred"]
     rows = [r for r in walk_rows() if r[0] in keep]
     rows.insert(1, ("suite, delay 3", delayed(3), dict(SUITE, delay=3)))
-    arms = ["off", "on", "churn"]
+    arms = ["off", "on", "churn", "oncap"]
     res = grid(os.path.join(opt["out"], "walk"), rows, arms, opt)
     return grid_table("## 2b. The walk's deciding cells on 8 seeds (scripts/timerule.sh walk8)",
                       rows, arms, res, opt)
@@ -120,7 +130,7 @@ def reach(opt):
 def readout(opt):
     return reach_table("## 6. With the output-gap readout (scripts/timerule.sh readout): "
                        "--g.readout_evidence 2 --g.readout_good 2 --g.margin_percent 20 "
-                       "--g.margin_win 2", ["off", "on", "goodoff", "goodon"], opt,
+                       "--g.margin_win 2", ["off", "on", "goodon"], opt,
                        ("goodon", "on"))
 
 
