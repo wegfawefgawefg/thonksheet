@@ -117,7 +117,11 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
     where the cells sit.
 17. **Do not strengthen your own answer on good.** [likely] The rule above never does, and
     it has no locked lives: shuffled Echo is 1.00 on every seed, crossed ones included,
-    where the old rule averaged 0.56.
+    where the old rule averaged 0.56. *The literature says this is too strong* (Baldassi
+    and others 2007, binary synapses with hidden states like ours): never on a comfortable
+    good, but on a good that was barely won, deepen the hidden evidence of what helped.
+    Without that case learning time grows exponentially with size; with it, about twice as
+    many patterns are held. Being tested (the tags-and-margin run).
 
 18. **Size does not break it, so far.** [hint] Echo scores the same with the sheet grown 16
     times around the same task (minimal engine 0.94, 0.93, 0.92 at 4,096, 16,384 and 65,536
@@ -147,6 +151,34 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
     readable for 60 ticks, three times the default's limit, and tells cues apart a third
     as well while they are on. Nothing found by tuning holds 150 ticks. So one region to
     ring and one to mix, and a real mechanism for anything longer.
+
+23. **Where inhibition reaches is a lever; tidy structure is not.** [hint: four seeds, sheet
+    as born, ideal reader] Inhibition kept inside its own tile nearly triples how readable
+    a gap is (1.60 to 4.62) and lifts exclusive-or (1.76 to 2.84), at a cost to telling
+    cues apart and to order. Links that go both ways help a little everywhere. Layers
+    inside a tile, finer locality, fewer neighbour slots, hubs and topographic far links
+    make the sheet poorer or change nothing. A second sheet fed by the first, and a gentle
+    flow in one direction, add reach only.
+24. **Wiring laid down at birth does not last.** [hint: one seed] With learning on, growth
+    and pruning took mirror wiring from 0.80 reciprocal back to 0.15 within 100,000 ticks.
+    A wiring idea has to live in the growth rule to survive a life.
+
+## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
+
+- Finding 14's hidden counter is a known device (permanence in HTM; hidden states in binary
+  synapses), and the best number of hidden states is small. Our 6 bits fits.
+- Finding 15's "which action was taken" bit is what the attention-gated rules (AGREL,
+  AuGMEnT, BrainProp) send back from the chosen action to tag the neurons that fed it. It
+  is the most direct known route from our readout to the inside. Being tested.
+- Finding 13 has a stronger form: reward must be centred per situation, which takes a
+  critic, not one running average. An actor told only good and bad failed cartpole in 1983
+  too; it took a critic. Being tested.
+- Finding 12 stands (perturbing single neurons scales badly), with one open door:
+  perturbing connections, or every unit at once by its own code (idea 138).
+- Finding 1's budget has to act fast, and a trained readout wants a bigger budget than the
+  sheet (fits finding 16).
+- A warning for any holding region (Braitenberg): activity held while co-activity wiring
+  runs ties the held units together and loses their order.
 
 ## Walls
 
