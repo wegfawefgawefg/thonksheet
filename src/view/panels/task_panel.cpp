@@ -121,9 +121,13 @@ static void score_plot(const TaskView& t, const TaskScores& sc, float height) {
         }
     }
     const bool share = top <= 1.0f;
+    // grid lines at quarters; on a short plot only the top and bottom are labelled
     for (int i = 0; i <= 4; ++i) {
         const float y = plot.y + size.y * i / 4.0f;
         dl->AddLine(ImVec2(plot.x, y), ImVec2(plot.x + size.x, y), IM_COL32(48, 53, 64, 255));
+        if (size.y < 80.0f && i != 0 && i != 4) {
+            continue;
+        }
         char label[16];
         std::snprintf(label, sizeof label, share ? "%.2f" : "%.0f", top * (4 - i) / 4.0f);
         dl->AddText(ImVec2(at.x, y - 7), color(DIM), label);
@@ -286,22 +290,24 @@ void task_panel(State& s) {
     }
     last_try(t);
 
-    // the world (bitmap or numbers) at the left, the strip of the last steps at the right
+    // the world (bitmap or numbers) down the left; the strip of the last steps, the score
+    // plot and its legend in the rest
+    const float below = ImGui::GetContentRegionAvail().y;
     const float strip_h = std::clamp(r.h * 0.28f, 40.0f, 30.0f + 9.0f * std::min(t.singles, 16));
-    const float world_w = world_picture_width(t, strip_h + 30.0f);
+    const float world_w = world_picture_width(t, std::min(below, 2.0f * strip_h + 40.0f));
     if (world_w > 0) {
-        ImGui::BeginGroup();
-        world_picture(t, world_w, strip_h + 30.0f);
-        ImGui::EndGroup();
+        ImGui::BeginChild("world", ImVec2(world_w, below), ImGuiChildFlags_None,
+                          ImGuiWindowFlags_NoScrollbar);
+        world_picture(t, world_w - 4, below);
+        ImGui::EndChild();
         ImGui::SameLine();
     }
     ImGui::BeginGroup();
     line_strip(t, strip_h);
-    ImGui::EndGroup();
-
     const float room = ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeightWithSpacing() - 6;
     score_plot(t, s.frame.scores, std::max(30.0f, room));
     legend(t, s.frame.scores);
+    ImGui::EndGroup();
     ImGui::End();
 }
 

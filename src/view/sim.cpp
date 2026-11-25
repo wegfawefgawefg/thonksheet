@@ -128,7 +128,10 @@ static void sim_loop(Sim& sim) {
         }
 
         // tick or not, by the mode
-        const int mode = sh.mode.load();
+        // a measurement asked for runs flat out whatever the mode, so it never takes minutes
+        const bool measuring = (sim.probe.on || sim.probe.pending >= 0) && !sim.probe.live &&
+                               sim.settings.probe.feature < 0;
+        const int mode = measuring ? RUN_FULL : sh.mode.load();
         bool tick = false, task_step = false;
         if (mode == RUN_FULL || mode == RUN_TURBO) {
             tick = true;

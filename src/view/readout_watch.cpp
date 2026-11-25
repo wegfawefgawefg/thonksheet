@@ -40,17 +40,30 @@ static int full_keep(const Blob& b, int n, int8_t* value, int8_t* wired, int* to
         row = b.readout_evidence + static_cast<int64_t>(b.readout_row[n]) * KEEP_SOURCES;
         *budget = b.readout_keep[b.readout_row[n]];
     }
-    for (int k = 0; k < SLOTS; ++k) {
-        for (int bit = 0; bit < TILE_NEURONS; ++bit) {
-            const int w = blob_weight(b, n, k, bit);
-            wired[k * TILE_NEURONS + bit] = w > 0 ? 1 : 0;
-            value[k * TILE_NEURONS + bit] =
-                static_cast<int8_t>(row != nullptr ? row[k * TILE_NEURONS + bit] : w);
-        }
-    }
     const int bits = std::clamp(b.genome.readout_evidence_bits, 2, 8);
     *top = counters ? (1 << (bits - 1)) - 1 : 5;
-    return counters ? KEEP_COUNTERS : KEEP_STRENGTHS;
+    const int kind = counters ? KEEP_COUNTERS : KEEP_STRENGTHS;
+    if (row != nullptr && wired == nullptr) {
+        std::memcpy(value, row, KEEP_SOURCES); // the counters alone: one copy
+        return kind;
+    }
+    // a slot's two weight words at once (blob_weight per bit is slow at this count)
+    for (int k = 0; k < SLOTS; ++k) {
+        const int64_t at = blob_weight_index(n, k);
+        const uint64_t w0 = b.w0[at], w1 = b.w1[at];
+        int8_t* v = value + k * TILE_NEURONS;
+        for (int bit = 0; bit < TILE_NEURONS; ++bit) {
+            const int w = static_cast<int>((w0 >> bit) & 1) + 4 * static_cast<int>((w1 >> bit) & 1);
+            v[bit] = static_cast<int8_t>(w);
+            if (wired != nullptr) {
+                wired[k * TILE_NEURONS + bit] = w > 0 ? 1 : 0;
+            }
+        }
+    }
+    if (row != nullptr) {
+        std::memcpy(value, row, KEEP_SOURCES);
+    }
+    return kind;
 }
 
 // the minimal engine: bitsliced counters (offset binary) where it keeps them, else the mask
@@ -73,7 +86,9 @@ static int minimal_keep(const Blob& b, int n, int8_t* value, int8_t* wired, int*
                 }
                 v -= 1 << (bits - 1);
             }
-            wired[k * TILE_NEURONS + bit] = static_cast<int8_t>((mask >> bit) & 1);
+            if (wired != nullptr) {
+                wired[k * TILE_NEURONS + bit] = static_cast<int8_t>((mask >> bit) & 1);
+            }
             value[k * TILE_NEURONS + bit] = static_cast<int8_t>(clamp_byte(v));
         }
     }
@@ -124,8 +139,26 @@ void readout_watch_start(ReadoutWatch& w, int engine, const Blob& blob, const Pl
 }
 
 void readout_watch_tick(ReadoutWatch& w, const Blob& blob) {
-    for (size_t i = 0; i < w.cells.size(); ++i) {
-        w.step_spikes[w.button[i]] += blob_fired(blob, w.cells[i]) ? 1 : 0;
+    // a word per button per tile it has cells in: one AND and popcount each
+    if (w.words.empty() && !w.cells.empty()) {
+        for (size_t i = 0; i < w.cells.size(); ++i) {
+            const int tile = w.cells[i] / TILE_NEURONS;
+            const uint64_t bit = 1ull << (w.cells[i] % TILE_NEURONS);
+            bool found = false;
+            for (ReadoutWord& word : w.words) {
+                if (word.tile == tile && word.button == w.button[i]) {
+                    word.cells |= bit;
+                    found = true;
+                }
+            }
+            if (!found) {
+                w.words.push_back(ReadoutWord{tile, w.button[i], bit});
+            }
+        }
+    }
+    const uint64_t* spikes = blob.spikes[blob.now];
+    for (const ReadoutWord& word : w.words) {
+        w.step_spikes[word.button] += __builtin_popcountll(spikes[word.tile] & word.cells);
     }
     for (size_t b = 0; b < w.view.buttons.size(); ++b) {
         w.view.buttons[b].spikes = w.step_spikes[b];
@@ -142,20 +175,16 @@ void readout_watch_answer(ReadoutWatch& w, int move) {
     }
 }
 
-void readout_watch_before_reward(ReadoutWatch& w, const Blob& blob) {
+void readout_watch_reward(ReadoutWatch& w, int64_t step, int valence, int move, bool watch) {
     if (w.view.keep == KEEP_NONE) {
         return;
     }
-    w.before.resize(w.cells.size() * KEEP_SOURCES);
-    int top = 1, budget = 0;
-    for (size_t i = 0; i < w.cells.size(); ++i) {
-        keep_row(w.engine, blob, w.cells[i], &w.before[i * KEEP_SOURCES], w.wired.data(), &top,
-                 &budget);
+    if (!watch) {
+        w.stale = true; // flat out undrawn: nothing compared, the next one a baseline
+        w.pending = false;
+        return;
     }
-}
-
-void readout_watch_after_reward(ReadoutWatch& w, int64_t step, int valence, int move) {
-    w.pending = w.view.keep != KEEP_NONE && w.before.size() == w.cells.size() * KEEP_SOURCES;
+    w.pending = true;
     w.pending_step = step;
     w.pending_valence = valence;
     w.pending_move = move;
@@ -166,19 +195,27 @@ void readout_watch_settle(ReadoutWatch& w, const Blob& blob) {
         return;
     }
     w.pending = false;
-    const int64_t step = w.pending_step;
-    const int valence = w.pending_valence;
-    const int move = w.pending_move;
-    // compare every cell's row with its copy from before the reward; the copy becomes the
-    // differences. a cell's up and down are counted as drive: a local inhibitory source's
-    // counter going up takes drive away, as the rule means it ("losing" an input)
+    // the first time, or after rewards that were not watched: only a new baseline
+    const size_t size = w.cells.size() * KEEP_SOURCES;
+    const bool baseline = w.stale || w.before.size() != size;
+    w.stale = false;
+    w.before.resize(size);
+    w.diff.resize(size);
+    // compare every cell's row with the baseline, which then becomes the row. a cell's up and
+    // down are counted as drive: a local inhibitory source's counter going up takes drive
+    // away, as the rule means it ("losing" an input)
     std::vector<int16_t> up(w.cells.size(), 0), down(w.cells.size(), 0);
     bool any = false;
     int top = 1, budget = 0;
     for (size_t i = 0; i < w.cells.size(); ++i) {
         const int n = w.cells[i];
-        w.view.keep = keep_row(w.engine, blob, n, w.row.data(), w.wired.data(), &top, &budget);
+        w.view.keep = keep_row(w.engine, blob, n, w.row.data(), nullptr, &top, &budget);
         int8_t* was = &w.before[i * KEEP_SOURCES];
+        int8_t* diff = &w.diff[i * KEEP_SOURCES];
+        if (std::memcmp(was, w.row.data(), KEEP_SOURCES) == 0) {
+            std::memset(diff, 0, KEEP_SOURCES); // unchanged (every cell, on a good step)
+            continue;
+        }
         for (int k = 0; k < SLOTS; ++k) {
             const int src = source_tile(w.engine, blob, n, k);
             const uint64_t inh =
@@ -189,16 +226,17 @@ void readout_watch_settle(ReadoutWatch& w, const Blob& blob) {
                 const int drive = (inh >> bit) & 1 ? -d : d;
                 up[i] = static_cast<int16_t>(up[i] + (drive > 0 ? drive : 0));
                 down[i] = static_cast<int16_t>(down[i] + (drive < 0 ? -drive : 0));
-                was[j] = static_cast<int8_t>(clamp_byte(d));
+                diff[j] = static_cast<int8_t>(clamp_byte(d));
+                was[j] = w.row[j];
             }
         }
         any = any || up[i] > 0 || down[i] > 0;
     }
-    if (!any) {
+    if (!any || baseline) {
         return;
     }
     // a change: keep it as the last one
-    w.moved.swap(w.before);
+    w.moved.swap(w.diff);
     ReadoutView& v = w.view;
     for (ReadoutButton& b : v.buttons) {
         b.gained = b.lost = b.up = b.down = 0;
@@ -212,9 +250,9 @@ void readout_watch_settle(ReadoutWatch& w, const Blob& blob) {
         b.gained += up[i] > down[i] ? 1 : 0;
         b.lost += down[i] > up[i] ? 1 : 0;
     }
-    v.change_step = step;
-    v.change_valence = valence;
-    v.change_pressed = move;
+    v.change_step = w.pending_step;
+    v.change_valence = w.pending_valence;
+    v.change_pressed = w.pending_move;
     ++v.changes;
 }
 

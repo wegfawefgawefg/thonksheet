@@ -99,13 +99,8 @@ bool sim_task_after_tick(Sim& sim) {
     if (tt.valence != 0) {
         // the world tells the buttons' cells which button was pressed, then rewards
         plug_mark_acted(tt.plug, *sim.blob, tt.move);
-        if (watch) {
-            readout_watch_before_reward(st.readout, *sim.blob);
-        }
         engine_reward(sim.engine, *sim.blob, tt.valence);
-        if (watch) {
-            readout_watch_after_reward(st.readout, v.step + 1, tt.valence, tt.move);
-        }
+        readout_watch_reward(st.readout, v.step + 1, tt.valence, tt.move, watch);
     }
 
     // the try, the counts, and a window's score when one closes
@@ -150,7 +145,8 @@ void task_scores_copy(TaskScores& to, const TaskScores& from) {
 // the world as the task shows it this step: the bitmap and the numbers with their lines
 static void fill_world(TaskView& out, const TaskTicker& tt) {
     const Plug& plug = tt.plug;
-    std::memcpy(out.sheet, tt.sense.sheet, sizeof out.sheet);
+    const int pixels = std::min<int>(out.sheet_w * out.sheet_h, sizeof tt.sense.sheet);
+    out.sheet.assign(tt.sense.sheet, tt.sense.sheet + std::max(0, pixels));
     for (int i = 0; i < out.numbers; ++i) {
         out.number[i] = tt.sense.numbers[i];
         out.number_on[i] = 0;

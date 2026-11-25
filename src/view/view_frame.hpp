@@ -193,7 +193,7 @@ struct TaskView {
     char motor_names[TASK_NAMES][TASK_NAME] = {};
     // the world as the task shows it this step: its bitmap and its numbers
     int sheet_w = 0, sheet_h = 0;
-    uint8_t sheet[256] = {};
+    std::vector<uint8_t> sheet; // sheet_w * sheet_h, row by row
     int numbers = 0, number_lines = 0;
     int32_t number[TASK_WORLD_NUMBERS] = {}, number_lo[TASK_WORLD_NUMBERS] = {},
             number_hi[TASK_WORLD_NUMBERS] = {};

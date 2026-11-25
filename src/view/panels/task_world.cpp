@@ -47,7 +47,7 @@ void world_picture(const TaskView& t, float width, float height) {
         for (int y = 0; y < t.sheet_h; ++y) {
             for (int x = 0; x < t.sheet_w; ++x) {
                 const int i = y * t.sheet_w + x;
-                if (i < 256 && t.sheet[i]) {
+                if (i < static_cast<int>(t.sheet.size()) && t.sheet[i]) {
                     const ImVec2 p(at.x + 1 + x * px, top + 1 + y * px);
                     dl->AddRectFilled(p, ImVec2(p.x + px - 1, p.y + px - 1),
                                       IM_COL32(235, 240, 245, 255));
