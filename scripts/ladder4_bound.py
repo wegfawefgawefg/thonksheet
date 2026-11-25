@@ -17,7 +17,9 @@ step fails to reach it.
   apart   family 4: give the pixels back through a linear decoder (the autoencoder) and keep
           the cells of a tile uncorrelated (mean squared correlation within tiles)
   bcm     family 5: BCM's objective per cell, E[c^3]/3 - E[c^2]^2/4, at the engine's rate
-Family 0's bound is idea 165's autoencoder (ladder2 kind "auto"), read from its outputs.
+  auto    family 0: give the pixels back through a linear decoder (idea 165's autoencoder,
+          competitive learning's nearest loss: vector quantisation is a reconstruction)
+Each bound's wiring is written out (arm B<objective>) so it can be read in the real sheet.
 """
 
 import json
@@ -32,7 +34,7 @@ import ladder2_model as M
 import ladder2_train as T
 import ladder4_data as X
 
-OBJECTIVES = ["real", "pixel", "looks", "apart", "bcm"]
+OBJECTIVES = ["auto", "real", "pixel", "looks", "apart", "bcm"]
 
 
 def tile_sum(c, tile, tiles):
@@ -76,6 +78,9 @@ def loss_of(obj, model, aims, xb, gen, ctx):
         logits = a @ b.t() / 0.1
         y = torch.arange(len(xb))
         return 0.5 * (Fn.cross_entropy(logits, y) + Fn.cross_entropy(logits.t(), y)), c
+    if obj == "auto":
+        c = model(xb)
+        return Fn.binary_cross_entropy_with_logits(aims.decoder(c), xb), c
     if obj == "apart":
         c = model(xb)
         rec = Fn.binary_cross_entropy_with_logits(aims.decoder(c), xb)
@@ -90,7 +95,8 @@ def loss_of(obj, model, aims, xb, gen, ctx):
     raise ValueError(obj)
 
 
-def run_one(task_name, obj, seed, sheet_path, out_path, epochs, limit=0, lr=2e-3):
+def run_one(task_name, obj, seed, sheet_path, out_path, epochs, limit=0, wiring_out=None,
+            lr=2e-3):
     torch.set_num_threads(1)
     torch.manual_seed(seed)
     gen = torch.Generator().manual_seed(seed)
@@ -108,7 +114,7 @@ def run_one(task_name, obj, seed, sheet_path, out_path, epochs, limit=0, lr=2e-3
         j = torch.nonzero(t >= 0).flatten()
         model.cand[j, t[j]] = False
         ctx["target"] = t
-    aims = Aims(sheet.H, ctx["tiles"], obj == "apart")
+    aims = Aims(sheet.H, ctx["tiles"], obj in ("apart", "auto"))
     T.init_thresholds(model, x0[:3000])
     params = [p for n, p in model.named_parameters() if n != "theta"] + list(aims.parameters())
     opt = torch.optim.Adam(params, lr=lr)
@@ -142,6 +148,8 @@ def run_one(task_name, obj, seed, sheet_path, out_path, epochs, limit=0, lr=2e-3
            "rate": float(f_te.mean()) * 1000 / M.TICKS, "active": float((f_te > 0).float().mean()),
            "silent_cells": float((f_te.sum(0) == 0).float().mean())}
     res.update(T.wiring_stats(model, sheet))
+    if wiring_out:
+        T.write_wiring(model, sheet, wiring_out)
     res["seconds"] = round(time.time() - t0)
     logf.write(json.dumps(res) + "\n")
     with open(out_path, "w") as f:

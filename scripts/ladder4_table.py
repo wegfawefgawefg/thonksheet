@@ -13,7 +13,7 @@ import json
 import os
 import re
 
-BOUND_OF = {"f0": "auto (idea 165)", "f1": "real", "f1g": "real", "f2": "pixel", "f3": "looks",
+BOUND_OF = {"f0": "auto", "f1": "real", "f1g": "real", "f2": "pixel", "f3": "looks",
             "f4": "apart", "f5": "bcm"}
 # idea 165's autoencoder at the bottom rung, seeds 5-7 (out/from-agents/ladder2/full)
 AUTO = {"mnist": [0.9608, 0.9583, 0.9615], "pair": [0.7448, 0.7409, 0.7487]}

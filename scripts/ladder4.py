@@ -39,7 +39,7 @@ ENGINE = {"compete": "--g.learn_mode 5 --g.compete_on 1 --g.compete_shift 5".spl
           "compete-tw": ("--g.learn_mode 5 --g.compete_on 1 --g.compete_shift 5 "
                          "--g.tile_winners 4").split()}
 ARMS = ["f0", "f1", "f1g", "f2", "f3", "f4", "f5"]
-OBJECTIVES = ["real", "pixel", "looks", "apart", "bcm"]
+OBJECTIVES = ["auto", "real", "pixel", "looks", "apart", "bcm"]
 
 
 def arm_opt(arm):
@@ -106,8 +106,15 @@ def bound_job(outdir, task, obj, seed, opt):
     out = os.path.join(outdir, "bound-%s-%s-%d.json" % (task, obj, seed))
     cmd = nice([PY, os.path.abspath(__file__), "bound", task, obj, str(seed),
                 sheet_file(outdir, seed), out, "--epochs", str(opt["epochs"]), "--limit",
-                str(opt["limit"])])
+                str(opt["limit"]), "--wiring", wiring_file(outdir, task, "B" + obj, "life", seed)])
     return cmd, out
+
+
+def finished(outdir, task, arm, ctrl, seed):
+    """the json of the run that wrote this wiring (a life, or a bound: arm B<objective>)"""
+    if arm.startswith("B"):
+        return os.path.join(outdir, "bound-%s-%s-%d.json" % (task, arm[1:], seed))
+    return os.path.join(outdir, "life-%s-%s-%s-%d.json" % (task, arm, ctrl, seed))
 
 
 def transplant_jobs(outdir, task, arm, ctrl, seed, opt):
@@ -120,8 +127,7 @@ def transplant_jobs(outdir, task, arm, ctrl, seed, opt):
     tag = "@" + opt["read_tag"] if opt["read_tag"] else ""
     jobs = [(nice(base), os.path.join(outdir, "bornread-%s%s-%d.txt" % (task, tag, seed)))]
     w = wiring_file(outdir, task, arm, ctrl, seed)
-    done = os.path.join(outdir, "life-%s-%s-%s-%d.json" % (task, arm, ctrl, seed))
-    if os.path.exists(w) and os.path.exists(done):
+    if os.path.exists(w) and os.path.exists(finished(outdir, task, arm, ctrl, seed)):
         jobs.append((nice(base + ["--wiring-load", w]), os.path.join(
             outdir, "transplant-%s-%s-%s%s-%d.txt" % (task, arm, ctrl, tag, seed))))
     return jobs
@@ -149,7 +155,10 @@ def pack(outdir, only=None):
         if not (f.startswith("wiring-") and f.endswith(".txt")):
             continue
         w = os.path.join(outdir, f)
-        done = os.path.join(outdir, "life-" + f[len("wiring-"):-4] + ".json")
+        task, rest = f[len("wiring-"):-4].split("-", 1)
+        arm_ctrl, seed = rest.rsplit("-", 1)
+        arm, ctrl = arm_ctrl.rsplit("-", 1)
+        done = finished(outdir, task, arm, ctrl, int(seed))
         if (only is not None and w not in only) or not os.path.exists(done):
             continue
         if not os.path.exists(w + ".gz"):
@@ -249,7 +258,7 @@ def main():
         task, obj, seed, sheet, out = args[1:6]
         rest = args[6:]
         ladder4_bound.run_one(task, obj, int(seed), sheet, out, int(flag(rest, "--epochs", 6)),
-                              int(flag(rest, "--limit", 0)))
+                              int(flag(rest, "--limit", 0)), flag(rest, "--wiring", None))
         return 0
     name = args.pop(0)
     opt = {"seeds": [5, 6, 7], "tasks": ["mnist", "pair"], "parts": ["model"], "jobs": 3,
