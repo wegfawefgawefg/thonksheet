@@ -16,6 +16,7 @@
 #                                               the gap (seed 5): how many events a cue survives
 #   scripts/memory.sh sheet place 5             the combination: the memory reading a sheet
 #                                               held fixed (1) and a learning one (2)
+#   scripts/memory.sh ladder                    pairs and hold ladders, seeds 5-12
 #   scripts/memory.sh speed                     ticks per second (random input) and bytes
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -63,6 +64,21 @@ hold)
     shift 2 || shift $#
     nice -n 19 ./build/memprobe hold --distractors "$d" --seed "$seed" "$@"
     ;;
+ladder)
+    # pairs 16..4096 (and learning off) and hold with 0..3 distractors, seeds 5-12, 2 at a
+    # time; lines land in out/memory/ladder.txt
+    mkdir -p out/memory
+    for s in 5 6 7 8 9 10 11 12; do
+        for n in 16 64 256 1024 2048 4096; do
+            echo "pairs --n $n --seed $s"
+            echo "pairs --n $n --seed $s --off 1"
+        done
+        for d in 0 1 2 3; do
+            echo "hold --distractors $d --seed $s"
+            echo "hold --distractors $d --seed $s --off 1"
+        done
+    done | xargs -P 2 -I{} sh -c 'nice -n 19 ./build/memprobe {} '"$*"' >> out/memory/ladder.txt'
+    ;;
 sheet)
     task="${1:-place}" seed="${2:-5}"
     shift 2 || shift $#
@@ -78,7 +94,7 @@ speed)
     nice -n 19 ./build/memprobe bytes "$@"
     ;;
 *)
-    sed -n '2,22p' "$0"
+    sed -n '2,20p' "$0"
     exit 1
     ;;
 esac
