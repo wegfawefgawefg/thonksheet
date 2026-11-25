@@ -233,6 +233,18 @@ static bool life_plain(const RunFlags& flags, const std::string& csv, FILE* sum,
     if (babble_on(flags.babble) && !life_signal_report(flags, csv, sum, key, ran, edge)) {
         return false;
     }
+    // versions rewarded and not scored (place, the invariance battery)
+    for (int d = 0; d < (int)Driver::count; d++) {
+        const std::vector<double>& t = results[d].taught;
+        if (!ran[d] || t.size() != windows || t.empty() || t[0] < 0) {
+            continue;
+        }
+        double early = mean(t, 0, edge), late = mean(t, windows - edge, windows);
+        std::printf("%-10s %10.4f %10.4f %+12.4f   on the rewarded versions\n", driver_names[d],
+                    early, late, late - early);
+        put(sum, d, (key + "taught_early").c_str(), early);
+        put(sum, d, (key + "taught_late").c_str(), late);
+    }
     for (int d = 0; d < (int)Driver::count; d++) {
         if (ran[d] && results[d].end.measured) {
             life_end_print(results[d].end, driver_names[d], stdout);

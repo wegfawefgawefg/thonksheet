@@ -1,0 +1,23 @@
+row,label,a_input_same,a_input_held,a_nearest_same,a_nearest_held,a_whole_same,a_whole_held,a_view_same,a_view_held,b_held,b_taught,b_twin_held,b_coin_held,c_held,c_taught,c_twin_held,c_coin_held,b_held_sd,c_held_sd,seeds
+about,name,,,,,,,,,,,,,,,,,,,table
+about,engine,,,,,,,,,,,,,,,,,,,table
+about,seeds,,,,,,,,,,,,,,,,,,,5-12
+about,note,,,,,,,,,,,,,,,,,,,partial: stopped before every run finished; see the results doc
+place,place: the suite's place task,0.9300,0.1705,,,0.8866,0.2017,0.6236,0.3893,,,,,0.3916,0.4688,0.4558,0.4746,,0.0692,8
+position,"position: a shape at 15 places, 4 held",1.0000,0.4243,,,0.8162,0.4213,0.6160,0.4831,,,,,0.4417,0.4328,0.4690,0.4703,,0.0222,8
+scale,"scale: 1x held, taught at 2x and 3x",1.0000,0.5125,,,0.9647,0.5847,0.8050,0.4899,,,,,0.4225,0.4456,0.4729,0.4637,,0.0332,8
+rotation,rotation: half and 3/4 turns held,1.0000,0.5010,,,0.9059,0.4524,0.7435,0.4483,,,,,0.4233,0.4646,0.4677,0.4805,,0.0296,8
+bright,bright: 1 line of 4 per pixel held (control),1.0000,1.0000,,,0.9496,0.8474,0.7256,0.5343,,,,,0.4717,0.4596,0.4685,0.4682,,0.0882,8
+clutter,clutter: 8 and 16 extra blocks held,0.9987,0.9100,,,0.9550,0.8060,0.7328,0.5526,,,,,0.4441,0.4295,0.4613,0.4660,,0.0240,8
+mixed,mixed: 1x right and 2x left held,1.0000,0.5005,,,0.8598,0.5144,0.6170,0.5236,,,,,0.4459,0.4250,0.4632,0.4774,,0.0228,8
+view,"view: 3D object, 3 of 8 angles held",,,,,,,,,,,,,0.4254,0.4290,0.4562,0.4810,,0.0311,8
+shift,shift: tune starting 4 ticks in held,,,,,,,,,,,,,0.4278,0.4386,0.4614,0.4757,,0.0263,8
+tempo,"tempo: 2-tick notes held, taught 4-8",,,,,,,,,,,,,0.4482,0.4401,0.4619,0.4690,,0.0458,8
+pitch,pitch: tune at 2 of 6 pitches held,1.0000,0.0655,,,0.6170,0.4779,0.5953,0.4862,,,,,0.4263,0.4353,0.4564,0.4773,,0.0323,8
+position+motion,position + motion (half the life drifting),,,,,,,,,,,,,0.4561,0.4414,0.4843,0.4762,,0.0458,8
+scale+motion,scale + motion (half the life drifting),,,,,,,,,,,,,0.4270,0.4267,0.4648,0.4852,,0.0303,8
+rotation+motion,rotation + motion (half the life drifting),,,,,,,,,,,,,0.4253,0.4303,0.4602,0.4791,,0.0087,8
+bright+motion,bright + motion (half the life drifting),,,,,,,,,,,,,0.4302,0.4416,0.4572,0.4789,,0.0311,8
+clutter+motion,clutter + motion (half the life drifting),,,,,,,,,,,,,0.4519,0.4342,0.4664,0.4859,,0.0251,8
+mixed+motion,mixed + motion (half the life drifting),,,,,,,,,,,,,0.4527,0.4320,0.4755,0.4837,,0.0199,8
+view+motion,view + motion (half the life drifting),,,,,,,,,,,,,0.4334,0.4219,0.4617,0.4655,,0.0237,8

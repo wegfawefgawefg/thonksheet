@@ -29,6 +29,8 @@ struct LifePhase {
 
 struct LifeResult {
     std::vector<double> scores; // one per window, all phases in order
+    // place and the invariance battery: right / tries on the rewarded versions, per window
+    std::vector<double> taught;
     // phase p owns scores [first_window[p], first_window[p + 1])
     int first_window[LIFE_MAX_PHASES + 1] = {};
     int64_t ticks = 0;              // ticks lived over the phases (not the end measurements)

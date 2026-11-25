@@ -12,7 +12,11 @@ static const char* usage =
     "  --task NAME        echo, shuffled-echo, delayed-echo, go-no-go, beat, sequence,\n"
     "                     catch, cartpole, order, both-not-either, gap, place, mnist,\n"
     "                     points, number, two-numbers, past, bandit, switch-bandit, chain,\n"
-    "                     track, forage, mountain-car, pendulum (default echo)\n"
+    "                     track, forage, mountain-car, pendulum (default echo); the\n"
+    "                     invariance battery: inv-position, inv-scale, inv-rotation,\n"
+    "                     inv-bright, inv-clutter, inv-mixed, inv-shift, inv-tempo, inv-pitch,\n"
+    "                     inv-view (--inv-shapes N, --inv-hold 2,3 or rN, --inv-motion\n"
+    "                     PERCENT, --inv-motion-steps N; docs/curriculum.md)\n"
     "  --seed N           blob seed (default 1)\n"
     "  --task-seed N      task seed (default: same as --seed)\n"
     "  --steps N          life length in task steps (default 20000)\n"
@@ -75,6 +79,8 @@ static const char* usage =
     "                     the motor region, nearest the cues first; more than fit means\n"
     "                     all of them (default 0: one group)\n"
     "  --motor-spread-even 1  the N cells spread evenly from nearest to farthest instead\n"
+    "  --bitmap-map M     plug: plain (default) or logpolar (a task's bitmap as 8 rings x 16\n"
+    "                     angles about its middle: growing and turning become sliding)\n"
     "life protocols (one at a time; without them, one task for the whole life):\n"
     "  --retention TASK   --task for --steps, then TASK for --steps (its cues and buttons\n"
     "                     after A's, cue offset + k), then --task again for --retest steps\n"
@@ -291,7 +297,9 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             continue;
         }
         if (std::strcmp(flag, "--task") == 0) {
-            if (!task_from_name(value, flags.task)) {
+            if (invariance_task_name(value, flags.task_settings.inv)) {
+                flags.task = TaskKind::invariance;
+            } else if (!task_from_name(value, flags.task)) {
                 std::fprintf(stderr, "blobrun: no task '%s'\n%s", value, usage);
                 return false;
             }
@@ -307,6 +315,20 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
         }
         if (std::strcmp(flag, "--out") == 0) {
             flags.out = value;
+            continue;
+        }
+        bool inv_ok = true;
+        if (invariance_flag(flag, value, flags.task_settings.inv, inv_ok)) {
+            if (!inv_ok) {
+                return false;
+            }
+            continue;
+        }
+        if (std::strcmp(flag, "--bitmap-map") == 0) {
+            if (!plug_map_from_name(value, flags.plug.bitmap_map)) {
+                std::fprintf(stderr, "blobrun: --bitmap-map is plain or logpolar\n");
+                return false;
+            }
             continue;
         }
         int64_t v = 0;

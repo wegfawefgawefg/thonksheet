@@ -157,6 +157,68 @@ same reader on the input lines of every step of the trial; (b) the readout rule 
 frozen sheet; (c) the minimal engine and table neurons with their own rules. A member is
 "got" at a level when its late score is at least halfway from chance to 1.0.
 
+## Invariance
+
+The invariance battery (idea 101; `scripts/invariance.sh`). One task kind, `--task
+inv-<kind>`. Each shows one of `--inv-shapes` things (2 by default; shapes up to 4, view
+objects up to 3) in one version of one change; the button is which thing. Some versions are
+rewarded. The others, the held-out set, are never rewarded (no good, no bad) and are the
+only trials scored, so the score is carrying what was learned to versions never taught.
+Versions are drawn evenly. The rewarded versions' score is kept apart (`taught_late` in a
+summary). `--inv-hold 2,3` sets the held-out versions, `--inv-hold r4` draws 4 per life.
+Coin flips score about 0.47 (ties are no move), the scripted player 1.00, on every kind.
+
+**Picture kinds.** A 16x12 bitmap (`--sensor-side 1`, one sensor cell a line) and an ask
+line. A trial is one blank step, then one step with the picture and the ask on; only that
+step's press counts. The shapes are 4x4 templates of 7 pixels, each drawn at 2x2 lines a
+pixel unless said: shape 0 `.### ##.. .#.. .#..`, shape 1 `...# #### .#.. .#..` (they share
+5 pixels), shapes 2 and 3 for `--inv-shapes 4`. Every shape is chiral and none is a turn or
+mirror image of another. The pair was chosen so a linear reader of the input lines cannot
+carry them to a held-out version of any picture kind; most pairs it can.
+
+- **position.** The shape's corner on a 2-line grid, 5 across by 3 down: 15 places. 4
+  drawn per life are held out.
+- **scale.** About the middle, 1x, 2x, 3x (1, 2, 3 lines a pixel). 1x is held out.
+- **rotation.** About the middle, 0, 1/4, 1/2, 3/4 turn, plain and mirrored (versions 0-3
+  plain, 4-7 mirrored). Half and three-quarter turns are held out, both ways.
+- **bright.** Each pixel lights 4, 2 or 1 of its 2x2 lines. 1 is held out. A linear reader
+  of the input lines carries this one (the lit lines are a subset of the taught ones); it
+  stays as a control and because the readout does not.
+- **clutter.** 0, 3, 8 or 16 extra 2x2 blocks on a 6x6 grid of blocks around and among the
+  shape, never on its own pixels, drawn per trial. 8 and 16 are held out. Mostly carried
+  by a linear reader too (added cells shift a linear sum only a little).
+- **mixed** (place and scale at once). 1x or 2x at one of four places along the middle
+  row, two left, two right. Taught: 1x on the left, 2x on the right; held out: 1x on the
+  right, 2x on the left. Each place and each size was taught, only not together.
+- **view.** Three small 3D objects, 8 points each on a 4x4x4 grid, a post with an arm (along
+  x at the top, along z at the top, along x at the foot), seen straight on after turning
+  about the vertical axis by k/8 of a turn, each point a 2x2 block. Object 0 seen from the
+  front looks like object 1 seen from the side but for one point. Views 2, 3, 4 (a quarter
+  to a half turn) are held out.
+
+**With motion** (`--inv-motion P`, percent of all steps; the battery uses 50, stretches of
+`--inv-motion-steps` 8). Whenever moving steps are under P percent, a stretch runs before
+the next trial: one shape, no ask, no reward, drifting a notch each step through the
+versions and bouncing at the ends: sliding a line (position), growing a quarter line
+between 1x and 3x (scale), turning 1/16 (rotation and view), one line a pixel dimmer or
+brighter, one clutter block more or less, sliding and growing at once (mixed). The drift
+passes through held-out versions too; that is what a rule that ties together what follows
+what has to learn from. Mirrored and plain never turn into each other.
+
+**Time kinds.** A tune is three notes (A, B, C) in an order and then all three together
+for one note, so every note was last on at the same moment: tune 0 is A B C ABC, tune 1 is C
+B A ABC (2 and 3: B A C, A C B). A trial is a blank step, two steps in which the tune
+plays tick by tick (one step for shift), and the ask step with every note off; only the
+ask step's press counts. These sense every tick.
+
+- **shift.** Lines A, B, C, ask (`--sensor-side 3`). Notes 3 ticks; the tune starts 0, 4
+  or 8 ticks into its step. 4 is held out.
+- **tempo.** Same lines. Notes 2, 4, 6 or 8 ticks, the tune ending as the ask comes on. 2
+  (faster than any taught) is held out.
+- **pitch.** A 16x8 bitmap (`--sensor-side 1`) whose columns are frequency lines, and the
+  ask. Notes 6 ticks; note A is column 2v, B 2v + 2, C 2v + 4 for version v = 0..5. 2 drawn
+  per life are held out.
+
 ## Reach
 
 - **Readable.** `blobrun --reach`: `blobprobe carry`'s measure

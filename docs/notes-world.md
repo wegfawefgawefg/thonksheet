@@ -21,6 +21,9 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
 - `world/task_bandit.cpp` (bandit, switching bandit, chain), `world/task_move.cpp` (track,
   forage), `world/task_classic.cpp` (mountain car, pendulum, with a 16.16 series sine):
   the more worlds of idea 63.
+- `world/task_invariance.hpp/.cpp`, `world/task_invariance_draw.cpp`: the invariance
+  battery (one task kind, `--task inv-<kind>`), its moving stretches, its pictures, tunes
+  and 3D objects. `world/plug_map.cpp`: `--bitmap-map logpolar`.
 - `world/standin.hpp/.cpp`: a Blob shell with only the arrays the plug touches, and a fake
   tick (coin-flip motors, or the right motor group firing). Needs no core.
 - `run/main.cpp`: the driver calls (birth, tick, reward, death; declared in `run/drive.hpp`)
@@ -36,6 +39,8 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
 - `probe/reader.cpp`: `blobprobe reader`, level (a) of the function battery (a ridge reader
   of the frozen sheet and of the input lines; held-out values scored apart). Results so
   far: `docs/results-2026-11-25-function-battery.md` (unfinished; resume lines there).
+- `probe/invariance.cpp`, `probe/invariance_show.cpp`, `probe/linear_split.cpp`:
+  `blobprobe invariance`, level (a) of the battery, and `--show 1`, its pictures as text.
 
 ## The plug
 
@@ -134,12 +139,26 @@ that fires the right group every tick and predicts its input exactly.
 | forage 5x5, warmer or not | 5x5 bitmap (side 2); 4 buttons | steps ending nearer / steps | 0.38 | 1.00 |
 | mountain car | 2 numbers x 8 lines (side 2) | episodes at the goal / episodes | 0.00 | 1.00 |
 | pendulum | 2 numbers x 8 lines (side 2) | steps upright / steps | 0.05 | 0.86 |
+| inv-position | ask, 16x12 sheet at side 1; 2 buttons | right / held-out trials | 0.48 | 1.00 |
+| inv-scale | | | 0.47 | 1.00 |
+| inv-rotation | | | 0.47 | 1.00 |
+| inv-bright | | | 0.48 | 1.00 |
+| inv-clutter | | | 0.48 | 1.00 |
+| inv-mixed | | | 0.47 | 1.00 |
+| inv-view | | | 0.47 | 1.00 |
+| inv-shift | A, B, C, ask at side 3; 2 buttons | | 0.48 | 1.00 |
+| inv-tempo | | | 0.49 | 1.00 |
+| inv-pitch | ask, 16x8 sheet at side 1; 2 buttons | | 0.50 | 1.00 |
 
 The function battery (79 members, `scripts/functions.py --list`; 20,000 steps, window 200,
 seed 1): perfect is 1.000 on every member; coin is 0.47-0.48 on two-button members and a
 little under 1/answers on the rest (0.31 for 3, 0.23 for 4, 0.18 for 5, 0.11 for 8, 0.10
 for 9). `--task points --fn parity --fn-lines 2` gives a csv byte-identical to
 both-not-either, whose own 40,000-step csv did not change.
+
+The battery rows: 20,000 steps, window 200, `--ticks 20`, mean over all windows; the
+rewarded versions score the same (coin 0.45-0.48, perfect 1.00). Definitions:
+`docs/curriculum.md`, "Invariance".
 
 The four new rows were checked with the core linked (coin and perfect are the stand-in
 either way), mean over all 100 windows. Definitions: `docs/curriculum.md`, "Features nobody
@@ -165,6 +184,18 @@ nice -n 19 ./build/blobrun --task beat --period 4 --steps 40000
 nice -n 19 ./build/blobrun --task sequence --seq-lines 8 --seq-length 4 --steps 20000
 nice -n 19 ./build/blobrun --task catch --steps 40000
 nice -n 19 ./build/blobrun --task cartpole --steps 100000 --window 1000
+```
+
+The invariance battery (`scripts/invariance.sh` runs it at three levels):
+
+```
+nice -n 19 ./build/blobrun --task inv-scale --sensor-side 1 --ticks 20       picture kinds
+nice -n 19 ./build/blobrun --task inv-rotation --sensor-side 1 --inv-motion 50    with motion
+nice -n 19 ./build/blobrun --task inv-tempo --sensor-side 3 --ticks 20        time kinds
+nice -n 19 ./build/blobrun --task inv-position --sensor-side 1 --inv-hold r6  6 places held
+nice -n 19 ./build/blobrun --task inv-scale --sensor-side 1 --bitmap-map logpolar
+nice -n 19 ./build/blobprobe invariance --task inv-view --sensor-side 1 --ticks 20   level (a)
+scripts/invariance.sh show rotation                                  the pictures as text
 ```
 
 New tasks and settings:
@@ -424,6 +455,28 @@ in `Task`, one flag hook in `run_flags.cpp` and one protocol entry.
   engine ran 20k to 38k ticks/s, table neurons about 14k; on stevejobs under load table
   neurons about 19k, the minimal engine about 58k (a 10M-step life about 1 hour).
 - Ticks per step stay 20 as everywhere; a hold gap is given in steps (`--hold-steps`).
+
+## The invariance battery (2026-11-25)
+
+- One `TaskKind::invariance`; which change it is lives in `TaskSettings::inv` (so the
+  other agents adding task kinds touch the enum once). `--task inv-<kind>` sets both.
+  Its flags are parsed in `invariance_flag` (task_invariance.cpp), one hook in
+  run_flags.cpp. `task_name` says "invariance", so the default csv is
+  `out/invariance-s<seed>.csv` for every kind; give `--out`.
+- Held-out trials are tally 0/1 (the window score), rewarded ones 2/3.
+  `task_taught_score` reads 2/3 for place and the battery; `life.cpp` keeps it per window
+  and the summary gets `taught_early` and `taught_late` (place's were never printed).
+- The time kinds change their lines inside a step. `ticker_before_tick` now senses on
+  every tick when `inv_by_tick` says so, after telling the task the tick
+  (`inv_set_tick`); every other task still senses once a step (csvs byte-identical).
+- `--bitmap-map logpolar` (`plug_map.cpp`) is the only plug change: at attach the task's
+  bitmap size is swapped for 16 x 8 and a table says which task pixels each mapped line
+  ORs; `plug_set_lines` fills the mapped lines from it. Off by default; any task with a
+  bitmap can use it (catch too, though there it means little).
+- `blobprobe invariance` drives any engine (`--engine minimal`, `--table`); blobprobe now
+  links the minimal and table libraries (CMakeLists, two blocks).
+- Moving stretches count as steps of the life: with `--inv-motion 50` a 40,000-step life
+  has half as many trials.
 
 ## Reading a scorecard run with a readout rule in its flags (2026-11-25)
 

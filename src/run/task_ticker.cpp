@@ -18,10 +18,14 @@ int ticker_before_tick(TaskTicker& tt, Blob& blob) {
         plug_write(tt.plug, blob);
         return -1;
     }
-    // a step's first tick: what the task shows, and what would be right
-    if (tt.tick_in_step == 0) {
+    // a step's first tick: what the task shows, and what would be right. a task whose
+    // lines change inside a step (the battery's tunes) senses on every tick
+    if (tt.tick_in_step == 0 || inv_by_tick(tt.task)) {
+        inv_set_tick(tt.task, tt.tick_in_step, tt.ticks_per_step);
         task_sense(tt.task, tt.sense);
         plug_set_lines(tt.plug, tt.sense);
+    }
+    if (tt.tick_in_step == 0) {
         tt.perfect_move = task_perfect_move(tt.task);
         tt.in = TaskStepIn{};
         tt.in.sensed_neurons = tt.plug.sensed_neurons;

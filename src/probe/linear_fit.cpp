@@ -119,6 +119,11 @@ static bool ridge_solve(const std::vector<double>& a, int m, double ridge, const
     return true;
 }
 
+bool linear_ridge_solve(const std::vector<double>& a, int m, double ridge, const double* b,
+                        int cols, std::vector<double>& x) {
+    return ridge_solve(a, m, ridge, b, cols, x);
+}
+
 // share right over rows [from, to), with weights w (features x classes) on `features`
 static double accuracy(const LinearData& data, const Standard& s, const std::vector<int>& features,
                        const std::vector<double>& w, int from, int to) {

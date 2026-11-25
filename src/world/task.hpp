@@ -2,6 +2,7 @@
 
 #include "world/task_function.hpp"
 #include "world/task_long.hpp"
+#include "world/task_invariance.hpp"
 #include "world/world_random.hpp"
 
 #include <cstdint>
@@ -64,6 +65,7 @@ enum class TaskKind {
     once,            // a pattern shown once with its answer, asked much later
     rare,            // patterns asked one step in a thousand among common ones
     drift,           // fixed pairs; half change button late in life
+    invariance,      // the invariance battery: a shape in versions never rewarded (task_invariance)
     count,
 };
 
@@ -160,6 +162,7 @@ struct TaskSettings {
     int forage_warmer = 1;                  // forage: each step nearer is good, further bad
     int classic_reward = 0;                 // mountain car, pendulum: 0 shaped, 1 goal only
     LongSettings longs; // hold, pairs, once, rare, drift (task_long.hpp)
+    InvarianceSettings inv; // the invariance battery
 };
 
 // fixed point for cartpole: 16 fractional bits
@@ -230,6 +233,8 @@ struct Task {
     int64_t episodes = 0, wins = 0;
 
     LongState longs; // hold, pairs, once, rare, drift
+
+    InvarianceState inv; // the invariance battery
 };
 
 // script step flags
@@ -254,6 +259,9 @@ double task_window_score(Task& task);
 // kinds that do not count them
 const char* task_episode_name(TaskKind kind);
 const char* task_win_name(TaskKind kind);
+// place and the invariance battery: right / tries on the rewarded versions since the last
+// window score (call it first); -1 for other tasks
+double task_taught_score(const Task& task);
 
 // per-kind halves, in task_reflex.cpp, task_sequence.cpp, task_control.cpp and
 // task_feature.cpp

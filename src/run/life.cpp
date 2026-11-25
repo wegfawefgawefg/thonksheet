@@ -99,6 +99,7 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
                     out.clean.push_back(
                         babble_window_clean(tt.babble, tt.task.tally[0], tt.task.tally[1]));
                 }
+                out.taught.push_back(task_taught_score(tt.task));
                 out.scores.push_back(task_window_score(tt.task));
             }
         }

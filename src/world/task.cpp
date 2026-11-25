@@ -56,6 +56,7 @@ static const char* const task_names[(int)TaskKind::count] = {
     "once",
     "rare",
     "drift",
+    "invariance",
 };
 // clang-format on
 
@@ -134,6 +135,9 @@ void task_reset(Task& task, TaskKind kind, const TaskSettings& settings, uint64_
     case TaskKind::drift:
         long_reset(task);
         break;
+    case TaskKind::invariance:
+        invariance_reset(task);
+        break;
     case TaskKind::count:
     default:
         break;
@@ -185,6 +189,8 @@ TaskShape task_shape(const Task& task) {
     case TaskKind::rare:
     case TaskKind::drift:
         return long_shape(task);
+    case TaskKind::invariance:
+        return invariance_shape(task);
     case TaskKind::count:
     default:
         break;
@@ -250,6 +256,9 @@ void task_sense(const Task& task, TaskSense& sense) {
     case TaskKind::drift:
         long_sense(task, sense);
         break;
+    case TaskKind::invariance:
+        invariance_sense(task, sense);
+        break;
     case TaskKind::count:
     default:
         break;
@@ -301,6 +310,8 @@ int task_perfect_move(const Task& task) {
     case TaskKind::rare:
     case TaskKind::drift:
         return long_perfect_move(task);
+    case TaskKind::invariance:
+        return invariance_perfect_move(task);
     case TaskKind::count:
     default:
         break;
@@ -367,6 +378,9 @@ int task_step(Task& task, const TaskStepIn& in) {
     case TaskKind::drift:
         valence = long_step(task, in);
         break;
+    case TaskKind::invariance:
+        valence = invariance_step(task, in);
+        break;
     case TaskKind::count:
     default:
         break;
@@ -377,6 +391,11 @@ int task_step(Task& task, const TaskStepIn& in) {
 
 static double ratio(int64_t num, int64_t den) {
     return den > 0 ? (double)num / (double)den : 0.0;
+}
+
+double task_taught_score(const Task& task) {
+    bool versions = task.kind == TaskKind::place || task.kind == TaskKind::invariance;
+    return versions ? ratio(task.tally[2], task.tally[3]) : -1.0;
 }
 
 double task_window_score(Task& task) {
@@ -413,6 +432,7 @@ double task_window_score(Task& task) {
     case TaskKind::once:
     case TaskKind::rare:
     case TaskKind::drift:
+    case TaskKind::invariance:
         // right answers over chances to answer (each new world says what it counts)
         score = ratio(t[0], t[1]);
         break;
