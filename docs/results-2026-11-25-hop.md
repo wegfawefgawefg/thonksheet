@@ -119,49 +119,49 @@ freezes the inside, puts every motor cell back as born, wipes the readout's coun
 fresh readout learns the same task for 20,000 steps. The number is that fresh readout's late
 score (last tenth); in brackets its first quarter. "off" is the same life with the readout
 learning and the rule off: the check that the output's own learning does not reach the
-reader. "coin": the rule on, every error sent to a random line. Seeds 5-8; one setting, not
-tuned (the defaults above). Rule numbers per life on xor: about 500 verdicts reach the rule
+reader. "coin": the rule on, every error sent to a random line. Seeds 5-12 (parity of 4 and
+"m1, and good teaches": 5-8); one setting, not tuned (the defaults above). Rule numbers per life on xor: about 500 verdicts reach the rule
 (the live readout is right almost at once), about 940 cells taught per verdict, 10 counter
 steps per taught cell, 400 re-picks per verdict.
 
-| task (fresh output, late) | born | off | **told the right button (m2)** | told good or bad (m1) | m1, and good teaches | coin (m2's errors on random lines) |
-|---|---|---|---|---|---|---|
-| both-not-either (xor) | 0.857 (0.698) | 0.876 (0.735) | **0.998 (0.960)** | 0.982 (0.829) | 0.915 | 0.933 (0.770) |
-| parity of 3 | 0.542 (0.525) | 0.550 (0.532) | **0.824 (0.711)** | 0.681 (0.596) | 0.608 | 0.589 (0.544) |
-| parity of 4 | 0.473 | 0.488 | 0.494 | 0.473 | | 0.475 |
+| task (fresh output, late) | born | off | **told the right button (m2)** | told good or bad (m1) | m1, and good teaches | coin for m2 | coin for m1 |
+|---|---|---|---|---|---|---|---|
+| both-not-either (xor) | 0.855 (0.685) | 0.866 (0.726) | **0.998 (0.958)** | 0.983 (0.843) | 0.915 | 0.930 (0.772) | 0.871 (0.687) |
+| parity of 3 | 0.552 (0.531) | 0.562 (0.542) | **0.816 (0.709)** | 0.667 (0.599) | 0.608 | 0.587 (0.548) | 0.613 (0.586) |
+| parity of 4 | 0.473 | 0.488 | 0.494 | 0.473 | | 0.475 | |
 
-The coin control for m1 (m1's errors on random lines; `--settings m1coin`): xor 0.879,
-parity 3 0.617.
-
-Per seed (5, 6, 7, 8): xor m2 0.999, 0.997, 0.998, 0.998 against born 0.839, 0.895, 0.856,
-0.836 and coin 0.933, 0.934, 0.933, 0.931; parity 3 m2 0.826, 0.855, 0.816, 0.800 against
-born 0.528, 0.561, 0.561, 0.518 and coin 0.582, 0.588, 0.575, 0.609. Every seed is above its
-coin control on xor and parity 3 in both teaching modes (m1 against m1coin: xor 0.988,
-0.985, 0.962, 0.995 against 0.897, 0.842, 0.863, 0.915; parity 3 0.671, 0.690, 0.684, 0.678
-against 0.653, 0.671, 0.580, 0.565).
+Per seed (5 to 12): xor m2 0.999, 0.997, 0.998, 0.998, 0.997, 0.999, 0.996, 0.997 against
+born 0.839, 0.895, 0.856, 0.836, 0.885, 0.814, 0.852, 0.866 and coin 0.933, 0.934, 0.933,
+0.931, 0.933, 0.899, 0.944, 0.931; parity 3 m2 0.826, 0.855, 0.816, 0.800, 0.802, 0.795,
+0.838, 0.793 against born 0.528, 0.561, 0.561, 0.518, 0.591, 0.553, 0.543, 0.562 and coin
+0.582, 0.588, 0.575, 0.609, 0.602, 0.581, 0.589, 0.574. Every seed is above its coin
+control on xor and parity 3 in both teaching modes (m1 against its own coin: xor 0.988,
+0.985, 0.962, 0.995, 0.986, 0.971, 0.983, 0.994 against 0.897, 0.842, 0.863, 0.915, 0.856,
+0.854, 0.936, 0.808; parity 3 0.671, 0.690, 0.684, 0.678, 0.678, 0.706, 0.596, 0.632
+against 0.653, 0.671, 0.580, 0.565, 0.642, 0.631, 0.559, 0.602).
 
 - **Yes on the toys: the inside comes to carry the product.** A readout that has never seen
   the task reads exclusive-or from the lived sheet at 0.96 in its first quarter and 0.998 at
   the end (born 0.70 and 0.86): the same as tags (0.961 / 0.998) on the same test, reached
   by a different route (tags follow the button's own wiring back one hop; this reaches
   every hidden cell through random wires). Parity of 3, which only the richest sheet
-  carried (finding 33), goes 0.54 to 0.82.
-- **Told the right button teaches more than good or bad** (parity 3: 0.82 against 0.68), as
+  carried (finding 33), goes 0.55 to 0.82.
+- **Told the right button teaches more than good or bad** (parity 3: 0.82 against 0.67), as
   expected: on a two-button task "the pressed one was wrong" already names the right one,
   so the gap is in how many cells move (a +1 line and a -1 line reach more cells than one),
   not in what they are told.
 - **Good should teach nothing.** Letting good say "the pressed button should have been
-  higher" costs both tasks (xor 0.98 to 0.92, parity 3 0.68 to 0.61). Finding 39 again.
+  higher" costs both tasks (seeds 5-8: xor 0.98 to 0.92, parity 3 0.68 to 0.61). Finding 39 again.
 - **The coin control moves the toys too** (xor 0.86 to 0.93, parity 3 0.54 to 0.59): churn
   of the wiring with no information is worth something, as the shuffled control was for
   competitive learning and the unsigned half was for reverse replay. The errors are worth
-  far more (+0.065 and +0.235 over the coin).
+  far more (m2: +0.068 and +0.229 over its coin; m1: +0.112 and +0.054).
 - **Parity of 4: no**, also with a four times longer life (`scripts/hop.sh toy toys-long
   --settings off,m2,m2coin --tasks parity4 --seeds 5,6 --steps 160000 --window 4000`: off
   0.475, m2 0.478, coin 0.498). The live readout stays at chance through the life too.
 
 - **The live readout learns the toys too, in the same life.** The life's own readout with
-  the rule on ends at 0.996 on xor (off 0.905) and 0.783 on parity 3 (off 0.538), seeds 5-8
+  the rule on ends at 0.997 on xor (off 0.883) and 0.797 on parity 3 (off 0.541), seeds 5-12
   ("life's own readout" in `out/hop/toys/table.txt`). On these worlds the rule is not only
   a better sheet for a later reader: the readout that is learning beside it uses it.
 - **The rate does not move on the toys.** One life each, seed 5 (`blobrun --task
@@ -169,17 +169,23 @@ against 0.653, 0.671, 0.580, 0.565).
   xor 33.8 spikes per 1,024 neuron-ticks against 32.9 off; parity 3 34.0 against 33.3.
   Thresholds at the cap 2.3% against 1.0%.
 
-**Which cells should count as near** (m2, seeds 5-8; `scripts/hop.sh toy toys-near0
---settings m2 --tasks xor,parity3 --g.hop_near 0`, and `toys-nofired ... --g.hop_fired 0`):
+**At the MNIST setting** (a counter step with chance 1/128 instead of 1/8, `scripts/hop.sh
+toy toys-s7 --settings m2,m2coin,m1 --tasks xor,parity3 --g.hop_shift 7`, seeds 5-8): the
+same 40,000-step life moves the inside less. xor m2 0.977, m1 0.943, coin 0.911; parity 3
+m2 0.634, m1 0.664, coin 0.587. Still above the coin on every mean, but 16 times fewer
+steps buy a third of the gain on parity 3.
+
+**Which cells should count as near** (m2; `scripts/hop.sh toy toys-near0 --settings m2
+--tasks xor,parity3 --g.hop_near 0`, and `toys-nofired ... --g.hop_fired 0`):
 
 | marks from | xor | parity 3 |
 |---|---|---|
-| cells at or over the bar only (fired, or over it but held back): Hebbian with a sign | 0.997 | 0.849 |
-| fired, or within a quarter of the bar under it (the default) | 0.998 | 0.824 |
-| **within a quarter of the bar under it, not fired** | 0.997 | **0.893** |
+| cells at or over the bar only (fired, or over it but held back): Hebbian with a sign (seeds 5-8) | 0.997 | 0.849 |
+| fired, or within a quarter of the bar under it (the default; seeds 5-12) | 0.998 | 0.816 |
+| **within a quarter of the bar under it, not fired** (seeds 5-12) | 0.997 | **0.897** |
 
-On parity 3 the cells that came near and did not fire are the better teachers (0.893, every
-seed 0.886 to 0.903, against 0.80 to 0.86 for the default): "fire more" has the most to say
+On parity 3 the cells that came near and did not fire are the better teachers (0.897, every
+seed 0.876 to 0.928, against 0.793 to 0.855 for the default): "fire more" has the most to say
 to a cell that almost fired, as the float rule's pseudo-derivative says. On xor everything
 reaches 0.997.
 
