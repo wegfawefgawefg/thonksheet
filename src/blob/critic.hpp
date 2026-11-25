@@ -17,7 +17,10 @@
 // The surprise is reward (against its running mean) + level now - level a step ago, in
 // spikes. Beyond the margin it is good or bad, and that, not the world's raw good or bad,
 // teaches the actor: the readout's button cells, through the same counters, for the press
-// made a step ago and the few before it (learn_actor.cpp).
+// made a step ago and the few before it (learn_actor.cpp). With margin_percent set, the
+// actor's good half for a kept step runs only when that step's vote was close (the
+// pressed button's lead under margin_percent of its spikes): the margin gate of
+// learn_margin.cpp, moved to the actor (learn_margin itself never runs under a critic).
 //
 // Everything is integers and chance. A step is whatever the world calls one: it calls
 // blob_reward once per step, valence 0 included, and marks the pressed button first.
@@ -46,6 +49,13 @@ struct CriticState {
     int surprise = 0;                // the last surprise, in spikes
     int sign = 0;                    // and what it counted as: +1, -1 or 0
     int explored = 0;                // 1 if this step's press was forced at random
+    // per kept step: the vote (pressed button's spikes, the runner-up's), as the world
+    // marked it (plug_mark_vote, only while margin_percent is set)
+    int32_t vote[CRITIC_STEPS][2] = {};
+    // a diagnostic, never a candidate: set by a probe, the surprise is the step before's
+    // valence alone (critic_reward x valence: no level, no mean), so a probe that hands in a
+    // clean valence from the world's true state drives the actor with a clean surprise
+    int oracle = 0;
 };
 
 // the critic cells: set if `neuron` is one (false before the first step)
@@ -57,6 +67,8 @@ inline bool critic_cell(const Blob& blob, int neuron) {
 // one step's end (from blob_reward). true if the critic took the reward: the caller then
 // leaves the raw valence alone. false when critic_on or learning_on is 0.
 bool critic_step(Blob& blob, int valence);
+// the critic's state, made if missing (for probes: the oracle diagnostic)
+CriticState& critic_state(Blob& blob);
 // the critic cells' spikes over the last 15 ticks, for any blob (born wiring if the critic
 // never learned); the mask is made if missing. for probes
 int critic_level(Blob& blob);
