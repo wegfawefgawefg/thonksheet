@@ -43,6 +43,12 @@ struct LifeResult {
     std::vector<double> clean;
     int64_t steps = 0, babbled = 0, obeyed = 0, still = 0, good_raw = 0, bad_raw = 0, good_sent = 0,
             bad_sent = 0;
+
+    // extra scores per window, when the task has them (task_extra_name names them; the
+    // task is the last phase's, valid until the next life)
+    int extras = 0;
+    std::vector<double> extra[TASK_MAX_EXTRA];
+    const Task* extra_task = nullptr;
 };
 
 // --task for --steps, as blobrun has always run

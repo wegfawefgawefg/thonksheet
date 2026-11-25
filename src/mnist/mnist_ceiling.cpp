@@ -10,7 +10,13 @@
 //   --settle N     digits shown before any are kept (default 200)
 //   --test-count N test digits (default 10000)
 //   --passes N     reader passes (default 3); --lr-1000 N step size in thousandths (10)
-//   --pretrain N   N digits of reward-free wiring by co-activity before freezing
+//   --life N       the measurement of the inside-learning test, not a stage of the machine:
+//                  the sheet lives N digits under the genome's own learning rules with no
+//                  reward (learn mode as given; the default, 0, is wiring by co-activity),
+//                  then is frozen and read; a line on activity and wiring every tenth of it.
+//                  (--pretrain N, the older name, does the same)
+//   --life-shuffle 1   that life on digits whose pixels are shuffled, a fresh permutation
+//                  per digit (the control); the reader still sees real digits
 //   --shift 1      the reader also scored on test digits moved 1 and 2 pixels
 //   --val 1        validation slice instead of the test set
 //   --scale M      how the reader scales features (mnist_learn.hpp; default 0)
@@ -23,7 +29,8 @@
 
 static const char* const ceiling_own[] = {"--fit",     "--settle",   "--test-count", "--passes",
                                           "--lr-1000", "--pretrain", "--shift",      "--val",
-                                          "--gap",     "--views",    "--scale"};
+                                          "--gap",     "--views",    "--scale",
+                                          "--life",    "--life-shuffle"};
 
 // a copy of rows with only the given columns
 static void pick_columns(const Rows& in, const std::vector<int>& cols, Rows& out) {
@@ -90,7 +97,7 @@ int mnist_ceiling(int argc, char** argv) {
     int test_count = int_flag(argc, argv, "--test-count", 10000);
     int passes = int_flag(argc, argv, "--passes", 3);
     float lr = (float)int_flag(argc, argv, "--lr-1000", 3) / 1000.0f;
-    int64_t pretrain = int_flag(argc, argv, "--pretrain", 0);
+    int64_t pretrain = int_flag(argc, argv, "--life", int_flag(argc, argv, "--pretrain", 0));
     bool shift = int_flag(argc, argv, "--shift", 0) != 0;
     // which views to fit, as a bit mask over the list in make_views (default all four)
     int view_mask = int_flag(argc, argv, "--views", 15);
@@ -99,8 +106,13 @@ int mnist_ceiling(int argc, char** argv) {
     const Mnist* data = mnist_data();
 
     double t0 = now_seconds();
+    std::vector<uint64_t> born;
+    wiring_snapshot(s, born);
+    wiring_report(s, born, "as born");
     if (pretrain > 0) {
-        sheet_pretrain(s, pretrain);
+        s.shuffle = int_flag(argc, argv, "--life-shuffle", 0);
+        life_run(s, pretrain, 10, born);
+        s.shuffle = 0;
     }
     s.blob->genome.learning_on = 0; // frozen from here on
     sheet_train(s, settle, false, nullptr);
@@ -127,7 +139,7 @@ int mnist_ceiling(int argc, char** argv) {
             }
         }
     }
-    std::printf("ceiling  seed %llu  %d neurons  ticks/digit %d  gap %d  pretrain %lld  "
+    std::printf("ceiling  seed %llu  %d neurons  ticks/digit %d  gap %d  life %lld  "
                 "fit on %d training digits (sheet %.1f s, %.0f ticks/s)  scored on %s (%d)\n",
                 (unsigned long long)s.flags.seed, s.blob->neuron_count, s.flags.plug.ticks_per_step,
                 s.gap, (long long)pretrain, fit, sheet_secs, rate, scored, test.n);
@@ -181,6 +193,7 @@ int mnist_ceiling(int argc, char** argv) {
         std::printf("%-34s %7d %8.4f %8s %8s %9.1f\n", "the bits alone (same digits)", w * h,
                     linear_accuracy(lin, te, sc), "-", "-", now_seconds() - r0);
     }
+    activity_report(s, train, "frozen, fit digits");
     std::printf("total wall %.1f s\n", now_seconds() - t0);
     sheet_free(s);
     return 0;

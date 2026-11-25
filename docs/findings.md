@@ -41,7 +41,8 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   0.998 against 0.855 as born; the sheet stays at its target rate through 160,000 steps.
   Two independent rules now pass the inside-learning test, and they are the same idea:
   one step of signed credit from the action's cells into hidden counters under a budget.
-  Neither transfers to a task it was not rewarded on, and neither helps MNIST.
+  Neither transfers to a task it was not rewarded on, and neither helps MNIST (the
+  reward-free rule below does).
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -51,6 +52,71 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   items in order.
 - **Learning on good only when the vote was close** doubles the pairs held (16 cues 0.31
   to 0.60) and lifts MNIST's online readout 0.71 to 0.81, without the lock.
+
+**The inside learns features from the input alone (2026-11-25, late;
+`docs/results-2026-11-25-compete.md`, `scripts/inside.sh`).** Competitive learning with no
+reward: a hidden cell that fires among its tile's winners moves hidden counters toward the
+sources that were just on, and rewires its top counters at the counts it was born with.
+After a life of 60,000 MNIST digits, frozen, a fresh linear reader gets 0.952 on the test
+digits, on every one of seeds 5 to 12 (0.950 to 0.954). The sheet as born: 0.926. The
+control, the same life on digits with their pixels shuffled afresh each time: 0.939. A
+random projection: 0.943. A two-layer net by backprop, one pass: 0.955. It is the first
+result here where the lived inside beats the born inside on real data, and it used no
+reward and no error.
+- What the cells learned: the pixels one cell listens to go from scattered (correlation
+  between them 0.05, spread 4.1 pixels) to patches that light together (0.26, 2.5
+  pixels). The shuffled life leaves them scattered.
+- Held-out calculation cases move too (2 seeds, no shuffled control): xor of 4 bits 0.60
+  to 0.67 becomes 0.73 to 0.80, add of 4 bits 0.52 to 0.61 becomes 0.61 to 0.69.
+- The old co-activity wiring passes the same test, which had not been measured: 0.937
+  (born 0.924, shuffled 0.926; 2 seeds). The budget and counters double its gain.
+- **Caveat one, the rate.** The learned cells fire at twice their target (63 against 33
+  spikes per 1,000 cell-ticks). Held at target, lived still beats born by 0.013, but
+  beats the shuffled control by 0.012 without tile winners and only 0.002 with them (2
+  seeds each). A higher rate alone does not help (the born sheet pushed to 63 reads
+  0.910). So about half of the headline gain is structure and half is not yet separated
+  from rate.
+- **Caveat two, our own output cannot use it.** With the rule on from the first digit of
+  the rewarded online life, the sheet's own readout scores the same as with it off (0.72
+  at 20,000 digits, falling to 0.66 to 0.68 by 120,000). A linear reader gets 0.95 from
+  the same cells. The gap between what the sheet holds and what our output rule reads is
+  now the largest number on the board.
+- Cost: 1.9 times slower per tick at the cheaper setting (a quarter of the updates, same
+  score), because each update re-picks a cell's wiring from 704 counters.
+
+**The references on every row (2026-11-25, `docs/scoreboard.md`).** The GRU, the plain
+two-layer net and the memory engine now have the whole suite, eight seeds, on the
+integrated code. What that table says about the tests, before it says anything about us:
+
+- **Rows no reference learns, so they do not yet measure anything:** analogy (0.50, 0.33),
+  how many of 1 to 5 with mixed sizes (0.35), being shown the answer with no reward (all
+  nine rows at chance), fill-in, the pendulum (0.22 with the scripted player at 0.86), the
+  band of a sine at an x never rewarded (0.36 against 0.24), and the held-out rows for
+  place, turn, size and mixed. Either they need a kind of learner none of the three is, or
+  they are badly made. Each needs a learner that passes it, or a note saying why none can.
+- **The lookup table is a lookup table.** Memory matches or beats the GRU wherever the
+  exact case comes back (prediction 0.85 against 0.50, catch 0.99 against 0.72, n-back,
+  switching, parity of 4 lines 0.99 against 0.50). It is at chance the moment the case is
+  only near one it saw: a dimmer shape 0.50 (GRU 0.96), more clutter 0.50 (0.89), items
+  never taught 0.65 and 0.27 (0.87 and 0.48), reward true 60 in 100 0.73 (1.00).
+- **Where recurrence is the whole difference:** every row with a gap (delayed echo, order,
+  gap, same-then, copy, recall, n-back, brackets) the GRU learns and the plain net sits at
+  0.50. Our sheet without time cells sits with the plain net.
+- **The chain is ours.** GRU 0.01, memory 0.00, plain net 0.45, the readout alone 0.72;
+  with the critic 0.97 on the tuning seeds. It is the one row where a rule of ours beats
+  all three references, and it is the row that needs credit one step back.
+
+**Calculation (2026-11-25, `docs/results-2026-11-25-calculation.md`).** Answers that are
+bit patterns, 28 kinds at 56 sizes, a quarter of each one's cases never rewarded. With a
+verdict per bit the working rule learns what is a weighted sum of its input lines (copy to
+8 bits, not, compare, max, the carry-out of a sum up to 6 bits) and nothing that needs a
+product of distant lines (sum bits, exclusive-or, parity of 4, the ALUs, programs of two
+steps). Of 56: 7 learned with held-out cases too, 3 on seen cases only, 16 the sheet
+carries and the rule does not reach, 30 the sheet does not carry. Where it learns, held
+out stays within 0.05 to 0.16 of seen, so it is a rule and not a table. The memory engine
+is the reverse: 0.88 to 0.99 on seen cases, the most common answer on held-out ones (add
+0.11, exclusive-or 0.05). The GRU and plain net, held out, get only comparison. This
+battery is the suite a lookup cannot pass.
 
 ## The headline (2026-11-25)
 
@@ -319,6 +385,29 @@ docs/results-2026-11-25-mnist.md
     alone and the input writes into the state.** [likely: one engine, 8 seeds] Matching by
     nearness and waiting for the input to settle is what lets it survive noise and answer
     unseen patterns, where a hashed lookup cannot.
+41. **The frozen sheet is a linear-plus-pairs feature bank.** [likely: one engine, 56
+    worlds] On the calculation battery a reader of the sheet as born equals a reader of
+    the raw input lines within a few hundredths, except for exclusive-ors of lines that
+    sit together (0.54 to 0.66, 0.72 to 0.91). With finding 33 this is what "rich" means
+    for this sheet today: little beyond its input, and nothing at a distance. So carry
+    stops at the first sum bit (an exclusive-or of lines N apart), and a program stops at
+    two instructions though the sheet still holds the previous one at 0.96.
+42. **One verdict cannot teach many outputs with an error rule that moves only on bad.**
+    [likely; predicted from the rule's drift balance before the runs] One good or bad for
+    the whole answer equals a verdict per bit at one output bit, loses a little at two,
+    and sits at the learning-off twin from three bits on (0.39 to 0.55 where per-bit
+    grading reaches 0.94). Moving on good as well partly rescues 3 and 4 bits, not 6 or 8.
+    A verdict per two-valued output is being shown the answer, bit by bit. A wide answer
+    needs that, or a rule that splits one verdict among many outputs.
+43. **A reward-free rule teaches the inside when it keeps its counts.** [likely: 8 seeds,
+    one data set] Competition in the tile, hidden counters, and rewiring at the born
+    counts: lived 0.952 against born 0.926 on MNIST. The same idea without a budget or
+    counters (co-activity wiring) gets half the gain. Second result for finding 38.
+44. **Every inside-learning claim needs a shuffled-input control and a rate-matched one.**
+    [likely] A life on shuffled digits lifts the reader by 0.014 with nothing to learn
+    (cells drift toward being a random projection of the input), and a rule that leaves
+    cells firing faster changes what a reader sees. Only what is left after both is
+    learned structure.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 
@@ -382,4 +471,8 @@ it.*
   The memory engine learns catch (0.99) and cartpole (109 lean, 279 sparse) once credit
   reaches two steps back, which confirms the lean reward's one-step lag from a second side.
 - **More than four things.** Eight cues are now learned (0.84) by the new readout on the
-  full engine. Sixteen is untested with it.
+  full engine. Sixteen is untested with it. An answer of 8 or 9 bits, with 14 to 16 motor
+  cells a group, learns below its learning-off twin (add of 8 bits 0.38 against 0.45):
+  groups fall silent. `readout_evidence 3` removes the drop and costs copy of 8 bits 0.78
+  to 0.66. And reach sets which output bits can be learned: in copy of 8 bits the bit
+  whose line is nearest the motors gets 0.90, the furthest 0.50.

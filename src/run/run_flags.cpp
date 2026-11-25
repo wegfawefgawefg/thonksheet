@@ -13,7 +13,7 @@ static const char* usage =
     "                     catch, cartpole, order, both-not-either, gap, place, mnist,\n"
     "                     points, number, two-numbers, past, bandit, switch-bandit, chain,\n"
     "                     track, forage, mountain-car, pendulum, distract, serial-add,\n"
-    "                     majority (default echo); the\n"
+    "                     majority, calc (default echo; calc's flags under --help); the\n"
     "                     invariance battery: inv-position, inv-scale, inv-rotation,\n"
     "                     inv-bright, inv-clutter, inv-mixed, inv-shift, inv-tempo, inv-pitch,\n"
     "                     inv-view (--inv-shapes N, --inv-hold 2,3 or rN, --inv-motion\n"
@@ -204,6 +204,7 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
         if (std::strcmp(flag, "--help") == 0 || std::strcmp(flag, "-h") == 0) {
             std::fputs(usage, stderr);
             std::fputs(long_usage, stderr);
+            std::fputs(calc_flags_usage, stderr);
             return false;
         }
         if (std::strcmp(flag, "--long") == 0) {
@@ -248,6 +249,14 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             std::strncmp(flag, "--y.", 4) == 0 || std::strncmp(flag, "--v.", 4) == 0) {
             continue; // a genome number: apply_genome_args, apply_minimal_args,
                       // table_genome_args, apply_nn_args, apply_memory_args, apply_vm_args
+        }
+        // the calculation battery's own flags (world/task_calc_flags.cpp)
+        int calc = calc_parse_flag(flag, value, flags.task_settings);
+        if (calc != 0) {
+            if (calc < 0) {
+                return false;
+            }
+            continue;
         }
         bool fn_ok = true;
         if (function_flag(flag, value, flags.task_settings, fn_ok)) {

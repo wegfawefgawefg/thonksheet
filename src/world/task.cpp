@@ -60,6 +60,7 @@ static const char* const task_names[(int)TaskKind::count] = {
     "distract",
     "serial-add",
     "majority",
+    "calc",
 };
 // clang-format on
 
@@ -146,6 +147,9 @@ void task_reset(Task& task, TaskKind kind, const TaskSettings& settings, uint64_
     case TaskKind::majority:
         beyond_reset(task);
         break;
+    case TaskKind::calc:
+        calc_reset(task);
+        break;
     case TaskKind::count:
     default:
         break;
@@ -203,6 +207,8 @@ TaskShape task_shape(const Task& task) {
     case TaskKind::serial_add:
     case TaskKind::majority:
         return beyond_shape(task);
+    case TaskKind::calc:
+        return calc_shape(task);
     case TaskKind::count:
     default:
         break;
@@ -276,6 +282,9 @@ void task_sense(const Task& task, TaskSense& sense) {
     case TaskKind::majority:
         beyond_sense(task, sense);
         break;
+    case TaskKind::calc:
+        calc_sense(task, sense);
+        break;
     case TaskKind::count:
     default:
         break;
@@ -333,6 +342,8 @@ int task_perfect_move(const Task& task) {
     case TaskKind::serial_add:
     case TaskKind::majority:
         return beyond_perfect_move(task);
+    case TaskKind::calc:
+        return calc_perfect_move(task);
     case TaskKind::count:
     default:
         break;
@@ -407,6 +418,9 @@ int task_step(Task& task, const TaskStepIn& in) {
     case TaskKind::majority:
         valence = beyond_step(task, in);
         break;
+    case TaskKind::calc:
+        valence = calc_step(task, in);
+        break;
     case TaskKind::count:
     default:
         break;
@@ -473,6 +487,8 @@ double task_window_score(Task& task) {
         // steps per fall; a window with no fall scores its length
         score = (double)t[0] / (double)(t[1] > 0 ? t[1] : 1);
         break;
+    case TaskKind::calc:
+        return calc_window_score(task);
     case TaskKind::count:
     default:
         break;

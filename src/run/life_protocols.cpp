@@ -229,6 +229,7 @@ static bool life_plain(const RunFlags& flags, const std::string& csv, FILE* sum,
             late_out[d] = late;
         }
     }
+    life_extra_report(csv, ran, results, sum, edge);
     life_episodes(flags.task, ran, sum);
     if (babble_on(flags.babble) && !life_signal_report(flags, csv, sum, key, ran, edge)) {
         return false;

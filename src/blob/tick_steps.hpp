@@ -45,6 +45,8 @@ void learn_tags(Blob& blob, int valence);
 // reverse replay (idea 62, learn_replay.cpp): walks the readout's error back through the
 // spike ring before the readout moves; does nothing while replay_depth and replay_until are 0
 void learn_replay(Blob& blob, int valence);
+// competitive learning on hidden cells, no reward (genome compete_on, learn_compete.cpp)
+void learn_compete(Blob& blob, int read_now);
 // lose-shift, win-stay and bad cut on motor cells (idea 53); does nothing while all are off
 void learn_lose_shift(Blob& blob, int boost);
 

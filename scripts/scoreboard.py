@@ -33,6 +33,11 @@ def short(v):
     return "%.2f" % v
 
 
+def is_card(path):
+    with open(path) as f:
+        return f.readline().startswith("property,test,")
+
+
 def read_card(path):
     about, rows = {}, []
     with open(path) as f:
@@ -65,6 +70,8 @@ def main():
         return 1
     names = sorted(f[:-4] for f in os.listdir(CARDS) if f.endswith(".csv"))
     names = [n for n in names if (n in wanted if wanted else not n.endswith("-quick"))]
+    # other tables live in the same folder (the invariance battery's); only scorecards join
+    names = [n for n in names if is_card(os.path.join(CARDS, n + ".csv"))]
     if not names:
         print("no scorecards to join")
         return 1

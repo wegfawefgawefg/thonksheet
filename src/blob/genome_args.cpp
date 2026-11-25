@@ -183,6 +183,10 @@ static const GenomeField fields[] = {
     {"explore_scale", &Genome::explore_scale},
     {"critic_opponent", &Genome::critic_opponent},
     {"critic_wide", &Genome::critic_wide},
+    {"compete_on", &Genome::compete_on},
+    {"compete_shift", &Genome::compete_shift},
+    {"compete_down_shift", &Genome::compete_down_shift},
+    {"compete_inh", &Genome::compete_inh},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

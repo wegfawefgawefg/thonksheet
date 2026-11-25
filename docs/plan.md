@@ -45,13 +45,18 @@ is.
 
 Running (four), as of 2026-11-25 night:
 - Item B below (idea 155) and item C below (the critic).
-- The calculation battery, with answers that are patterns and held-out inputs.
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
+- Queued item 2b (idea 159): the error sent one hop to every hidden cell.
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
-153, 154), both merged. Their slots went to items B and C.
-Also running unattended, not agents: the search on stevejobs (minimal, table); the
-memory, GRU and MLP reference suites on stevejobs (`thonk-ref`), on the integrated code
-with the fixed cartpole.
+153, 154), both merged; their slots went to items B and C. The calculation battery
+(ideas 133, 134; docs/results-2026-11-25-calculation.md), merged; its slot went to
+queued items 1 and 2. Those are done and merged too (`scripts/inside.sh`; competitive
+learning lifts the lived sheet to 0.952 on MNIST against 0.926 as born, idea 158,
+docs/results-2026-11-25-compete.md); their slot went to item 2b.
+Also running unattended, not an agent: the readout suite on stevejobs (`thonk-ref`, log
+`out/readout.log` there; pull with `MINI_DIR=thonk-ref scripts/mini.sh pull`). The memory,
+GRU and plain-net suites on the integrated code are done and on the scoreboard. The search
+is stopped on both machines (resumable).
 
 Done since the queue was written: the GPU (any world, evidence counters, the memory
 engine, one call per table of designs); the integration of all eleven wound-up branches
@@ -76,21 +81,45 @@ so they come first):
   MNIST (0.924 and 0.943 to beat) and on held-out rows.)
 - C. *(running)* The critic on report seeds and long lives, on the fixed cartpole, with the wide
   critic.
-- D. Integration check: after the merges, re-run the suite for the readout, the GRU and
-  the memory engine, so the scoreboard is on the fixed cartpole and has the new rows.
+- D. *(GRU, plain net and memory done; readout running on stevejobs)* Integration check:
+  after the merges, re-run the suite for the readout, the GRU and the memory engine, so
+  the scoreboard is on the fixed cartpole and has the new rows. What the reference table
+  says about the tests is in `docs/findings.md`, "The references on every row".
 
 Queued, in order:
-1. The inside-learning test as one script: after a life, freeze, wipe the output, fit a
+1. *(done: `scripts/inside.sh`)* The inside-learning test as one script: after a life, freeze, wipe the output, fit a
    fresh output, and compare with the machine as born and a random projection, on MNIST
    and on the held-out columns. Every item below is scored with it.
-2. Competitive learning with local inhibition, no reward: units that win on an input
+2. *(done, passes: 0.952 against 0.926 born and 0.939 shuffled, 8 seeds; idea 158)* Competitive learning with local inhibition, no reward: units that win on an input
    move toward it (in bits: gain the input's bits, lose others, under a budget).
-3. A local "is this real" score per region: real input against shuffled or self-made
+2a. Follow-ups to item 2, in this order, as one job after 2b and 2c are placed: a
+   rate-matched control (half the margin is not yet separated from a doubled firing
+   rate); a cheap read-off (the rule costs 1.9 times per tick); the rule in the time suite
+   (half of each cell's inputs become pixels: does delayed echo or order pay?); a
+   shuffled control for the calculation rows.
+2c. *(next free slot)* Why our output cannot read what the inside learned (idea 161): a
+   linear reader gets 0.95 from the lived sheet, the sheet's own readout 0.72 and falling.
+   Takes in item 9 (the weighted vote, the drift). This gap is now the largest number on
+   the board.
+2b. *(running, idea 159)* The error sent one hop, to every hidden cell (was item 5; owner,
+   2026-11-25: "do we need some sort of hyper truncated bit backprop... maybe backprop
+   isnt the issue but the whole requirement that it goes all the way back"). Each hidden
+   cell has a few fixed random wires from the output's error lines (which button should
+   have been higher, which lower); each of its connections keeps a fading mark of "I just
+   helped this cell fire"; when the error arrives, marked connections move a hidden
+   counter up or down by the sign on that cell's wire. No chain backwards, no second
+   pass, no stored history. Tags are the one-bit-reward version of this that only reaches
+   cells with a spike path into the action; this reaches every cell and carries a signed
+   error per output. Run it both ways: told only good or bad, and told the right button.
+   Scored by the inside-learning test, MNIST 0.924 to beat.
+3. Predicting the input: every unit learns to predict a neighbour or the next tick from
+   the rest; what is mispredicted is what gets learned. Moved up (owner, 2026-11-25: "do
+   we need pretraining step lol. its not like llms start off with general features"):
+   there is no stage before the life. Every inner rule is always on, in the one life, and
+   "a life, then freeze and read" is only how we measure. A language model's features
+   come from predicting its input all the time, which is this item.
+4. A local "is this real" score per region: real input against shuffled or self-made
    input, each region raising its activity for one and lowering it for the other.
-4. Predicting the input: every unit learns to predict a neighbour or the next tick from
-   the rest; what is mispredicted is what gets learned.
-5. Fixed random feedback of the output's error to the inside (the bits form of direct
-   feedback alignment), beside the tags result.
 6. Credit by code (idea 138).
 7. Units pay the units that set them up (idea 139).
 8. A memory that knows near from far (idea 152), scored on MNIST.
@@ -98,7 +127,10 @@ Queued, in order:
 10. Finish the critic: cartpole with the reward lag fixed, against the memory engine's 109
     and 279 steps per fall.
 11. The suite a lookup table cannot pass (149) and the held-out split (126): fold every
-    battery's never-shown rows into the scoreboard as their own columns.
+    battery's never-shown rows into the scoreboard as their own columns. The calculation
+    battery is the first such suite (memory: seen 0.88 to 0.99, held out near the most
+    common answer); what is left is the scoreboard columns.
+11b. Tidy: `src/world/task.cpp` is 541 lines, over the 500-line rule; split it.
 12. The seeing battery (136): shapes, tracking, counting, behind a cover.
 13. The behaviour battery (145).
 14. Two regions, one tuned to ring and one to mix (112), on delayed echo and hold.
@@ -106,7 +138,10 @@ Queued, in order:
 16. Copy, vary, keep a frozen copy; never erase (140, 141).
 17. Look one step ahead (144), on the acting worlds.
 18. Position tolerance learned from motion (idea 104) on the invariance battery.
-19. A red-team agent: beat the best design by any means that keeps the rules (127).
+19. A red-team agent: beat the best design by any means that keeps the rules (127). It
+    also takes the rows no reference learns (analogy, how-many-hard, the shown-the-answer
+    rows, fill-in, the pendulum, the sine band): for each, a learner that passes it or
+    the reason none can, and the row fixed or struck.
 20. Loop audit: cut mechanisms and suite rows that have earned nothing; one page.
 21. Long memory, whatever its wind-up leaves unfinished: the forgetting curve to a
     million steps, the freezer.

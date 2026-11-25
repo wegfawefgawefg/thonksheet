@@ -91,8 +91,13 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
             }
             // with a critic the blob hears every step, valence 0 included (blob/critic.hpp)
             if (tt.valence != 0 || (flags.genome.critic_on && core_blob(driver))) {
-                plug_mark_acted(tt.plug, *blob, tt.move);
-                plug_mark_vote(tt.plug, *blob, tt.move);
+                if (tt.plug.shape.pattern_bits > 0) {
+                    plug_mark_pattern(tt.plug, *blob, tt.in.pattern, tt.in.pattern_tied,
+                                      tt.task.pattern_graded);
+                } else {
+                    plug_mark_acted(tt.plug, *blob, tt.move);
+                    plug_mark_vote(tt.plug, *blob, tt.move);
+                }
                 reward(driver, *blob, tt.valence);
             }
             step++;
@@ -103,6 +108,12 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
                 }
                 out.taught.push_back(task_taught_score(tt.task));
                 out.scores.push_back(task_window_score(tt.task));
+                // extra scores (the calculation battery), one list each
+                for (int i = 0; i < tt.task.score_extras && i < TASK_MAX_EXTRA; i++) {
+                    out.extra[i].push_back(tt.task.score_extra[i]);
+                }
+                out.extras = tt.task.score_extras > out.extras ? tt.task.score_extras : out.extras;
+                out.extra_task = &tt.task;
             }
         }
         out.episodes += tt.task.episodes;
