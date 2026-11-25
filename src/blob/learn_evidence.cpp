@@ -80,7 +80,10 @@ void evidence_rewire(Blob& blob, int n) {
         uint32_t src = slot_source(blob, n, k);
         uint64_t u = src == (uint32_t)blob.tile_count ? 0 : ~0ull;
         u &= k == 4 ? ~self : ~0ull;
-        u &= k >= LOCAL_SLOTS ? ~blob.inhibitory[src] : ~0ull;
+        // readout_evidence 3: as 2, and only excitatory sources are wired (a ten-button
+        // readout otherwise wired a losing button to its inhibitory sources and silenced it)
+        bool no_inhibitory = k >= LOCAL_SLOTS || blob.genome.readout_evidence == 3;
+        u &= no_inhibitory ? ~blob.inhibitory[src] : ~0ull;
         usable[k] = u;
         for (int b = 0; b < TILE_NEURONS; b++) {
             int v = c[k * TILE_NEURONS + b];
@@ -104,7 +107,7 @@ void evidence_rewire(Blob& blob, int n) {
     // random place, instead of all of it being dropped. with 1, a cell whose counters all
     // reach the clamp together (more of them than its budget) wires nothing and goes silent
     // for good: ten-button mnist lost four buttons that way
-    int fill = blob.genome.readout_evidence == 2 && cut > 1 ? keep - total : 0;
+    int fill = blob.genome.readout_evidence >= 2 && cut > 1 ? keep - total : 0;
     int start = fill > 0 ? (int)(blob.rng[0] % (uint64_t)EVIDENCE_ROW) : 0;
     uint64_t extra[SLOTS] = {};
     for (int j = 0; j < EVIDENCE_ROW && fill > 0; j++) {

@@ -202,8 +202,7 @@ void learn_readout(Blob& blob, int valence) {
         // readout_balance 2: the nearest power of two instead of the next one up, so with ten
         // buttons the nine others move at 1/8, not 1/16, and the counters do not drain (mnist)
         int64_t below = e > 0 ? pressed_cells << (e - 1) : 0;
-        if (g.readout_balance == 2 && below > 0 &&
-            other_cells * other_cells < 2 * below * below) {
+        if (g.readout_balance == 2 && below > 0 && other_cells * other_cells < 2 * below * below) {
             other_shift--;
         }
     }

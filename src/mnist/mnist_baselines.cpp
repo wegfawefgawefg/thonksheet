@@ -179,6 +179,11 @@ int mnist_baselines(int argc, char** argv) {
         linear_train(lin, train, s, MNIST_CLASSES, passes, lr, seed);
         std::snprintf(name, sizeof name, "linear, grey pixels, %d passes", passes);
         report(name, t0, [&](const Rows& r) { return linear_accuracy(lin, r, s); });
+        TwoLayer net;
+        t0 = now_seconds();
+        two_layer_train(net, train, s, MNIST_CLASSES, hidden, 1, lr2, seed);
+        std::snprintf(name, sizeof name, "two-layer, grey pixels, 1 pass");
+        report(name, t0, [&](const Rows& r) { return two_layer_accuracy(net, r, s); });
     }
     make(false);
     {

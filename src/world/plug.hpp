@@ -20,7 +20,7 @@ constexpr int PLUG_MAX_SIDE = 4;
 constexpr int PLUG_MAX_GROUP = PLUG_MAX_SIDE * PLUG_MAX_SIDE;
 constexpr int PLUG_GOOD_LINE = 0;
 constexpr int PLUG_BAD_LINE = 1;
-constexpr int PLUG_MAX_SPREAD = 1024; // motor cells over all buttons with --motor-spread
+constexpr int PLUG_MAX_SPREAD = 4096; // motor cells over all buttons with --motor-spread
 
 struct PlugSettings {
     int sensor_side = 2;       // a sensor line drives side x side neurons
