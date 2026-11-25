@@ -14,7 +14,7 @@ import loops_probe as lp  # noqa: E402  part A: blobprobe looptrace and transfer
 # the change of part B, and the runner-up: genome numbers added to every arm of a life
 CHANGES = {
     "leak": "--g.leak_shift_min 4 --g.leak_shift_max 6",
-    "leakstep": "--g.leak_shift_min 4 --g.leak_shift_max 6 --g.sector_step_shift 3",
+    "leak56": "--g.leak_shift_min 5 --g.leak_shift_max 6",
 }
 for key, flags in CHANGES.items():
     tl.ARMS[key + "-on"] = tl.ARMS["on"] + " " + flags
@@ -35,7 +35,8 @@ tl.setting_flags = setting_flags
 
 # part B's rows: the time and memory rows of the timerule job, the 1,000-tick hold, and the
 # rows that must not break
-B_ROWS = [(label, args, SUITE) for label, args, _ in REACH_ROWS]
+B_ROWS = [(label, args, SUITE) for label, args, _ in REACH_ROWS
+          if label not in ("sequence, 8 lines x 4", "same or different in turn")]
 B_ROWS.insert(5, ("delayed echo, 50 steps", delayed(50), SUITE))
 MUST_ROWS = [("exclusive-or (both-not-either)", ["--task", "both-not-either"], SUITE),
              ("echo, 16 cues", ["--task", "echo", "--k", "16"], SUITE),
@@ -69,9 +70,15 @@ def best(opt):
     folder = os.path.join(opt["out"], "lives")
     lp.reuse_timerule(folder, opt)
     c = opt["change"]
-    arms = ["off", "on", "oncap", "churn", c + "-off", c + "-on", c + "-cap"]
+    arms = ["off", "on", "oncap", c + "-off", c + "-on", c + "-cap"]
     rows = B_ROWS + MUST_ROWS
     res = grid(folder, rows, arms, opt, by_args=True)
+    # plain churn: the timerule job's lives (no new rows)
+    old = [r for r in rows if r[0] in [x[0] for x in REACH_ROWS]]
+    res.update(grid(folder, old, ["churn"], opt, by_args=True))
+    for label, _, _ in rows:
+        res.setdefault((label, "churn"), [(None, None, None)])
+    arms.insert(3, "churn")
     # churn under the change: only on the rows a held trace should move
     some = [r for r in rows if r[0] in CHURN_ROWS]
     res.update(grid(folder, some, [c + "-churn"], opt, by_args=True))

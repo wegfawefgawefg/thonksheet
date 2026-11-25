@@ -358,6 +358,34 @@ int probe_looptrace(int argc, char** argv) {
         }
     }
     double hn = hidden.empty() ? 1 : (double)hidden.size();
+    // the cells at their threshold cap against the rest: inputs from sensor cells, and rate
+    double cap_n[2] = {0, 0}, cap_sense[2] = {0, 0}, cap_rate[2] = {0, 0};
+    for (int i : hidden) {
+        int at = blob->threshold[i] >= blob->genome.threshold_cap;
+        int sense = 0;
+        for (int k = 0; k < SLOTS; k++) {
+            uint32_t src = slot_source(*blob, i, k);
+            if (src != (uint32_t)tiles) {
+                int64_t w = blob_weight_index(i, k);
+                sense += __builtin_popcountll((blob->w0[w] | blob->w1[w]) & blob->sensor[src]);
+            }
+        }
+        double s = 0;
+        for (size_t r = 0; r < c.cue.size(); r++) {
+            for (int p = 0; p < c.phases; p++) {
+                s += c.spikes[(r * c.phases + p) * n + i];
+            }
+        }
+        cap_n[at] += 1;
+        cap_sense[at] += sense;
+        cap_rate[at] += 1024 * s / ((double)c.cue.size() * c.phases * ticks_per_step);
+    }
+    std::printf("at cap: %.0f cells, sensor inputs per cell %.1f (others %.1f), rate %.1f (others "
+                "%.1f)\n",
+                cap_n[1], cap_sense[1] / (cap_n[1] > 0 ? cap_n[1] : 1),
+                cap_sense[0] / (cap_n[0] > 0 ? cap_n[0] : 1),
+                cap_rate[1] / (cap_n[1] > 0 ? cap_n[1] : 1),
+                cap_rate[0] / (cap_n[0] > 0 ? cap_n[0] : 1));
     std::printf("state: hidden rate %.1f per 1024 cell-ticks; hidden thresholds mean %.2f, at cap "
                 "%.3f, at floor %.3f; sector bias mean %.2f, at +max %.3f, at -max %.3f\n",
                 1024 * spikes / hn / ((double)c.cue.size() * c.phases * ticks_per_step), thr / hn,

@@ -44,14 +44,11 @@ for _name, _flags in UNDER:
 DELAYS = [2, 3, 4, 8, 16]
 # the ones scored on delayed echo (the trace table has them all). the leak lives are part
 # B's own arms (loops.py CHANGES), so best reuses them
-SCORE_AFTER = ["as lived", "sector bias held at 0", "sector bias at most 4", "thresholds frozen",
-               "no tile winners", "inhibition 3 (was 5)", "cooldown 1", "leak shift 6 (was 1-4)",
-               "loop inputs all strong", "no noise, no pacemakers"]
+SCORE_AFTER = ["as lived", "sector bias held at 0", "thresholds frozen", "no tile winners",
+               "inhibition 3 (was 5)", "leak shift 6 (was 1-4)", "loop inputs all strong"]
 SCORE_UNDER = [("life: sector bias off", "u-life__sector_bias_off"),
-               ("life: sector bias at most 4", "u-life__sector_bias_at_most_4"),
                ("life: slow bias step", "u-life__slow_bias_step"),
-               ("life: leak shift 4-6", "leak-on"),
-               ("life: leak shift 4-6, slow bias step", "leakstep-on")]
+               ("life: leak shift 4-6", "leak-on"), ("life: leak shift 5-6", "leak56-on")]
 
 
 def reuse_timerule(folder, opt):
@@ -96,6 +93,10 @@ def trace_parse(path):
         m = re.match(r"looptrace .*loop cells (\d+) \(cue 0\) (\d+)", line)
         if m:
             out["loops"] = int(m.group(1)) + int(m.group(2))
+        m = re.match(r"at cap: (\d+) cells, sensor inputs per cell ([0-9.]+) \(others ([0-9.]+)\), "
+                     r"rate ([0-9.]+) \(others ([0-9.]+)\)", line)
+        if m:
+            out["cap"] = [float(v) for v in m.groups()]
         m = re.match(r"trace: (\d+)", line)
         if m:
             out["trace"] = int(m.group(1))
@@ -261,7 +262,8 @@ def pred(opt):
              "share at their cap (threshold_cap); bias: sector bias mean, share of sector-ticks "
              "at +max and at -max." % ",".join(map(str, opt["seeds"])), "",
              "| sheet | rate | threshold mean | at cap | bias mean | at +max | at -max | loop "
-             "cells | vote b1 / b2 |", "|---|---|---|---|---|---|---|---|---|"]
+             "cells | vote b1 / b2 | capped cells: sensor inputs (others) | capped: rate "
+             "(others) |", "|---|---|---|---|---|---|---|---|---|---|---|"]
     for name, _, _, _ in sheets:
         p = [x for x in res[name] if "state" in x]
         if not p:
@@ -269,9 +271,11 @@ def pred(opt):
         st = [fmt(mean([x["state"][i] for x in p]), d) for i, d in
               ((0, 1), (1, 1), (2, 3), (3, 1), (4, 3), (5, 3))]
         loops = fmt(mean([x.get("loops", 0) for x in p]), 0)
-        lines.append("| %s | %s | %s | %s / %s |" % (name, " | ".join(st), loops,
-                                                     fmt(mean([x["vote"][1] for x in p])),
-                                                     fmt(mean([x["vote"][2] for x in p]))))
+        cap = [x["cap"] for x in p if "cap" in x and x["cap"][0] > 0]
+        capc = lambda i: fmt(mean([c[i] for c in cap]), 1) if cap else "-"  # noqa: E731
+        lines.append("| %s | %s | %s | %s / %s | %s (%s) | %s (%s) |" % (
+            name, " | ".join(st), loops, fmt(mean([x["vote"][1] for x in p])),
+            fmt(mean([x["vote"][2] for x in p])), capc(1), capc(2), capc(3), capc(4)))
     return "\n".join(lines)
 
 
