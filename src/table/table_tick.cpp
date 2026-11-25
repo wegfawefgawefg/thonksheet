@@ -106,12 +106,11 @@ void table_tick(Blob& blob) {
         uint64_t flip = sparse_word(tb.rng, tb.tg.noise_shift) & ~sensor;
         b.predicted[t] = out & sensor;
         surprise += std::popcount((b.predicted[t] ^ sensed) & b.sense_attached[t] & sensor);
-        uint64_t inner = (out ^ flip) & ~sensor;
+        uint64_t inner = ((out ^ flip) | b.urge[t]) & ~sensor; // urge: idea 60
         // the world's damage and being shown the answer (both null unless asked for)
         inner &= b.silenced ? ~b.silenced[t] : ~0ull;
         inner |= b.forced ? b.forced[t] & ~sensor : 0;
         uint64_t spikes = inner | sensed;
-        uint64_t spikes = (((out ^ flip) | b.urge[t]) & ~sensor) | sensed; // urge: idea 60
         map[t] = spikes;
         flips[t] = flip;
         fired += std::popcount(spikes);

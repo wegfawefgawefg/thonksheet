@@ -392,7 +392,6 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.alive_ticks = (int)v;
         } else if (std::strcmp(flag, "--rhythm-ticks") == 0) {
             flags.rhythm_ticks = (int)v;
-        } else if (!parse_map_flag(flag, v, flags)) {
         } else if (std::strcmp(flag, "--babble") == 0) {
             flags.babble.chance = (int)v;
         } else if (std::strcmp(flag, "--babble-fade") == 0) {
@@ -405,7 +404,7 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.babble.memory_shift = (int)v;
         } else if (std::strcmp(flag, "--signal-report") == 0) {
             flags.babble.report = (int)v;
-        } else {
+        } else if (!parse_map_flag(flag, v, flags)) {
             std::fprintf(stderr, "blobrun: unknown flag %s\n%s", flag, usage);
             return false;
         }
@@ -422,6 +421,8 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
         return false;
     }
     if (!function_settings_ok(flags.task, flags.task_settings)) {
+        return false;
+    }
     BabbleSettings& bs = flags.babble;
     if (bs.chance < 0 || bs.chance > 1024 || bs.fire < 0 || bs.fire > 256 || bs.memory_shift < 1 ||
         bs.memory_shift > 14) {

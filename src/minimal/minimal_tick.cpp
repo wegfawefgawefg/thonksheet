@@ -198,15 +198,13 @@ void minimal_tick(Blob& blob) {
         uint64_t would = plain ? would_fire_plain(m, prev, t) : would_fire(m, next, t);
         uint64_t sensor = blob.sensor[t];
         min_site(m, MIN_DRAW_NOISE, (uint32_t)t, 0);
-        uint64_t noise = sparse_word(m.rng, mg.noise_shift) & ~sensor;
+        // an urged cell (idea 60) counts as a noise spike: an experiment the rule grades
+        uint64_t noise = (sparse_word(m.rng, mg.noise_shift) | blob.urge[t]) & ~sensor;
         uint64_t inner = (would | noise) & ~sensor;
         // the world's damage and being shown the answer (both null unless asked for)
         inner &= blob.silenced ? ~blob.silenced[t] : ~0ull;
         inner |= blob.forced ? blob.forced[t] & ~sensor : 0;
         uint64_t fired = inner | (blob.sense_in[t] & sensor);
-        // an urged cell (idea 60) counts as a noise spike: an experiment the rule grades
-        uint64_t noise = (sparse_word(m.rng, mg.noise_shift) | blob.urge[t]) & ~sensor;
-        uint64_t fired = ((would | noise) & ~sensor) | (blob.sense_in[t] & sensor);
         out[t] = fired;
         noise_out[t] = noise & ~would & inner;
         fired_count += (uint32_t)__builtin_popcountll(fired);

@@ -35,7 +35,6 @@ struct TaskTicker {
     int cue = 0;         // task.cue while it was sensed
     int right_move = -1; // what the perfect player would have done
     int move = -1;       // what the blob did (-1 no move)
-    int valence = 0;
     // being shown the answer, damage (tiers 8 and 9): good and bad are worked out but not
     // given (valence 0, the good/bad line stays quiet); what the task said is kept here
     bool withhold = false;
