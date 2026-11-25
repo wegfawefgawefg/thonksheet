@@ -260,6 +260,7 @@ int probe_invariance(int argc, char** argv) {
     SplitPrep prep;
     split_prepare(input, prep);
     report("input lines", split_fit(input, prep, {}, versions), sum, "input");
+    report("nearest taught input", split_nearest(input, prep), sum, "nearest");
     // --sheet 0: the input lines only (a quick check of a task design)
     if (!int_arg(argc, argv, "--sheet", 1)) {
         if (sum) {

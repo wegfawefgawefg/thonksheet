@@ -2,7 +2,10 @@
 
 #include "probe/linear_fit.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <map>
+#include <string>
 
 constexpr int RIDGE_STEPS = 6;
 static const double ridge_scale[RIDGE_STEPS] = {0.0003, 0.003, 0.03, 0.3, 3.0, 30.0};
@@ -187,4 +190,57 @@ SplitScore split_fit(const SplitData& data, const SplitPrep& p, const std::vecto
         }
     }
     return best;
+}
+
+// the nearest taught pattern: every distinct fit row with how often each class came with
+// it; a test row takes the classes of the fit patterns nearest to it (fewest differing
+// counts, summed), ties shared. what a reader that only remembers what it saw would do
+static double nearest_share(const SplitData& data, const SplitPrep& p,
+                            const std::map<std::string, std::vector<int>>& seen,
+                            const std::vector<int>& rows) {
+    int d = data.features, c = p.classes;
+    double right = 0;
+    std::vector<int> votes((size_t)c, 0);
+    for (int r : rows) {
+        const uint8_t* x = &data.x[(size_t)r * d];
+        int best = 1 << 30;
+        std::fill(votes.begin(), votes.end(), 0);
+        for (const auto& kv : seen) {
+            const uint8_t* y = (const uint8_t*)kv.first.data();
+            int dist = 0;
+            for (int j = 0; j < d && dist <= best; j++) {
+                dist += x[j] > y[j] ? x[j] - y[j] : y[j] - x[j];
+            }
+            if (dist < best) {
+                best = dist;
+                std::fill(votes.begin(), votes.end(), 0);
+            }
+            if (dist == best) {
+                for (int i = 0; i < c; i++) {
+                    votes[(size_t)i] += kv.second[(size_t)i];
+                }
+            }
+        }
+        int total = 0;
+        for (int v : votes) {
+            total += v;
+        }
+        right += total ? (double)votes[(size_t)data.label[(size_t)r]] / total : 0.0;
+    }
+    return rows.empty() ? 0.0 : right / (double)rows.size();
+}
+
+SplitScore split_nearest(const SplitData& data, const SplitPrep& p) {
+    std::map<std::string, std::vector<int>> seen;
+    int d = data.features;
+    for (int r : p.fit) {
+        const uint8_t* x = &data.x[(size_t)r * d];
+        std::vector<int>& counts = seen[std::string((const char*)x, (size_t)d)];
+        counts.resize((size_t)p.classes, 0);
+        counts[(size_t)data.label[(size_t)r]]++;
+    }
+    SplitScore s;
+    s.same = nearest_share(data, p, seen, p.same);
+    s.held = nearest_share(data, p, seen, p.held);
+    return s;
 }

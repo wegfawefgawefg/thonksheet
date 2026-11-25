@@ -35,3 +35,6 @@ void split_prepare(const SplitData& data, SplitPrep& prep);
 // a reader of the given features (every feature if empty)
 SplitScore split_fit(const SplitData& data, const SplitPrep& prep, const std::vector<int>& features,
                      int versions);
+// the nearest taught pattern (fewest differing counts) among the fit rows, ties shared: a
+// reader that only remembers. well below 0.5 on the held rows means the world misleads it
+SplitScore split_nearest(const SplitData& data, const SplitPrep& prep);
