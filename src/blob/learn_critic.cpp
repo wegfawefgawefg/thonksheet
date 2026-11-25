@@ -195,6 +195,7 @@ bool critic_step(Blob& blob, int valence) {
     for (int t = 0; t < c.words; t++) {
         acted[t] = blob.motor_acted ? blob.motor_acted[t] : 0;
     }
+    c.judged[c.head] = valence != 0;
     c.level_before = c.level;
     c.level = level_of(c, planes);
 

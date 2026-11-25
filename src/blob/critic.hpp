@@ -46,6 +46,7 @@ struct CriticState {
     int surprise = 0;                // the last surprise, in spikes
     int sign = 0;                    // and what it counted as: +1, -1 or 0
     int explored = 0;                // 1 if this step's press was forced at random
+    uint8_t judged[CRITIC_STEPS] = {}; // per kept step: 1 if the world gave it good or bad
 };
 
 // the critic cells: set if `neuron` is one (false before the first step)

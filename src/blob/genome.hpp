@@ -279,6 +279,8 @@ struct Genome {
     int critic_keep_world = 0; // 1: with the critic on, the world's good and bad still reach
                                // the readout, the replay walk and the integrator cells as
                                // without it; the surprise teaches the actor on top
+    int actor_unjudged = 0;    // 1: the surprise teaches only presses the world left without
+                               // good or bad (with critic_keep_world the verdict taught them)
     int actor_good = 0;        // 1: a good surprise teaches the actor's good half (pressed
                                // gain, others lose) whatever readout_good says
 };

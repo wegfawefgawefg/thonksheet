@@ -185,6 +185,7 @@ static const GenomeField fields[] = {
     {"critic_wide", &Genome::critic_wide},
     {"critic_keep_world", &Genome::critic_keep_world},
     {"actor_good", &Genome::actor_good},
+    {"actor_unjudged", &Genome::actor_unjudged},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

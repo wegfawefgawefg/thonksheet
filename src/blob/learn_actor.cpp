@@ -37,6 +37,10 @@ void actor_learn(Blob& blob, CriticState& c, int sign) {
     int ages = clamp_int(g.actor_trace_steps, 1, CRITIC_STEPS - 1);
     ages = ages < c.steps ? ages : (int)c.steps;
     for (int a = 1; a <= ages; a++) {
+        // actor_unjudged: a press the world judged was taught by its verdict already
+        if (g.actor_unjudged && c.judged[critic_slot(c, a)]) {
+            continue;
+        }
         const uint64_t* acted = c.acted + (std::size_t)critic_slot(c, a) * words;
         int shift = g.readout_shift + (a - 1) * g.actor_fade;
         int64_t pressed_cells = 0, other_cells = 0;
