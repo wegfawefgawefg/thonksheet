@@ -354,3 +354,40 @@ ones?" There are. Three things widen the search from here.
      elsewhere for the source at the same offset, weakly, so that what is true everywhere
      ends up wired everywhere and what is local stays local. A convolution that is found,
      not built in. *idea*
+
+### Invariance (added 2026-11-25)
+
+The owner: "how does the brain do it? ... fundamental ways of getting the same kind of
+effect cheaply? scale invariance, rotational invariance, position invariance, time
+invariance, frequency invariance ... we should have envs for testing all of these and keep
+trying more mechanics until we find something that can do all of them."
+
+The brain does not share weights. As far as is known it gets invariance five ways, and each
+is a mechanism to try. All are scored on the invariance battery (idea 101).
+
+101. **The invariance battery.** A task per kind of change (place, scale, turn, thickness,
+     time shift, tempo, pitch, clutter), rewarded on some versions and scored on versions
+     never rewarded, with and without the pattern drifting through its versions, measured at
+     three levels: is it readable, does the readout get it, does the whole thing. *building*
+102. **What follows is the same thing.** [known: the trace rule] As a thing moves, the
+     detectors it sets off one after another get wired to the same cells, because wiring
+     uses a slow "fired recently". One local rule that gives place, size and turn alike,
+     learned from motion. *idea*
+103. **Cells that fire for any one of several.** [known: complex cells] A neuron that fires
+     if any one of its slots is active enough pools the same detector over nearby places.
+     Same as idea 72. *idea*
+104. **Maps where the change is a slide.** [known: the eye and the ear] A log-polar map of
+     the image turns growing and turning into sliding; frequency lines spaced by ratio turn
+     a change of pitch into a slide; time constants spaced by ratio turn tempo into a slide.
+     Then one answer to sliding answers all of them. *first test inside idea 101*
+105. **Move the eye.** [known: fixation] Motor lines that shift what the sensor sheet sees.
+     The thing gets centred by acting, and position stops mattering. *idea*
+106. **Stages with growing reach.** [known] A second and third sheet, each cell pooling a
+     patch of the one before, so by the top a pattern anywhere looks the same. *idea*
+107. **The same rule sees the same world everywhere.** [known] No sharing is needed if every
+     patch sees every pattern in time. Test: after a life of drifting patterns and wiring by
+     co-activity, are the detectors in different tiles alike? *idea*
+108. **Gain control.** [known] Each cell's input divided by how active its neighbourhood is,
+     so thick and thin, bright and dim drive it alike. *idea*
+Idea 100 (leak evidence to the same offset elsewhere) is the engineer's way; the brain is
+not known to do it.
