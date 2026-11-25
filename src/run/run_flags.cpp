@@ -1,5 +1,7 @@
 #include "run/run_flags.hpp"
 
+#include "run/run_flags_worlds.hpp"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -7,12 +9,16 @@
 static const char* usage =
     "usage: blobrun [flags]\n"
     "  --task NAME        echo, shuffled-echo, delayed-echo, go-no-go, beat, sequence,\n"
-    "                     catch, cartpole, order, both-not-either, gap, place (default echo)\n"
+    "                     catch, cartpole, order, both-not-either, gap, place, bandit,\n"
+    "                     switch-bandit, chain, track, forage, mountain-car, pendulum\n"
+    "                     (default echo)\n"
     "  --seed N           blob seed (default 1)\n"
     "  --task-seed N      task seed (default: same as --seed)\n"
     "  --steps N          life length in task steps (default 20000)\n"
     "  --ticks N          blob ticks per task step (default 8)\n"
     "  --window N         task steps per score window (default 200)\n"
+    "  --windows N        as many windows as this over the life (window = steps / N), so a\n"
+    "                     long life keeps a small csv\n"
     "  --edge N           windows averaged for early and late (default: a tenth)\n"
     "  --out PATH         csv path (default out/<task>-s<seed>.csv)\n"
     "  --no-baselines     skip the learning-off and coin-flip runs\n"
@@ -33,12 +39,24 @@ static const char* usage =
     "  --number-code C    how a number becomes lines: bar (default) or place (one line on)\n"
     "  --cart-reward R    cartpole: sparse (default), alive, or lean (good when it ends a\n"
     "                     step nearer upright and centred, bad when further)\n"
+    "                     or relative (good when nearer upright than the recent average)\n"
+    "  --cart-start S     cartpole starts: narrow (default, +-0.05) or wide\n"
     "  --cue-offset N     echo family: cues and buttons start at line N (default 0)\n"
     "  --order-gap N      order: steps the first cue is on alone (default 1)\n"
     "  --gap-short N      gap: blank steps between blinks, short (default 1)\n"
     "  --gap-long N       gap: blank steps between blinks, long (default 3)\n"
     "  --place-size N     place: the sheet is N x N (default 4)\n"
     "  --place-hold N     place: places never rewarded, the scored ones (default 3)\n"
+    "  --k N              bandit, switch-bandit, chain: buttons (default 2)\n"
+    "  --bandit-good P    bandit: percent of presses the best button pays (default 80)\n"
+    "  --bandit-poor P    bandit: percent of presses the others pay (default 20)\n"
+    "  --switch-every N   switch-bandit: steps before the paying button moves (default 1000)\n"
+    "  --chain-cue 0|1    chain: a line shows the stage (default 1)\n"
+    "  --track-size N     track: cells on the line (default 5)\n"
+    "  --track-reward R   track: shaped (default; nearer good, further bad) or arrive\n"
+    "  --forage-size N    forage: the wrapped grid's side, odd (default 5)\n"
+    "  --forage-warmer 0|1  forage: nearer good, further bad (default 1); 0 pays on arrival\n"
+    "  --classic-reward R mountain-car, pendulum: energy (default) or goal\n"
     "  --distance N       plug: cue lines and motor lines N tiles apart (default: packed,\n"
     "                     1 tile with the default genome)\n"
     "  --motor-spread N   plug: N motor cells per button, dealt like a checkerboard over\n"
@@ -74,6 +92,7 @@ static bool read_int(const char* text, int64_t& out) {
 }
 
 bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
+    int64_t windows = 0;
     for (int i = 1; i < argc; i++) {
         const char* flag = argv[i];
         if (std::strcmp(flag, "--help") == 0 || std::strcmp(flag, "-h") == 0) {
@@ -139,8 +158,17 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
                 flags.task_settings.cart_reward = 1;
             } else if (std::strcmp(value, "lean") == 0) {
                 flags.task_settings.cart_reward = 2;
+            } else if (std::strcmp(value, "relative") == 0) {
+                flags.task_settings.cart_reward = 3;
             } else {
-                std::fprintf(stderr, "blobrun: --cart-reward is sparse, alive or lean\n");
+                std::fprintf(stderr, "blobrun: --cart-reward is sparse, alive, lean or relative\n");
+                return false;
+            }
+            continue;
+        }
+        if (std::strcmp(flag, "--cart-start") == 0 || std::strcmp(flag, "--track-reward") == 0 ||
+            std::strcmp(flag, "--classic-reward") == 0) {
+            if (!parse_world_word(flag, value, flags.task_settings)) {
                 return false;
             }
             continue;
@@ -178,6 +206,8 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.plug.ticks_per_step = (int)v;
         } else if (std::strcmp(flag, "--window") == 0) {
             flags.window = (int)v;
+        } else if (std::strcmp(flag, "--windows") == 0) {
+            windows = v;
         } else if (std::strcmp(flag, "--edge") == 0) {
             flags.edge = (int)v;
         } else if (std::strcmp(flag, "--sensor-side") == 0) {
@@ -218,6 +248,8 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.task_settings.place_size = (int)v;
         } else if (std::strcmp(flag, "--place-hold") == 0) {
             flags.task_settings.place_hold = (int)v;
+        } else if (parse_world_number(flag, v, flags.task_settings)) {
+            // a more-worlds number (run_flags_worlds.cpp)
         } else if (std::strcmp(flag, "--distance") == 0) {
             flags.plug.distance = (int)v;
         } else if (std::strcmp(flag, "--motor-spread") == 0) {
@@ -243,6 +275,9 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             std::fprintf(stderr, "blobrun: unknown flag %s\n%s", flag, usage);
             return false;
         }
+    }
+    if (windows > 0) {
+        flags.window = (int)(flags.steps / windows > 0 ? flags.steps / windows : 1);
     }
     if (flags.steps < 1 || flags.window < 1 || flags.plug.ticks_per_step < 1) {
         std::fprintf(stderr, "blobrun: --steps, --window and --ticks must be at least 1\n");

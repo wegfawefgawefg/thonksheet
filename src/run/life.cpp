@@ -88,6 +88,8 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
                 out.scores.push_back(task_window_score(tt.task));
             }
         }
+        out.episodes += tt.task.episodes;
+        out.wins += tt.task.wins;
     }
     out.first_window[count] = (int)out.scores.size();
     out.seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();

@@ -26,7 +26,8 @@ struct LifeResult {
     std::vector<double> scores; // one per window, all phases in order
     // phase p owns scores [first_window[p], first_window[p + 1])
     int first_window[LIFE_MAX_PHASES + 1] = {};
-    int64_t ticks = 0; // ticks lived over the phases (not the end measurements)
+    int64_t ticks = 0;              // ticks lived over the phases (not the end measurements)
+    int64_t episodes = 0, wins = 0; // the tasks' own count (task_episode_name), all phases
     double seconds = 0;
     LifeEnd end; // room and aliveness, for real blobs only
 };

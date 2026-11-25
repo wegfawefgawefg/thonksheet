@@ -4,8 +4,10 @@
 
 // names as typed on the blobrun command line
 static const char* const task_names[(int)TaskKind::count] = {
-    "echo",  "shuffled-echo", "delayed-echo", "go-no-go",        "beat", "sequence",
-    "catch", "cartpole",      "order",        "both-not-either", "gap",  "place",
+    "echo",     "shuffled-echo", "delayed-echo", "go-no-go",      "beat",
+    "sequence", "catch",         "cartpole",     "order",         "both-not-either",
+    "gap",      "place",         "bandit",       "switch-bandit", "chain",
+    "track",    "forage",        "mountain-car", "pendulum",
 };
 
 const char* task_name(TaskKind kind) {
@@ -50,6 +52,19 @@ void task_reset(Task& task, TaskKind kind, const TaskSettings& settings, uint64_
     case TaskKind::place:
         feature_reset(task);
         break;
+    case TaskKind::bandit:
+    case TaskKind::switch_bandit:
+    case TaskKind::chain:
+        bandit_reset(task);
+        break;
+    case TaskKind::track:
+    case TaskKind::forage:
+        move_reset(task);
+        break;
+    case TaskKind::mountain_car:
+    case TaskKind::pendulum:
+        classic_reset(task);
+        break;
     case TaskKind::count:
         break;
     }
@@ -74,6 +89,16 @@ TaskShape task_shape(const Task& task) {
     case TaskKind::gap:
     case TaskKind::place:
         return feature_shape(task);
+    case TaskKind::bandit:
+    case TaskKind::switch_bandit:
+    case TaskKind::chain:
+        return bandit_shape(task);
+    case TaskKind::track:
+    case TaskKind::forage:
+        return move_shape(task);
+    case TaskKind::mountain_car:
+    case TaskKind::pendulum:
+        return classic_shape(task);
     case TaskKind::count:
         break;
     }
@@ -105,6 +130,19 @@ void task_sense(const Task& task, TaskSense& sense) {
     case TaskKind::place:
         feature_sense(task, sense);
         break;
+    case TaskKind::bandit:
+    case TaskKind::switch_bandit:
+    case TaskKind::chain:
+        bandit_sense(task, sense);
+        break;
+    case TaskKind::track:
+    case TaskKind::forage:
+        move_sense(task, sense);
+        break;
+    case TaskKind::mountain_car:
+    case TaskKind::pendulum:
+        classic_sense(task, sense);
+        break;
     case TaskKind::count:
         break;
     }
@@ -129,6 +167,16 @@ int task_perfect_move(const Task& task) {
     case TaskKind::gap:
     case TaskKind::place:
         return feature_perfect_move(task);
+    case TaskKind::bandit:
+    case TaskKind::switch_bandit:
+    case TaskKind::chain:
+        return bandit_perfect_move(task);
+    case TaskKind::track:
+    case TaskKind::forage:
+        return move_perfect_move(task);
+    case TaskKind::mountain_car:
+    case TaskKind::pendulum:
+        return classic_perfect_move(task);
     case TaskKind::count:
         break;
     }
@@ -160,6 +208,19 @@ int task_step(Task& task, const TaskStepIn& in) {
     case TaskKind::place:
         valence = feature_step(task, in);
         break;
+    case TaskKind::bandit:
+    case TaskKind::switch_bandit:
+    case TaskKind::chain:
+        valence = bandit_step(task, in);
+        break;
+    case TaskKind::track:
+    case TaskKind::forage:
+        valence = move_step(task, in);
+        break;
+    case TaskKind::mountain_car:
+    case TaskKind::pendulum:
+        valence = classic_step(task, in);
+        break;
     case TaskKind::count:
         break;
     }
@@ -185,7 +246,14 @@ double task_window_score(Task& task) {
     case TaskKind::both_not_either:
     case TaskKind::gap:
     case TaskKind::place:
-        // right answers over chances to answer
+    case TaskKind::bandit:
+    case TaskKind::switch_bandit:
+    case TaskKind::chain:
+    case TaskKind::track:
+    case TaskKind::forage:
+    case TaskKind::mountain_car:
+    case TaskKind::pendulum:
+        // right answers over chances to answer (each new world says what it counts)
         score = ratio(t[0], t[1]);
         break;
     case TaskKind::beat:
@@ -203,4 +271,45 @@ double task_window_score(Task& task) {
         task.tally[i] = 0;
     }
     return score;
+}
+
+const char* task_episode_name(TaskKind kind) {
+    switch (kind) {
+    case TaskKind::catch_dot:
+        return "dots";
+    case TaskKind::cartpole:
+        return "falls";
+    case TaskKind::bandit:
+        return "presses";
+    case TaskKind::switch_bandit:
+        return "blocks";
+    case TaskKind::chain:
+        return "chains paid";
+    case TaskKind::track:
+    case TaskKind::forage:
+        return "targets";
+    case TaskKind::mountain_car:
+    case TaskKind::pendulum:
+        return "episodes";
+    default:
+        return nullptr;
+    }
+}
+
+const char* task_win_name(TaskKind kind) {
+    switch (kind) {
+    case TaskKind::catch_dot:
+        return "caught";
+    case TaskKind::bandit:
+        return "paid";
+    case TaskKind::track:
+    case TaskKind::forage:
+        return "reached";
+    case TaskKind::mountain_car:
+        return "at the goal";
+    case TaskKind::pendulum:
+        return "ended upright";
+    default:
+        return nullptr;
+    }
 }
