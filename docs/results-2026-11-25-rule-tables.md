@@ -9,7 +9,30 @@ pair, look at a few local yes-or-no facts and move that pair's evidence up, down
 all, with some chance. Here that shape is the whole rule: a table with one entry per
 combination of ten facts.
 
-SHORT
+## Short version (wound up early, 2026-11-25; the search is unfinished)
+
+- **Built:** the rule as data. Ten local facts per (neuron, source) pair, a 1,024-entry
+  table of 4-bit entries (action and one of four chances) plus an 8-digit header: one
+  1,032-digit hex string, loaded with `--rule-file` or `--rule-hex`, switched by genome
+  `rule_on`. Applied a slot word at a time with ANDs and sparse random words, on reward
+  moments and own spikes, moving the evidence counters of `learn_evidence.cpp` (now on every
+  neuron) or the connection levels directly. Off is byte-identical.
+- **The form is rich enough for the hand-written rules.** The error rule as a table scores
+  as the original on echo k=2, k=4 and exclusive-or (1.000, 0.997, 0.869 against 1.000,
+  0.997, 0.883; seeds 5-12). The old good/bad rule and growth are reproduced in kind and
+  score a little higher as tables on echo k=2 (+0.07, +0.11), level elsewhere.
+- **The search ran, but nothing is confirmed.** One search (the inside: hand error rule at
+  the buttons, the table on every other neuron) ran 11 generations of 16 on selection seeds
+  1-2 with short lives; its best table gains +0.122 scaled over the frozen-sheet readout on
+  those seeds. **No table has been run on confirmation seeds, so this may be noise and must
+  not be read as a result.** The frozen and whole-sheet searches (the readout question, and
+  "frozen against inner allowed") never started on this PC; on the second machine two
+  searches got one generation each.
+- What the inside search's best table does, as sentences: mostly growth on the neuron's
+  own spikes, gated by facts nobody wrote together: grow from causal sources (fired exactly
+  one delay before the spike) fast while the last reward was good and slowly while it was
+  bad; for noise-fired neurons, opposite signs after good and after bad. See "What a
+  varied table found".
 
 ## What was built
 
@@ -157,9 +180,75 @@ The tables, as `scripts/rules.sh print` gives them:
 So all three hand-written rules are rows of the same table. Matching scores, not bytes, was
 the bar.
 
-SEARCH
+## The search (unfinished)
 
-COST
+`scripts/rule_search.py` (`scripts/rules.sh search`). Population 16, elite 4, children by
+group crossover (40%) and 1-3 mutations each: a new random cube over 2-6 facts, an existing
+cube moved, widened, narrowed or given another action or chance, a header digit nudged.
+Mutations stay on the neurons the mode uses. Fitness: mean over 4 worlds (echo k=4,
+exclusive-or, order, echo 3 tiles apart) and 2 selection seeds (1, 2) of
+(late - twin) / (1 - twin); lives of 6,000 steps of 20 ticks, late = last 3 windows of 500,
+128 motor cells per button; in inside mode minus the same for the frozen readout (0.647 on
+the selection seeds, identical on both machines). Twin and baseline are run once, cached.
+
+Lives took 5 to 60 s here (load 30-40 from other agents; tables that put evidence rows on
+every inner neuron and act on own spikes are the slow ones), so a generation took 7 to 15
+minutes. The second machine was at load 40-70 on 14 cores: one generation in 75 minutes.
+
+| search | where | generations done | best selection fitness | state |
+|---|---|---|---|---|
+| inside-hand (readout fixed, table inside, seeded with the three hand tables) | this PC | 11 | +0.122 gain over the frozen readout | stopped |
+| inside-random (the same, random sparse start) | second machine | 1 | -0.030 | stopped |
+| whole-random (table on every neuron, random start) | second machine | 1 | +0.022 | stopped |
+| frozen-hand, whole-hand, frozen-random | | 0 | | never started |
+
+inside-hand, best and mean fitness by generation: +0.018/-0.061, +0.018/-0.037,
++0.061/-0.042, +0.078/+0.007, +0.078/-0.039, +0.103/+0.047, +0.103/+0.051, +0.104/+0.052,
++0.104/+0.050, +0.112/+0.042, +0.122/+0.067. An elite's selection fitness climbs partly by
+luck on two seeds; only confirmation seeds can say how much.
+
+Not answered, because those searches did not run: whether a table beats the hand error
+rule on confirmation seeds; whether a table evolved with the sheet frozen differs from one
+evolved with inner neurons learning.
+
+## What a varied table found (selection seeds only)
+
+The best inside table, `out/rules/search/inside-hand/tables/6571be21f6db.rule`: direct
+read-off, window 6, entries for inner neurons only (`scripts/rules.sh show inside-hand 1`
+prints all 11 sentences). The main ones:
+
+1. when the neuron fires, while the last reward was good, an inner neuron that did not fire
+   recently strengthens its links from unconnected sources that fired recently and fired
+   exactly one delay before its spike, chance 1 in 16;
+2. the same while the last reward was bad, chance 1 in 2,048;
+3. when the neuron fires, while the last reward was bad, an inner neuron (not noise-fired)
+   that fired recently strengthens its links from unconnected sources that fired
+   recently, chance 1 in 16 (while it was good, 1 in 2,048);
+4. for a noise-fired inner neuron after bad: weaken links from causal sources (1 in 2,048)
+   and from causal inhibitory sources (1 in 16); after good: strengthen links from
+   unconnected excitatory and causal inhibitory sources (1 in 16);
+5. when good arrives, an inner neuron that did not fire recently and was not noise-fired
+   weakens its strong excitatory links from sources that did not fire at its delay,
+   chance 1 in 128.
+
+Known: 1 and 2 are growth gated by spike timing (the causal half of STDP, as wiring rather
+than weight) with a reward factor on top, the family of reward-modulated STDP
+(three-factor rules). 5 is close to the old rule's weakening and to heterosynaptic
+depression of inputs that took no part. New here: 3 (grow fast after bad, slowly after
+good, for neurons in a burst) and 4 (noise-fired neurons gaining or losing connections with
+opposite signs after good and bad: the noise rule of learn modes 3 and 4 moved from weights
+onto growth). None of it is confirmed to help.
+
+## Cost
+
+Not measured on a quiet machine; `out/rules/cost.sh` is written for it and was not run.
+From lives in this job, same machine and load, blobrun's ticks per second: echo k=4 with
+the error rule hand-written 41,600, as a table 57,900 (5,000 steps, seed 1: the table costs
+no more than the original); old rule hand 38,800, table 34,500 to 46,300; growth hand
+58,400, table 33,900 (own-spike moments run every tick for every neuron that fired). With
+`rule_on 0` nothing runs. Bytes: 704 per non-sensor neuron with an evidence read-off (2.9 MB
+at 4,096 neurons); nothing extra with the direct read-off. The integrate-and-fire loop is
+untouched.
 
 ## Script lines
 
@@ -172,6 +261,59 @@ scripts/rules.sh search NAME --mode inside --init hand --gens 20 --jobs 2
 scripts/rules.sh status NAME
 scripts/rules.sh show NAME 3
 scripts/rules.sh confirm NAME 4                         best 4 on seeds 5-12
+scripts/rules.sh confirm NAME 4 --mode whole            a search's tables in another mode
 ```
 
-ROUGH
+To finish (each search resumes from its state.json; lives already run are cached):
+
+```
+python3 scripts/rule_search.py confirm --name inside-hand --top 4 --jobs 2
+python3 scripts/rule_search.py confirm --name inside-hand --top 2 --steps 40000 --jobs 2
+python3 scripts/rule_search.py run --name inside-hand --mode inside --init hand --gens 20 --jobs 2 --rng 1
+python3 scripts/rule_search.py run --name frozen-hand --mode frozen --init hand --gens 12 --jobs 2 --rng 3
+python3 scripts/rule_search.py run --name whole-hand --mode whole --init hand --gens 12 --jobs 2 --rng 4
+python3 scripts/rule_search.py run --name frozen-random --mode frozen --init random --gens 20 --jobs 2 --rng 5
+out/rules/cost.sh out/rules/search/inside-hand/tables/6571be21f6db.rule     quiet machine only
+```
+
+The second machine's two searches (inside-random, whole-random) are in
+`~/thonk-rules/out/rules/search/` there; `MINI_DIR=thonk-rules scripts/mini.sh pull` brings
+them to `out/mini/rules/search/`.
+
+## Plain words
+
+The rule is now a string. All three rules written by hand so far are rows of the same
+table and behave like their originals, so a search over the string is a search over
+learning rules, not over the numbers of one rule. A first search for a rule inside the
+sheet, beside the readout that works, found tables that beat the frozen sheet on the two
+seeds it chose on: mostly growth of new links gated by spike timing and by the sign of the
+last reward, roughly what a textbook would propose (reward-modulated STDP), plus two pieces
+nobody wrote. Whether any of it holds on fresh seeds is not known: the confirmation was not
+run before the job was wound up.
+
+## What should change elsewhere (for the coordinator; not edited here)
+
+- `docs/findings.md`: nothing moves a grade yet. Under principle 19 or the wall "broken at
+  the output, standing inside", one line: a learning rule can be written as a table of ten
+  local facts (idea 120); the error rule, the old rule and growth are all expressible and
+  score as their originals (seeds 5-12); an evolved inside rule is pending confirmation.
+- `docs/ideas.md`, idea 120: built; reproductions done; search started (inside-hand, 11
+  generations); confirmation and the frozen and whole searches queued (lines above).
+- `docs/predictions.md`: nothing to score.
+
+## Rough
+
+- The search's fitness uses 2 seeds and 6,000-step lives; its best is chosen on them.
+  Nothing from the search is a confirmed result.
+- A stopped search keeps its last evaluated generation in state.json; the generation that
+  was running is lost except for the lives already cached.
+- In the printer, a cube that does not care whether the source fired covers two
+  applications at a reward (one chance per tick for sources that fired, one for quiet
+  ones); the sentence says so in brackets.
+- The old rule's reward window and growth's choice of candidate differ from the originals
+  (reproduction section); both are properties of the moment, not of the facts.
+- Fact 7 means two things (pressed button for button cells, noise for the rest); the
+  printer decodes it, a reader of raw hex has to know.
+- Raw outputs: evolved tables in `out/rules/search/*/tables/`, lives in
+  `out/rules/search/*/cache.jsonl`, search logs `out/rules/*.log`, reproduction tables
+  `out/rules/reproduce.md` and `out/rules/sweep/`, the identity check `out/rules/ident/`.

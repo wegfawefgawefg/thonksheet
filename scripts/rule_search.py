@@ -324,9 +324,9 @@ def cmd_status(opt):
 
 def cmd_show(opt):
     search = Search(opt.name)
-    _, best, _ = best_of(search, opt.top)
+    sopt, best, _ = best_of(search, opt.top)
     for r, f, i in best:
-        print(f"## {i} (selection fitness {f:+.3f})\n{rt.describe(r)}\n")
+        print(f"## {i} (selection fitness {f:+.3f})\n{rt.describe(r, MODE_BUTTON[sopt.mode])}\n")
 
 
 def cmd_confirm(opt):
@@ -336,6 +336,9 @@ def cmd_confirm(opt):
     seeds = parse_seeds(opt.seeds)
     if opt.steps:
         sopt.steps, sopt.window, sopt.late = opt.steps, opt.window, opt.late
+    own_mode = sopt.mode
+    if opt.mode:
+        sopt.mode = opt.mode  # the tables of one search tried in another mode
     extras = [rule_args(sopt, search, r) for r, _, _ in best]
     names = [i for _, _, i in best]
     hand = rt.hand_error()
@@ -343,8 +346,8 @@ def cmd_confirm(opt):
     extras += [READOUT, ["--g.rule_on", "3", "--rule-file", os.path.relpath(hand_path, ROOT)]]
     names += ["hand error rule (learn_mode 5)", "error rule as a table, buttons only"]
     results = evaluate(search, sopt, extras, seeds)
-    base = results[-2][0] if sopt.mode == "inside" else 0.0
-    lines = [f"## {opt.name}: confirmation, seeds {opt.seeds}, {sopt.steps} steps\n",
+    lines = [f"## {opt.name} (evolved as {own_mode}) run as {sopt.mode}: seeds {opt.seeds}, "
+             f"{sopt.steps} steps\n",
              "| table | selection | confirmation | gain over frozen readout | "
              + " | ".join(WORLDS) + " |",
              "|---|---|---|---|" + "---|" * len(WORLDS)]
@@ -355,9 +358,8 @@ def cmd_confirm(opt):
                      + " | ".join(f"{per[w]:.3f}" for w in WORLDS) + " |")
     text = "\n".join(lines) + "\n"
     print(text)
-    tag = f"confirm-{opt.seeds}-{sopt.steps}.md"
+    tag = f"confirm-{sopt.mode}-{opt.seeds}-{sopt.steps}.md"
     open(os.path.join(search.dir, tag), "w").write(text)
-    _ = base
 
 
 def main():
@@ -385,6 +387,8 @@ def main():
         p.add_argument("--steps", type=int, default=0, help="0: the search's own life length")
         p.add_argument("--window", type=int, default=1000)
         p.add_argument("--late", type=int, default=4)
+        p.add_argument("--mode", choices=list(MODE_FLAGS), default="",
+                       help="confirm: run the tables in this mode instead of their own")
     opt = ap.parse_args()
     {"run": cmd_run, "status": cmd_status, "show": cmd_show, "confirm": cmd_confirm}[opt.what](opt)
 

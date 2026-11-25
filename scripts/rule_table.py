@@ -82,10 +82,12 @@ def save(rule, path, comment=""):
             f.write(h[i:i + 64] + "\n")
 
 
-def cubes(rule):
-    """the non-nothing entries merged into (care, value, digit) cubes over all ten facts"""
+def cubes(rule, button=None):
+    """the non-nothing entries merged into (care, value, digit) cubes over all ten facts;
+    button 0 or 1 keeps only the entries for neurons that are (not) button cells"""
     full = ENTRIES - 1
-    live = {(full, i, rule.entry[i]) for i in range(ENTRIES) if rule.entry[i] >> 2}
+    live = {(full, i, rule.entry[i]) for i in range(ENTRIES) if rule.entry[i] >> 2
+            and (button is None or (i >> BIT["n_button"]) & 1 == button)}
     merged = True
     while merged:
         merged = False
@@ -174,13 +176,16 @@ def sentence(rule, cube):
     return text + f", chance 1 in {2 ** shift}"
 
 
-def describe(rule):
+def describe(rule, button=None):
     lines = [f"read-off: {READOFFS[rule.readoff]}; window {rule.window} ticks; "
              f"balance {'on' if rule.balance else 'off'}; chances "
              + ", ".join(f"1/{2 ** s}" for s in rule.shifts)]
     live = sum(1 for e in rule.entry if e >> 2)
     lines.append(f"{live} of {ENTRIES} entries act")
-    for c in cubes(rule):
+    if button is not None:
+        lines.append("only " + ("button cells" if button else "neurons that are not button cells")
+                     + " use this table here; entries for the others are left out")
+    for c in cubes(rule, button):
         lines.append("- " + sentence(rule, c))
     return "\n".join(lines)
 
