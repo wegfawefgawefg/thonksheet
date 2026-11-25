@@ -13,7 +13,14 @@ static void tick_learn(Blob& blob, int read_now) {
         return;
     }
     if (mode == 5 || mode == 6) {
+        // tags first: the feedback runs along the wiring that made the answer
+        if (g.tag_mode && blob.pending_valence != 0) {
+            learn_tags(blob, blob.pending_valence);
+        }
         learn_readout(blob, blob.pending_valence);
+        if (g.margin_percent && blob.pending_valence > 0) {
+            learn_margin(blob);
+        }
         if (mode == 5) {
             return;
         }

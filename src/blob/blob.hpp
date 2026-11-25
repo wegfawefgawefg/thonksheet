@@ -127,6 +127,28 @@ struct Blob {
     int32_t* readout_row = nullptr;
     int8_t* readout_evidence = nullptr;
     uint16_t* readout_keep = nullptr;
+
+    // margin_percent (learn_margin.cpp): the vote of the step just rewarded, written by the
+    // world with the pressed button: spikes of the pressed button and of the runner-up, and
+    // the runner-up's cells (tile_count + 1 words, made on first use)
+    int32_t vote_pressed = 0, vote_runner = 0;
+    uint64_t* motor_runner = nullptr;
+    uint32_t margin_goods = 0, margin_thin = 0; // goods seen, and those that were close
+
+    // tag_mode (learn_tags.cpp): the neurons the chosen button's feedback reached at the last
+    // verdict, by sign (tile_count + 1 words each), and a hidden counter per possible source
+    // for every neuron (SLOTS x 64 bytes each), with the connection and strong counts it
+    // keeps. all made on first use
+    uint64_t* tag_plus = nullptr;
+    uint64_t* tag_minus = nullptr;
+    int16_t* tag_feedback = nullptr; // scratch: summed feedback per neuron
+    uint64_t* tag_scratch = nullptr;  // scratch: the second hop's tags, 2 x (tile_count + 1)
+    int8_t* tag_evidence = nullptr;
+    uint16_t* tag_keep = nullptr;
+    uint16_t* tag_strong = nullptr;
+    uint8_t* tag_made = nullptr;
+    int32_t tag_average = 0; // running mean of rewards, x256
+    uint32_t tag_events = 0, tag_count = 0; // verdicts that moved counters, neurons moved
 };
 
 // birth and death
@@ -209,6 +231,10 @@ inline void blob_motor_acted(Blob& blob, int neuron) {
     }
     blob.motor_acted[neuron / TILE_NEURONS] |= 1ull << (neuron % TILE_NEURONS);
 }
+
+// margin_percent: the step's vote (spikes of the pressed button and of the runner-up) and the
+// runner-up's cells. defined in learn_margin.cpp; does nothing while margin_percent is 0
+void blob_mark_vote(Blob& blob, int pressed, int runner, const int* runner_cells, int count);
 
 // strength of the connection in one slot from source bit `bit`: 0, 1, 4 or 5
 inline int blob_weight(const Blob& blob, int neuron, int slot, int bit) {

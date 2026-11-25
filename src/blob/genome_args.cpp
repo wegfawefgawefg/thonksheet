@@ -102,6 +102,19 @@ static const GenomeField fields[] = {
     {"bad_cut_on", &Genome::bad_cut_on},
     {"noise_learn_sign", &Genome::noise_learn_sign},
     {"noise_learn_pair", &Genome::noise_learn_pair},
+    {"margin_percent", &Genome::margin_percent},
+    {"margin_win", &Genome::margin_win},
+    {"margin_rival", &Genome::margin_rival},
+    {"margin_rival_shift", &Genome::margin_rival_shift},
+    {"tag_mode", &Genome::tag_mode},
+    {"tag_hops", &Genome::tag_hops},
+    {"tag_thin", &Genome::tag_thin},
+    {"tag_min", &Genome::tag_min},
+    {"tag_shift", &Genome::tag_shift},
+    {"tag_far", &Genome::tag_far},
+    {"tag_inh", &Genome::tag_inh},
+    {"tag_avg_shift", &Genome::tag_avg_shift},
+    {"tag_bits", &Genome::tag_bits},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

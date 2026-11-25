@@ -25,6 +25,7 @@
 
 int int_arg(int argc, char** argv, const char* name, int fallback);
 const char* text_arg(int argc, char** argv, const char* name, const char* fallback);
+Blob* probe_sheet(int argc, char** argv, const Genome& genome, uint64_t seed);
 
 enum class Feature { which, order, order_xor, gap, hold };
 
@@ -151,7 +152,7 @@ int probe_feature(int argc, char** argv) {
     bool linear = int_arg(argc, argv, "--linear", 0) != 0;
     LinearData kept;
 
-    Blob* blob = blob_birth(genome, seed);
+    Blob* blob = probe_sheet(argc, argv, genome, seed); // born, or lived with --life
     int cue_tile = cue_y * blob->tiles_w + cue_x;
     int tiles = blob->tile_count;
     int neurons = blob->neuron_count;

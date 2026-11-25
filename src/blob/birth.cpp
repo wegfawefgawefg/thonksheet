@@ -311,6 +311,9 @@ void blob_free(Blob* blob) {
         blob->noise_ring,  blob->noise_trace,     blob->active_trace,
         blob->motor_attached, blob->motor_acted, blob->readout_last,
         blob->readout_row,    blob->readout_evidence, blob->readout_keep,
+        blob->motor_runner,   blob->tag_plus,     blob->tag_minus,    blob->tag_feedback,
+        blob->tag_evidence,   blob->tag_keep,     blob->tag_strong,   blob->tag_made,
+        blob->tag_scratch,
     };
     for (void* p : arrays) {
         std::free(p);

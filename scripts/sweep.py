@@ -39,6 +39,9 @@ LEARNING_ONLY = {
     "readout_center", "readout_evidence", "readout_evidence_bits", "readout_evidence_strong",
     "readout_balance",
     "lose_shift_steps", "win_stay_steps", "lose_shift_fires", "bad_cut_on",
+    "margin_percent", "margin_win", "margin_rival", "margin_rival_shift",
+    "tag_mode", "tag_hops", "tag_thin", "tag_min", "tag_shift", "tag_far", "tag_inh",
+    "tag_avg_shift", "tag_bits",
 }
 
 
