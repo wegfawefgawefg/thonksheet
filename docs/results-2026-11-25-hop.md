@@ -130,10 +130,15 @@ steps per taught cell, 400 re-picks per verdict.
 | parity of 3 | 0.542 (0.525) | 0.550 (0.532) | **0.824 (0.711)** | 0.681 (0.596) | 0.608 | 0.589 (0.544) |
 | parity of 4 | 0.473 | 0.488 | 0.494 | 0.473 | | 0.475 |
 
+The coin control for m1 (m1's errors on random lines; `--settings m1coin`): xor 0.879,
+parity 3 0.617.
+
 Per seed (5, 6, 7, 8): xor m2 0.999, 0.997, 0.998, 0.998 against born 0.839, 0.895, 0.856,
 0.836 and coin 0.933, 0.934, 0.933, 0.931; parity 3 m2 0.826, 0.855, 0.816, 0.800 against
 born 0.528, 0.561, 0.561, 0.518 and coin 0.582, 0.588, 0.575, 0.609. Every seed is above its
-coin control on xor and parity 3 in both teaching modes.
+coin control on xor and parity 3 in both teaching modes (m1 against m1coin: xor 0.988,
+0.985, 0.962, 0.995 against 0.897, 0.842, 0.863, 0.915; parity 3 0.671, 0.690, 0.684, 0.678
+against 0.653, 0.671, 0.580, 0.565).
 
 - **Yes on the toys: the inside comes to carry the product.** A readout that has never seen
   the task reads exclusive-or from the lived sheet at 0.96 in its first quarter and 0.998 at
@@ -168,6 +173,37 @@ On parity 3 the cells that came near and did not fire are the better teachers (0
 seed 0.886 to 0.903, against 0.80 to 0.86 for the default): "fire more" has the most to say
 to a cell that almost fired, as the float rule's pseudo-derivative says. On xor everything
 reaches 0.997.
+
+## Step 2: the calculation battery (held-out cases)
+
+`scripts/hop.sh calc calc --seeds 5,6 --life 400000`: a taught life of 400,000 ticks (20,000
+trials, a verdict per output bit, the readout learning), motor cells put back as born, then
+`blobprobe calc`'s ridge reader per output bit on the frozen sheet. Bits right, seen /
+held-out (held-out cases are never rewarded in the life). Seeds 5 and 6, untuned defaults;
+the last row is marks from near-but-not-fired cells only (`scripts/hop.sh calc calc-nf
+--seeds 5,6 --life 400000 --settings m2,m2coin --g.hop_fired 0`).
+
+| | xor4, seed 5 | xor4, seed 6 | add4, seed 5 | add4, seed 6 | parity4, seed 5 | parity4, seed 6 |
+|---|---|---|---|---|---|---|
+| input lines alone | 0.53 / 0.41 | 0.53 / 0.34 | 0.60 / 0.49 | 0.62 / 0.45 | 0.61 / 0.25 | 0.58 / 0.23 |
+| born | 0.648 / 0.635 | 0.669 / 0.631 | 0.634 / 0.566 | 0.623 / 0.563 | 0.673 / 0.098 | 0.660 / 0.100 |
+| off (readout alone in the life) | 0.659 / 0.647 | 0.681 / 0.642 | 0.657 / 0.544 | 0.653 / 0.526 | 0.723 / 0.152 | 0.588 / 0.152 |
+| **told the answer (m2)** | **0.919 / 0.889** | **0.863 / 0.854** | **0.739 / 0.652** | **0.738 / 0.667** | 0.843 / 0.026 | 0.788 / 0.020 |
+| told good or bad per bit (m1) | 0.806 / 0.792 | 0.772 / 0.754 | 0.682 / 0.625 | 0.683 / 0.617 | 0.721 / 0.160 | 0.612 / 0.135 |
+| coin (m2's errors on random lines) | 0.718 / 0.685 | 0.714 / 0.649 | 0.661 / 0.566 | 0.661 / 0.542 | 0.705 / 0.182 | 0.630 / 0.013 |
+| m2, near and not fired | 0.914 / 0.900 | 0.896 / 0.902 | 0.734 / 0.675 | 0.728 / 0.628 | 0.802 / 0.031 | 0.809 / 0.008 |
+| its coin | 0.706 / 0.663 | 0.753 / 0.710 | 0.677 / 0.620 | 0.691 / 0.606 | 0.729 / 0.178 | 0.667 / 0.081 |
+
+- **The held-out columns move, and the coin does not explain it.** xor4 held-out 0.63 to
+  0.87 (0.90 with near-not-fired marks), against 0.67 for the coin; add4 0.565 to 0.660,
+  against 0.554. These members need exclusive-ors of lines that sit apart, which the born
+  sheet does not carry (finding 41); after the life a linear reader gets them on cases never
+  rewarded. For comparison, competitive learning (no reward, its own born sheet with tile
+  winners) reached xor4 held-out 0.73 and 0.77, add4 0.63 and 0.63 (compete doc).
+- Told good or bad per bit (m1) gets about half of it (xor4 0.77).
+- Parity of 4: the seen column rises (0.67 to 0.82) and held-out falls to 0.02: every held
+  case's nearest seen case has the opposite answer, so a reader that learned more of the
+  seen cases gets these more wrong. Nothing about parity 4 is generalised, as on the toy.
 
 ## Step 3: MNIST (`scripts/inside.sh NAME --teach 1|2 ...`)
 
