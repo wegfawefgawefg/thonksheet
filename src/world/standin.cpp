@@ -83,7 +83,19 @@ void standin_tick(Blob& blob, const Plug& plug, StandinPlay play, int perfect_mo
         surprise += std::popcount((predicted ^ sensed) & blob.sense_attached[t] & blob.sensor[t]);
         map[t] = sensed | motor;
     }
-    if (play == StandinPlay::perfect && perfect_move >= 0 && perfect_move < plug.motor_lines) {
+    // a pattern answer (idea 134): perfect_move is the answer's bits; each bit's right
+    // group fires
+    for (int b = 0; play == StandinPlay::perfect && perfect_move >= 0 &&
+                    b < plug.shape.pattern_bits;
+         b++) {
+        const int* cells = nullptr;
+        int group = plug_motor_cells(plug, 2 * b + ((perfect_move >> b) & 1), &cells);
+        for (int k = 0; k < group; k++) {
+            map[cells[k] / TILE_NEURONS] |= 1ull << (cells[k] % TILE_NEURONS);
+        }
+    }
+    if (play == StandinPlay::perfect && perfect_move >= 0 && perfect_move < plug.motor_lines &&
+        plug.shape.pattern_bits == 0) {
         const int* cells = nullptr;
         int group = plug_motor_cells(plug, perfect_move, &cells);
         for (int k = 0; k < group; k++) {

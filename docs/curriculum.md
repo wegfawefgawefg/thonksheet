@@ -84,6 +84,73 @@ Coin flips score about 0.44 (ties are no move), the scripted player 1.00.
   carrying a shape learned at some places to places it was never taught at. Trial: 2 steps;
   about a third of trials are scored.
 
+## Calculation (ideas 133, 134)
+
+`blobrun --task calc --calc OP`. The answer is a pattern: B yes/no outputs at once. Each
+output bit has two motor lines, an "off" group (line 2b) and an "on" group (line 2b + 1),
+read over the ask step like buttons; the group with more spikes is the bit's answer and a
+tie is no answer, which counts as wrong. With `--motor-spread 128` the motor region's 256
+cells are dealt out to the 2B lines like a checkerboard (256 / 2B cells each).
+
+Trial: one blank step, then the steps that show it; the last of them also has the ask line
+on, and only the answer on that step counts. Inputs are on/off lines: line 0 is ask;
+numbers are in binary, low bit first, one line per bit (a 0 is an absence); geometry is
+place-coded, one line of `size` on per coordinate, and so is its answer.
+
+Grading, `--calc-grade`:
+
+- `whole` (default): good if every bit is right, bad otherwise; on bad every output's cells
+  are marked, the winning group of each as "pressed". What the world gives: one bit of
+  verdict, plus which group won each output (the same efference copy the buttons get).
+- `bit`: bad if any bit is wrong, good if none is, and the marks cover only the wrong
+  bits' cells, so the readout's error step (which moves nothing on good) lands on them
+  alone. What the world gives: a verdict per output. With two groups per bit, "this bit was
+  wrong" is the same as "the other group was right": per-bit grading is being shown the
+  answer, bit by bit.
+
+Held-out cases (`--calc-hold N`, default 4): N/16 of the input cases are never rewarded,
+drawn per life from the task seed (exactly, by a hash, when there are at most 4,096 cases;
+by a hash test per case above that). The window score is the share of output bits right on
+seen cases; the extra scores (`<stem>-extra.csv`, `_late` keys in the summary) are whole
+answers right on seen cases, bits and whole answers on held-out cases, and each bit on
+both. Coin flips score about 0.49 per bit; the scripted player 1.00.
+
+Members (N = `--calc-bits`, the operand width):
+
+| op | shows | answer (bits) |
+| --- | --- | --- |
+| copy | a | a (N); the control, every bit is one input line |
+| add | a, b | a + b (N + 1) |
+| sub | a, b | a - b mod 2^N (N) |
+| mul | a, b | a b (2N) |
+| inc | a | a + 1 (N + 1) |
+| compare | a, b | a > b (1) |
+| and, or, xor | a, b | bitwise (N) |
+| not | a | ~a (N) |
+| shl, rotl | a, s (s < N in binary) | a shifted or turned left by s (N) |
+| ones | a | how many bits of a are on (bits to hold N) |
+| parity | a | odd number of bits on (1) |
+| alu4 | op (2 bits), a, b | add, sub, and, xor; mod 2^N (N) |
+| alu8 | op (3 bits), a, b | add, sub, and, or, xor, not a, a << 1, a >> 1 (N) |
+| program | one instruction per step: op (2 bits) and a value (N bits); `--calc-len` steps | the register at the end (N) |
+| max | a, b | the larger (N) |
+| sort3 | a, b, c | the three in rising order (3N) |
+| kth | `--calc-list` numbers, k in binary | the k-th (N) |
+| turn | a point on a `size` x `size` grid | turned a quarter: (size - 1 - y, x) |
+| mirror | the point | (size - 1 - x, y) |
+| move | the point and an offset | moved, wrapping at the edge |
+| scale | the point and a factor 1..size-1 | (kx, ky), only cases that stay on the grid |
+| turn3d, move3d | a point in a `size`^3 cube (and an offset) | turned a quarter about z; moved, wrapping |
+| angle | a point on a (2r+1)^2 grid (r = `--calc-size`) within r of the centre, and one of 8 angles (place-coded) | turned by k x 45 degrees, each coordinate rounded half away from zero |
+| turn3 | three points on the grid | each turned a quarter |
+
+The program's ops are 0 load the value, 1 add it, 2 xor it, 3 shift left by one (its
+value lines stay off); the first instruction is always a load, the register keeps N bits.
+The ask line is on with the last instruction, so a program of length 1 is copy and every
+further instruction is one more step the register has to be held.
+
+The battery runs through `scripts/calc.sh` (docs/notes-world.md).
+
 ## Reach
 
 - **Readable.** `blobrun --reach`: `blobprobe carry`'s measure

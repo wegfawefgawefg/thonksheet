@@ -1,5 +1,6 @@
 #pragma once
 
+#include "world/task_calc.hpp"
 #include "world/world_random.hpp"
 
 #include <cstdint>
@@ -21,6 +22,7 @@ enum class TaskKind {
     both_not_either, // two cues; one button when exactly one is on, the other otherwise
     gap,             // one cue blinks twice; answer whether the gap was short or long
     place,           // a small shape at one of several places; answer which shape
+    calc,            // the calculation battery: the answer is a pattern (task_calc.hpp)
     count,
 };
 
@@ -30,6 +32,7 @@ constexpr int TASK_MAX_NUMBERS = 4;
 constexpr int TASK_MAX_MOTORS = 16;
 constexpr int TASK_MAX_PATTERN = 64;
 constexpr int TASK_MAX_TRIAL = 16; // steps in one trial of a feature task
+constexpr int TASK_MAX_EXTRA = 64; // extra scores per window (calc)
 
 // what a task needs plugged in
 struct TaskShape {
@@ -41,6 +44,9 @@ struct TaskShape {
     int32_t number_hi[TASK_MAX_NUMBERS] = {};
     int motors = 0;
     bool uses_reward = true; // false leaves the good and bad lines unattached
+    // an answer that is a pattern (idea 134): this many output bits, motors = 2 per bit,
+    // line 2b "off" and 2b + 1 "on". 0: one button wins, as before
+    int pattern_bits = 0;
 };
 
 // one step's input as the task sees it
@@ -55,6 +61,9 @@ struct TaskStepIn {
     int move = -1;          // motor line that won, -1 for no move
     int surprise = 0;       // wrong sensor predictions on the step's first tick
     int sensed_neurons = 0; // attached sensor neurons that surprise is counted over
+    // pattern tasks: each bit's answer, and the bits whose two groups tied (no answer)
+    uint64_t pattern = 0;
+    uint64_t pattern_tied = 0;
 };
 
 struct TaskSettings {
@@ -73,6 +82,7 @@ struct TaskSettings {
     // every step up, bad on a fall), 2 lean (every step: good if the pole and cart ended
     // nearer upright-and-centred than they began or are already there, bad if further)
     int cart_reward = 0;
+    CalcSettings calc; // the calculation battery
 };
 
 // fixed point for cartpole: 16 fractional bits
@@ -109,6 +119,14 @@ struct Task {
 
     // window score, meaning depends on the kind (see task_window_score)
     int64_t tally[4] = {};
+
+    // the calculation battery
+    CalcState calc;
+    // pattern tasks: the output bits the last step's good or bad is for
+    uint64_t pattern_graded = 0;
+    // extra scores of the last window (task_extra_name names them)
+    int extras = 0;
+    double extra[TASK_MAX_EXTRA] = {};
 };
 
 const char* task_name(TaskKind kind);
@@ -155,3 +173,13 @@ TaskShape feature_shape(const Task& task);
 void feature_sense(const Task& task, TaskSense& sense);
 int feature_perfect_move(const Task& task);
 int feature_step(Task& task, const TaskStepIn& in);
+
+void calc_reset(Task& task);
+TaskShape calc_shape(const Task& task);
+void calc_sense(const Task& task, TaskSense& sense);
+// the right pattern, as bits (or -1 off the ask step)
+int calc_perfect_move(const Task& task);
+int calc_step(Task& task, const TaskStepIn& in);
+double calc_window_score(Task& task);
+// the name of extra score i, e.g. "whole_held" or "bit3_seen"
+void task_extra_name(const Task& task, int i, char* out, int size);

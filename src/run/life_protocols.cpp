@@ -147,6 +147,7 @@ static bool life_plain(const RunFlags& flags, const std::string& csv, FILE* sum,
             late_out[d] = late;
         }
     }
+    life_extra_report(csv, ran, results, sum, edge);
     for (int d = 0; d < (int)Driver::count; d++) {
         if (ran[d] && results[d].end.measured) {
             life_end_print(results[d].end, driver_names[d], stdout);

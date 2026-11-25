@@ -29,6 +29,11 @@ struct LifeResult {
     int64_t ticks = 0; // ticks lived over the phases (not the end measurements)
     double seconds = 0;
     LifeEnd end; // room and aliveness, for real blobs only
+    // extra scores per window, when the task has them (task_extra_name names them; the
+    // task is the last phase's, valid until the next life)
+    int extras = 0;
+    std::vector<double> extra[TASK_MAX_EXTRA];
+    const Task* extra_task = nullptr;
 };
 
 // --task for --steps, as blobrun has always run

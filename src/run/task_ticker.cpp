@@ -42,8 +42,14 @@ bool ticker_after_tick(TaskTicker& tt, const Blob& blob) {
         return false;
     }
 
-    // the answer: the motor line with the most spikes over the step
-    tt.in.move = plug_choice(tt.plug);
+    // the answer: the motor line with the most spikes over the step, or for a pattern
+    // answer each output pair's vote (idea 134)
+    if (tt.plug.shape.pattern_bits > 0) {
+        plug_pattern(tt.plug, tt.in.pattern, tt.in.pattern_tied);
+        tt.in.move = -1;
+    } else {
+        tt.in.move = plug_choice(tt.plug);
+    }
     tt.cue = tt.task.cue;
     tt.right_move = tt.perfect_move;
     tt.move = tt.in.move;

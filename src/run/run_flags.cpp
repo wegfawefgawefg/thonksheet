@@ -7,7 +7,8 @@
 static const char* usage =
     "usage: blobrun [flags]\n"
     "  --task NAME        echo, shuffled-echo, delayed-echo, go-no-go, beat, sequence,\n"
-    "                     catch, cartpole, order, both-not-either, gap, place (default echo)\n"
+    "                     catch, cartpole, order, both-not-either, gap, place, calc (default\n"
+    "                     echo; calc flags under --help)\n"
     "  --seed N           blob seed (default 1)\n"
     "  --task-seed N      task seed (default: same as --seed)\n"
     "  --steps N          life length in task steps (default 20000)\n"
@@ -78,6 +79,7 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
         const char* flag = argv[i];
         if (std::strcmp(flag, "--help") == 0 || std::strcmp(flag, "-h") == 0) {
             std::fputs(usage, stderr);
+            std::fputs(calc_flags_usage, stderr);
             return false;
         }
         if (std::strcmp(flag, "--no-baselines") == 0) {
@@ -116,6 +118,14 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
         if (std::strncmp(flag, "--g.", 4) == 0 || std::strncmp(flag, "--m.", 4) == 0 ||
             std::strncmp(flag, "--t.", 4) == 0) {
             continue; // a genome number: apply_genome_args, apply_minimal_args, table_genome_args
+        }
+        // the calculation battery's own flags (world/task_calc_flags.cpp)
+        int calc = calc_parse_flag(flag, value, flags.task_settings);
+        if (calc != 0) {
+            if (calc < 0) {
+                return false;
+            }
+            continue;
         }
         if (std::strcmp(flag, "--engine") == 0) {
             flags.engine = value;

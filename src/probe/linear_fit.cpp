@@ -77,7 +77,7 @@ static double dot(const double* a, const double* b, int n) {
 }
 
 // solve (a + ridge I) x = b in place for `cols` right-hand sides; a is m x m, kept intact
-static bool ridge_solve(const std::vector<double>& a, int m, double ridge, const double* b,
+bool ridge_solve(const std::vector<double>& a, int m, double ridge, const double* b,
                         int cols, std::vector<double>& x) {
     std::vector<double> l(a);
     for (int i = 0; i < m; i++) {

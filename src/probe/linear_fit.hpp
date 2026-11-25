@@ -21,3 +21,8 @@ struct LinearData {
 // middle tile can see through its local slots). cue_tile and motor_tiles are marked.
 void linear_report(const LinearData& data, const char* label, int cue_tile,
                    const std::vector<int>& motor_tiles);
+
+// solve (a + ridge I) x = b for `cols` right-hand sides (b and x are m x cols, row-major);
+// a is m x m and kept intact. false if not positive definite. (linear_fit.cpp)
+bool ridge_solve(const std::vector<double>& a, int m, double ridge, const double* b, int cols,
+                 std::vector<double>& x);
