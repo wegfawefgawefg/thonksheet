@@ -19,6 +19,8 @@
 //                  sheet's counts and from the lines themselves (predict_future.hpp); question
 //                  "future", keys h<h>_sheet, h<h>_lines, h<h>_same, h<h>_common; and (idea
 //                  164) h<h>_hidden (the hidden cells only) and h<h>_both (hidden and lines)
+//   --lean 1       only the hidden cells' and the lines' readers (no whole sheet, no "both"):
+//                  the ridge fits are most of a run's time
 // With --out, the life's own numbers too (question "life"): the task's late score (the last
 // tenth of its windows), ticks per second, the predictor's skill per horizon, and the
 // one-hop rule's counts. The life hands the one-hop rule the buttons' lines as blobrun does.
@@ -43,7 +45,7 @@ int int_arg(int argc, char** argv, const char* name, int fallback);
 const char* text_arg(int argc, char** argv, const char* name, const char* fallback);
 
 static const char* const own_flags[] = {"--life",  "--shuffle", "--trials", "--settle",
-                                        "--label", "--out",     "--future"};
+                                        "--label", "--out",     "--future", "--lean"};
 
 static TaskTicker ticker;
 static Predictor predictor;
@@ -238,6 +240,7 @@ int probe_predict(int argc, char** argv) {
     }
     int64_t life = int_arg(argc, argv, "--life", 0);
     bool shuffle = int_arg(argc, argv, "--shuffle", 0) != 0;
+    bool lean = int_arg(argc, argv, "--lean", 0) != 0;
     int trials = int_arg(argc, argv, "--trials", 3000);
     int settle = int_arg(argc, argv, "--settle", 300);
     const char* label = text_arg(argc, argv, "--label", "run");
@@ -396,7 +399,7 @@ int probe_predict(int argc, char** argv) {
         r.two.neurons = 2 * task_lines;
         r.all.neurons = plug.sensor_lines;
         int classes = first.classes[q];
-        double values[8] = {fit(r.sheet, r.label, classes, true),
+        double values[8] = {lean ? -1.0 : fit(r.sheet, r.label, classes, true),
                             fit(r.hidden, r.label, classes, true),
                             fit(r.now, r.label, classes, false),
                             fit(r.two, r.label, classes, false),
@@ -419,17 +422,22 @@ int probe_predict(int argc, char** argv) {
     for (const char* at = future; at && *at;) {
         int h = std::atoi(at);
         int count = (int)fut_line.size();
-        FutureScore sheet =
-            future_fit(fut_x, (int)sheet_cells.size(), fut_lines, count, fut_rows, h);
         FutureScore lines = future_fit(fut_lines, count, fut_lines, count, fut_rows, h);
+        FutureScore sheet = lean ? lines
+                                 : future_fit(fut_x, (int)sheet_cells.size(), fut_lines, count,
+                                              fut_rows, h);
         int hc = (int)hidden_cells.size();
         FutureScore inner = future_fit(fut_hidden, hc, fut_lines, count, fut_rows, h);
-        FutureScore both = future_fit(fut_both, hc + count, fut_lines, count, fut_rows, h);
+        FutureScore both =
+            lean ? FutureScore{} : future_fit(fut_both, hc + count, fut_lines, count, fut_rows, h);
         double values[6] = {sheet.right, lines.right, sheet.same, sheet.common, inner.right,
                             both.right};
         static const char* const keys[6] = {"sheet", "lines", "same", "common", "hidden", "both"};
         std::printf("%-24s future h=%d", label, h);
         for (int k = 0; k < 6; k++) {
+            if (lean && (k == 0 || k == 5)) {
+                continue; // not read
+            }
             std::printf(" %s %.4f", keys[k], values[k]);
             if (csv) {
                 std::fprintf(csv, "%s,future,h%d_%s,%.6g\n", label, h, keys[k], values[k]);

@@ -19,8 +19,9 @@ GENOME = ("--g.sensor_w 64 --g.motor_stride 1 --g.learn_mode 5 --g.readout_evide
           "--g.readout_shift 4 --g.readout_balance 1").split()
 PRED = "--predict 1,2,4,8 --predict-shift 2".split()
 WORLD_GENOME = {"catch": "--g.motor_w 48".split()}
-# the one-hop rule as finding 45 and 46 say for many verdicts: slow, near-not-fired marks
-HOP = "--g.hop_on 1 --g.hop_shift 7 --g.hop_fired 0".split()
+# the one-hop rule: near-not-fired marks (finding 46), slowed (finding 45) to 1 in 32, picked
+# on seeds 1 and 2 against 1 in 8 and 1 in 128 (results doc)
+HOP = "--g.hop_on 1 --g.hop_shift 5 --g.hop_fired 0".split()
 FROM_PRED = HOP + "--g.hop_teach 0 --predict-hop 1".split()
 COMPETE = "--g.compete_on 1 --g.tile_winners 4 --g.compete_shift 5".split()
 # track is dropped (it locks against a wall on this sheet; predict doc). predict-next at
@@ -73,8 +74,8 @@ def parse(argv):
     if not argv or argv[0].startswith("-"):
         usage()
     opt = {"name": argv[0], "seeds": [5, 6, 7, 8, 9, 10, 11, 12], "jobs": 3, "steps": 20000,
-           "trials": 3000, "worlds": list(WORLDS), "arms": list(ARMS), "reach": 4,
-           "table_only": False, "extra": []}
+           "trials": 3000, "worlds": list(WORLDS), "arms": list(ARMS), "reach": 8,
+           "table_only": False, "full": False, "extra": []}
     i = 1
     while i < len(argv):
         a = argv[i]
@@ -83,6 +84,8 @@ def parse(argv):
             opt.update(seeds=[1], steps=2000, trials=600)
         elif a == "--table-only":
             opt["table_only"] = True
+        elif a == "--full":
+            opt["full"] = True
         elif a == "--seeds":
             opt["seeds"] = seeds_of(val)
             i += 1
@@ -110,6 +113,8 @@ def job(world, arm, seed, opt, folder):
             "--out", base + ".csv"])
     if shuffled:
         cmd += ["--shuffle", "1"]
+    if not opt["full"]:
+        cmd += ["--lean", "1"]  # hidden and lines readers only: the fits are most of a run
     return cmd + opt["extra"], base + ".txt", base + ".csv"
 
 
@@ -162,7 +167,7 @@ def tables(opt, folder):
             for w in worlds for a in arms for s in seeds}
 
     def got(w, a, q, k):
-        return [data[(w, a, s)].get((q, k)) for s in seeds]
+        return [data.get((w, a, s), {}).get((q, k)) for s in seeds]
 
     out = [f"# predhop {opt['name']}: seeds {','.join(map(str, seeds))}, {opt['steps']}-step "
            f"lives, {opt['trials']} read steps; extra flags: {' '.join(opt['extra']) or 'none'}; "
