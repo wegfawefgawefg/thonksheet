@@ -30,6 +30,9 @@ struct Genome {
     int learn_shift, avg_shift, grade_mode, cowire_on;
     int cowire_shift, cowire_needs_input, noise_sign, pad;
     int budget, threshold_min, threshold_max, inhibitory_percent; // birth only
+    int slots, delay_max, far_percent, far_reach, far_delay_per_tile, delay_percent;
+    int ev_on, ev_bits, ev_init, ev_read, ev_spikes, ev_fired_min;
+    int ev_quiet, ev_quiet_shift, ev_shift, ev_inh, ev_cowire, pad2;
 };
 
 struct Life {
@@ -100,4 +103,24 @@ layout(std430, binding = 10) readonly buffer XWords { // tiles + 1 words per lif
 };
 layout(std430, binding = 11) writeonly buffer XOut {
     ExchangeOut xout[];
+};
+// evidence counters (EV 1). meta, per batch: the rows' neurons per tile, the row before each
+// tile, the motor cells per tile (tiles + 1 words each). planes, per life: row-major, then
+// slot, then bit (EV_BITS planes of 64 counters). lines: one byte per row per life (read 1).
+layout(std430, binding = 12) readonly buffer EvMeta {
+    uint64_t ev_meta[];
+};
+layout(std430, binding = 13) buffer EvPlanes {
+    uint64_t ev_planes[];
+};
+layout(std430, binding = 14) buffer EvLines {
+    uint8_t ev_lines[];
+};
+// far slots and delays, per life: delays as the masks (one byte per neuron per slot), far
+// source tiles ((tile * far slots + j) * 64 + bit)
+layout(std430, binding = 15) buffer Delays {
+    uint8_t delays[];
+};
+layout(std430, binding = 16) buffer FarTiles {
+    uint far_tiles[];
 };

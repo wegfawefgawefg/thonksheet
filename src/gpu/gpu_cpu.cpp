@@ -93,8 +93,60 @@ static bool same_words(const uint64_t* a, const uint64_t* b, size_t count, size_
     return true;
 }
 
-bool cpu_life_matches(const CpuLife& c, const GpuLifeData& gpu, int recent, bool host,
-                      std::string& why) {
+// masks, delays and far tiles slot by slot (the GPU's layout has the batch's slots, the CPU's
+// the life's own), then the evidence counters and lines row by row
+static bool same_grown(const MinimalBlob& m, const GpuLifeData& gpu, const GpuBatch& batch,
+                       std::string& why) {
+    const GpuShape& s = batch.shape;
+    const int tiles = m.shell.tile_count, far = m.slots - MIN_SLOTS, gfar = s.slots - MIN_SLOTS;
+    char text[160];
+    for (int t = 0; t < tiles; t++) {
+        for (int k = 0; k < s.slots; k++) {
+            for (int bit = 0; bit < 64; bit++) {
+                size_t g = ((size_t)t * s.slots + k) * 64 + bit;
+                size_t c = ((size_t)t * m.slots + k) * 64 + bit;
+                uint64_t mask = k < m.slots ? m.mask[c] : 0;
+                int delay = k < m.slots && m.delay ? m.delay[c] : 1;
+                uint32_t src = k >= MIN_SLOTS && k - MIN_SLOTS < far
+                                   ? m.far_tile[((size_t)t * far + k - MIN_SLOTS) * 64 + bit]
+                                   : (uint32_t)tiles;
+                bool same = gpu.mask[g] == mask && (!s.delay || gpu.delays[g] == delay) &&
+                            (k < MIN_SLOTS ||
+                             gpu.far_tiles[((size_t)t * gfar + k - MIN_SLOTS) * 64 + bit] == src);
+                if (!same) {
+                    std::snprintf(text, sizeof(text),
+                                  "mask, delay or far tile of neuron %d slot %d", t * 64 + bit, k);
+                    why = text;
+                    return false;
+                }
+            }
+        }
+    }
+    if (!m.ev_planes) {
+        return true;
+    }
+    for (int n = 0; n < m.shell.neuron_count; n++) {
+        int row = m.ev_row[n], grow = batch.ev_row[(size_t)n];
+        if (row < 0) {
+            continue;
+        }
+        bool same = m.ev_line[row] == gpu.ev_lines[(size_t)grow];
+        for (int k = 0; k < m.slots && same; k++) {
+            for (int i = 0; i < m.mg.ev_bits; i++) {
+                same = same && m.ev_planes[((size_t)row * m.slots + k) * m.mg.ev_bits + i] ==
+                                   gpu.ev_planes[((size_t)grow * s.slots + k) * s.ev_bits + i];
+            }
+        }
+        if (!same) {
+            why = "evidence counters or line of neuron " + std::to_string(n);
+            return false;
+        }
+    }
+    return true;
+}
+
+bool cpu_life_matches(const CpuLife& c, const GpuLifeData& gpu, const GpuBatch& batch, int recent,
+                      bool host, std::string& why) {
     const MinimalBlob& m = minimal_of(*c.blob);
     const Blob& b = m.shell;
     const GpuLife& L = gpu.life;
@@ -130,10 +182,7 @@ bool cpu_life_matches(const CpuLife& c, const GpuLifeData& gpu, int recent, bool
         }
     }
     size_t n = (size_t)b.neuron_count;
-    if (!same_words(m.mask, gpu.mask.data(), n * MIN_SLOTS, at)) {
-        std::snprintf(text, sizeof(text), "mask word %zu (neuron %zu, slot %zu)", at,
-                      (at / (MIN_SLOTS * 64)) * 64 + at % 64, (at / 64) % MIN_SLOTS);
-        why = text;
+    if (!same_grown(m, gpu, batch, why)) {
         return false;
     }
     if (std::memcmp(m.threshold, gpu.threshold.data(), n) != 0) {

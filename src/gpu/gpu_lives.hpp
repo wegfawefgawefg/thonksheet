@@ -30,6 +30,8 @@ struct GpuWorld {
 
 // the task runs inside the shader (the Echo family); any other runs as a host world
 bool gpu_world_in_shader(TaskKind kind);
+// the grown-back pieces (evidence counters, far slots, delays) run with host worlds only
+bool gpu_needs_host(const MinimalGenome& mg);
 // a minimal genome the shader runs as written; false with the reason if it is not
 bool gpu_genome_supported(const MinimalGenome& mg, std::string& why);
 // the world from a born life (the plug is attached to it and detached again)

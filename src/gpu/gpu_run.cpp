@@ -157,7 +157,7 @@ bool gpu_run_check(GpuContext& g, GpuBatch& b, GpuGroup& group, std::vector<CpuL
             return false;
         }
         std::string why;
-        if (!cpu_life_matches(c, data, ticks, host, why)) {
+        if (!cpu_life_matches(c, data, b, ticks, host, why)) {
             std::fprintf(stderr, "check: life %d (seed %llu) differs after tick %llu: %s\n",
                          group.first + i, (unsigned long long)c.flags.seed,
                          (unsigned long long)c.blob->stats.tick, why.c_str());

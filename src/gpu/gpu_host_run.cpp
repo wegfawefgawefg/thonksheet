@@ -28,9 +28,28 @@ bool host_run_open(GpuContext& g, GpuBatch& b, const GpuFlags& f, std::vector<Ho
     shape.workgroup = f.workgroup;
     shape.wave = f.wave;
     shape.host = 1;
+    // the grown-back pieces: room for the most any life of the batch asks for
+    int ev_on = 0;
+    for (const GpuLifeSpec& L : lives) {
+        GpuLifeData d;
+        gpu_life_unborn(d, L, f.run);
+        shape.slots = d.genome.slots > shape.slots ? d.genome.slots : shape.slots;
+        shape.delay = shape.delay || d.genome.delay_max > 1;
+        ev_on = d.genome.ev_on > ev_on ? d.genome.ev_on : ev_on;
+        shape.ev_bits =
+            d.genome.ev_on && d.genome.ev_bits > shape.ev_bits ? d.genome.ev_bits : shape.ev_bits;
+    }
+    shape.ev = ev_on ? 1 : 0;
+    shape.ev_rows = ev_on ? gpu_ev_rows(first->sensor, first->motor, first->tile_count, ev_on) : 1;
+    std::vector<uint64_t> sensor(first->sensor, first->sensor + first->tile_count + 1);
+    std::vector<uint64_t> motor(first->motor, first->motor + first->tile_count + 1);
     minimal_free(first);
     if (!ok) {
         std::fprintf(stderr, "blobgpu: %s\n", why.c_str());
+        return false;
+    }
+    if (shape.ev && !f.birth_gpu) {
+        std::fprintf(stderr, "blobgpu: evidence counters are born on the GPU only\n");
         return false;
     }
     // what the shader reads of the batch: the plug's ticks; the rest is per life
@@ -41,7 +60,8 @@ bool host_run_open(GpuContext& g, GpuBatch& b, const GpuFlags& f, std::vector<Ho
     p.reward_line_ticks = f.run.plug.reward_line_ticks;
     p.window = 1;
     p.steps = 1;
-    return gpu_batch_open(g, b, shape, p, words, life_spv, birth_spv);
+    return gpu_batch_open(g, b, shape, p, words, life_spv, birth_spv, sensor.data(), motor.data(),
+                          ev_on);
 }
 
 // the host's half of an exchange for lives [from, to) of a group. more threads only when one
@@ -93,7 +113,7 @@ static bool check_part(GpuContext& g, GpuBatch& b, GpuGroup& group, int from, in
             return false;
         }
         std::string why;
-        bool same = cpu_life_matches(c, data, ran < 31 ? ran : 31, true, why);
+        bool same = cpu_life_matches(c, data, b, ran < 31 ? ran : 31, true, why);
         const HostLife& h = host[life];
         const Task &a = h.task, &z = c.ticker->task;
         if (same && (a.random.state != z.random.state || a.cue != z.cue || a.phase != z.phase ||

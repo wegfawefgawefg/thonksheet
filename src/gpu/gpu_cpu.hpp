@@ -36,5 +36,5 @@ void cpu_life_free(CpuLife& c);
 // the CPU life against the GPU's copy of it: spike and noise maps of the last `recent`
 // ticks, then the whole ring, masks, thresholds, reward average and task (host worlds: the
 // task is the host's, compared apart). false with the first difference in `why`.
-bool cpu_life_matches(const CpuLife& c, const GpuLifeData& gpu, int recent, bool host,
-                      std::string& why);
+bool cpu_life_matches(const CpuLife& c, const GpuLifeData& gpu, const GpuBatch& batch, int recent,
+                      bool host, std::string& why);

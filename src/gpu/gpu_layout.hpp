@@ -46,6 +46,10 @@ struct GpuGenome {
     int32_t cowire_shift, cowire_needs_input, noise_sign, pad;
     // birth only (minimal_birth.comp)
     int32_t budget, threshold_min, threshold_max, inhibitory_percent;
+    // the grown-back pieces: slots in use (9 + far slots), delays, evidence counters
+    int32_t slots, delay_max, far_percent, far_reach, far_delay_per_tile, delay_percent;
+    int32_t ev_on, ev_bits, ev_init, ev_read, ev_spikes, ev_fired_min;
+    int32_t ev_quiet, ev_quiet_shift, ev_shift, ev_inh, ev_cowire, pad2;
 };
 
 // one life's small state: the engine's clock and reward average, the task, the ticker
@@ -83,7 +87,7 @@ struct GpuExchangeOut {
 };
 
 static_assert(sizeof(GpuParams) == 64, "mirrors minimal_layout.glsl");
-static_assert(sizeof(GpuGenome) == 80, "mirrors minimal_layout.glsl");
+static_assert(sizeof(GpuGenome) == 152, "mirrors minimal_layout.glsl");
 static_assert(sizeof(GpuLife) == 232, "mirrors minimal_layout.glsl");
 static_assert(sizeof(GpuExchangeIn) == 16, "mirrors minimal_layout.glsl");
 static_assert(sizeof(GpuExchangeOut) == 80, "mirrors minimal_layout.glsl");

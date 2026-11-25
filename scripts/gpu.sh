@@ -29,7 +29,8 @@
 # Every task runs. The Echo family (echo, shuffled-echo, delayed-echo, both-not-either) runs
 # inside the shader; every other task, and these with --host, runs as a host world: the sheet
 # on the GPU, the task and plug code of src/world on the CPU, one exchange per task step. The
-# plain minimal engine only (no far slots, delays, evidence counters, drop_mode 1 or noise_pair).
+# minimal engine with evidence counters, far slots and delays (any --m. number; these run as
+# host worlds); not drop_mode 1 or noise_pair.
 # Base flags as scripts/minimal.sh: 20 ticks a step, 3x3 sensor and motor groups.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -79,6 +80,13 @@ check_host() {
     mkdir -p out/gpu
     printf 'seed,grade_mode,budget_on,noise_shift,learn_shift,noise_sign,cowire_on,cowire_needs_input,credit_ticks,avg_shift,up_shift,g.inhibitory_percent,budget\n1,0,1,9,0,1,1,1,20,5,4,25,48\n2,1,0,7,1,-1,1,0,10,3,3,10,96\n' \
         >out/gpu/settings-host.csv
+    # evidence counters: motor cells or every neuron, each read-off rule, quiet and co-activity
+    # variants, and a plain row in the same batch
+    printf 'seed,ev_on,ev_bits,ev_init,ev_spikes,ev_inh,ev_quiet,ev_read,ev_cowire,ev_fired_min,ev_shift,ev_quiet_shift\n1,1,6,4,1,0,1,0,1,1,0,0\n2,1,4,2,0,1,0,0,1,1,0,0\n3,2,6,4,1,0,1,0,1,1,0,0\n4,2,5,3,2,1,2,1,0,2,1,1\n5,1,3,1,1,0,1,2,1,1,0,2\n6,0,4,2,0,0,1,0,1,1,0,0\n' \
+        >out/gpu/settings-evidence.csv
+    # far slots and delays, alone, together and with evidence counters, and a plain row
+    printf 'seed,far_slots,far_percent,far_reach,delay_max,delay_percent,far_delay_per_tile,ev_on,ev_bits,ev_init,ev_spikes,credit_ticks\n1,2,100,3,1,100,1,0,4,2,0,20\n2,0,15,3,8,100,1,0,4,2,0,20\n3,1,50,2,6,60,2,0,4,2,0,25\n4,2,100,5,15,100,3,1,6,4,1,10\n5,1,15,3,4,100,1,2,6,4,1,20\n6,0,15,3,1,100,1,0,4,2,0,20\n' \
+        >out/gpu/settings-far.csv
     one() {
         local name=$1
         shift
@@ -100,6 +108,10 @@ check_host() {
     one host-worlds --settings out/gpu/settings-host.csv --twin --rest-ticks 3 --reward-ticks 4 \
         --tasks echo:k=4,order,gap,catch:catch-size=4/4,cartpole:sensor-side=2:cart-reward=lean \
         "${b[@]}"
+    one evidence --settings out/gpu/settings-evidence.csv --twin --rest-ticks 2 \
+        --tasks both-not-either,echo:k=4 "${b[@]}"
+    one far-delays --settings out/gpu/settings-far.csv --twin --rest-ticks 2 \
+        --tasks echo:k=4,gap,order "${b[@]}"
 }
 
 # one world, seeds 5-8 and their twins, on the GPU and in blobrun; the windows compared as text
@@ -165,6 +177,15 @@ against)
     against catch --task catch --catch-size 4 4 "${b[@]}"
     against cartpole --task cartpole --cart-reward lean --number-code place "${b[@]}" \
         --sensor-side 2
+    # evidence counters: settings A and C of docs/results-2026-11-24-evidence.md
+    against evidence-A --task echo --k 4 "${b[@]}" --m.ev_on 1 --m.ev_bits 6 --m.ev_init 4 \
+        --m.ev_spikes 1
+    against evidence-C --task order "${b[@]}" --m.ev_on 2 --m.ev_bits 6 --m.ev_init 4 \
+        --m.ev_spikes 1
+    against far --task echo --k 4 "${b[@]}" --m.far_slots 2 --m.far_percent 100
+    against delays --task gap "${b[@]}" --m.delay_max 8
+    against far-delays-evidence --task order "${b[@]}" --m.far_slots 2 --m.far_percent 100 \
+        --m.delay_max 6 --m.ev_on 1 --m.ev_bits 6 --m.ev_init 4 --m.ev_spikes 1
     kernel_log
     ;;
 run)

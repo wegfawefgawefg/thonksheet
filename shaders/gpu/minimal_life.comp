@@ -23,6 +23,12 @@ layout(constant_id = 1) const int TILES = 64;  // tiles in a sheet
 layout(constant_id = 2) const int STRIDE = 72; // words from one ring map to the next
 layout(constant_id = 3) const int TILES_W = 8; // tiles across the sheet
 layout(constant_id = 4) const int HOST = 0;    // 1: the world is on the host (see above)
+// the grown-back pieces, for the whole batch (a life uses what its genome says, inside them)
+layout(constant_id = 5) const int SLOTS = 9;     // slots per neuron: 9 local, then far ones
+layout(constant_id = 6) const int DELAY = 0;     // 1: each slot reads its own delay back
+layout(constant_id = 7) const int EV = 0;        // 1: evidence counters
+layout(constant_id = 8) const int EV_BITS = 1;   // planes per slot (the batch's widest)
+layout(constant_id = 9) const int EV_ROWS = 1;   // rows of counters per life
 
 layout(push_constant) uniform Push {
     int ticks; // at most this many ticks
@@ -67,9 +73,9 @@ shared uint64_t s_words[6][TILES];
 shared uint64_t s_task[TILES + 1]; // host worlds: the task's sensor words this step
 shared int s_count[MAX_MOTORS];
 shared uint s_lines;
-shared int s_resting, s_grade, s_better, s_shift, s_done;
+shared int s_resting, s_grade, s_better, s_shift, s_done, s_ev_up;
 
-uint g_mask_base, g_ring_base;
+uint g_mask_base, g_ring_base, g_far_base, g_delay_base;
 int g_now;
 uint g_attached; // lines attached: P.attached, or the life's own with host worlds
 
@@ -81,6 +87,7 @@ int local_tile(int t, int k) {
 }
 
 #include "minimal_learn.glsl"
+#include "minimal_evidence.glsl"
 #include "minimal_world.glsl"
 
 // the life's small state stays in its buffer: only thread 0 reads and writes it, taking a
@@ -126,6 +133,7 @@ void reward_life(inout Life L, Genome G, int valence) {
     int width = findMSB(abs(delta)) + 1;
     s_grade = 1;
     s_better = (delta > 0) == (G.noise_sign >= 0) ? 1 : 0;
+    s_ev_up = delta > 0 ? 1 : 0;
     s_shift = G.learn_shift + (width >= 9 ? 0 : 9 - width);
 }
 
@@ -204,6 +212,7 @@ void grade(uint64_t key, uint64_t tick, Genome G, int tid, int WG) {
             }
             Rng r = rng_at(key, tick, SITE_GRADE, uint(t), uint(a));
             pick &= sparse_word(r, shift);
+            pick &= ~ev_mine(t, G); // counter neurons learn through their counters
             graded |= pick;
             a0 |= (a & 1) != 0 ? pick : 0UL;
             a1 |= (a & 2) != 0 ? pick : 0UL;
@@ -264,7 +273,11 @@ void main() {
     }
     const Genome G = genomes[life];
     const uint thr_base = life * uint(N);
-    g_mask_base = life * uint(TILES * 9 * 64);
+    g_mask_base = life * uint(TILES * SLOTS * 64);
+    g_delay_base = g_mask_base;
+    g_far_base = life * uint(TILES * (SLOTS - 9) * 64);
+    g_ev_base = life * uint(EV_ROWS * SLOTS * EV_BITS);
+    g_line_base = life * uint(EV_ROWS);
     g_ring_base = life * uint(2 * RING * STRIDE);
     const uint noise_base = g_ring_base + uint(RING * STRIDE);
     // the life's world table: one per batch, or its own world's block with host worlds
@@ -298,6 +311,9 @@ void main() {
         barrier();
         if (s_grade != 0) {
             grade(key, tick, G, tid, WG);
+            if (EV != 0) {
+                ev_reward(key, tick, G, s_ev_up != 0, s_shift, tid, WG);
+            }
         }
     }
 
@@ -345,17 +361,47 @@ void main() {
         for (int n = tid; n < N; n += WG) {
             int t = tile_of(n), b = n & 63;
             int drive = 0;
-            // a mask is read only where its source tile spiked (most do not, most ticks), and
-            // every such read is issued before any is used, so they wait in parallel
-            uint64_t m[9];
-            for (int k = 0; k < 9; k++) {
-                bool live = uniform64(s_map[cur][local_tile(t, k)]) != 0UL;
-                m[k] = live ? masks[g_mask_base + uint((t * 9 + k) * 64 + b)] : 0UL;
+            if (DELAY == 0) {
+                // a mask is read only where its source tile spiked (most do not, most ticks),
+                // and every such read is issued before any is used, so they wait in parallel
+                uint64_t m[9];
+                for (int k = 0; k < 9; k++) {
+                    bool live = uniform64(s_map[cur][local_tile(t, k)]) != 0UL;
+                    m[k] = live ? masks[g_mask_base + uint((t * SLOTS + k) * 64 + b)] : 0UL;
+                }
+                for (int k = 0; k < 9; k++) {
+                    int src = local_tile(t, k);
+                    uint64_t s = uniform64(s_map[cur][src]), inh = uniform64(s_inh[src]);
+                    drive += bc64(s & ~inh & m[k]) - G.inhibit_gain * bc64(s & inh & m[k]);
+                }
+            } else {
+                // slot delays: each slot reads the map its own delay back (1: the last one)
+                for (int k = 0; k < 9; k++) {
+                    int src = local_tile(t, k);
+                    int index = (g_now + 1 - slot_delay(t, b, k)) & (RING - 1);
+                    uint64_t s = rings[g_ring_base + uint(index * STRIDE + src)];
+                    if (s != 0UL) {
+                        uint64_t m = masks[g_mask_base + uint((t * SLOTS + k) * 64 + b)];
+                        uint64_t inh = s_inh[src];
+                        drive += bc64(s & ~inh & m) - G.inhibit_gain * bc64(s & inh & m);
+                    }
+                }
             }
-            for (int k = 0; k < 9; k++) {
-                int src = local_tile(t, k);
-                uint64_t s = uniform64(s_map[cur][src]), inh = uniform64(s_inh[src]);
-                drive += bc64(s & ~inh & m[k]) - G.inhibit_gain * bc64(s & inh & m[k]);
+            // far slots: each neuron its own source tile (and delay); excitatory senders only
+            for (int k = 9; k < SLOTS; k++) {
+                int src = source_tile(t, b, k);
+                if (src == TILES) {
+                    continue;
+                }
+                uint64_t s = DELAY == 0
+                                 ? s_map[cur][src]
+                                 : rings[g_ring_base +
+                                         uint(((g_now + 1 - slot_delay(t, b, k)) & (RING - 1)) *
+                                                  STRIDE +
+                                              src)];
+                if (s != 0UL) {
+                    drive += bc64(s & masks[g_mask_base + uint((t * SLOTS + k) * 64 + b)]);
+                }
             }
             if (drive >= int(thresholds[thr_base + uint(n)])) {
                 atomicOr(s_would(t), 1UL << b);
@@ -405,7 +451,11 @@ void main() {
             }
             if ((s_cow(t) & bit) != 0UL) {
                 Rng r = rng_at(key, tick, SITE_COWIRE_PICK, uint(n), 0u);
-                gain_active(t, b, 0, r, G.budget_on);
+                if (EV != 0 && G.ev_cowire != 0 && (ev_mine(t, G) & bit) != 0UL) {
+                    ev_cowire(t, b, G, r); // a counter goes up, the mask follows
+                } else {
+                    gain_active(t, b, 0, r, G.budget_on);
+                }
             }
         }
         tick++;
@@ -416,6 +466,9 @@ void main() {
 
         if (s_grade != 0) {
             grade(key, tick, G, tid, WG);
+            if (EV != 0) {
+                ev_reward(key, tick, G, s_ev_up != 0, s_shift, tid, WG);
+            }
         }
     }
 

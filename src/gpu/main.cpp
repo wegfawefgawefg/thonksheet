@@ -88,15 +88,20 @@ int main(int argc, char** argv) {
     }
     // the Echo family runs in the shader unless --host or --tasks says otherwise
     std::vector<HostWorld> worlds;
-    if (!gpu_world_in_shader(f.run.task)) {
-        f.host = true;
+    GpuSettings settings;
+    std::vector<GpuLifeSpec> lives;
+    if (!gpu_lives_list(f, genome, mg, 1, settings, lives)) {
+        return 1;
+    }
+    f.host = f.host || !gpu_world_in_shader(f.run.task);
+    for (const GpuLifeSpec& life : lives) {
+        f.host = f.host || gpu_needs_host(life.mg);
     }
     if (f.host && !host_worlds_parse(f.tasks, f.run_args, f.run, worlds)) {
         return 1;
     }
-    GpuSettings settings;
-    std::vector<GpuLifeSpec> lives;
     int world_count = worlds.empty() ? 1 : (int)worlds.size();
+    settings = GpuSettings{};
     if (!gpu_lives_list(f, genome, mg, world_count, settings, lives)) {
         return 1;
     }

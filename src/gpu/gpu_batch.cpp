@@ -7,11 +7,17 @@
 // the compute pipelines (a life's ticks, a life's birth), the groups' buffers and
 // descriptor sets, and one dispatch.
 
-constexpr int BINDINGS = 12;
+constexpr int BINDINGS = 17;
 constexpr int MAX_GROUPS = 256;
 
 static uint64_t mask_words(const GpuShape& s) {
-    return (uint64_t)s.tiles * 9 * 64;
+    return (uint64_t)s.tiles * s.slots * 64;
+}
+static uint64_t ev_words(const GpuShape& s) {
+    return s.ev ? (uint64_t)s.ev_rows * s.slots * s.ev_bits : 0;
+}
+static uint64_t far_words(const GpuShape& s) {
+    return (uint64_t)s.tiles * (s.slots - 9) * 64;
 }
 static uint64_t ring_words(const GpuShape& s) {
     return 2ull * GPU_RING * (uint64_t)s.stride;
@@ -20,14 +26,16 @@ static uint64_t ring_words(const GpuShape& s) {
 uint64_t gpu_life_bytes(const GpuShape& s) {
     return mask_words(s) * 8 + (uint64_t)s.tiles * 64 + ring_words(s) * 8 +
            ((uint64_t)s.tiles + 1) * 8 + sizeof(GpuLife) + sizeof(GpuGenome) +
-           (uint64_t)s.max_windows * 8;
+           (uint64_t)s.max_windows * 8 + ev_words(s) * 8 + (s.ev ? (uint64_t)s.ev_rows : 0) +
+           (s.delay ? mask_words(s) : 0) + far_words(s) * 4;
 }
 
 int gpu_group_size(const GpuContext& g, const GpuShape& s) {
     // the masks are the largest buffer; keep each under the binding limit and 1 GB
     uint64_t limit = g.limits.maxStorageBufferRange;
     limit = limit < (1ull << 30) ? limit : (1ull << 30);
-    uint64_t lives = limit / (mask_words(s) * 8);
+    uint64_t largest = mask_words(s) * 8 > ev_words(s) * 8 ? mask_words(s) * 8 : ev_words(s) * 8;
+    uint64_t lives = limit / largest;
     lives = lives > 65535 ? 65535 : lives;
     return lives < 1 ? 1 : (int)lives;
 }
@@ -91,10 +99,14 @@ static bool make_pipeline(GpuContext& g, GpuBatch& b, const char* spv, int wave,
     if (!gpu_ok(g, vkCreateShaderModule(g.device, &module_info, nullptr, &module), "shader")) {
         return false;
     }
-    int32_t values[5] = {b.shape.workgroup, b.shape.tiles, b.shape.stride, b.shape.tiles_w,
-                         b.shape.host};
-    VkSpecializationMapEntry entries[5] = {{0, 0, 4}, {1, 4, 4}, {2, 8, 4}, {3, 12, 4}, {4, 16, 4}};
-    VkSpecializationInfo spec{5, entries, sizeof(values), values};
+    const GpuShape& s = b.shape;
+    int32_t values[10] = {s.workgroup, s.tiles, s.stride, s.tiles_w, s.host,
+                          s.slots,     s.delay, s.ev,     s.ev_bits, s.ev_rows};
+    VkSpecializationMapEntry entries[10];
+    for (uint32_t i = 0; i < 10; i++) {
+        entries[i] = VkSpecializationMapEntry{i, i * 4, 4};
+    }
+    VkSpecializationInfo spec{10, entries, sizeof(values), values};
     VkComputePipelineCreateInfo info{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
     info.stage =
         VkPipelineShaderStageCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
@@ -113,17 +125,45 @@ static bool make_pipeline(GpuContext& g, GpuBatch& b, const char* spv, int wave,
     return ok;
 }
 
+int gpu_ev_rows(const uint64_t* sensor, const uint64_t* motor, int tiles, int ev_on_max) {
+    int rows = 0;
+    for (int t = 0; t < tiles; t++) {
+        uint64_t kind = ev_on_max == 2 ? ~0ull : motor[t];
+        rows += __builtin_popcountll(kind & ~sensor[t]);
+    }
+    return rows;
+}
+
 bool gpu_batch_open(GpuContext& g, GpuBatch& b, const GpuShape& shape, const GpuParams& params,
                     const std::vector<uint64_t>& world_words, const char* life_spv,
-                    const char* birth_spv) {
+                    const char* birth_spv, const uint64_t* sensor, const uint64_t* motor,
+                    int ev_on_max) {
     b.shape = shape;
     b.params = params;
     if (!make_layout(g, b) || !make_pipeline(g, b, life_spv, shape.wave, b.pipeline) ||
         !make_pipeline(g, b, birth_spv, 0, b.birth)) {
         return false;
     }
+    // evidence rows: which neurons, the row before each tile, the motor cells
+    const size_t tiles1 = (size_t)shape.tiles + 1;
+    std::vector<uint64_t> meta(3 * tiles1, 0);
+    if (shape.ev) {
+        b.ev_row.assign((size_t)shape.tiles * 64, -1);
+        int row = 0;
+        for (int t = 0; t < shape.tiles; t++) {
+            uint64_t kind = (ev_on_max == 2 ? ~0ull : motor[t]) & ~sensor[t];
+            meta[(size_t)t] = kind;
+            meta[tiles1 + (size_t)t] = (uint64_t)row;
+            meta[2 * tiles1 + (size_t)t] = motor[t];
+            for (int bit = 0; bit < 64; bit++) {
+                b.ev_row[(size_t)t * 64 + (size_t)bit] = ((kind >> bit) & 1) ? row++ : -1;
+            }
+        }
+    }
     return gpu_buffer(g, b.world, world_words.size() * 8, false) &&
-           gpu_upload(g, b.world, 0, world_words.data(), world_words.size() * 8);
+           gpu_upload(g, b.world, 0, world_words.data(), world_words.size() * 8) &&
+           gpu_buffer(g, b.ev_meta, meta.size() * 8, false) &&
+           gpu_upload(g, b.ev_meta, 0, meta.data(), meta.size() * 8);
 }
 
 // a new device buffer of zeros
@@ -206,6 +246,12 @@ bool gpu_group_add(GpuContext& g, GpuBatch& b, int first, const GpuLifeData* liv
     ok = ok && gpu_buffer(g, gr.xin, sizeof(GpuExchangeIn) * xn, true) &&
          gpu_buffer(g, gr.xwords, 8 * tiles1 * xn, true) &&
          gpu_buffer_read_back(g, gr.xout, sizeof(GpuExchangeOut) * xn);
+    // the grown-back pieces: zeros, or what birth fills
+    size_t ew = (size_t)ev_words(s);
+    ok = ok && zeros_new(g, gr.ev_planes, ew ? ew * n * 8 : 8) &&
+         zeros_new(g, gr.ev_lines, s.ev ? (size_t)s.ev_rows * n : 8) &&
+         zeros_new(g, gr.delays, s.delay ? mw * n : 8) &&
+         zeros_new(g, gr.far_tiles, s.slots > 9 ? (size_t)far_words(s) * n * 4 : 8);
     if (!ok) {
         return false;
     }
@@ -219,9 +265,10 @@ bool gpu_group_add(GpuContext& g, GpuBatch& b, int first, const GpuLifeData* liv
     if (!gpu_ok(g, vkAllocateDescriptorSets(g.device, &alloc, &gr.set), "descriptor set")) {
         return false;
     }
-    GpuBuffer* order[BINDINGS] = {&gr.params, &b.world,       &gr.genomes, &gr.lives,
-                                  &gr.masks,  &gr.thresholds, &gr.rings,   &gr.inhibitory,
-                                  &gr.scores, &gr.xin,        &gr.xwords,  &gr.xout};
+    GpuBuffer* order[BINDINGS] = {
+        &gr.params, &b.world,       &gr.genomes,  &gr.lives,  &gr.masks,    &gr.thresholds,
+        &gr.rings,  &gr.inhibitory, &gr.scores,   &gr.xin,    &gr.xwords,   &gr.xout,
+        &b.ev_meta, &gr.ev_planes,  &gr.ev_lines, &gr.delays, &gr.far_tiles};
     VkDescriptorBufferInfo infos[BINDINGS];
     VkWriteDescriptorSet writes[BINDINGS];
     for (int i = 0; i < BINDINGS; i++) {
@@ -274,7 +321,17 @@ bool gpu_group_read(GpuContext& g, const GpuBatch& b, GpuGroup& group, int index
     out.threshold.resize((size_t)s.tiles * 64);
     out.ring.resize(rw);
     out.inhibitory.resize(tiles1);
-    return gpu_download(g, group.lives, i * sizeof(GpuLife), &out.life, sizeof(GpuLife)) &&
+    uint64_t ew = ev_words(s), fw = far_words(s);
+    out.ev_planes.resize(ew);
+    out.ev_lines.resize(s.ev ? (size_t)s.ev_rows : 0);
+    out.delays.resize(s.delay ? mw : 0);
+    out.far_tiles.resize(fw);
+    bool ok = (!ew || gpu_download(g, group.ev_planes, i * ew * 8, out.ev_planes.data(), ew * 8)) &&
+              (!s.ev || gpu_download(g, group.ev_lines, i * s.ev_rows, out.ev_lines.data(),
+                                     (uint64_t)s.ev_rows)) &&
+              (!s.delay || gpu_download(g, group.delays, i * mw, out.delays.data(), mw)) &&
+              (!fw || gpu_download(g, group.far_tiles, i * fw * 4, out.far_tiles.data(), fw * 4));
+    return ok && gpu_download(g, group.lives, i * sizeof(GpuLife), &out.life, sizeof(GpuLife)) &&
            gpu_download(g, group.masks, i * mw * 8, out.mask.data(), mw * 8) &&
            gpu_download(g, group.thresholds, i * s.tiles * 64, out.threshold.data(),
                         (uint64_t)s.tiles * 64) &&
@@ -295,14 +352,15 @@ void gpu_batch_close(GpuContext& g, GpuBatch& b) {
         vkDeviceWaitIdle(g.device);
     }
     for (GpuGroup& gr : b.groups) {
-        GpuBuffer* all[] = {&gr.params,     &gr.genomes, &gr.lives,      &gr.masks,
-                            &gr.thresholds, &gr.rings,   &gr.inhibitory, &gr.scores,
-                            &gr.xin,        &gr.xwords,  &gr.xout};
+        GpuBuffer* all[] = {&gr.params, &gr.genomes,    &gr.lives,    &gr.masks,  &gr.thresholds,
+                            &gr.rings,  &gr.inhibitory, &gr.scores,   &gr.xin,    &gr.xwords,
+                            &gr.xout,   &gr.ev_planes,  &gr.ev_lines, &gr.delays, &gr.far_tiles};
         for (GpuBuffer* buf : all) {
             gpu_free(g, *buf);
         }
     }
     gpu_free(g, b.world);
+    gpu_free(g, b.ev_meta);
     vkDestroyPipeline(g.device, b.pipeline, nullptr);
     vkDestroyPipeline(g.device, b.birth, nullptr);
     vkDestroyDescriptorPool(g.device, b.pool, nullptr);
