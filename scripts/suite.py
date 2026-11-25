@@ -37,6 +37,28 @@ FEATURES = [("order", "order: which of two cues came on first"),
             ("gap", "gap: short or long gap between two blinks"),
             ("place", "place: shape at a place never rewarded")]
 
+# the function battery (scripts/functions.sh), a few rungs of its ladder
+FUNCTIONS = [
+    ("fn-parity3", "points: parity of 3 lines",
+     ["--task", "points", "--fn", "parity", "--fn-lines", "3"]),
+    ("fn-parity4", "points: parity of 4 lines",
+     ["--task", "points", "--fn", "parity", "--fn-lines", "4"]),
+    ("fn-majority5", "points: majority of 5 lines",
+     ["--task", "points", "--fn", "majority", "--fn-lines", "5"]),
+    ("fn-count4", "points: how many of 4 lines are on (5 buttons)",
+     ["--task", "points", "--fn", "count", "--fn-lines", "4"]),
+    ("fn-sine-held", "number: band of sine(x), 16 lines, 4 bands, x never rewarded",
+     ["--task", "number", "--fn", "sine", "--fn-lines", "16", "--fn-bands", "4",
+      "--fn-hold", "3", "--sensor-side", "2"]),
+    ("fn-product", "two numbers: product above or below half, 8 lines each",
+     ["--task", "two-numbers", "--fn", "product", "--fn-lines", "8", "--fn-bands", "2",
+      "--sensor-side", "2"]),
+    ("fn-recall", "past: the first of 2 items, 2 blank steps between",
+     ["--task", "past", "--fn", "recall", "--fn-gap", "2"]),
+    ("fn-same", "past: the last 2 items the same, back to back",
+     ["--task", "past", "--fn", "same", "--fn-gap", "0"]),
+]
+
 
 def jobs_for(life, readout):
     """name -> (blobrun args, rough cost in lives of the standard length)"""
@@ -70,6 +92,8 @@ def jobs_for(life, readout):
     if readout:
         # the control: a readout that can learn at all, where the input hands over the answer
         jobs["readout-echo"] = (["--task", "echo", "--frozen-readout"] + plain, 1)
+    for job, _, args in FUNCTIONS:
+        jobs[job] = (args + plain, 1)
     return jobs
 
 
@@ -141,6 +165,8 @@ def rows_for():
                      "ticks_per_s_" + size))
     rows.append(("fits the machine", "bytes per neuron (32x32 tiles)", "speed",
                  "bytes_per_neuron_32x32"))
+    for job, label, _ in FUNCTIONS:
+        rows.append(("fixed functions (the battery)", label, job, "late"))
     return rows
 
 
