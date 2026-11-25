@@ -266,3 +266,171 @@ Status words: idea, building, tried (with result), kept, dropped.
     evidence counters at the motor cells and inside, many motor cells per button, delays
     for the time tasks. Does the combination keep the reflex, the reach, the features and
     the speed at once? *building*
+
+## The wider space (added 2026-11-25)
+
+The owner: "you tested like what, 20 mechanics? shouldnt there be a fuckton of possible
+ones?" There are. Three things widen the search from here.
+
+- **Screen sheets without any learning rule.** Learning has turned out to be mostly selection
+  at the output, so a mechanism inside the sheet can be judged in seconds by how readable
+  the features are (`scripts/richness.sh`). Hundreds of variants an hour instead of a few a
+  day.
+- **Re-test the early nulls.** Delays, far links, the branch bonus and varied neurons were all
+  judged "does nothing" through a readout that could not read. Those verdicts are void until
+  re-run through the new readout.
+- **Families.** Mechanisms grouped by what they change, a handful per agent, each scored by
+  the richness screen first and the suite second.
+
+### What a connection does over a few ticks
+66. **Tiring synapses.** A source that just fired counts for less for a few ticks. *idea*
+67. **Warming synapses.** A source that just fired counts for more for a few ticks. *idea*
+68. **Tiring neurons.** A neuron's threshold jumps when it fires and drifts back. *idea*
+69. **A slow second potential.** Each neuron keeps a second sum that leaks much more slowly
+    and adds to the first. *idea*
+70. **Rebound.** A neuron that was just inhibited is easier to fire for a few ticks. *idea*
+71. **Up and down states.** A neuron has two thresholds and stays "up" until it falls below
+    the lower one. *idea*
+
+### What a neuron computes
+72. **Any-branch neurons.** Fire if any one slot has enough active sources (an OR of ANDs),
+    not on the sum over slots. *idea*
+73. **Veto.** One inhibitory source on a branch cancels the whole branch. *idea*
+74. **Coincidence only.** Fire only if sources at two different delays are both active. *idea*
+75. **Winner in the tile.** After the tick, only the most-driven few neurons of each tile keep
+    their spike. *idea*
+76. **Table plus count.** A table over the neuron's four strongest sources, a popcount over
+    the rest. *idea*
+
+### Wiring
+77. **Mirror links.** If A listens to B, B is likelier to listen to A (loops by design). *idea*
+78. **Hubs.** A few neurons with ten times the connections, in and out. *idea*
+79. **Streams.** Wiring biased along one direction of the sheet, so activity flows. *idea*
+80. **Two sheets.** A second sheet that only the first one feeds, and that feeds back. *idea*
+81. **Wire by timing.** Growth prefers sources that fired just before, not just recently. *idea*
+82. **Prune what is redundant.** Drop a source that always fires with another one you
+    already have. *idea*
+83. **Topography in the far links.** Far links from neighbouring neurons land near each other.
+    *idea*
+
+### Global states and signals
+84. **Novelty opens the gate.** Plasticity is on only for a while after surprise. *idea*
+85. **Arousal.** After good or bad, the whole sheet's thresholds drop a little for a while.
+    *idea*
+86. **Rhythm as a clock.** Keep a slow pulse on purpose and let neurons prefer a phase of it.
+    *idea*
+87. **Replay in sleep.** When idle, replay the last rewarded stretches of the spike ring and
+    learn from them again. *idea*
+88. **Critical periods.** Each neuron's plasticity starts high and falls as it is used. *idea*
+89. **Attention.** The readout's current evidence feeds back and raises the gain of the tiles
+    it relies on. *idea*
+
+### Credit
+90. **A value cell.** A group of neurons learns to predict good and bad, and its change, not
+    the raw reward, is what teaches. *idea*
+91. **Error by the difference of two phases.** Run a few ticks with the answer clamped and a
+    few without; learn from the difference in each neuron's activity. *idea*
+92. **Teach the inside to help the readout.** An inner neuron gains evidence when the readout
+    currently relies on it and was right. *idea*
+93. **Counters that forget.** Evidence leaks toward zero, so old evidence fades. *idea*
+94. **Two readouts that vote.** A fast one and a slow one; the slow one learns from the fast
+    one's mistakes. *idea*
+
+### Growth and development
+95. **Start small.** A sheet that begins with few connections and adds them as tasks demand.
+    *idea*
+96. **Add neurons where surprise stays high.** *idea*
+97. **Pre-wire by spontaneous waves.** Before any input, waves of activity cross the sheet and
+    co-activity wiring lays down local structure (as in a developing retina). *idea*
+
+### Automatic search
+98. **Search the sheet's numbers for richness.** Random sheets, each scored by the feature
+    probe as born. *tried: the default sheet is mediocre. The best of 600 read order and gap
+    three to four times better and exclusive-or up to twice, and keep the lead on fresh
+    seeds. Levers: longer delays (time), denser local wiring, the branch bonus (exclusive-
+    or), more inhibitory neurons. docs/results-2026-11-25-richness-search.md*
+99. **Search the switches in combination.** Every mechanism on or off, scored by the quick
+    suite, to find pieces that only work together. *idea*
+100. **Share what one patch learned.** [the day-one question: a net with all the priors]
+     Nothing carries a feature to a new place (the suite's place task scores 0.25, under
+     chance). Let evidence learned for a source at some offset from a cell leak to cells
+     elsewhere for the source at the same offset, weakly, so that what is true everywhere
+     ends up wired everywhere and what is local stays local. A convolution that is found,
+     not built in. *idea*
+
+### Invariance (added 2026-11-25)
+
+The owner: "how does the brain do it? ... fundamental ways of getting the same kind of
+effect cheaply? scale invariance, rotational invariance, position invariance, time
+invariance, frequency invariance ... we should have envs for testing all of these and keep
+trying more mechanics until we find something that can do all of them."
+
+The brain does not share weights. As far as is known it gets invariance five ways, and each
+is a mechanism to try. All are scored on the invariance battery (idea 101).
+
+101. **The invariance battery.** A task per kind of change (place, scale, turn, thickness,
+     time shift, tempo, pitch, clutter), rewarded on some versions and scored on versions
+     never rewarded, with and without the pattern drifting through its versions, measured at
+     three levels: is it readable, does the readout get it, does the whole thing. *building*
+102. **What follows is the same thing.** [known: the trace rule] As a thing moves, the
+     detectors it sets off one after another get wired to the same cells, because wiring
+     uses a slow "fired recently". One local rule that gives place, size and turn alike,
+     learned from motion. *idea*
+103. **Cells that fire for any one of several.** [known: complex cells] A neuron that fires
+     if any one of its slots is active enough pools the same detector over nearby places.
+     Same as idea 72. *idea*
+104. **Maps where the change is a slide.** [known: the eye and the ear] A log-polar map of
+     the image turns growing and turning into sliding; frequency lines spaced by ratio turn
+     a change of pitch into a slide; time constants spaced by ratio turn tempo into a slide.
+     Then one answer to sliding answers all of them. *first test inside idea 101*
+105. **Move the eye.** [known: fixation] Motor lines that shift what the sensor sheet sees.
+     The thing gets centred by acting, and position stops mattering. *idea*
+106. **Stages with growing reach.** [known] A second and third sheet, each cell pooling a
+     patch of the one before, so by the top a pattern anywhere looks the same. *idea*
+107. **The same rule sees the same world everywhere.** [known] No sharing is needed if every
+     patch sees every pattern in time. Test: after a life of drifting patterns and wiring by
+     co-activity, are the detectors in different tiles alike? *idea*
+108. **Gain control.** [known] Each cell's input divided by how active its neighbourhood is,
+     so thick and thin, bright and dim drive it alike. *idea*
+Idea 100 (leak evidence to the same offset elsewhere) is the engineer's way; the brain is
+not known to do it.
+109. **The function battery.** The owner: "xor, 2 point, 3 point, 4 point pattern. 5 point
+     pattern. sin, cos, theres lots of cheap envs we can do. and we should be able to learn
+     all of em." Boolean functions of N cues (and, or, parity, majority, random truth
+     tables), counting, functions of a number (step, tent, sine, cosine, sums, products),
+     functions of the last few cues; each scored as readable, read, and learned. *building*
+110. **A shell of views.** [known] The owner: "you have a shape, and you rotate it, you still
+     know what it is. you form some imagination of a nd shell." As far as is known a brain
+     does not rotate a model; it ties together the views that follow each other as a thing
+     turns. Same mechanism as idea 102, tested on a viewpoint task. *the task is being built*
+111. **A place that holds.** [known: persistent activity] The default sheet keeps a cue
+     readable for 20 ticks and has lost it by 60. Search for sheets, or regions of a sheet,
+     that hold it: slow leak, dense local excitation with wider inhibition, up and down
+     states. Aimed at the time wall. *running: a 500-sheet search on how long a cue is held*
+112. **Different regions, different rules.** [known] The owner: "grid cells have a different
+     winner take all kind of activity bias too. that we wouldnt want everywhere in the brain
+     but in somewhere probably?" Give each sector its own genome numbers, so one region can
+     be winner-take-all and hold a bump of activity (a map, a memory) while another mixes
+     freely. The sectors already exist; the numbers are global today. *idea*
+113. **Screen the neuron and synapse family.** Ideas 66 to 76, each at several strengths,
+     through the feature and hold probes, then a combined search. *building*
+114. **Screen the wiring family.** Ideas 19 to 21 and 77 to 83, likewise. *building*
+115. **MNIST.** The owner: "wed be cool as fuck if we beat mnist." Digits onto the sensor
+     sheet, ten buttons, good and bad only. Three numbers: what a linear reader gets from a
+     never-taught sheet, what the evidence readout learns, and how long it takes. Targets: a
+     linear classifier on pixels (about 92%), then a small two-layer network (about 97%).
+     *building*
+116. **The rest of the map.** Worlds for relation (same or different, odd one out, bigger
+     than), number, parts and wholes (grammar), chance (answers right only most of the
+     time), context (a cue that changes what another means), longer memory (copy, recall,
+     n-back), no teacher (predict the next input, fill in a gap), being shown the answer,
+     and damage to the sheet. `docs/task-map.md` lists the tiers. *building*
+117. **The fixed-net reference.** One ordinary network (a small two-layer one, and a small
+     recurrent one), one size, one recipe, behind the same plug, told only good and bad,
+     run on the whole map with nothing changed between tasks. Not to beat it task by task:
+     to see where an unchanged network stops, and to calibrate which worlds are learnable.
+     *building*
+118. **One setting for everything.** Score our own designs the same way: one set of numbers
+     for the whole map. Today the readout runs use flags chosen per task (long delays for
+     the time tasks, more motor cells here, smaller line groups there). *idea: the combined
+     engine is the first to be held to it*

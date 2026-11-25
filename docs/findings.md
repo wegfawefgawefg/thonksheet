@@ -8,14 +8,30 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
 
 ## The headline (2026-11-25)
 
-**A sheet that was never taught anything, plus a readout that adds up evidence, learns
-things no input line carries.** With every connection inside the sheet frozen as born, a
-rule at the motor cells learns exclusive-or of two cues (0.88), which cue came first (0.70,
+**The output can now learn online, from good and bad alone, things no input line carries.**
+In a test with the inside of the sheet held fixed as born (a way to find where learning
+happens, not a goal), a rule at the motor cells learns exclusive-or of two cues (0.88), which cue came first (0.70,
 0.84 with long delays), Echo with the cue three tiles from the button (0.85), four cues
 (1.00) and eight (0.84), and shuffled Echo with no locked lives (1.00 on eight seeds of
 eight). The same sheet with the old readout scored chance on all of these. The owner's
 thesis, that a rich enough sheet turns learning into selection, holds for everything a
 plain linear reader can get out of the sheet. docs/results-2026-11-24-readout.md
+
+**What this is not.** The goal is a brain that learns everywhere, all the time, on any task
+(the owner, 2026-11-25: "i didnt say it needs to be never taught ... the whole point is it
+should be able to learn new things right? run nonstop. online learning for any task"). The
+readout does learn that way: it never stops, it picks up a second task without losing the
+first. The inside does not yet. Held fixed, it can only offer what it was born with, which
+is why a shape in a new place, a long gap and sixteen cues fail. Letting the old inner rule
+run alongside helps reach and hurts the feature tasks. Making the inside learn usefully,
+online, is the open problem and the next target.
+
+The full suite on that rule (`blob-readout` in docs/scoreboard.md, 8 seeds, sheet frozen)
+agrees and adds: a second task is learned after the first (0.99) with the first still there
+(0.98 at once); eight cue-button pairs held, and sixteen at 0.31 where chance is 0.06;
+nothing lost after being unplugged (1.00 before, 1.00 after); Echo five tiles away 0.59;
+catch 0.32 where chance is 0.25. Still failing: delayed echo (0.55), beat, gap (0.52),
+cartpole (below a coin), and a shape in a place it was never rewarded (0.25, below chance).
 
 ## Principles that hold so far
 
@@ -112,6 +128,17 @@ plain linear reader can get out of the sheet. docs/results-2026-11-24-readout.md
     0.63, every seed up. This is the first sign of a reward rule making neurons inside the
     sheet more useful. It costs memory (82 to 493 bytes per neuron) and reward-time work.
 
+20. **Richness can be tuned, and ours was not.** [likely] Among 600 random sheets the best
+    read order and gap three to four times better than the default and exclusive-or up to
+    twice as well, on fresh seeds. No single number does it (best rank correlation 0.3):
+    longer delays for time, denser local wiring, the dendrite-branch bonus for
+    exclusive-or, more inhibitory neurons. Whether richer sheets learn better through the
+    readout is being tested.
+21. **A mechanism can only be judged on a task that needs it, through a readout that can
+    read.** [solid] Delays, far links and the branch bonus all measured as doing nothing on
+    Echo. Delays turned out to carry time, far links reach, and the branch bonus
+    exclusive-or.
+
 ## Walls
 
 - **Reading a thin signal: broken at the output, standing inside.** An error rule moving
@@ -132,6 +159,10 @@ plain linear reader can get out of the sheet. docs/results-2026-11-24-readout.md
   not a lock: the blob leans to one side (0.58 of presses) without being stuck.
   Any rule graded against its own average also freezes once every reward equals the
   average: an all-wrong life stops moving.
+- **A new place.** A shape learned in some places is answered wrongly in a place never
+  rewarded (0.25 where chance is 0.49). Nothing in the sheet shares what one patch learned
+  with another. This is the missing prior the owner started from on day one (a convolution
+  shares; this sheet does not).
 - **Acting in a world.** Nothing learns catch or cartpole. On cartpole learning makes the
   full engine worse than a coin.
 - **More than four things.** Eight cues are now learned (0.84) by the new readout on the
