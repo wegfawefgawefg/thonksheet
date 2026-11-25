@@ -38,7 +38,8 @@ double rung1_offline(const Ladder& L) {
 
 struct LinReader {
     int kind = 2; // 2 float softmax, 3 integer told the answer, 4 integer told good or bad
-    int good = 0; // kind 4: 0 nothing on good, 1 up on good, 2 up on a close good
+    int good = 0; // kind 4: what moves on good (GoodHalf)
+    int nonneg = 0; // 1: no weight goes below zero (a source can only speak for a button)
     int d = 0;
     Scale sc;                // kind 2
     std::vector<float> wf;   // kind 2: (d + 1) x classes, the last row the bias
@@ -84,16 +85,8 @@ static void lin_move(LinReader& R, int k, int step) {
     int32_t* w = &R.wi[(size_t)k * R.d];
     for (int j = 0; j < R.d; j++) {
         w[j] += step * R.xi[(size_t)j];
+        w[j] = R.nonneg && w[j] < 0 ? 0 : w[j];
     }
-}
-
-// a close vote: the winner's lead under 20% of its own score (the engine's margin_percent 20)
-static bool close_vote(const double* s, int pressed) {
-    double runner = -1e300;
-    for (int k = 0; k < CLASSES; k++) {
-        runner = k != pressed && s[k] > runner ? s[k] : runner;
-    }
-    return (s[pressed] - runner) * 100.0 < 20.0 * std::fabs(s[pressed]);
 }
 
 // one digit learned: scores are those lin_scores just gave for it
@@ -136,8 +129,23 @@ static void lin_learn(LinReader& R, double* s, int pick, int label) {
     // told good or bad: as the engine's rule, the pressed button with the verdict, the
     // others against it at a sixteenth; no press (a tie) on bad lifts every button
     int valence = pick == label ? 1 : -1;
-    if (valence > 0 && (R.good == 0 || (R.good == 2 && !close_vote(s, pick)))) {
-        return;
+    if (valence > 0) {
+        int runner = -1;
+        bool close = ladder_close(s, CLASSES, pick, runner);
+        bool closed = R.good == GOOD_ALL_CLOSE || R.good == GOOD_PRESSED_CLOSE ||
+                      R.good == GOOD_RIVAL_CLOSE;
+        if (R.good == GOOD_NONE || (closed && !close)) {
+            return;
+        }
+        if (R.good == GOOD_PRESSED || R.good == GOOD_PRESSED_CLOSE) {
+            lin_move(R, pick, PRESSED_STEP);
+            return;
+        }
+        if (R.good == GOOD_RIVAL_CLOSE) {
+            lin_move(R, pick, PRESSED_STEP);
+            lin_move(R, runner, -PRESSED_STEP);
+            return;
+        }
     }
     for (int k = 0; k < CLASSES; k++) {
         if (pick < 0) {
@@ -212,9 +220,10 @@ void rung3_integer_told(const Ladder& L, Curve& c) {
     lin_run(R, L, c);
 }
 
-void rung4_integer_good_bad(const Ladder& L, int good, Curve& c) {
+void rung4_integer_good_bad(const Ladder& L, int good, int nonneg, Curve& c) {
     LinReader R;
     R.kind = 4;
     R.good = good;
+    R.nonneg = nonneg;
     lin_run(R, L, c);
 }

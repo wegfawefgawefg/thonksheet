@@ -27,6 +27,8 @@ struct Cells {
     std::vector<uint64_t> inhib;        // count x SLOTS: inhibitory sources among them
     std::vector<int8_t> born;           // count x SLOTS x 64: born strength (0, 1, 4, 5)
     std::vector<int> keep;              // born connection count (the budget)
+    std::vector<uint8_t> against;       // an odd column of the motor lattice: the opponent
+                                        // half, as the engine's readout_opponent has it
     double fire_share = 0;              // share of digits a motor cell fires on, as recorded
     int inhibit_gain = 5;
 };
@@ -60,20 +62,34 @@ void ladder_print(const char* name, const Curve& c);
 double rung1_offline(const Ladder& L);
 void rung2_online_float(const Ladder& L, Curve& c);
 void rung3_integer_told(const Ladder& L, Curve& c);
-// good: 0 nothing moves on good, 1 the pressed button gains, 2 only when the vote was close
-void rung4_integer_good_bad(const Ladder& L, int good, Curve& c);
+// what moves on a good (bad always: the pressed button loses, the others gain a sixteenth)
+enum GoodHalf {
+    GOOD_NONE = 0,          // nothing
+    GOOD_ALL = 1,           // the pressed button gains, the others lose a sixteenth (engine)
+    GOOD_ALL_CLOSE = 2,     // the same, only when the vote was close (the gate)
+    GOOD_PRESSED = 3,       // the pressed button gains, the others do not move
+    GOOD_PRESSED_CLOSE = 4, // the same, only when the vote was close
+    GOOD_RIVAL_CLOSE = 5,   // on a close vote the pressed button gains and the runner-up loses
+};
+// a close vote: the winner's lead under 20% of its own score (the engine's margin_percent 20)
+bool ladder_close(const double* score, int k, int pick, int& runner);
+// nonneg 1: weights never go below zero
+void rung4_integer_good_bad(const Ladder& L, int good, int nonneg, Curve& c);
 
 // rungs 5 and 6: a button is the vote of its motor cells (mnist_ladder_cells.cpp)
-// vote: 0 the sum of the cells' drives, 1 a count of cells over their own threshold
-void rung5_cells(const Ladder& L, int vote, Curve& c);
+// vote: 0 the sum of the cells' drives, 1 each cell's drive over its threshold, in its own
+// spread (a stand-in for a spike count), 2 a count of cells over their threshold
+void rung5_cells(const Ladder& L, int vote, int good, Curve& c);
 // rung 6 and the fixes tried on it before they go into the engine
 struct Rung6 {
     int form = 1;     // 0 counters as graded weights, 1 one-bit wiring of the top counters
-    int gate = 0;     // 1: good moves only when the vote was close (margin 20%)
+    int good = GOOD_ALL;
     int keep_mul = 1; // the budget: this many times the born connection count
     int halve = 0;    // 1: a counter reaching the clamp halves the cell's whole row
     int strong = 0;   // 1: the top quarter of the wired sources count 4 (the w1 plane)
     int dale = 0;     // 1: only excitatory sources may be wired (readout_evidence 3)
+    int opponent = 0; // 1: every second cell of a button counts against it and learns the
+                      // other way, so one-bit excitatory wiring can say "not this button"
 };
 void rung6_counters(const Ladder& L, const Rung6& opt, Curve& c);
 

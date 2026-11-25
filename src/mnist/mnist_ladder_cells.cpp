@@ -26,7 +26,8 @@ struct CellReader {
     std::vector<int8_t> counter; // rung 6: cells x ROW
     std::vector<uint64_t> wired; // rung 6: cells x SLOTS
     std::vector<uint64_t> strong; // rung 6, opt.strong: the wired sources that count 4
-    std::vector<double> drive, theta, spread;
+    std::vector<double> drive, theta, mean, var;
+    double z = 0; // the threshold stands z spreads over a cell's mean drive
     std::vector<uint64_t> ge20, ge15; // per digit: MAX_COUNT x tiles, bits whose count >= r
     int tiles = 0;
     uint64_t rng[4] = {};
@@ -107,20 +108,63 @@ static void button_scores(const CellReader& R, const Ladder& L, double* score) {
     }
     for (int m = 0; m < C.count; m++) {
         double d = R.drive[(size_t)m];
-        score[C.button[(size_t)m]] += R.vote == 0 ? d : (d >= R.theta[(size_t)m] ? 1.0 : 0.0);
+        double th = R.theta[(size_t)m], sd = std::sqrt(R.var[(size_t)m]) + 1e-9;
+        double v = R.vote == 0 ? d
+                               : (R.vote == 1 ? (d > th ? (d - th) / sd : 0.0) : (d >= th ? 1.0 : 0.0));
+        score[C.button[(size_t)m]] += R.opt.opponent && C.against[(size_t)m] ? -v : v;
     }
 }
 
-// each cell's threshold moves so that it is over it on about the share of digits the
-// engine's motor cells fire on (the stand-in for threshold regulation)
-static void regulate(CellReader& R, const Ladder& L) {
-    double p = L.cells.fire_share;
+// the stand-in for threshold regulation: each cell's threshold follows its drive's running
+// mean and spread (over about 128 digits), z spreads up, so it is over it on about the share
+// of digits the engine's motor cells fire on
+static void regulate(CellReader& R, const Ladder& L, bool first) {
     for (int m = 0; m < L.cells.count; m++) {
-        double d = R.drive[(size_t)m], &th = R.theta[(size_t)m], &sp = R.spread[(size_t)m];
-        double off = std::fabs(d - th);
-        sp = sp <= 0 ? off + 1 : sp + (off - sp) / 64.0;
-        th += 0.05 * sp * (d >= th ? 1.0 - p : -p);
+        double d = R.drive[(size_t)m], &mu = R.mean[(size_t)m], &v = R.var[(size_t)m];
+        if (first) {
+            mu = d;
+            v = d * d + 1.0;
+        } else {
+            mu += (d - mu) / 128.0;
+            v += ((d - mu) * (d - mu) - v) / 128.0;
+        }
+        R.theta[(size_t)m] = mu + R.z * std::sqrt(v);
     }
+}
+
+// z with a normal tail of p over it
+static double tail_z(double p) {
+    double lo = -5, hi = 5;
+    for (int i = 0; i < 60; i++) {
+        double mid = (lo + hi) / 2;
+        (0.5 * std::erfc(mid / std::sqrt(2.0)) > p ? lo : hi) = mid;
+    }
+    return (lo + hi) / 2;
+}
+
+// who moves, for one cell of button b: +1 or -1, at the pressed rate (1) or the others' (2);
+// 0 when it does not move
+static int move_plan(int good, int pick, int runner, bool close, int valence, int b, int& rate) {
+    rate = 1;
+    if (pick < 0) {
+        return 1; // no press: every cell gains, at the pressed rate (the engine's balance)
+    }
+    if (valence < 0) {
+        rate = b == pick ? 1 : 2;
+        return b == pick ? -1 : 1;
+    }
+    bool closed = good == GOOD_ALL_CLOSE || good == GOOD_PRESSED_CLOSE || good == GOOD_RIVAL_CLOSE;
+    if (good == GOOD_NONE || (closed && !close)) {
+        return 0;
+    }
+    if (good == GOOD_PRESSED || good == GOOD_PRESSED_CLOSE) {
+        return b == pick ? 1 : 0;
+    }
+    if (good == GOOD_RIVAL_CLOSE) {
+        return b == pick ? 1 : (b == runner ? -1 : 0);
+    }
+    rate = b == pick ? 1 : 2;
+    return b == pick ? 1 : -1;
 }
 
 // the engine's rewire (evidence_rewire_as, readout_evidence 2, strength 1): the top
@@ -244,20 +288,16 @@ static void cells_learn(CellReader& R, const Ladder& L, const uint8_t* x20, cons
                         const double* score, int pick, int label) {
     const Cells& C = L.cells;
     int valence = pick == label ? 1 : -1;
-    if (valence > 0 && R.opt.gate) {
-        // the gate: a good moves only when the lead is under 20% of the winner's votes
-        double runner = 0;
-        for (int k = 0; k < C.buttons; k++) {
-            runner = k != pick && score[k] > runner ? score[k] : runner;
-        }
-        if ((score[pick] - runner) * 100.0 >= 20.0 * score[pick]) {
-            return;
-        }
-    }
+    int runner = -1;
+    bool close = pick >= 0 && ladder_close(score, C.buttons, pick, runner);
     if (R.rung == 5) {
         for (int m = 0; m < C.count; m++) {
-            int b = C.button[(size_t)m];
-            int step = pick < 0 ? 16 : (b == pick ? 16 * valence : -valence);
+            int rate = 1;
+            int sign = move_plan(R.opt.good, pick, runner, close, valence, C.button[(size_t)m], rate);
+            if (!sign) {
+                continue;
+            }
+            int step = sign * (rate == 1 ? 16 : 1);
             for (int k = 0; k < SLOTS; k++) {
                 int t = C.tile[(size_t)m * SLOTS + k];
                 if (t < 0) {
@@ -285,12 +325,11 @@ static void cells_learn(CellReader& R, const Ladder& L, const uint8_t* x20, cons
         other_shift++;
     }
     for (int m = 0; m < C.count; m++) {
-        if (pick < 0) {
-            move_counters(R, L, m, 1, READOUT_SHIFT);
-        } else if (C.button[(size_t)m] == pick) {
-            move_counters(R, L, m, valence, READOUT_SHIFT);
-        } else {
-            move_counters(R, L, m, -valence, other_shift);
+        int rate = 1;
+        int sign = move_plan(R.opt.good, pick, runner, close, valence, C.button[(size_t)m], rate);
+        sign = R.opt.opponent && C.against[(size_t)m] ? -sign : sign;
+        if (sign) {
+            move_counters(R, L, m, sign, rate == 1 ? READOUT_SHIFT : other_shift);
         }
     }
 }
@@ -323,7 +362,9 @@ static void cells_run(CellReader& R, const Ladder& L, Curve& c) {
     R.ge15.assign((size_t)MAX_COUNT * R.tiles, 0);
     R.drive.assign((size_t)C.count, 0.0);
     R.theta.assign((size_t)C.count, 0.0);
-    R.spread.assign((size_t)C.count, 0.0);
+    R.mean.assign((size_t)C.count, 0.0);
+    R.var.assign((size_t)C.count, 1.0);
+    R.z = tail_z(L.cells.fire_share);
     rng_seed(R.rng, L.seed * 977 + (uint64_t)(R.rung * 10 + R.opt.form));
     if (R.rung == 5) {
         // the born cell: excitatory sources at their strength, inhibitory at minus the gain
@@ -358,17 +399,18 @@ static void cells_run(CellReader& R, const Ladder& L, Curve& c) {
         cell_drives(R, L, x20);
         button_scores(R, L, score.data());
         int pick = ladder_pick(score.data(), C.buttons);
-        if (R.vote == 1) {
-            regulate(R, L);
+        if (R.vote >= 1) {
+            regulate(R, L, i == 0);
         }
         cells_learn(R, L, x20, x15, score.data(), pick, L.train.label[(size_t)r]);
     }
 }
 
-void rung5_cells(const Ladder& L, int vote, Curve& c) {
+void rung5_cells(const Ladder& L, int vote, int good, Curve& c) {
     CellReader R;
     R.rung = 5;
     R.vote = vote;
+    R.opt.good = good;
     cells_run(R, L, c);
 }
 
