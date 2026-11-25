@@ -24,8 +24,13 @@
 #   scripts/gpu.sh settings in.csv out.csv --tasks echo:k=8,order,gap,catch:catch-size=4/4 --twin
 #                                   every row on every world of the list, one batch: late_<world>
 #                                   and twin_late_<world> per row (key=value is a blobrun flag)
+#   scripts/gpu.sh settings in.csv out.csv --engine memory --tasks echo:k=8,order,gap --twin
+#                                   the same for the memory engine (columns y.name)
 #   scripts/gpu.sh speed            the speed table: 1, 64, 1,024, 16,384 lives, learning on and
 #                                   off, then the CPU engine on one core, same task (a few min)
+#   scripts/gpu.sh speed-host       every path (in the shader, host worlds, evidence, far slots,
+#                                   delays, the memory engine) at 1, 64, 1,024 lives and the most
+#                                   that fit, beside one CPU core (about 15 min)
 #   scripts/gpu.sh big              16,384 lives of echo k=2 with twins, 40,000 steps (the
 #                                   search's life; 40 minutes on the RX 9070 XT, 10.8 GB)
 #
@@ -232,6 +237,37 @@ speed)
     done
     echo "load: $(cut -d' ' -f1-3 /proc/loadavg)"
     kernel_log "30 minutes ago"
+    ;;
+speed-host)
+    # every path at 1, 64, 1,024 lives and the largest that fits, echo (k=4 for the grown-back
+    # pieces), 500-step lives; then the CPU engine on one core, same flags (keyed words)
+    b=("${base[@]}" --steps 500 --window 100 --out out/gpu/speed.csv)
+    row() {
+        local name=$1 largest=$2
+        shift 2
+        for lives in 1 64 1024 $largest; do
+            printf '%-22s %6s lives: ' "$name" $lives
+            gpu --lives $lives "${b[@]}" "$@" | grep -E "^gpu" | sed 's/.*s: \([0-9]*\) life-ticks.*/\1/'
+        done
+        printf '%-22s    cpu core: ' "$name"
+        local cpu_args=()
+        for a in "$@"; do [ "$a" = --host ] || cpu_args+=("$a"); done
+        nice -n 19 build/blobgpu --device cpu --m.rng_mode 1 --lives 2 "${b[@]}" "${cpu_args[@]}" |
+            grep "^cpu" | sed 's/.*ticking: \([0-9]*\) life-ticks.*/\1/'
+    }
+    row "shader echo k=2" 16384 --task echo --k 2
+    row "host echo k=2" 16384 --host --task echo --k 2
+    row "host catch 4x4" 16384 --task catch --catch-size 4 4
+    row "evidence A, echo k=4" 16384 --task echo --k 4 --m.ev_on 1 --m.ev_bits 6 --m.ev_init 4 \
+        --m.ev_spikes 1
+    row "evidence C, echo k=4" 4096 --task echo --k 4 --m.ev_on 2 --m.ev_bits 6 --m.ev_init 4 \
+        --m.ev_spikes 1
+    row "far 2, echo k=4" 16384 --task echo --k 4 --m.far_slots 2 --m.far_percent 100
+    row "delays 8, echo k=4" 16384 --task echo --k 4 --m.delay_max 8
+    row "memory echo k=2" 2048 --engine memory --task echo --k 2
+    row "memory catch 4x4" 2048 --engine memory --task catch --catch-size 4 4
+    echo "load: $(cut -d' ' -f1-3 /proc/loadavg)"
+    kernel_log "60 minutes ago"
     ;;
 big)
     gpu --lives 16384 --twin --task echo --k 2 "${base[@]}" --steps 40000 --window 1000 \
