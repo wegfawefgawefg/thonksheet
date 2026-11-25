@@ -91,12 +91,25 @@ Queued, in order:
    and on the held-out columns. Every item below is scored with it.
 2. *(running)* Competitive learning with local inhibition, no reward: units that win on an input
    move toward it (in bits: gain the input's bits, lose others, under a budget).
-3. A local "is this real" score per region: real input against shuffled or self-made
+2b. *(next free slot)* The error sent one hop, to every hidden cell (was item 5; owner,
+   2026-11-25: "do we need some sort of hyper truncated bit backprop... maybe backprop
+   isnt the issue but the whole requirement that it goes all the way back"). Each hidden
+   cell has a few fixed random wires from the output's error lines (which button should
+   have been higher, which lower); each of its connections keeps a fading mark of "I just
+   helped this cell fire"; when the error arrives, marked connections move a hidden
+   counter up or down by the sign on that cell's wire. No chain backwards, no second
+   pass, no stored history. Tags are the one-bit-reward version of this that only reaches
+   cells with a spike path into the action; this reaches every cell and carries a signed
+   error per output. Run it both ways: told only good or bad, and told the right button.
+   Scored by the inside-learning test, MNIST 0.924 to beat.
+3. Predicting the input: every unit learns to predict a neighbour or the next tick from
+   the rest; what is mispredicted is what gets learned. Moved up (owner, 2026-11-25: "do
+   we need pretraining step lol. its not like llms start off with general features"):
+   there is no stage before the life. Every inner rule is always on, in the one life, and
+   "a life, then freeze and read" is only how we measure. A language model's features
+   come from predicting its input all the time, which is this item.
+4. A local "is this real" score per region: real input against shuffled or self-made
    input, each region raising its activity for one and lowering it for the other.
-4. Predicting the input: every unit learns to predict a neighbour or the next tick from
-   the rest; what is mispredicted is what gets learned.
-5. Fixed random feedback of the output's error to the inside (the bits form of direct
-   feedback alignment), beside the tags result.
 6. Credit by code (idea 138).
 7. Units pay the units that set them up (idea 139).
 8. A memory that knows near from far (idea 152), scored on MNIST.
