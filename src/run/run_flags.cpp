@@ -7,7 +7,8 @@
 static const char* usage =
     "usage: blobrun [flags]\n"
     "  --task NAME        echo, shuffled-echo, delayed-echo, go-no-go, beat, sequence,\n"
-    "                     catch, cartpole, order, both-not-either, gap, place (default echo)\n"
+    "                     catch, cartpole, order, both-not-either, gap, place, bandit,\n"
+    "                     chain (default echo)\n"
     "  --seed N           blob seed (default 1)\n"
     "  --task-seed N      task seed (default: same as --seed)\n"
     "  --steps N          life length in task steps (default 20000)\n"

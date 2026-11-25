@@ -21,6 +21,8 @@ enum class TaskKind {
     both_not_either, // two cues; one button when exactly one is on, the other otherwise
     gap,             // one cue blinks twice; answer whether the gap was short or long
     place,           // a small shape at one of several places; answer which shape
+    bandit,          // no cue; one of k buttons pays good most of the time (task_rungs.cpp)
+    chain,           // press A, then B, to be paid; the first press is paid a step later
     count,
 };
 
@@ -73,6 +75,8 @@ struct TaskSettings {
     // every step up, bad on a fall), 2 lean (every step: good if the pole and cart ended
     // nearer upright-and-centred than they began or are already there, bad if further)
     int cart_reward = 0;
+    // bandit: percent chance a press pays, the best arm and the rest (task_rungs.cpp)
+    int bandit_good = 80, bandit_poor = 20;
 };
 
 // fixed point for cartpole: 16 fractional bits
@@ -155,3 +159,9 @@ TaskShape feature_shape(const Task& task);
 void feature_sense(const Task& task, TaskSense& sense);
 int feature_perfect_move(const Task& task);
 int feature_step(Task& task, const TaskStepIn& in);
+
+void rung_reset(Task& task);
+TaskShape rung_shape(const Task& task);
+void rung_sense(const Task& task, TaskSense& sense);
+int rung_perfect_move(const Task& task);
+int rung_step(Task& task, const TaskStepIn& in);
