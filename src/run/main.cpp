@@ -18,6 +18,9 @@
 #ifdef BLOB_HAS_MINIMAL
 #include "minimal/minimal.hpp"
 #endif
+#ifdef BLOB_HAS_VM
+#include "vm/vm.hpp"
+#endif
 
 // who drives the motor lines (drive.hpp)
 // table and table_off are idea 26 (src/table/), picked with --table
@@ -48,6 +51,14 @@ static MinimalGenome minimal_genome;
 static const bool use_minimal = false;
 #endif
 
+// --engine vm: src/vm/ (idea 135), same shell; --v.name value sets its numbers
+#ifdef BLOB_HAS_VM
+static bool use_vm = false;
+static VmGenome vm_genome;
+#else
+static const bool use_vm = false;
+#endif
+
 Blob* birth(Driver driver, const Genome& genome, uint64_t seed) {
     if (table_driver(driver)) {
         TableGenome tg = table_genome;
@@ -57,6 +68,11 @@ Blob* birth(Driver driver, const Genome& genome, uint64_t seed) {
 #ifdef BLOB_HAS_MINIMAL
     if (use_minimal && real_blob(driver)) {
         return minimal_birth(genome, minimal_genome, seed);
+    }
+#endif
+#ifdef BLOB_HAS_VM
+    if (use_vm && real_blob(driver)) {
+        return vm_birth(genome, vm_genome, seed);
     }
 #endif
 #ifdef BLOB_HAS_CORE
@@ -76,6 +92,12 @@ void death(Driver driver, Blob* blob) {
 #ifdef BLOB_HAS_MINIMAL
     if (use_minimal && real_blob(driver)) {
         minimal_free(blob);
+        return;
+    }
+#endif
+#ifdef BLOB_HAS_VM
+    if (use_vm && real_blob(driver)) {
+        vm_free(blob);
         return;
     }
 #endif
@@ -100,6 +122,12 @@ void tick(Driver driver, Blob& blob, const Plug& plug, int perfect_move) {
         return;
     }
 #endif
+#ifdef BLOB_HAS_VM
+    if (use_vm && real_blob(driver)) {
+        vm_tick(blob);
+        return;
+    }
+#endif
 #ifdef BLOB_HAS_CORE
     if (real_blob(driver)) {
         blob_tick(blob);
@@ -118,6 +146,12 @@ void reward(Driver driver, Blob& blob, int valence) {
 #ifdef BLOB_HAS_MINIMAL
     if (use_minimal && real_blob(driver)) {
         minimal_reward(blob, valence);
+        return;
+    }
+#endif
+#ifdef BLOB_HAS_VM
+    if (use_vm && real_blob(driver)) {
+        vm_reward(blob, valence);
         return;
     }
 #endif
@@ -140,7 +174,7 @@ void drivers_wanted(const RunFlags& flags, bool* want) {
     want[(int)Driver::blob] = true;
     want[(int)Driver::learn_off] = flags.baselines;
 #endif
-    if (use_minimal) {
+    if (use_minimal || use_vm) {
         want[(int)Driver::blob] = true;
         want[(int)Driver::learn_off] = flags.baselines;
     }
@@ -180,12 +214,16 @@ int main(int argc, char** argv) {
     use_minimal = flags.engine == "minimal";
     apply_minimal_args(argc, argv, minimal_genome);
 #endif
-    if (flags.engine != "blob" && !use_minimal) {
+#ifdef BLOB_HAS_VM
+    use_vm = flags.engine == "vm";
+    apply_vm_args(argc, argv, vm_genome);
+#endif
+    if (flags.engine != "blob" && !use_minimal && !use_vm) {
         std::fprintf(stderr, "blobrun: no engine '%s' in this build\n", flags.engine.c_str());
         return 1;
     }
     // the readout mode is the blob genome's learn_mode 1; other engines do not read it
-    if (flags.frozen_readout && (flags.table || use_minimal)) {
+    if (flags.frozen_readout && (flags.table || use_minimal || use_vm)) {
         std::fprintf(stderr, "blobrun: --frozen-readout is the blob's learn_mode 1; this "
                              "engine has no readout mode\n");
         return 1;

@@ -21,13 +21,14 @@ enum class TaskKind {
     both_not_either, // two cues; one button when exactly one is on, the other otherwise
     gap,             // one cue blinks twice; answer whether the gap was short or long
     place,           // a small shape at one of several places; answer which shape
+    two_step,        // press the cue's button, then the other one; judged only at the end
     count,
 };
 
 constexpr int TASK_MAX_SINGLES = 32;
 constexpr int TASK_MAX_SHEET = 256;
 constexpr int TASK_MAX_NUMBERS = 4;
-constexpr int TASK_MAX_MOTORS = 16;
+constexpr int TASK_MAX_MOTORS = 32;
 constexpr int TASK_MAX_PATTERN = 64;
 constexpr int TASK_MAX_TRIAL = 16; // steps in one trial of a feature task
 
@@ -107,6 +108,9 @@ struct Task {
     uint64_t held_out = 0;    // place: one bit per place never rewarded
     bool scored = true;       // place: this trial is on a held-out place
 
+    // two-step: the first press of the trial (-1 none)
+    int first_move = -1;
+
     // window score, meaning depends on the kind (see task_window_score)
     int64_t tally[4] = {};
 };
@@ -155,3 +159,10 @@ TaskShape feature_shape(const Task& task);
 void feature_sense(const Task& task, TaskSense& sense);
 int feature_perfect_move(const Task& task);
 int feature_step(Task& task, const TaskStepIn& in);
+
+// two-step (task_two_step.cpp)
+void two_step_reset(Task& task);
+TaskShape two_step_shape(const Task& task);
+void two_step_sense(const Task& task, TaskSense& sense);
+int two_step_perfect_move(const Task& task);
+int two_step_step(Task& task, const TaskStepIn& in);
