@@ -84,6 +84,79 @@ Coin flips score about 0.44 (ties are no move), the scripted player 1.00.
   carrying a shape learned at some places to places it was never taught at. Trial: 2 steps;
   about a third of trials are scored.
 
+## The function battery
+
+Worlds where the right button is a fixed function of what was shown, cheap to run and
+graded in difficulty, so we can see exactly where a sheet stops (`scripts/functions.sh`,
+results in `docs/results-2026-11-25-function-battery.md`). Four task kinds, one trial shape:
+one blank step that parts it from the last trial, the steps that show the input, and an
+answer step with the ask line on. Only the press on the answer step counts; presses before
+it are ignored. The right button is good, any other bad, no move a miss. Score: right
+answers over trials. Everything is integer, so the same flags give the same csv.
+
+How inputs are drawn: uniformly, when that already gives every answer equally often
+(parity, for instance); otherwise an answer is drawn first, uniformly among the answers
+some input has, then an input with that answer, uniformly. So always pressing one button
+scores one over the number of answers, and that is the chance level the ladder uses. Coin
+flips score a little under it (ties are no move); the scripted player scores 1.00 on every
+member (checked on all 79, 20,000 steps).
+
+- **Points** (`--task points --fn F --fn-lines N`, N from 1 to 10). N cue lines, each on or
+  off, shown together with the ask line for one step. Trial: 2 steps. Two buttons (button 1
+  when F is true) for:
+  - `and` (all on), `or` (any on), `parity` (an odd number on), `majority` (more than half
+    on; half of an even N is not), `exactly` (exactly `--fn-k` on, default 1);
+  - `table`: a truth table drawn once per life from the task seed, any but the two
+    constant ones; `table-lin`: a random threshold unit (a weight of plus or minus 1 to 4 on
+    every line, the bar at the weighted sum of one random input; redrawn if constant), so
+    one threshold unit can always do it; `table-nonlin`: a random table that a perceptron
+    on the lines cannot get in 2,000 passes, so one threshold unit cannot (exact for
+    N up to 4; for larger N almost every table is like this anyway).
+  And with more buttons: `count`, how many lines are on (N + 1 buttons); `first`, the index
+  of the first line on (N buttons; all off is never shown). `points --fn parity
+  --fn-lines 2` is both-not-either exactly: the same lines in the same places, the same
+  draws, a byte-identical csv.
+- **Number** (`--task number --fn F --fn-lines L --fn-bands K`). x, a whole number from 0
+  to L - 1, lights one line of L (place code: one line per value). The lines sit on a sheet
+  8 wide in a snake (left to right, then right to left on the next row), so x and x + 1
+  are always neighbours; at 3x3 sensor groups only 5 fit a row, so the battery uses 2x2.
+  f is worked out at the centre of x's share of [0, 1), u = (2x + 1) / 2L, in units of
+  1/4096: `identity` u; `step` 0 below the middle, the top above (always 2 buttons);
+  `tent` up to the middle and back down; `sine` and `cosine` 0.5 + 0.5 sin or cos of one
+  full turn (a table of 128 values); `square` u squared. The answer is which of K equal
+  bands of [0, 1) f falls in, one button each. `--fn-hold H`: H values of x, drawn once per
+  life from the task seed, are never rewarded, and only trials on them are scored (as in
+  place). A held value lies inside a band (both neighbours taught and in the same band, so
+  filling in between taught values gives the right answer), and no two are side by side.
+  Trial: 2 steps. With place coding every taught x is its own line, so on taught values
+  this is a lookup a linear reader of the input lines can always do; the held-out values
+  are the real question.
+- **Two numbers** (`--task two-numbers --fn F --fn-lines L --fn-bands K`, L up to 32). x1
+  and x2 the same way, x1's rows of the sheet above x2's. `sum` (x1 + x2), `diff` (x1 - x2,
+  signed), `larger` (the larger of the two), `product`: the band of K over the result's
+  whole range. `compare`: button 0 if x1 is larger, 1 if x2 is; equal pairs are never
+  shown. Sum, difference and compare are a weighted sum of the input lines; product and
+  larger need lines to be combined.
+- **Past** (`--task past --fn F --fn-gap G`). Lines A, B and ask. Each item lights A or B
+  (a coin flip) for one step; items are G blank steps apart, so (G + 1) x ticks-per-step
+  ticks (20 x (G + 1) in the battery); the last item comes with the ask. `recall`: button
+  1 if the first of 2 items was B (holding one item); `same`: the last 2 items are the same
+  (exclusive-or in time); `majority` (more B than A) and `parity` (an odd number of B)
+  over `--fn-items` items (default 3, up to 4). Trial: 1 + items + (items - 1) G steps.
+
+The battery (`scripts/functions.py`, `members`) runs points with N = 2 to 8 (and, or at 2,
+4, 8; parity at 2, 3, 4, 5, 6, 8; majority, exactly-1 and both tables at 3, 4, 5, 6, 8;
+count at 2, 3, 4, 6, 8; first at 3, 4, 6, 8), identity at L = 8, 16, 32 and K = 2, 4, 8,
+the other one-number functions at L = 16 (step K = 2, the rest K = 4), the same with 3
+held-out values (identity also at K = 2), two numbers at L = 8 with K = 2 and 4 (compare
+with 2), and the past functions at gaps 0 and 2: 79 members. Each is scored three ways:
+(a) `blobprobe reader`, a ridge reader of every non-sensor neuron's spike count over the
+answer step of a frozen sheet as born, fitted on the first 60% of 3,000 trials, the ridge
+picked on the next 15%, scored on the last 25% (and on every held-out trial), beside the
+same reader on the input lines of every step of the trial; (b) the readout rule on a
+frozen sheet; (c) the minimal engine and table neurons with their own rules. A member is
+"got" at a level when its late score is at least halfway from chance to 1.0.
+
 ## Reach
 
 - **Readable.** `blobrun --reach`: `blobprobe carry`'s measure

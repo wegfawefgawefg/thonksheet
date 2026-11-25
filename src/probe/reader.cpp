@@ -61,6 +61,37 @@ static void standardize(const ReaderRows& r, std::vector<int>& keep, std::vector
     }
 }
 
+// dot products with several running sums, so the compiler can keep them in vector lanes
+static float dot_float(const float* a, const float* b, int n) {
+    float s[8] = {};
+    int i = 0;
+    for (; i + 8 <= n; i += 8) {
+        for (int k = 0; k < 8; k++) {
+            s[k] += a[i + k] * b[i + k];
+        }
+    }
+    float sum = ((s[0] + s[1]) + (s[2] + s[3])) + ((s[4] + s[5]) + (s[6] + s[7]));
+    for (; i < n; i++) {
+        sum += a[i] * b[i];
+    }
+    return sum;
+}
+
+static double dot_double(const double* a, const double* b, int n) {
+    double s[4] = {};
+    int i = 0;
+    for (; i + 4 <= n; i += 4) {
+        for (int k = 0; k < 4; k++) {
+            s[k] += a[i + k] * b[i + k];
+        }
+    }
+    double sum = (s[0] + s[1]) + (s[2] + s[3]);
+    for (; i < n; i++) {
+        sum += a[i] * b[i];
+    }
+    return sum;
+}
+
 // the kernel K = Z Z^T over every row, built a block of features at a time
 static std::vector<double> kernel(const ReaderRows& r, int& features) {
     std::vector<int> keep;
@@ -86,11 +117,7 @@ static std::vector<double> kernel(const ReaderRows& r, int& features) {
             const float* zi = &z[(size_t)i * bw];
             for (int j = 0; j <= i; j++) {
                 const float* zj = &z[(size_t)j * bw];
-                float s = 0.0f;
-                for (int c = 0; c < bw; c++) {
-                    s += zi[c] * zj[c];
-                }
-                k[(size_t)i * n + j] += s;
+                k[(size_t)i * n + j] += dot_float(zi, zj, bw);
             }
         }
     }
@@ -111,10 +138,7 @@ static bool solve(const std::vector<double>& a, int m, double ridge, const std::
     }
     for (int j = 0; j < m; j++) {
         double* lj = &l[(size_t)j * m];
-        double diag = lj[j];
-        for (int c = 0; c < j; c++) {
-            diag -= lj[c] * lj[c];
-        }
+        double diag = lj[j] - dot_double(lj, lj, j);
         if (diag <= 0) {
             return false;
         }
@@ -122,11 +146,7 @@ static bool solve(const std::vector<double>& a, int m, double ridge, const std::
         lj[j] = diag;
         for (int i = j + 1; i < m; i++) {
             double* li = &l[(size_t)i * m];
-            double s = li[j];
-            for (int c = 0; c < j; c++) {
-                s -= li[c] * lj[c];
-            }
-            li[j] = s / diag;
+            li[j] = (li[j] - dot_double(li, lj, j)) / diag;
         }
     }
     x.assign((size_t)m * cols, 0.0);
@@ -175,8 +195,82 @@ static double accuracy(const ReaderRows& r, const std::vector<double>& k,
     return rows.empty() ? -1.0 : (double)right / (double)rows.size();
 }
 
+static int best_class(const double* score, int c) {
+    int best = 0;
+    for (int q = 1; q < c; q++) {
+        best = score[q] > score[best] ? q : best;
+    }
+    return best;
+}
+
+// fewer features than fit rows (the input lines): solve over the features instead
+static void fit_primal(const ReaderRows& r, const std::vector<int>& keep,
+                       const std::vector<float>& mean, const std::vector<float>& scale,
+                       double& test_acc, double& held_acc) {
+    int f = (int)keep.size(), c = r.classes, m = (int)r.fit.size();
+    std::vector<double> z((size_t)r.n * f);
+    for (int i = 0; i < r.n; i++) {
+        for (int j = 0; j < f; j++) {
+            z[(size_t)i * f + j] =
+                ((double)r.x[(size_t)i * r.d + keep[(size_t)j]] - mean[(size_t)j]) *
+                scale[(size_t)j];
+        }
+    }
+    std::vector<double> y_mean((size_t)c, 0.0), a((size_t)f * f, 0.0), b((size_t)f * c, 0.0);
+    for (int i : r.fit) {
+        y_mean[(size_t)r.label[(size_t)i]] += 1.0 / m;
+    }
+    for (int i : r.fit) {
+        const double* zi = &z[(size_t)i * f];
+        for (int p = 0; p < f; p++) {
+            for (int q = 0; q < f; q++) {
+                a[(size_t)p * f + q] += zi[p] * zi[q];
+            }
+            for (int k = 0; k < c; k++) {
+                b[(size_t)p * c + k] +=
+                    zi[p] * ((r.label[(size_t)i] == k ? 1.0 : 0.0) - y_mean[(size_t)k]);
+            }
+        }
+    }
+    auto accuracy = [&](const std::vector<double>& w, const std::vector<int>& rows) {
+        int right = 0;
+        std::vector<double> score((size_t)c);
+        for (int row : rows) {
+            for (int k = 0; k < c; k++) {
+                score[(size_t)k] = y_mean[(size_t)k];
+                for (int p = 0; p < f; p++) {
+                    score[(size_t)k] += z[(size_t)row * f + p] * w[(size_t)p * c + k];
+                }
+            }
+            right += best_class(score.data(), c) == r.label[(size_t)row];
+        }
+        return rows.empty() ? -1.0 : (double)right / (double)rows.size();
+    };
+    double best = -1;
+    test_acc = held_acc = -1;
+    std::vector<double> w;
+    for (int s = 0; s < READER_RIDGES; s++) {
+        if (!solve(a, f, ridge_scale[s] * m, b, c, w)) {
+            continue;
+        }
+        double val = accuracy(w, r.pick);
+        if (val > best) {
+            best = val;
+            test_acc = accuracy(w, r.test);
+            held_acc = accuracy(w, r.held_rows);
+        }
+    }
+}
+
 // fit on the fit rows, pick the ridge on the pick rows; share right on test and held rows
 static void fit_rows(const ReaderRows& r, double& test_acc, double& held_acc) {
+    std::vector<int> keep;
+    std::vector<float> mean, scale;
+    standardize(r, keep, mean, scale);
+    if (keep.size() < r.fit.size()) {
+        fit_primal(r, keep, mean, scale, test_acc, held_acc);
+        return;
+    }
     int features = 0;
     std::vector<double> k = kernel(r, features);
     int m = (int)r.fit.size(), c = r.classes;
