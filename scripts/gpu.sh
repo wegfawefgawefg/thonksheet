@@ -7,6 +7,8 @@
 #   scripts/gpu.sh check            the shader against the CPU engine, tick by tick: nine cases
 #                                   of the Echo family in the shader and nine of host worlds, on
 #                                   lavapipe (software Vulkan) first, then on the GPU
+#   scripts/gpu.sh sweep [memory]   every task kind as a host world, checked every step against
+#                                   the CPU engine (lavapipe, then the GPU)
 #   scripts/gpu.sh check host       only the host-world cases (check shader: only the others);
 #                                   host worlds include the evidence counters, far slots and
 #                                   delays, and the memory engine (--engine memory)
@@ -269,6 +271,30 @@ speed-host)
     row "memory catch 4x4" 2048 --engine memory --task catch --catch-size 4 4
     echo "load: $(cut -d' ' -f1-3 /proc/loadavg)"
     kernel_log "60 minutes ago"
+    ;;
+sweep)
+    # every task kind (not mnist) as a host world, one life and its twin, checked every step
+    # against the CPU engine, at the largest group side that fits of 3, 2, 1. sweep memory: the
+    # memory engine. lavapipe first, then the GPU
+    engine=()
+    [ "${2:-}" = memory ] && engine=(--engine memory)
+    tasks=$(sed -n '/^static const char\* const task_names/,/^};/p' src/world/task.cpp |
+        grep -o '"[a-z0-9-]*"' | tr -d '"' | grep -v '^mnist$')
+    for device in lavapipe "gpu --validate"; do
+        echo "$device:"
+        for t in $tasks; do
+            for side in 3 2 1; do
+                result=$($device --check --host --twin --lives 1 --seed-from 5 --task $t \
+                    --ticks 20 --sensor-side $side --motor-side 3 --window 50 --steps 150 \
+                    --rest-ticks 1 --out out/gpu/sweep.csv "${engine[@]}" 2>&1 || true)
+                echo "$result" | grep -q "does not fit\|do not fit\|lands off" && continue
+                printf '%-16s side %d  %s\n' $t $side \
+                    "$(echo "$result" | grep -E "^check|blobgpu:|vulkan:" | head -1)"
+                break
+            done
+        done
+    done
+    kernel_log
     ;;
 big)
     gpu --lives 16384 --twin --task echo --k 2 "${base[@]}" --steps 40000 --window 1000 \
