@@ -413,7 +413,7 @@ cap, 14-16% of thresholds at the cap. The gate changes nothing inside.
 | exclusive-or, gate | 0.799 | 32.9 | 0 | 0.8% | 63.0 |
 | exclusive-or, tags + gate | 0.966 | 33.4 | 0 | 1.8% | 63.0 |
 | echo, 3 tiles, tags | 0.881 | 32.9 | 0 | 0.8% | 62.5 |
-| echo, 5 tiles, tags | <!-- E5 --> | | | | |
+| echo, 5 tiles, tags | 0.789 | 32.7 | 0 | 0.5% | 62.9 |
 | echo, 3 tiles, frozen (replay doc) | 0.863 | 32.8 | 0 | 0.6% | |
 | echo, 3 tiles, walk depth 2 (replay doc) | 0.805 | **112** | **12.9%** | **30.8%** | |
 
