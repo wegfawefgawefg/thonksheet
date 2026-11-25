@@ -4,6 +4,7 @@
 #   scripts/watch.sh                 echo with 2 cues
 #   scripts/watch.sh echo --k 4
 #   scripts/watch.sh cartpole
+#   scripts/watch.sh inv-rotation --inv-motion 50     the invariance battery (docs/curriculum.md)
 # Agents must not run this: it opens a window. Use --capture or scripts/offscreen.sh.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -22,5 +23,10 @@ if [ "$task" = cartpole ]; then
     side=2
     extra="--cart-reward lean --number-code place"
 fi
+# the invariance battery's pictures and pitch need one sensor cell a line (16x12 bitmap)
+case "$task" in
+inv-shift | inv-tempo) ;;
+inv-*) side=1 ;;
+esac
 exec ./build/blobview --task "$task" --ticks 20 --sensor-side "$side" --motor-side 3 --window 50 \
     --slow 400 $extra "$@"

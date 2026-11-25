@@ -10,6 +10,9 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
 - `world/task_reflex.cpp`: echo, shuffled echo, delayed echo, go/no-go, beat.
 - `world/task_sequence.cpp`, `world/task_control.cpp` (catch, cartpole).
 - `world/task_feature.cpp`: order, both-not-either, gap, place (features nobody designed in).
+- `world/task_invariance.hpp/.cpp`, `world/task_invariance_draw.cpp`: the invariance
+  battery (one task kind, `--task inv-<kind>`), its moving stretches, its pictures, tunes
+  and 3D objects. `world/plug_map.cpp`: `--bitmap-map logpolar`.
 - `world/standin.hpp/.cpp`: a Blob shell with only the arrays the plug touches, and a fake
   tick (coin-flip motors, or the right motor group firing). Needs no core.
 - `run/main.cpp`: the driver calls (birth, tick, reward, death; declared in `run/drive.hpp`)
@@ -19,6 +22,8 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
 - `run/life_measures.cpp`: `--reach` and `--speed`.
 - `run/life_end.cpp`: room and aliveness at the end of a life.
 - `probe/rhythm_find.hpp`, `probe/carry_measure.hpp`: shared with `blobprobe`.
+- `probe/invariance.cpp`, `probe/invariance_show.cpp`, `probe/linear_split.cpp`:
+  `blobprobe invariance`, level (a) of the battery, and `--show 1`, its pictures as text.
 
 ## The plug
 
@@ -110,6 +115,20 @@ that fires the right group every tick and predicts its input exactly.
 | both-not-either | A, B, ask; 2 buttons | right / trials | 0.45 | 1.00 |
 | gap 1 or 3 | cue, ask; 2 buttons | right / trials | 0.44 | 1.00 |
 | place 4x4, 3 held out | ask, 4x4 sheet; 2 buttons | right / held-out trials | 0.44 | 1.00 |
+| inv-position | ask, 16x12 sheet at side 1; 2 buttons | right / held-out trials | 0.48 | 1.00 |
+| inv-scale | | | 0.47 | 1.00 |
+| inv-rotation | | | 0.47 | 1.00 |
+| inv-bright | | | 0.48 | 1.00 |
+| inv-clutter | | | 0.48 | 1.00 |
+| inv-mixed | | | 0.47 | 1.00 |
+| inv-view | | | 0.47 | 1.00 |
+| inv-shift | A, B, C, ask at side 3; 2 buttons | | 0.48 | 1.00 |
+| inv-tempo | | | 0.49 | 1.00 |
+| inv-pitch | ask, 16x8 sheet at side 1; 2 buttons | | 0.50 | 1.00 |
+
+The battery rows: 20,000 steps, window 200, `--ticks 20`, mean over all windows; the
+rewarded versions score the same (coin 0.45-0.48, perfect 1.00). Definitions:
+`docs/curriculum.md`, "Invariance".
 
 The four new rows were checked with the core linked (coin and perfect are the stand-in
 either way), mean over all 100 windows. Definitions: `docs/curriculum.md`, "Features nobody
@@ -135,6 +154,18 @@ nice -n 19 ./build/blobrun --task beat --period 4 --steps 40000
 nice -n 19 ./build/blobrun --task sequence --seq-lines 8 --seq-length 4 --steps 20000
 nice -n 19 ./build/blobrun --task catch --steps 40000
 nice -n 19 ./build/blobrun --task cartpole --steps 100000 --window 1000
+```
+
+The invariance battery (`scripts/invariance.sh` runs it at three levels):
+
+```
+nice -n 19 ./build/blobrun --task inv-scale --sensor-side 1 --ticks 20       picture kinds
+nice -n 19 ./build/blobrun --task inv-rotation --sensor-side 1 --inv-motion 50    with motion
+nice -n 19 ./build/blobrun --task inv-tempo --sensor-side 3 --ticks 20        time kinds
+nice -n 19 ./build/blobrun --task inv-position --sensor-side 1 --inv-hold r6  6 places held
+nice -n 19 ./build/blobrun --task inv-scale --sensor-side 1 --bitmap-map logpolar
+nice -n 19 ./build/blobprobe invariance --task inv-view --sensor-side 1 --ticks 20   level (a)
+scripts/invariance.sh show rotation                                  the pictures as text
 ```
 
 New tasks and settings:
@@ -264,6 +295,28 @@ linking against a throwaway stub core; it builds and runs.
   its own; 8x8 needs `--sensor-side 1`. The plug refuses cleanly when lines do not fit.
 - Score per window is 0 when a window holds no try (a window shorter than one delayed-echo
   trial). Keep windows well above the trial length.
+
+## The invariance battery (2026-11-25)
+
+- One `TaskKind::invariance`; which change it is lives in `TaskSettings::inv` (so the
+  other agents adding task kinds touch the enum once). `--task inv-<kind>` sets both.
+  Its flags are parsed in `invariance_flag` (task_invariance.cpp), one hook in
+  run_flags.cpp. `task_name` says "invariance", so the default csv is
+  `out/invariance-s<seed>.csv` for every kind; give `--out`.
+- Held-out trials are tally 0/1 (the window score), rewarded ones 2/3.
+  `task_taught_score` reads 2/3 for place and the battery; `life.cpp` keeps it per window
+  and the summary gets `taught_early` and `taught_late` (place's were never printed).
+- The time kinds change their lines inside a step. `ticker_before_tick` now senses on
+  every tick when `inv_by_tick` says so, after telling the task the tick
+  (`inv_set_tick`); every other task still senses once a step (csvs byte-identical).
+- `--bitmap-map logpolar` (`plug_map.cpp`) is the only plug change: at attach the task's
+  bitmap size is swapped for 16 x 8 and a table says which task pixels each mapped line
+  ORs; `plug_set_lines` fills the mapped lines from it. Off by default; any task with a
+  bitmap can use it (catch too, though there it means little).
+- `blobprobe invariance` drives any engine (`--engine minimal`, `--table`); blobprobe now
+  links the minimal and table libraries (CMakeLists, two blocks).
+- Moving stretches count as steps of the life: with `--inv-motion 50` a 40,000-step life
+  has half as many trials.
 
 ## Reading a scorecard run with a readout rule in its flags (2026-11-25)
 
