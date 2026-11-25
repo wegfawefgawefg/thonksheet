@@ -119,6 +119,7 @@ static const GenomeField fields[] = {
     {"veto_percent", &Genome::veto_percent},
     {"coincide_percent", &Genome::coincide_percent},
     {"tile_winners", &Genome::tile_winners},
+    {"syn_sensors", &Genome::syn_sensors},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

@@ -277,6 +277,10 @@ void dynamics_sent(Blob& blob, int next) {
         for (int age = 1; age <= g.syn_warm_ticks; age++) {
             warmed |= blob.spikes[(next - age) & (HISTORY - 1)][t];
         }
+        // syn_sensors 0: the world's lines send as they are
+        uint64_t own = g.syn_sensors ? ~0ull : ~blob.sensor[t];
+        tired &= own;
+        warmed &= own;
         uint64_t s = now[t];
         if (tired) {
             s &= ~(tired & ~sparse_word(blob.rng, g.syn_tire_keep_shift));

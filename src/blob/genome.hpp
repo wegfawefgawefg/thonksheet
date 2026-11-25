@@ -149,6 +149,7 @@ struct Genome {
                                  //     different delays both reach branch_threshold
     int tile_winners = 0;        // 75: at most this many neurons of a tile keep their spike,
                                  //     the ones furthest over threshold
+    int syn_sensors = 1;         // 66, 67: 1 sensor cells' spikes tire and warm too; 0 not
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

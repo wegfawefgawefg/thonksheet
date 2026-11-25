@@ -40,3 +40,8 @@ winners 2: --g.tile_winners 2
 winners 4: --g.tile_winners 4
 winners 8: --g.tile_winners 8
 winners 16: --g.tile_winners 16
+syn tire 4 ticks, sheet only: --g.syn_tire_ticks 4 --g.syn_tire_keep_shift 1 --g.syn_sensors 0
+syn tire 8 ticks, sheet only: --g.syn_tire_ticks 8 --g.syn_tire_keep_shift 1 --g.syn_sensors 0
+syn tire 4 ticks, keep 1/8, sheet only: --g.syn_tire_ticks 4 --g.syn_tire_keep_shift 3 --g.syn_sensors 0
+syn warm 4 ticks, sheet only: --g.syn_warm_ticks 4 --g.syn_sensors 0
+syn warm 8 ticks, sheet only: --g.syn_warm_ticks 8 --g.syn_sensors 0
