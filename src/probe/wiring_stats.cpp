@@ -13,10 +13,13 @@
 //   fartiles  distinct far tiles per tile with far links (topography makes this small)
 //   cross     local connections across the middle row, and far links each way (two sheets)
 //   alive: spikes per 1,024 per tick against the target, and the shares silent and stuck
+// --age N first lives N ticks with cue A or B (20-tick blocks) on tile (1, 1), as the
+// feature and carry probes do, so learning on shows what a life does to the wiring.
 
 #include "blob/birth_shape.hpp"
 #include "blob/blob.hpp"
 #include "blob/weight_levels.hpp"
+#include "probe/carry_measure.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -33,8 +36,22 @@ int probe_wiring(int argc, char** argv) {
     int ticks = int_arg(argc, argv, "--ticks", 20000);
     int settle = int_arg(argc, argv, "--settle", 5000);
     const char* label = text_arg(argc, argv, "--label", "run");
+    int age = int_arg(argc, argv, "--age", 0);
     Blob* blob = blob_birth(genome, seed);
     Blob& b = *blob;
+    uint64_t state = 0x2545F4914F6CDD1Dull ^ seed;
+    for (int i = 0; i < age; i++) {
+        if (i % 20 == 0) {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            carry_set_cue(b, b.tiles_w + 1, (int)(state >> 40) & 1);
+        }
+        blob_tick(b);
+    }
+    if (age > 0) {
+        blob_detach_all(b);
+    }
     int neurons = b.neuron_count, half = b.tiles_h / 2;
 
     std::vector<int> in(neurons, 0), out(neurons, 0);
