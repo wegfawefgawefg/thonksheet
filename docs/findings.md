@@ -33,6 +33,20 @@ nothing lost after being unplugged (1.00 before, 1.00 after); Echo five tiles aw
 catch 0.32 where chance is 0.25. Still failing: delayed echo (0.55), beat, gap (0.52),
 cartpole (below a coin), and a shape in a place it was never rewarded (0.25, below chance).
 
+**Where we stand against ordinary networks (2026-11-25).** A plain recurrent network (a
+GRU of 128 units trained by backprop through its last 8 steps), with one fixed setting,
+behind the same plug and told only good and bad, learns every world any of our engines
+learns, at the same or a higher score, and several that none of ours learn: sixteen cues
+(1.00 against our 0.31), delayed echo, beat, order and gap (all 1.00), catch (0.72 against
+0.32). Our only lead is speed on plain association (1,000 steps against 2,000 to 3,000).
+So nothing here beats standard methods yet, and the bar for "learns it" on these worlds is
+1.00, not "above chance". What the reference cannot do is as useful: a shape in a place
+never rewarded (0.16, below chance, same as ours), a hold longer than its window (fails at
+11 steps), and cartpole from good and bad alone (worse than a coin; shown the right press
+it balances for 1,000 steps). Those three are not our private walls. They are where a
+fixed ordinary network also stops, and where it would normally be redesigned per task.
+docs/results-2026-11-25-fixed-net-reference.md
+
 ## Principles that hold so far
 
 1. **A neuron must pay for what it keeps.** [solid] A fixed budget of connections, where
@@ -117,7 +131,11 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
     where the cells sit.
 17. **Do not strengthen your own answer on good.** [likely] The rule above never does, and
     it has no locked lives: shuffled Echo is 1.00 on every seed, crossed ones included,
-    where the old rule averaged 0.56.
+    where the old rule averaged 0.56. *The literature says this is too strong* (Baldassi
+    and others 2007, binary synapses with hidden states like ours): never on a comfortable
+    good, but on a good that was barely won, deepen the hidden evidence of what helped.
+    Without that case learning time grows exponentially with size; with it, about twice as
+    many patterns are held. Being tested (the tags-and-margin run).
 
 18. **Size does not break it, so far.** [hint] Echo scores the same with the sheet grown 16
     times around the same task (minimal engine 0.94, 0.93, 0.92 at 4,096, 16,384 and 65,536
@@ -148,6 +166,34 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
     as well while they are on. Nothing found by tuning holds 150 ticks. So one region to
     ring and one to mix, and a real mechanism for anything longer.
 
+23. **Where inhibition reaches is a lever; tidy structure is not.** [hint: four seeds, sheet
+    as born, ideal reader] Inhibition kept inside its own tile nearly triples how readable
+    a gap is (1.60 to 4.62) and lifts exclusive-or (1.76 to 2.84), at a cost to telling
+    cues apart and to order. Links that go both ways help a little everywhere. Layers
+    inside a tile, finer locality, fewer neighbour slots, hubs and topographic far links
+    make the sheet poorer or change nothing. A second sheet fed by the first, and a gentle
+    flow in one direction, add reach only.
+24. **Wiring laid down at birth does not last.** [hint: one seed] With learning on, growth
+    and pruning took mirror wiring from 0.80 reciprocal back to 0.15 within 100,000 ticks.
+    A wiring idea has to live in the growth rule to survive a life.
+
+## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
+
+- Finding 14's hidden counter is a known device (permanence in HTM; hidden states in binary
+  synapses), and the best number of hidden states is small. Our 6 bits fits.
+- Finding 15's "which action was taken" bit is what the attention-gated rules (AGREL,
+  AuGMEnT, BrainProp) send back from the chosen action to tag the neurons that fed it. It
+  is the most direct known route from our readout to the inside. Being tested.
+- Finding 13 has a stronger form: reward must be centred per situation, which takes a
+  critic, not one running average. An actor told only good and bad failed cartpole in 1983
+  too; it took a critic. Being tested.
+- Finding 12 stands (perturbing single neurons scales badly), with one open door:
+  perturbing connections, or every unit at once by its own code (idea 138).
+- Finding 1's budget has to act fast, and a trained readout wants a bigger budget than the
+  sheet (fits finding 16).
+- A warning for any holding region (Braitenberg): activity held while co-activity wiring
+  runs ties the held units together and loses their order.
+
 ## Walls
 
 - **Reading a thin signal: broken at the output, standing inside.** An error rule moving
@@ -169,10 +215,14 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
   Any rule graded against its own average also freezes once every reward equals the
   average: an all-wrong life stops moving.
 - **A new place.** A shape learned in some places is answered wrongly in a place never
-  rewarded (0.25 where chance is 0.49). Nothing in the sheet shares what one patch learned
+  rewarded (0.25 where chance is 0.49). The reference networks fail it the same way (0.16),
+  so the wall is real and general, though the world itself needs a cell-by-cell check
+  (everything scores below chance, which smells of overlapping shapes). Nothing in the sheet shares what one patch learned
   with another. This is the missing prior the owner started from on day one (a convolution
   shares; this sheet does not).
-- **Acting in a world.** Nothing learns catch or cartpole. On cartpole learning makes the
-  full engine worse than a coin.
+- **Acting in a world.** Nothing of ours learns catch or cartpole. On cartpole learning
+  makes the full engine worse than a coin, and the reference networks too: the "lean"
+  reward grades the press before the one it follows (a fault in the world, being fixed),
+  and the sparse reward needs credit carried 25 steps back. The GRU learns catch (0.72).
 - **More than four things.** Eight cues are now learned (0.84) by the new readout on the
   full engine. Sixteen is untested with it.

@@ -17,8 +17,9 @@ static const char* usage =
     "  --out PATH         csv path (default out/<task>-s<seed>.csv)\n"
     "  --no-baselines     skip the learning-off and coin-flip runs\n"
     "  --show-plug        print where each line sits on the sheet\n"
-    "  --engine NAME      blob (default), minimal or memory; --m.name value sets a minimal\n"
-    "                     number, --y.name value a memory number\n"
+    "  --engine NAME      blob (default), minimal, memory, mlp or gru; --m.name value sets\n"
+    "                     a minimal number, --y.name a memory number, --n.name a\n"
+    "                     reference network number (mlp, gru: the fixed reference)\n"
     "plug:\n"
     "  --sensor-side N    a sensor line drives N x N neurons (default 2)\n"
     "  --motor-side N     a motor line is read from N x N neurons (default 2)\n"
@@ -115,9 +116,10 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
         }
         const char* value = argv[++i];
         if (std::strncmp(flag, "--g.", 4) == 0 || std::strncmp(flag, "--m.", 4) == 0 ||
-            std::strncmp(flag, "--t.", 4) == 0 || std::strncmp(flag, "--y.", 4) == 0) {
-            continue; // a genome number: apply_genome_args, apply_minimal_args, table_genome_args,
-                      // apply_memory_args
+            std::strncmp(flag, "--t.", 4) == 0 || std::strncmp(flag, "--n.", 4) == 0 ||
+            std::strncmp(flag, "--y.", 4) == 0) {
+            continue; // a genome number: apply_genome_args, apply_minimal_args,
+                      // table_genome_args, apply_nn_args, apply_memory_args
         }
         if (std::strcmp(flag, "--engine") == 0) {
             flags.engine = value;

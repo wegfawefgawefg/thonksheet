@@ -66,6 +66,16 @@ alone: a design may pass tier 4 before tier 3.
 | 11 | real data | MNIST digits; spoken digits or tones; characters of text | being built (MNIST first) |
 | 12 | the long game | a maze; snake on a big board; several tasks interleaved for a whole life | hole |
 
+### The fixed reference
+
+One ordinary network setting run on the same rows (`scripts/reference.sh`, idea 117): a
+GRU of 128 units, backprop through 8 steps, told only good and bad. It is the bar for
+"learnable": tier 1 all 1.00 (16 cues included), exclusive-or 0.97, tier 4's delayed echo,
+beat, order and gap all 1.00, catch 0.72, tier 8 1.00. It fails the place never rewarded
+(0.16), holds longer than 8 steps, and cartpole. A world the reference fails is either
+truly hard or badly made; cartpole's "lean" reward and the place world are marked suspect
+until checked.
+
 ## Milestones worth naming
 
 - **Every row of tiers 1 to 4 on one set of rules.** Not yet: nothing holds a cue past 20
@@ -84,5 +94,5 @@ alone: a design may pass tier 4 before tier 3.
 
 Kinds of task with no world yet: learning with no teacher (tier 10); the long game (tier
 12); output that is a whole pattern or an amount instead of a button; being shown the answer
-(imitation); damage to the sheet. Each needs a world before any design can be said to work
+(imitation); damage to the sheet; a changed rule on the *same* lines and buttons (today's second task uses new ones, so nothing interferes). Each needs a world before any design can be said to work
 on "any task".
