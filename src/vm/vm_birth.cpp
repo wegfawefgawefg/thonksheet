@@ -209,6 +209,7 @@ Blob* vm_birth(const Genome& genome, const VmGenome& vg_in, uint64_t seed) {
     v->match_x = (uint16_t*)alloc_lines(sizeof(uint16_t) * E);
     v->x_size = (uint16_t*)alloc_lines(sizeof(uint16_t) * E);
     v->x_last = words((size_t)v->x_words);
+    v->x_event = words((size_t)v->x_words);
     v->winners = (int32_t*)alloc_lines(sizeof(int32_t) * (size_t)vg.active);
     v->fresh = (uint8_t*)alloc_lines((size_t)vg.active);
     v->vote = (int16_t*)alloc_lines(sizeof(int16_t) * (size_t)(v->motor_cells + 1));
@@ -242,7 +243,7 @@ void vm_free(Blob* blob) {
     void* own[] = {v->sensor_cell, v->motor_cell, v->free_cell, v->x_code, v->state,
                    v->addr,        v->set,        v->clr,       v->ev,     v->last_fired,
                    v->match,       v->winners,    v->vote,      v->delta,  v->match_x,
-                   v->x_size,      v->x_last,     v->fresh};
+                   v->x_size,      v->x_last,     v->fresh,     v->x_event};
     for (void* p : own) {
         std::free(p);
     }
@@ -299,6 +300,7 @@ static const VmField fields[] = {
     {"event_clr_shift", &VmGenome::event_clr_shift},
     {"event_m", &VmGenome::event_m},
     {"event_route", &VmGenome::event_route},
+    {"event_settle", &VmGenome::event_settle},
     {"m_slide_words", &VmGenome::m_slide_words},
     {"refract", &VmGenome::refract},
 };

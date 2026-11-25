@@ -209,13 +209,36 @@ static bool context_matches(const VmBlob& v, int e) {
 void vm_events(VmBlob& v) {
     const uint64_t* x = vm_x(v);
     int changed = 0, on = 0;
+    int both_last = 0, any_last = 0, both_event = 0, any_event = 0;
     for (int w = 0; w < v.x_words; w++) {
         changed += __builtin_popcountll(x[w] ^ v.x_last[w]);
         on += __builtin_popcountll(x[w]);
+        both_last += __builtin_popcountll(x[w] & v.x_last[w]);
+        any_last += __builtin_popcountll(x[w] | v.x_last[w]);
+        both_event += __builtin_popcountll(x[w] & v.x_event[w]);
+        any_event += __builtin_popcountll(x[w] | v.x_event[w]);
         v.x_last[w] = x[w];
     }
     v.event_entry = -1;
-    if (!v.vg.event_on || changed == 0 || on < v.vg.event_min_bits) {
+    if (v.vg.event_settle) {
+        // an event is an input that has settled (3/4 the same as on the tick before) and is
+        // not the one the last event was (under 3/4 the same). an input in flux, or too
+        // small, clears the last event, so the same input coming back is an event again
+        bool settled = on >= v.vg.event_min_bits && 4 * both_last >= 3 * any_last;
+        if (!settled) {
+            if (on < v.vg.event_min_bits || 4 * both_last < 3 * any_last) {
+                std::memset(v.x_event, 0, sizeof(uint64_t) * (size_t)v.x_words);
+            }
+            return;
+        }
+        if (any_event > 0 && 4 * both_event >= 3 * any_event) {
+            return;
+        }
+        std::memcpy(v.x_event, x, sizeof(uint64_t) * (size_t)v.x_words);
+    } else if (!v.vg.event_on || changed == 0 || on < v.vg.event_min_bits) {
+        return;
+    }
+    if (!v.vg.event_on) {
         return;
     }
     // event_route: the best detector anywhere in the bank; else only among the winners

@@ -77,6 +77,10 @@ struct VmGenome {
     // 1: when the input changes, its detector makes its mark whether or not it is among the
     // winners (answer entries for the same input out-match it). 0: only when it wins
     int event_route = 1;
+    // 1: an event waits for the input to settle (two ticks alike by 3/4) and must differ by
+    // more than a quarter from the last event, so input noise is not a stream of events.
+    // 0: any change of a single X bit is an event
+    int event_settle = 1;
     // the last this-many words of M form a ring that slides one bit along every tick: a
     // permutation, so a mark keeps all its bits and its place tells how long ago it was made
     int m_slide_words = 0;
@@ -116,6 +120,7 @@ struct VmBlob {
     uint16_t* match_x = nullptr;    // per entry, this tick: the X part alone
     uint16_t* x_size = nullptr;     // per entry: bits in the X part of its address
     uint64_t* x_last = nullptr;     // X on the previous tick
+    uint64_t* x_event = nullptr;    // X at the last event (event_settle)
     int32_t* winners = nullptr;     // the active entries this tick, vg.active
     uint8_t* fresh = nullptr;       // per winner: 1 if it did not fire on the tick before
     int16_t* vote = nullptr;        // per motor cell
