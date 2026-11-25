@@ -121,6 +121,7 @@ static bool create_device(GpuContext& g) {
     v12.shaderSharedInt64Atomics = VK_TRUE;
     VkPhysicalDeviceVulkan13Features v13{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
     v13.maintenance4 = VK_TRUE; // the workgroup size is a specialization constant
+    v13.subgroupSizeControl = VK_TRUE;
     v12.pNext = &v13;
     VkPhysicalDeviceFeatures2 features{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
     features.pNext = &v12;

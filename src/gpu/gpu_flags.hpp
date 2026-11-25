@@ -21,12 +21,14 @@ struct GpuFlags {
     bool validate = false;  // Vulkan validation layers
     GpuDevice device = GpuDevice::gpu;
     int workgroup = 256;  // threads per life
+    int wave = 0;         // subgroup size to ask for, 0 the driver's
     int dispatch_ms = 50; // aim for submits about this long
     int max_ticks = 4096; // never more ticks than this in one dispatch
     int check_ticks = 16; // ticks per dispatch while checking
     std::string out;      // one row per life
     std::string windows;  // one row per life per window
     std::string settings; // csv of settings in
+    std::string shader;   // the .spv to run; empty is the built one
     RunFlags run;         // the task and plug, as blobrun reads them
 };
 

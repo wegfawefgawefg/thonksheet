@@ -21,9 +21,11 @@ static const char* usage =
     "  --validate         Vulkan validation layers on\n"
     "  --check            run the CPU engine alongside, compare every tick (small batches)\n"
     "  --workgroup N      threads per life (default 256)\n"
+    "  --wave N           ask for subgroups of N lanes (32 or 64 on the GPU; default: driver)\n"
     "  --dispatch-ms N    aim for submits about N ms long (default 50)\n"
     "  --max-ticks N      ticks per dispatch at most (default 4096)\n"
     "  --check-ticks N    ticks per dispatch while checking (default 16, at most 31)\n"
+    "  --shader PATH      another build of minimal_life.comp (.spv), for speed experiments\n"
     "blobrun flags: --task, --k, --delay, --steps, --ticks, --window, --edge, --sensor-side,\n"
     "  --motor-side, --reward-ticks, --rest-ticks, --cue-offset, --g.name V, --m.name V\n"
     "tasks on the GPU: echo, shuffled-echo, delayed-echo, both-not-either\n";
@@ -51,8 +53,9 @@ bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, Minimal
         }
         bool mine = is(a, "--lives") || is(a, "--seed-from") || is(a, "--tiles") ||
                     is(a, "--settings") || is(a, "--out") || is(a, "--windows") ||
-                    is(a, "--device") || is(a, "--workgroup") || is(a, "--dispatch-ms") ||
-                    is(a, "--max-ticks") || is(a, "--check-ticks");
+                    is(a, "--device") || is(a, "--workgroup") || is(a, "--wave") ||
+                    is(a, "--dispatch-ms") || is(a, "--max-ticks") || is(a, "--check-ticks") ||
+                    is(a, "--shader");
         if (!mine) {
             rest.push_back(argv[i]);
             continue;
@@ -64,6 +67,8 @@ bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, Minimal
         i++;
         if (is(a, "--settings")) {
             f.settings = v;
+        } else if (is(a, "--shader")) {
+            f.shader = v;
         } else if (is(a, "--out")) {
             f.out = v;
         } else if (is(a, "--windows")) {
@@ -86,6 +91,8 @@ bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, Minimal
                 f.tiles = (int)n;
             } else if (is(a, "--workgroup")) {
                 f.workgroup = (int)n;
+            } else if (is(a, "--wave")) {
+                f.wave = (int)n;
             } else if (is(a, "--dispatch-ms")) {
                 f.dispatch_ms = (int)n;
             } else if (is(a, "--max-ticks")) {

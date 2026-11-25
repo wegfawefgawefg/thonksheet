@@ -44,6 +44,7 @@ bool gpu_run_open(GpuContext& g, GpuBatch& b, const GpuFlags& f,
         return false;
     }
     w.shape.workgroup = f.workgroup;
+    w.shape.wave = f.wave;
     return gpu_batch_open(g, b, w.shape, w.params, w.words, spv);
 }
 

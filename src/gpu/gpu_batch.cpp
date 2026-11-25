@@ -89,6 +89,10 @@ static bool make_pipeline(GpuContext& g, GpuBatch& b, const char* spv) {
     info.stage.module = module;
     info.stage.pName = "main";
     info.stage.pSpecializationInfo = &spec;
+    VkPipelineShaderStageRequiredSubgroupSizeCreateInfo wave{
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO};
+    wave.requiredSubgroupSize = (uint32_t)b.shape.wave;
+    info.stage.pNext = b.shape.wave > 0 ? &wave : nullptr;
     info.layout = b.layout;
     bool ok = gpu_ok(
         g, vkCreateComputePipelines(g.device, VK_NULL_HANDLE, 1, &info, nullptr, &b.pipeline),

@@ -17,6 +17,7 @@ struct GpuShape {
     int stride = 72;     // ring map stride in words (the CPU engine's)
     int max_windows = 0; // score windows per life
     int workgroup = 256; // threads per life
+    int wave = 0;        // subgroup size asked of the driver (0: its own choice)
 };
 
 // what one life holds on the device, host side, ready to upload

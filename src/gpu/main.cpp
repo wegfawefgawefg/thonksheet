@@ -46,8 +46,9 @@ int main(int argc, char** argv) {
         GpuContext g;
         GpuBatch b;
         std::vector<CpuLife> cpu;
+        std::string spv = f.shader.empty() ? BLOBGPU_SHADER_DIR "/minimal_life.comp.spv" : f.shader;
         bool ok = gpu_open(g, f.device == GpuDevice::lavapipe, f.validate) &&
-                  gpu_run_open(g, b, f, lives, BLOBGPU_SHADER_DIR "/minimal_life.comp.spv") &&
+                  gpu_run_open(g, b, f, lives, spv.c_str()) &&
                   gpu_run_upload(g, b, f, lives, f.check ? &cpu : nullptr);
         double setup = seconds_since(start);
         std::printf("%s: %zu lives in %zu groups, %.0f KB per life, setup %.2f s\n", g.name.c_str(),
@@ -112,8 +113,8 @@ int main(int argc, char** argv) {
                 ok = ok && cpu[i].scores == scores[i];
                 cpu_life_free(cpu[i]);
             }
-            std::printf(ok ? "check: every tick of every life identical to the CPU engine "
-                             "(spike and noise maps, masks, thresholds, task, scores)\n"
+            // spike and noise maps every tick; rings, masks, thresholds, task every dispatch
+            std::printf(ok ? "check: identical to the CPU engine\n"
                            : "check: window scores differ\n");
         }
         std::printf("%s: %lld ticks in %.2f s: %.0f life-ticks/s, %d dispatches, longest "
