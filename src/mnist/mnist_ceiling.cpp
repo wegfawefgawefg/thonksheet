@@ -31,6 +31,7 @@
 //   --describe F   the inside's ladder (mnist_transplant.cpp): write the sheet as born to F
 //   --wiring-load F   rewire the cells F lists before anything else (the transplant)
 //   --rows-out F   write the reader's rows of the non-sensor cells to F
+//   --twice 1 and the other probes of mnist_repeat.cpp (all off unless given)
 //   --live N       first a life of N training digits with rewards and the genome's own
 //                  learning (idea 155), then the motor cells put back to their born wiring,
 //                  so the reader sees the lived inside with the born output cells
@@ -46,7 +47,8 @@ static const char* const ceiling_own[] = {
     "--fit",       "--settle",      "--test-count",   "--passes",     "--lr-1000", "--pretrain",
     "--shift",     "--val",         "--gap",          "--views",      "--scale",   "--live",
     "--live-coin", "--life",        "--life-shuffle", "--life-teach", "--pair",    "--pair-mix",
-    "--describe",  "--wiring-load", "--rows-out"};
+    "--describe",  "--wiring-load", "--rows-out",     "--twice",      "--rec-cut", "--delays-one",
+    "--pace-off",  "--read-freeze", "--reset-digit",  "--input-every", "--count-from", "--inh-fast"};
 
 // a copy of rows with only the given columns
 static void pick_columns(const Rows& in, const std::vector<int>& cols, Rows& out) {
@@ -166,6 +168,7 @@ int mnist_ceiling(int argc, char** argv) {
     if (const char* describe = text_flag(argc, argv, "--describe", nullptr)) {
         sheet_describe(s, describe);
     }
+    repeat_setup(s, argc, argv);
     std::vector<uint64_t> born;
     wiring_snapshot(s, born);
     wiring_report(s, born, "as born");
@@ -190,6 +193,7 @@ int mnist_ceiling(int argc, char** argv) {
     }
     s.blob->genome.learning_on = 0; // frozen from here on
     sheet_train(s, settle, false, nullptr);
+    repeat_after_settle(s, argc, argv);
     std::vector<int> images, partners;
     s.images = &images;
     s.partners = &partners;
@@ -205,6 +209,11 @@ int mnist_ceiling(int argc, char** argv) {
     sheet_eval(s, 0, 0, test_count, &test);
     s.images = nullptr;
     s.partners = nullptr;
+    std::vector<View> views;
+    make_views(s, views);
+    if (int_flag(argc, argv, "--twice", 0)) {
+        repeat_twice(s, test, views[0].cols, test_count);
+    }
     std::vector<Rows> moved;
     if (shift) {
         for (int by = 1; by <= 2; by++) {
@@ -222,8 +231,6 @@ int mnist_ceiling(int argc, char** argv) {
                 s.gap, (long long)pretrain, fit, sheet_secs, rate, scored, test.n);
     std::printf("%-34s %7s %8s %8s %8s %9s\n", "reader of", "cells", scored, "moved 1", "moved 2",
                 "reader s");
-    std::vector<View> views;
-    make_views(s, views);
     if (const char* rows_out = text_flag(argc, argv, "--rows-out", nullptr)) {
         rows_write({&train, &images, &partners}, {&test, &test_images, &test_partners},
                    views[0].cols, rows_out);

@@ -87,14 +87,23 @@ static int one_digit(Sheet& s, bool learn, Rows* counts, std::vector<uint8_t>& c
     if (s.shuffle) {
         shuffle_draw(s);
     }
-    for (;;) {
+    if (s.reset_digit) {
+        repeat_digit_start(s);
+    }
+    for (int tick = 0;; tick++) {
         ticker_before_tick(tt, b);
         if (s.shuffle) {
             shuffle_apply(s);
         }
+        if (s.input_every > 1 && tick % s.input_every != 0) {
+            repeat_input_off(s);
+        }
+        if (s.inh_fast) {
+            repeat_inh_fast(s);
+        }
         blob_tick(b);
         s.ticks++;
-        for (int t = 0; counts && t < b.tile_count; t++) {
+        for (int t = 0; counts && tick >= s.count_from && t < b.tile_count; t++) {
             uint64_t spikes = b.spikes[b.now][t];
             while (spikes) {
                 uint8_t& n = c[(size_t)(t * TILE_NEURONS + __builtin_ctzll(spikes))];
@@ -129,6 +138,9 @@ static int one_digit(Sheet& s, bool learn, Rows* counts, std::vector<uint8_t>& c
         plug_quiet_lines(tt.plug);
         for (int g = 0; g < s.gap; g++) {
             plug_write(tt.plug, b);
+            if (s.inh_fast) {
+                repeat_inh_fast(s);
+            }
             blob_tick(b);
             s.ticks++;
         }
