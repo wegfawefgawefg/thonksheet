@@ -44,8 +44,7 @@ are ordered by the one question above. An item is struck when done, with where t
 is.
 
 Running (four), as of 2026-11-25 afternoon:
-- Queued item 3 (idea 162): every line is a target (its agent stopped; the coordinator
-  finishes the runs and the write-up, then sends its errors down idea 159's wires).
+- Queued item 3b (idea 164): prediction errors down the one-hop wires.
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
 - Queued item 2d (idea 163): what stops the one-hop error on real data.
 - Queued item 2a: the competitive-learning follow-ups (rate-matched and churn controls,
@@ -128,8 +127,12 @@ Queued, in order:
    cells with a spike path into the action; this reaches every cell and carries a signed
    error per output. Run it both ways: told only good or bad, and told the right button.
    Scored by the inside-learning test, MNIST 0.924 to beat.
-3. *(running, as idea 162: every line is a target; `scripts/predict.sh`,
-   docs/results-2026-11-25-predict.md)* Predicting the input: every unit learns to predict a neighbour or the next tick from
+3b. *(running, idea 164)* Each input line's prediction error as an error line of the
+   one-hop rule: every hidden cell taught by what the sheet failed to predict, no reward.
+3. *(first version done, merged: `scripts/predict.sh`,
+   docs/results-2026-11-25-predict.md; the cells predict where there is something to
+   predict, far under a fitted reader; nothing in it could change the inside; item 3b is
+   the real test)* Predicting the input: every unit learns to predict a neighbour or the next tick from
    the rest; what is mispredicted is what gets learned. Widened by the owner, 2026-11-25
    ("in all of our envs we should extract rich signal ... predict current state, next
    state, future states"): every input line is a target at 1, 2, 4, 8 steps ahead, in

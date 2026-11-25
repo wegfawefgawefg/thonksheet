@@ -123,6 +123,33 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
     nobody knows why; and the output still does not use the lived sheet's lead (0.845
     lived against 0.852 born), which survives float readers and is lost at the first
     integer one.
+- **Every line as a target: the cells can predict, and the inside is not yet taught by
+  it** (idea 162, the owner's "extract rich signal ... predict current state, next state,
+  future states"; docs/results-2026-11-25-predict.md, `scripts/predict.sh`). Output cells
+  for every input line at 1, 2, 4, 8 steps ahead, taught by the line's own future, always
+  on beside the task; 10 worlds, seeds 5 to 12.
+  - One step ahead they beat "same as now", "most common" and the learning-off twin on
+    every seed in chain (0.875 against 0.286, 0.643, 0.536) and predict-next (0.767
+    against 0.404, 0.634, 0.504); echo with random cues sits at baseline (0.749 against
+    0.754), as it must.
+  - A fitted reader of the same frozen sheet does much better (predict-next 0.914,
+    cartpole 0.924 against the cells' 0.871), and on cartpole, pendulum and mountain car
+    the cells are under "same as now". The output rule is the limit, not the information.
+    A reader of the input lines alone does as well as a reader of the sheet: for a
+    straight-line reader the future is in the lines.
+  - Only motor cells learn under the working rule, so prediction alone cannot change the
+    inside. With competitive learning and the errors fed back as lines, hidden cells
+    read far more (which way the paddle moved +0.27, time since the cue +0.20), but a
+    time-shuffled life does as well. The gain is what the error lines carry in, not
+    something learned about time.
+  - Competitive learning costs memory of time: time since the cue 0.859 from born hidden
+    cells, 0.645 after a life with it; beat phase 0.497 to 0.286.
+  - Error lines as input, nothing else changed and the rate unchanged: last press 0.604
+    to 0.745, beat phase 0.500 to 0.614, time since the cue 0.873 to 0.919.
+  - The task: delayed echo +0.04 to +0.05 on 7 or 8 seeds of 8, beat +0.03 with error
+    lines; catch, forage, chain a little worse. Cost: 0.49 to 0.87 of the speed.
+  The idea itself, errors teaching the inside, is untested until those errors go down
+  idea 159's wires (idea 164).
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -523,6 +550,13 @@ docs/results-2026-11-25-mnist.md
     joins principles 17 and 39: 17 was right for 2 buttons and wrong for 10; 39 (only
     when the vote was close) is half of it; who pays is the other half. The long-life
     drift (ideas 146, 157) was this, not the counter clamp and not the budget.
+49. **Surprise fed back in as input makes the recent past readable.** [likely: 8 seeds,
+    several worlds, rate unchanged] "I said on and it was off" lines are change
+    detectors; a sheet that hears them carries what just happened and how long ago.
+50. **A rule that turns cells toward the input costs them the recent past.** [likely: 8
+    seeds] Competitive learning lifts what a reader gets from one frame and lowers what it
+    gets about time (time since the cue 0.86 to 0.65). Feature learning and holding
+    compete for the same inputs of a cell unless something keeps them apart.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 

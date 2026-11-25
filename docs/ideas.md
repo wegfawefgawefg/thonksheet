@@ -729,7 +729,13 @@ co-activity runs ties the held units together and loses their order.
      the next state can depend on it; each line's error teaches its predictor, and the
      errors go to the inside (as lines, and one hop to every hidden cell once idea 159 is
      in). The critic is then just the predictor of the reward line. Takes in queue item 3
-     and idea 137. *building*
+     and idea 137. *first version done 2026-11-25: `blobrun --predict 1,2,4,8
+     --predict-errors 1 --predict-press 1`, `scripts/predict.sh`,
+     docs/results-2026-11-25-predict.md. The cells predict chain and predict-next one step
+     ahead well above every baseline; a fitted reader does much better (the output gap);
+     nothing in it can change a hidden cell, and with competitive learning the gain equals
+     a time-shuffled control. Error lines as input make the recent past readable. Next:
+     idea 164.*
 163. **What stops the one-hop error on real data.** Three suspects from idea 159's MNIST
      result: one cell hears about 6 pixels and cannot become what the error asks for
      (try wider cells, and a second set of cells that hear the taught ones, each still
@@ -737,3 +743,10 @@ co-activity runs ties the held units together and loses their order.
      cannot show a product being learned (score on a real-data task a straight line
      fails); the errors come from a readout that is mostly right and has dead buttons.
      Also parity of 4, and shuffled-input controls for the toys. *building*
+164. **Prediction errors down the one-hop wires.** Idea 162's point, now possible: each
+     input line's signed prediction error (`predict_errors()`) becomes an error line of
+     idea 159's rule, so every hidden cell is taught by what the sheet failed to predict,
+     with no reward at all. Hundreds of error lines a step in place of a handful from
+     the buttons. Scored by the inside read on the control worlds against a time-shuffled
+     life and the coin control, by the held-out calculation columns, and by whether the
+     task improves. The critic's surprise is then one more such line. *building*

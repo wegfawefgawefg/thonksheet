@@ -180,3 +180,10 @@ inner neurons measurably better for a task than unsupervised wiring already make
     local hearing (15%); good-or-bad costs about 0.06; the drift first shows at the
     good-or-bad rung (50%); the lived sheet loses its lead by the one-bit rung.
    - *Scored 2026-11-25: the largest loss was the second choice, good-or-bad, and 0.28 not 0.06; one-bit connections and local hearing cost nothing on the plain rule; the drift is only in the engine on the plain rule, wrong; the lived lead is gone at the first integer rung, earlier than guessed.*
+33. **Every line is a target** (written by its bot before the report seeds;
+    docs/results-2026-11-25-predict.md): at most 3 worlds beat all three baselines one
+    step ahead, chain among them (70%), at most 1 at 8 steps (75%); the echo control stays
+    at baseline (85%); on catch the prediction arm reads "which way it moved" within 0.03
+    of task-only (70%) and the competitive arms 0.10 above (60%); the task score stays
+    within 0.03 on 8 worlds (65%); cost 0.5 to 0.8 of the speed (80%).
+   - *Scored 2026-11-25, 8 seeds: 2 worlds and 0, right; echo right; within 0.03 right on hidden cells, wrong on the whole sheet; the competitive arms only with error lines in, and a time-shuffled life matches them; task within 0.03 on 7 of 10, wrong narrowly; cost 0.49 to 0.87, mostly right.*
