@@ -23,7 +23,7 @@
 enum class Feature { which, order, order_xor, gap, hold, count };
 
 inline const char* const feature_names[(int)Feature::count] = {"which", "order", "xor", "gap",
-                                                                "hold"};
+                                                               "hold"};
 
 inline bool feature_from_name(const char* name, Feature& feature) {
     for (int i = 0; i < (int)Feature::count; i++) {
