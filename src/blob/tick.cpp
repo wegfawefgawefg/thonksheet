@@ -14,6 +14,10 @@ static void tick_learn(Blob& blob, int read_now) {
     if (g.compete_on) {
         learn_compete(blob, read_now);
     }
+    // the error sent one hop to every hidden cell, beside whatever the learn mode does
+    if (g.hop_on) {
+        learn_hop(blob);
+    }
     // idea 120: the rule table, alone (1, 3) or beside the learn mode on the inside (2)
     if (g.rule_on) {
         learn_rule(blob, blob.pending_valence, g.rule_on == 3 ? 1 : (g.rule_on == 2 ? 2 : 0));
@@ -74,6 +78,9 @@ void blob_tick(Blob& blob) {
     tick_fire(blob, blob.spikes[next]);
     blob.now = next;
     long_memory_after_fire(blob);
+    if (g.hop_on && g.learning_on) {
+        hop_after_fire(blob); // the near maps only feed learning
+    }
 
     // "fired recently": OR of the last recent_ticks maps
     for (int t = 0; t <= blob.tile_count; t++) {

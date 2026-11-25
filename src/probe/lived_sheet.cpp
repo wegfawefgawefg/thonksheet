@@ -189,6 +189,8 @@ static std::vector<double> live(Blob& blob, const RunFlags& flags, int64_t steps
         if (tt.valence != 0) {
             plug_mark_acted(tt.plug, blob, tt.move);
             plug_mark_vote(tt.plug, blob, tt.move);
+            plug_hop_lines(tt.plug, blob, tt.move, tt.right_move, tt.in.pattern,
+                           tt.in.pattern_tied, tt.task.pattern_graded);
             blob_reward(blob, tt.valence);
         }
         step++;
@@ -249,6 +251,13 @@ Blob* probe_sheet(int argc, char** argv, const Genome& genome, uint64_t seed) {
                  "goods thin\n",
                  mean_of(s, s.size() - edge, s.size()), blob->tag_events, blob->tag_count,
                  blob->margin_thin, blob->margin_goods);
+    if (flags.genome.hop_on) {
+        uint64_t c[7];
+        blob_hop_counts(*blob, c);
+        std::fprintf(stderr, "life: hop verdicts %llu, cells taught %llu, counter steps %llu, "
+                     "rewires %llu\n", (unsigned long long)c[0], (unsigned long long)c[1],
+                     (unsigned long long)c[2], (unsigned long long)c[3]);
+    }
     blob->genome = genome;
     return blob;
 }

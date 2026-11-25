@@ -336,6 +336,7 @@ void blob_free(Blob* blob) {
         std::free(p);
     }
     std::free(blob->replay); // one block (blob/replay.hpp)
+    hop_free(*blob);
     long_memory_free(*blob);
     delete blob;
 }
