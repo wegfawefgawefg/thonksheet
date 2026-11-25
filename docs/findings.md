@@ -97,6 +97,32 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   reader of the born sheet is already at 0.925, so MNIST leaves little for products of
   nearby pixels to add. The calculation battery's held-out columns are the sharper test
   of whether the inside learned.
+- **The output's gap is its good half, and it is mostly closed** (idea 161,
+  docs/results-2026-11-25-output-gap.md, `scripts/outgap.sh`). A ladder of readers on the
+  same recorded sheet, from a float reader fit offline down to the engine's motor cells
+  (born sheet, 20,000 digits, seeds 5 to 12): offline 0.926; online float 0.905; integer
+  weights told the right button 0.864; the engine's good-and-bad rule on the same reader
+  0.577; motor cells' own fields 0.60 to 0.69; the engine 0.692. One step holds nearly all
+  of it: 0.28 lost where "on every good the pressed button gains and the nine others
+  lose". A button that wins keeps winning, and once accuracy is over one half a seldom
+  pressed button is pushed down more often than up, so 3 or 4 buttons die on every seed.
+  Hearing only nearby cells costs nothing; one-bit connections cost nothing on that rule.
+  - The fix, `--g.readout_good 2 --g.margin_percent 20 --g.margin_win 2`: on a good that
+    was close, the pressed button gains and only the runner-up loses. MNIST online
+    0.822, 0.845, 0.852 at 20,000, 60,000, 120,000 digits (plain 0.692, 0.673, 0.649; the
+    gate alone 0.811, 0.799, 0.759). No drift and no quiet button on any seed, and it is
+    cheaper per digit (1.2 ms against 3.2). With a weighted vote on top
+    (`--g.readout_evidence_strong 2`): 0.837, 0.854, 0.863.
+  - Toy rows, seeds 5 to 12: 8 cues 0.842 to 0.940, 16 cues 0.305 to 0.605 (0.723 with
+    the weighted vote), order 0.695 to 0.779; exclusive-or falls 0.883 to 0.793, the
+    gate's known cost (with two buttons the rule is the gate). So it is not yet one
+    default for every row.
+  - Still open: the sign (a one-bit excitatory connection can only add evidence; a
+    reader held to weights of zero or more loses 0.17; opponent cells did not get it
+    back); the engine reads 0.09 better than the agent's copy of it under the gate and
+    nobody knows why; and the output still does not use the lived sheet's lead (0.845
+    lived against 0.852 born), which survives float readers and is lost at the first
+    integer one.
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -490,6 +516,13 @@ docs/results-2026-11-25-mnist.md
     error on random lines 0.935, real signals 0.938 and 0.936, born 0.925. A teaching
     signal has shown its worth only where it beats that: the toys and the held-out
     calculation columns, not MNIST.
+48. **With many buttons, a good should move only the competitors.** [likely: MNIST 8
+    seeds and the toy rows] On a close good the pressed button gains and the runner-up
+    loses; nothing else moves. Pushing every other button down on every good drains the
+    seldom pressed ones, and moving on comfortable goods makes winners richer. This
+    joins principles 17 and 39: 17 was right for 2 buttons and wrong for 10; 39 (only
+    when the vote was close) is half of it; who pays is the other half. The long-life
+    drift (ideas 146, 157) was this, not the counter clamp and not the budget.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 

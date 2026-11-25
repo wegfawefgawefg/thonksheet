@@ -616,11 +616,15 @@ co-activity runs ties the held units together and loses their order.
 146. **Why the readout drifts down on a long life.** On MNIST it peaks at 20,000 digits and
      then loses a point every 20,000 more. Not the counter clamp. Suspects: the motor
      cells' threshold regulation; sources dropped and re-wired at the budget's edge. The
-     same thing may be hiding in every long life. *queued: small, first when a core frees*
+     same thing may be hiding in every long life. *answered 2026-11-25 by idea 161: the
+     good half of the rule pushing the nine other buttons down; `readout_good 2` removes
+     it to 120,000 digits.*
 147. **A weighted vote.** Wired strength set by where the counter stands (1, 4, 5 are already
      in the weight planes), so a motor cell is a weighted vote and not a count. Aimed at the
      25 points between the sheet's readout (0.71) and what a linear reader gets from the
-     same sheet (0.92). *queued*
+     same sheet (0.92). *built 2026-11-25 as `--g.readout_evidence_strong 2` (top quarter
+     at strength 4): on the runner-up rule MNIST +0.011 to +0.015 and 16 cues 0.605 to
+     0.723, exclusive-or 0.793 to 0.725. A trade, not a free gain.*
 148. **Search richness on digits.** The rich sheets found for order and gap read digits
      worse than the default. Score the search on the digit ceiling. *queued*
 149. **A suite a lookup table cannot pass.** The memory engine passes tiers 1, 2, 4, 7 and 8
@@ -684,7 +688,7 @@ co-activity runs ties the held units together and loses their order.
      per position); a learned gate on what to keep. *queued*
 157. **Why the output declines on a long life.** With the gate, buttons die one by one. A
      floor per button, or balancing the good half by how often each button is right.
-     Replaces idea 146. *queued*
+     Replaces idea 146. *answered by idea 161: the runner-up rule; no button goes quiet.*
 158. **Competitive learning with local inhibition, no reward.** [Rumelhart and Zipser
      1985; Kohonen; in bits] A hidden cell that fires among its tile's winners moves
      hidden counters toward the sources that were just on and rewires its top counters at
@@ -709,7 +713,11 @@ co-activity runs ties the held units together and loses their order.
      from the lived sheet and the sheet's own readout 0.72, falling on long lives. The
      motor cells hear only nearby cells, with one-bit connections and a vote. Candidates:
      a weighted vote (147), motor cells that hear the whole sheet, the drift (146, 157).
-     *queued with the output item*
+     *done 2026-11-25: docs/results-2026-11-25-output-gap.md, `scripts/outgap.sh`,
+     `blobmnist ladder`. The gap is the rule's good half (0.28 of it). Fix:
+     `--g.readout_good 2 --g.margin_percent 20 --g.margin_win 2`, MNIST online 0.852 at
+     120,000 digits (was 0.649), no drift. Open: the sign, the lived sheet's lead, the
+     exclusive-or cost, long lives past 120,000, the rule on the critic and on calc.*
 162. **Every line is a target.** [predictive coding; Sutton's many predictions at many
      horizons ("Horde"); in bits] Owner, 2026-11-25: "in all of our envs we should extract
      rich signal. thonksheet shouldnt just output policy right. shouldnt it predict current

@@ -46,7 +46,6 @@ is.
 Running (four), as of 2026-11-25 afternoon:
 - Queued item 3 (idea 162): every line is a target (its agent stopped; the coordinator
   finishes the runs and the write-up, then sends its errors down idea 159's wires).
-- Queued item 2c (idea 161): why our output cannot read what the inside learned.
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
 - Queued item 2d (idea 163): what stops the one-hop error on real data.
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
@@ -103,7 +102,11 @@ Queued, in order:
    rate); a cheap read-off (the rule costs 1.9 times per tick); the rule in the time suite
    (half of each cell's inputs become pixels: does delayed echo or order pay?); a
    shuffled control for the calculation rows.
-2c. *(running)* Why our output cannot read what the inside learned (idea 161): a
+2c. *(done, merged: docs/results-2026-11-25-output-gap.md; the gap is the rule's good
+   half; the runner-up rule lifts MNIST online to 0.852 at 120,000 digits with no drift.
+   Left, as item 9: the runner-up rule on the critic's actor, on the calculation
+   battery's many outputs, on lives past 120,000, the exclusive-or cost, the sign, and
+   making the output use the lived sheet's lead)* Why our output cannot read what the inside learned (idea 161): a
    linear reader gets 0.95 from the lived sheet, the sheet's own readout 0.72 and falling.
    Takes in item 9 (the weighted vote, the drift). This gap is now the largest number on
    the board.
@@ -141,7 +144,10 @@ Queued, in order:
 6. Credit by code (idea 138).
 7. Units pay the units that set them up (idea 139).
 8. A memory that knows near from far (idea 152), scored on MNIST.
-9. The output: a weighted vote (147) and the drift on long lives (146).
+9. The output, what idea 161 left: the runner-up rule (`readout_good 2`) on the whole
+   suite and as the one default (it costs exclusive-or 0.09), on the critic's actor, on
+   the calculation battery, past 120,000 digits; the sign of a connection; scaling each
+   source by its own spread so the output can use the lived sheet's lead.
 10. *(done as item C)* Finish the critic. What is left of it, as a later job: more
     information per press (a critic level per button), a cheaper step end (it costs 2 to
     4 times the readout alone), exploration for goal-only worlds, and the viewer's critic
