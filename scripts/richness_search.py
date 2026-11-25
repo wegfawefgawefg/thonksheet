@@ -115,7 +115,8 @@ def columns():
     return cols
 
 
-def append_rows(rows, path=CSV):
+def append_rows(rows, path=None):
+    path = path or CSV
     os.makedirs(OUT, exist_ok=True)
     new = not os.path.exists(path)
     with open(path, "a", newline="") as f:
@@ -126,7 +127,8 @@ def append_rows(rows, path=CSV):
             w.writerow(r)
 
 
-def load(path=CSV):
+def load(path=None):
+    path = path or CSV
     with open(path) as f:
         return [{k: float(v) for k, v in r.items()} for r in csv.DictReader(f)]
 
