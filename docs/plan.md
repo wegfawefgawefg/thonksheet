@@ -46,7 +46,6 @@ is.
 Running (four), as of 2026-11-25 afternoon:
 - Queued item 3b (idea 164): prediction errors down the one-hop wires.
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
-- Queued item 2d (idea 163): what stops the one-hop error on real data.
 - Queued item 2a: the competitive-learning follow-ups (rate-matched and churn controls,
   held-out calculation columns on 8 seeds, a cheap read-off, the time suite).
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
@@ -111,7 +110,10 @@ Queued, in order:
    linear reader gets 0.95 from the lived sheet, the sheet's own readout 0.72 and falling.
    Takes in item 9 (the weighted vote, the drift). This gap is now the largest number on
    the board.
-2d. *(running, idea 163)* What stops the one-hop error on real data: cell width, a
+2d. *(done, merged: docs/results-2026-11-25-hop-real.md; not MNIST being easy; errors
+   from the answer on every step are the best lever, +0.006 over the coin; depth helps a
+   little; the pair test `blobmnist --pair 1` is the new real-data yardstick, born 0.677,
+   two-layer net 0.80 to 0.85)* What stops the one-hop error on real data: cell width, a
    second set of cells one hop from the error, a real-data task a straight line fails,
    parity of 4, shuffled-input controls on the toys.
 2b. *(done, merged: docs/results-2026-11-25-hop.md; teaches the inside products on toys

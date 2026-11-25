@@ -187,3 +187,7 @@ inner neurons measurably better for a task than unsupervised wiring already make
     of task-only (70%) and the competitive arms 0.10 above (60%); the task score stays
     within 0.03 on 8 worlds (65%); cost 0.5 to 0.8 of the speed (80%).
    - *Scored 2026-11-25, 8 seeds: 2 worlds and 0, right; echo right; within 0.03 right on hidden cells, wrong on the whole sheet; the competitive arms only with error lines in, and a time-shuffled life matches them; task within 0.03 on 7 of 10, wrong narrowly; cost 0.49 to 0.87, mostly right.*
+34. **What stops the one-hop error on real data** (its bot's predictions are in
+    docs/results-2026-11-25-hop-real.md, written before any run and scored there). In
+    short: a real-data test where the rule beats its coin by 0.02 was not found; wider
+    cells did not help MNIST; depth did not get parity of 4.

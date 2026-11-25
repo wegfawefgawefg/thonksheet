@@ -742,7 +742,13 @@ co-activity runs ties the held units together and loses their order.
      one hop from the error); MNIST is nearly solved by a straight-line reader, so it
      cannot show a product being learned (score on a real-data task a straight line
      fails); the errors come from a readout that is mostly right and has dead buttons.
-     Also parity of 4, and shuffled-input controls for the toys. *building*
+     Also parity of 4, and shuffled-input controls for the toys. *done 2026-11-25:
+     docs/results-2026-11-25-hop-real.md, `scripts/hop2.sh`. A pair test a straight line
+     fails (`blobmnist --pair 1`): the rule equals its coin there too, so MNIST being easy
+     was not the reason. Errors from the answer on every step (`--g.hop_teach 3`) are the
+     best lever (MNIST +0.006 over the coin on 8 of 8). Depth helps a little, width not.
+     Toys and held-out calc pass the shuffled-input control. Parity of 4 fails. Left:
+     errors from the answer with depth and with near-not-fired marks, on toys and calc.*
 164. **Prediction errors down the one-hop wires.** Idea 162's point, now possible: each
      input line's signed prediction error (`predict_errors()`) becomes an error line of
      idea 159's rule, so every hidden cell is taught by what the sheet failed to predict,

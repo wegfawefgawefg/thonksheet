@@ -150,6 +150,28 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
     lines; catch, forage, chain a little worse. Cost: 0.49 to 0.87 of the speed.
   The idea itself, errors teaching the inside, is untested until those errors go down
   idea 159's wires (idea 164).
+- **What stops the one-hop error on real data: not MNIST being easy; the kind of error
+  matters most** (idea 163, docs/results-2026-11-25-hop-real.md, `scripts/hop2.sh`).
+  - A real-data test a straight line fails: two half-size digits interleaved, "same class
+    or not" (`blobmnist --pair 1`). Linear on the bits 0.510, born sheet 0.677, random
+    projection 0.705, two-layer net 0.796 to 0.852. The one-hop rule lifts the sheet to
+    0.691 and its coin control to 0.691 (seeds 5 to 12, rates matched): nothing beyond
+    churn. Competitive learning 0.726 at twice the rate; both rules 0.731, the pair with
+    the hop coin 0.731. So the MNIST result was not an artefact of an easy yardstick.
+  - Errors computed from the answer alone on every step (each line's target less its
+    running rate, `--g.hop_teach 3`) are the largest lever found: MNIST 0.9377 against
+    its coin 0.9317, 8 seeds of 8 (the old errors at the same slow step +0.0015); the
+    pair test +0.008 over its coin on 4 of 4. With the rate held at target the MNIST
+    margin is +0.003 (4 seeds). Thousandths, but the first error-driven margin on real
+    data that every seed shows.
+  - Depth helps the errors count, width does not. With half the cells hearing no pixels
+    the old errors beat their coin on the pair test by +0.007 on 8 of 8, though that
+    sheet starts and ends lower. Cells with four times the pixel inputs are pulled back
+    off the pixels by the rule (30.6 to 10.7 a cell) and end under their born score.
+  - A fault in the first hop job's toy test is fixed (the inner rules kept running while
+    the fresh output learned). Frozen, the toy result stands and is a little stronger:
+    parity of 3 0.847, coin 0.618, shuffled-input life 0.607; held-out xor4 0.871
+    against 0.692 shuffled and 0.667 coin. Parity of 4 fails in every arm.
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -557,6 +579,12 @@ docs/results-2026-11-25-mnist.md
     seeds] Competitive learning lifts what a reader gets from one frame and lowers what it
     gets about time (time since the cue 0.86 to 0.65). Feature learning and holding
     compete for the same inputs of a cell unless something keeps them apart.
+51. **The one-hop error teaches a cell what a few of its inputs can jointly decide, and
+    little else so far.** [likely: toys and calc 8 and 2 seeds with coin and shuffled
+    controls; two real-data tests, 8 seeds] Products of 2 or 3 nearby lines: yes, far
+    above every control. A digit class, "same class or not", parity of 4: no more than
+    churn. Better errors (from the answer, every step) and cells one more step from the
+    pixels each buy thousandths. What is missing is not the error reaching the cell.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 
