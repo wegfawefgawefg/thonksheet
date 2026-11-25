@@ -17,6 +17,13 @@ eight). The same sheet with the old readout scored chance on all of these. The o
 thesis, that a rich enough sheet turns learning into selection, holds for everything a
 plain linear reader can get out of the sheet. docs/results-2026-11-24-readout.md
 
+The full suite on that rule (`blob-readout` in docs/scoreboard.md, 8 seeds, sheet frozen)
+agrees and adds: a second task is learned after the first (0.99) with the first still there
+(0.98 at once); eight cue-button pairs held, and sixteen at 0.31 where chance is 0.06;
+nothing lost after being unplugged (1.00 before, 1.00 after); Echo five tiles away 0.59;
+catch 0.32 where chance is 0.25. Still failing: delayed echo (0.55), beat, gap (0.52),
+cartpole (below a coin), and a shape in a place it was never rewarded (0.25, below chance).
+
 ## Principles that hold so far
 
 1. **A neuron must pay for what it keeps.** [solid] A fixed budget of connections, where
@@ -132,6 +139,10 @@ plain linear reader can get out of the sheet. docs/results-2026-11-24-readout.md
   not a lock: the blob leans to one side (0.58 of presses) without being stuck.
   Any rule graded against its own average also freezes once every reward equals the
   average: an all-wrong life stops moving.
+- **A new place.** A shape learned in some places is answered wrongly in a place never
+  rewarded (0.25 where chance is 0.49). Nothing in the sheet shares what one patch learned
+  with another. This is the missing prior the owner started from on day one (a convolution
+  shares; this sheet does not).
 - **Acting in a world.** Nothing learns catch or cartpole. On cartpole learning makes the
   full engine worse than a coin.
 - **More than four things.** Eight cues are now learned (0.84) by the new readout on the

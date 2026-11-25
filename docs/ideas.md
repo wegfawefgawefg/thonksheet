@@ -348,3 +348,9 @@ ones?" There are. Three things widen the search from here.
     probe as born. *running: 600 sheets*
 99. **Search the switches in combination.** Every mechanism on or off, scored by the quick
     suite, to find pieces that only work together. *idea*
+100. **Share what one patch learned.** [the day-one question: a net with all the priors]
+     Nothing carries a feature to a new place (the suite's place task scores 0.25, under
+     chance). Let evidence learned for a source at some offset from a cell leak to cells
+     elsewhere for the source at the same offset, weakly, so that what is true everywhere
+     ends up wired everywhere and what is local stays local. A convolution that is found,
+     not built in. *idea*

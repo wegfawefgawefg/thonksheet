@@ -264,3 +264,11 @@ linking against a throwaway stub core; it builds and runs.
   its own; 8x8 needs `--sensor-side 1`. The plug refuses cleanly when lines do not fit.
 - Score per window is 0 when a window holds no try (a window shorter than one delayed-echo
   trial). Keep windows well above the trial length.
+
+## Reading a scorecard run with a readout rule in its flags (2026-11-25)
+
+The suite's "frozen sheet, readout learns" rows force `learn_mode 1`, the old readout, so in
+a scorecard such as `blob-readout` (run with `--g.learn_mode 5 ...`) those rows still show
+the old readout at chance. The rows labelled "whole blob learns" are the ones that ran with
+the flags given, which for mode 5 means a frozen sheet with the new readout.
+
