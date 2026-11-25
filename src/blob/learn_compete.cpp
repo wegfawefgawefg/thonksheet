@@ -35,19 +35,21 @@
 
 struct CompeteState {
     int8_t* bounds = nullptr; // per neuron: lowest wired, highest unwired, lowest strong,
-                              // highest weak (excitatory sources), and the draws a re-pick
-                              // that changes nothing takes (STALE: the bounds are not made)
+                              // highest weak (excitatory sources), the draws a re-pick that
+                              // changes nothing takes (STALE: the bounds are not made), and
+                              // the last re-pick's lines (tag_rewire_hinted), as guesses
     uint64_t* sum = nullptr;  // per neuron: a hash of its wiring when the bounds were made
 };
 
-enum { LOW_WIRED = 0, HIGH_UNWIRED = 1, LOW_STRONG = 2, HIGH_WEAK = 3, DRAWS = 4, BOUNDS = 5 };
+enum { LOW_WIRED = 0, HIGH_UNWIRED = 1, LOW_STRONG = 2, HIGH_WEAK = 3, DRAWS = 4, PICK = 5 };
+constexpr int BOUNDS = PICK + 12;
 constexpr int8_t STALE = -1;
 
 static CompeteState& compete_make(Blob& blob) {
     if (!blob.compete) {
         CompeteState* c = (CompeteState*)std::calloc(1, sizeof(CompeteState));
         size_t n = (size_t)blob.neuron_count;
-        c->bounds = (int8_t*)std::malloc(n * BOUNDS);
+        c->bounds = (int8_t*)std::calloc(n * BOUNDS, 1);
         c->sum = (uint64_t*)std::calloc(n, sizeof(uint64_t));
         for (size_t i = 0; i < n; i++) {
             c->bounds[i * BOUNDS + DRAWS] = STALE;
@@ -95,47 +97,19 @@ static uint64_t wiring_sum(const Blob& blob, int n) {
     return h ^ (h >> 31);
 }
 
-// exact bounds after a re-pick, and the draws a re-pick that changes nothing takes: one per
-// pick (wired, then strong, for each kind) that wants some and has enough sources for them
+// the bounds right after a re-pick, from where its lines fell: the lowest wired counter is
+// the line; the highest unwired is the line if some at the line were left out, else under it
+// (a bound loose in the safe direction). and the draws a re-pick that changes nothing takes:
+// those this one took, since the counts and the sources are the same
 static void bounds_make(Blob& blob, int n) {
     int8_t* bd = blob.compete->bounds + (size_t)n * BOUNDS;
-    const int8_t* c = tag_row(blob, n);
-    int8_t b[4] = {127, -128, 127, -128};
-    int usable_count[2] = {0, 0};
-    for (int k = 0; k < SLOTS; k++) {
-        uint32_t src = slot_source(blob, n, k);
-        if (src == (uint32_t)blob.tile_count) {
-            continue;
-        }
-        uint64_t kind = k < LOCAL_SLOTS ? blob.inhibitory[src] : 0;
-        uint64_t u = usable(blob, n, k, src) | kind;
-        u &= k == 4 ? ~(1ull << (n % TILE_NEURONS)) : ~0ull;
-        usable_count[0] += __builtin_popcountll(u & ~kind);
-        usable_count[1] += __builtin_popcountll(u & kind);
-        int64_t w = blob_weight_index(n, k);
-        uint64_t wired = connected_bits(blob.w0[w], blob.w1[w]), strong = blob.w1[w];
-        for (uint64_t m = u & ~kind; m; m &= m - 1) {
-            int i = __builtin_ctzll(m);
-            int8_t v = c[k * TILE_NEURONS + i];
-            if (!((wired >> i) & 1)) {
-                b[HIGH_UNWIRED] = v > b[HIGH_UNWIRED] ? v : b[HIGH_UNWIRED];
-                continue;
-            }
-            b[LOW_WIRED] = v < b[LOW_WIRED] ? v : b[LOW_WIRED];
-            int at = (strong >> i) & 1 ? LOW_STRONG : HIGH_WEAK;
-            b[at] = at == LOW_STRONG ? (v < b[at] ? v : b[at]) : (v > b[at] ? v : b[at]);
-        }
+    const int8_t* p = bd + PICK;
+    for (int j = 0; j < 2; j++) {
+        int line = p[3 * j];
+        bd[2 * j] = (int8_t)line;                                                 // lowest in
+        bd[2 * j + 1] = (int8_t)(p[3 * j + 1] || line == -128 ? line : line - 1); // highest out
     }
-    int draws = 0;
-    for (int i = 0; i < 2; i++) {
-        int keep = blob.tag_keep[2 * n + i], strong = blob.tag_strong[2 * n + i];
-        int wired = keep < usable_count[i] ? keep : usable_count[i];
-        draws += (keep > 0 && keep <= usable_count[i]) + (strong > 0 && strong <= wired);
-    }
-    for (int i = 0; i < 4; i++) {
-        bd[i] = b[i];
-    }
-    bd[DRAWS] = (int8_t)draws;
+    bd[DRAWS] = (int8_t)(p[2] + p[5] + p[8] + p[11]);
     blob.compete->sum[n] = wiring_sum(blob, n);
 }
 
@@ -205,24 +179,14 @@ static void churn_draw(Blob& blob, const uint64_t* u, int count, uint64_t* out) 
     }
 }
 
-// the old read-off checked: the re-pick must keep the wiring whenever the bounds said so
-static void check_repick(Blob& blob, int n, bool cross) {
-    uint64_t before = wiring_sum(blob, n);
-    tag_rewire(blob, n);
-    if (!cross && wiring_sum(blob, n) != before) {
-        std::fprintf(stderr, "compete_full 2: neuron %d rewired where the bounds said no\n", n);
-        std::abort();
-    }
-}
-
 // one cell moves toward (or, losing, away from) the sources that were active on this tick
 static void move_cell(Blob& blob, int n, int read_now, bool won) {
     const Genome& g = blob.genome;
     CompeteState& cs = *blob.compete;
     int8_t* bd = cs.bounds + (size_t)n * BOUNDS;
     // the bounds hold while this rule alone moved the counters and nobody touched the wiring
-    bool cheap = g.compete_full != 1 && g.tag_counts == 0 && !g.hop_on && bd[DRAWS] != STALE &&
-                 cs.sum[n] == wiring_sum(blob, n);
+    bool bounded = g.compete_full != 1 && g.tag_counts == 0 && !g.hop_on;
+    bool cheap = bounded && bd[DRAWS] != STALE && cs.sum[n] == wiring_sum(blob, n);
     const int8_t* row = blob.tag_evidence + (std::size_t)n * SLOTS * TILE_NEURONS;
     bool made = blob.tag_made[n] != 0;
     uint64_t use[SLOTS], active[SLOTS];
@@ -263,20 +227,25 @@ static void move_cell(Blob& blob, int n, int read_now, bool won) {
                        : (tag_add(blob, n, k, active[k], down), true);
         made = true;
     }
-    if (g.compete_full == 2 && cheap) {
-        check_repick(blob, n, cross);
-    } else if (cross || !cheap) {
-        tag_rewire(blob, n);
-    } else {
+    if (cheap && !cross && g.compete_full != 2) {
         // a re-pick here would keep the wiring; it would still draw for its ties
         for (int d = 0; d < bd[DRAWS]; d++) {
             rng_below(blob.rng, SLOTS);
         }
         return;
     }
-    if (g.compete_full != 1 && g.tag_counts == 0 && !g.hop_on) {
-        bounds_make(blob, n);
+    if (!bounded) {
+        tag_rewire(blob, n);
+        return;
     }
+    uint64_t before = g.compete_full == 2 ? wiring_sum(blob, n) : 0;
+    tag_rewire_hinted(blob, n, bd + PICK);
+    if (g.compete_full == 2 && cheap && !cross && wiring_sum(blob, n) != before) {
+        // the check: the re-pick changed the wiring where the bounds said it would not
+        std::fprintf(stderr, "compete_full 2: neuron %d rewired where the bounds said no\n", n);
+        std::abort();
+    }
+    bounds_make(blob, n);
 }
 
 // with tile_winners: cells still over their bar that did not fire, and had not fired lately
