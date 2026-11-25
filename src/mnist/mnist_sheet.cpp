@@ -104,7 +104,15 @@ static int one_digit(Sheet& s, bool learn, Rows* counts, std::vector<uint8_t>& c
     if (learn && tt.valence != 0) {
         plug_mark_acted(tt.plug, b, tt.move);
         plug_mark_vote(tt.plug, b, tt.move);
-        blob_reward(b, tt.valence);
+        int valence = tt.valence;
+        if (s.coin_reward) {
+            // the control: good or bad by a coin (splitmix64 step), whatever was pressed
+            uint64_t z = (s.coin_state += 0x9e3779b97f4a7c15ull);
+            z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull;
+            z = (z ^ (z >> 27)) * 0x94d049bb133111ebull;
+            valence = ((z ^ (z >> 31)) & 1) ? 1 : -1;
+        }
+        blob_reward(b, valence);
     }
     if (counts) {
         rows_add(*counts, c.data(), tt.right_move);

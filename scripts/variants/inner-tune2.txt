@@ -1,0 +1,11 @@
+# idea 155, second round on seeds 1-4: spike-exact credit alone did not bring the walk's
+# reach (echo at 5 tiles 0.77 against the walk's 0.82 and the tags' 0.80) and made echo at 2
+# tiles worse. so the walk's other two pieces, in turn: its verdict (only errors move), and
+# drive that can grow (strength from the counter, the two kinds' counts kept); and slower
+# steps. first line is the frozen-sheet readout.
+readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128
+exact, error verdict: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1 --g.tag_verdict 1
+exact, drive grows: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1 --g.tag_counts 1
+exact, error verdict, drive grows: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1 --g.tag_verdict 1 --g.tag_counts 1
+exact, error verdict, shift 5: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1 --g.tag_verdict 1 --g.tag_shift 5
+tags, error verdict: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_verdict 1

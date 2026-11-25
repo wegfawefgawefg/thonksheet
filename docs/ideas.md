@@ -671,7 +671,13 @@ co-activity runs ties the held units together and loses their order.
      growable reach, with the tags' contrast between buttons, their threshold, no learning
      by inhibitory neurons and fixed counts per neuron. Scored on the rows where each one
      alone loses (order, echo at 2 tiles, long lives), on MNIST's ceiling, and on held-out
-     rows. *building*
+     rows. *done 2026-11-25: `--g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1`,
+     `scripts/inner.sh`, docs/results-2026-11-25-inner-rule.md. It ties the plain tags and
+     gains none of the walk's reach, so the merge is not kept as the default. Its tests
+     gave more than the rule: transfer to related tasks (parity of 3 after exclusive-or
+     0.856 against 0.552), a random-neuron control, and MNIST 0.938 that coin rewards
+     match. Left: pieces on report seeds, long lives, a form of the walk's reach at fixed
+     counts.*
 156. **The vm's four walls.** Time (give the state a clock: a counter field in the address,
      or the time cells of idea 131 as input); credit one step back (the critic's surprise
      as the verdict); several items in order (marks that do not halve each other: a slot
@@ -700,3 +706,15 @@ co-activity runs ties the held units together and loses their order.
      motor cells hear only nearby cells, with one-bit connections and a vote. Candidates:
      a weighted vote (147), motor cells that hear the whole sheet, the drift (146, 157).
      *queued with the output item*
+162. **Every line is a target.** [predictive coding; Sutton's many predictions at many
+     horizons ("Horde"); in bits] Owner, 2026-11-25: "in all of our envs we should extract
+     rich signal. thonksheet shouldnt just output policy right. shouldnt it predict current
+     state, next state, future states ... a real brain extracts much more info from the
+     environment. and that info aids the goal and feature learning." Good or bad is at
+     most one bit a step; the input is hundreds of lines a step and each one, a step
+     later, is a free right answer. So: the sheet predicts every input line 1, 2, 4, 8
+     steps ahead, always on, in every world; its own last press comes back in as input so
+     the next state can depend on it; each line's error teaches its predictor, and the
+     errors go to the inside (as lines, and one hop to every hidden cell once idea 159 is
+     in). The critic is then just the predictor of the reward line. Takes in queue item 3
+     and idea 137. *building*

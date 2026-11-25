@@ -25,6 +25,49 @@
 //
 // the feedback is computed at the verdict from the spike ring, which in these worlds is the
 // tick right after the decision; a tag lasts until the next verdict.
+//
+// one inner rule (idea 155): the pieces of reverse replay (learn_replay.cpp) behind genome
+// numbers. tag_exact: the walk's spike-exact credit. a cell's feedback goes back only along
+// the edges whose source fired one slot delay before one of the cell's own spikes in the
+// step (the spikes its fire step read), and a tagged neuron moves the counters of the sources
+// that fired one delay before its own spikes, not of everything active in the step.
+// tag_grow 0: only wired sources move. tag_counts (tag_store.cpp): which counts a neuron
+// keeps. two controls: tag_shuffle gives each button cell a random role, tag_random hands
+// the tags to as many neurons drawn at random among those that fired.
+
+// the spike map `age` ticks before the newest
+static const uint64_t* map_at(const Blob& blob, int age) {
+    return blob.spikes[(blob.now - age) & (HISTORY - 1)];
+}
+
+// the step's window, as the readout counts it
+static int window_ages(const Genome& g) {
+    int ages = g.readout_trace_ticks;
+    return ages < 1 ? 1 : (ages > HISTORY - 1 ? HISTORY - 1 : ages);
+}
+
+// tag_exact: the ages in the window at which neuron n fired, a bit each
+static uint32_t fired_ages(const Blob& blob, int n) {
+    int t = n / TILE_NEURONS, b = n % TILE_NEURONS, ages = window_ages(blob.genome);
+    uint32_t m = 0;
+    for (int a = 1; a <= ages; a++) {
+        m |= (uint32_t)((map_at(blob, a)[t] >> b) & 1) << a;
+    }
+    return m;
+}
+
+// tag_exact: the sources of slot k that fired one slot delay before one of the spikes in
+// `fired` (a driver older than the ring is lost)
+static uint64_t exact_sources(const Blob& blob, int n, int k, uint32_t fired) {
+    uint32_t src = slot_source(blob, n, k);
+    int delay = blob.slot_delay[blob_weight_index(n, k)];
+    uint64_t d = 0;
+    for (; fired; fired &= fired - 1) {
+        int older = __builtin_ctz(fired) + delay;
+        d |= older < HISTORY ? map_at(blob, older)[src] : 0;
+    }
+    return d;
+}
 
 // neurons that may carry a tag in tile t
 static uint64_t learners(const Blob& blob, int t) {
@@ -36,6 +79,7 @@ static uint64_t learners(const Blob& blob, int t) {
 static void send_back(Blob& blob, int n, int sign, const uint64_t* trace, int thin) {
     const Genome& g = blob.genome;
     uint64_t self = 1ull << (n % TILE_NEURONS);
+    uint32_t fired = g.tag_exact ? fired_ages(blob, n) : 0;
     for (int k = 0; k < SLOTS; k++) {
         if (k >= LOCAL_SLOTS && !g.tag_far) {
             break;
@@ -45,7 +89,8 @@ static void send_back(Blob& blob, int n, int sign, const uint64_t* trace, int th
             continue;
         }
         int64_t w = blob_weight_index(n, k);
-        uint64_t reach = connected_bits(blob.w0[w], blob.w1[w]) & trace[src];
+        uint64_t from = g.tag_exact ? exact_sources(blob, n, k, fired) : trace[src];
+        uint64_t reach = connected_bits(blob.w0[w], blob.w1[w]) & from;
         reach &= learners(blob, (int)src) & (k == 4 ? ~self : ~0ull);
         if (thin > 0) {
             reach &= sparse_word(blob.rng, thin);
@@ -104,6 +149,24 @@ static void tag_from_buttons(Blob& blob, const uint64_t* trace) {
         weight = (int)((other_cells + pressed_cells / 2) / pressed_cells);
         weight = weight < 1 ? 1 : weight;
     }
+    if (g.tag_shuffle) {
+        // the control: every button cell draws its role, pressed with the pressed share of
+        // cells; in tag_mode 1 only the cells drawn as pressed send
+        uint32_t cells = (uint32_t)(pressed_cells + other_cells);
+        for (int t = 0; t < blob.tile_count && pressed_cells > 0; t++) {
+            uint64_t m = blob.motor_attached[t];
+            while (m) {
+                int n = t * TILE_NEURONS + __builtin_ctzll(m);
+                m &= m - 1;
+                bool pressed = (int64_t)rng_below(blob.rng, cells) < pressed_cells;
+                if (pressed || g.tag_mode == 2) {
+                    send_back(blob, n, pressed ? weight : -1, trace, 0);
+                }
+            }
+        }
+        read_tags(blob, g.tag_min < 1 ? 1 : g.tag_min, blob.tag_plus, blob.tag_minus);
+        return;
+    }
     for (int t = 0; t < blob.tile_count; t++) {
         uint64_t acted = blob.motor_acted[t] & blob.motor_attached[t];
         uint64_t other = g.tag_mode == 2 ? blob.motor_attached[t] & ~acted : 0;
@@ -125,6 +188,7 @@ static void tag_from_buttons(Blob& blob, const uint64_t* trace) {
 static void move_tagged(Blob& blob, int n, bool toward, const uint64_t* trace) {
     const Genome& g = blob.genome;
     uint64_t self = 1ull << (n % TILE_NEURONS);
+    uint32_t fired = g.tag_exact ? fired_ages(blob, n) : 0;
     for (int k = 0; k < SLOTS; k++) {
         uint32_t src = slot_source(blob, n, k);
         if (src == (uint32_t)blob.tile_count) {
@@ -133,7 +197,12 @@ static void move_tagged(Blob& blob, int n, bool toward, const uint64_t* trace) {
         uint64_t kind = k < LOCAL_SLOTS ? blob.inhibitory[src] : 0;
         uint64_t allowed = k == 4 ? ~self : ~0ull;
         allowed &= k >= LOCAL_SLOTS ? ~blob.inhibitory[src] : ~0ull;
-        uint64_t active = trace[src] & allowed & sparse_word(blob.rng, g.tag_shift);
+        if (!g.tag_grow) {
+            int64_t w = blob_weight_index(n, k);
+            allowed &= connected_bits(blob.w0[w], blob.w1[w]);
+        }
+        uint64_t from = g.tag_exact ? exact_sources(blob, n, k, fired) : trace[src];
+        uint64_t active = from & allowed & sparse_word(blob.rng, g.tag_shift);
         if (!active) {
             continue;
         }
@@ -141,6 +210,29 @@ static void move_tagged(Blob& blob, int n, bool toward, const uint64_t* trace) {
         tag_add(blob, n, k, toward ? more : less, toward ? less : more);
     }
     tag_rewire(blob, n);
+}
+
+// tag_random: the same numbers of plus and minus tags, on learners drawn at random among
+// those that fired in the step
+static void random_tags(Blob& blob, const uint64_t* trace) {
+    int64_t plus = 0, minus = 0, pool = 0;
+    for (int t = 0; t < blob.tile_count; t++) {
+        plus += __builtin_popcountll(blob.tag_plus[t]);
+        minus += __builtin_popcountll(blob.tag_minus[t]);
+        pool += __builtin_popcountll(learners(blob, t) & trace[t]);
+        blob.tag_plus[t] = blob.tag_minus[t] = 0;
+    }
+    int64_t want = plus + minus < pool ? plus + minus : pool;
+    for (int64_t i = 0; i < want;) {
+        int n = (int)rng_below(blob.rng, (uint32_t)blob.neuron_count);
+        int t = n / TILE_NEURONS;
+        uint64_t bit = 1ull << (n % TILE_NEURONS);
+        if (!(learners(blob, t) & trace[t] & bit) || ((blob.tag_plus[t] | blob.tag_minus[t]) & bit)) {
+            continue;
+        }
+        (i < plus ? blob.tag_plus : blob.tag_minus)[t] |= bit;
+        i++;
+    }
 }
 
 void learn_tags(Blob& blob, int valence) {
@@ -154,8 +246,7 @@ void learn_tags(Blob& blob, int valence) {
     blob.tag_average += gap >> g.tag_avg_shift;
 
     // what was active in the step that chose
-    int ages = g.readout_trace_ticks;
-    ages = ages < 1 ? 1 : (ages > HISTORY - 1 ? HISTORY - 1 : ages);
+    int ages = window_ages(g);
     uint64_t* trace = blob.active_trace;
     for (int t = 0; t <= blob.tile_count; t++) {
         uint64_t r = 0;
@@ -179,6 +270,10 @@ void learn_tags(Blob& blob, int valence) {
             blob.tag_plus[t] = p & ~m;
             blob.tag_minus[t] = m & ~p;
         }
+    }
+
+    if (g.tag_random) {
+        random_tags(blob, trace);
     }
 
     // how far from expected is the chance anything moves. tag_verdict 1: an error rule

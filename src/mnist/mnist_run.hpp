@@ -33,6 +33,9 @@ struct Sheet {
     int64_t ticks = 0;
     std::vector<int>* images = nullptr;      // when set, each digit's index in its set is appended
     int64_t presses[MNIST_PRESS_KINDS] = {}; // per button, then "no move", since last cleared
+    // idea 155, a control: the blob is told good or bad by a coin instead of the answer
+    int coin_reward = 0;
+    uint64_t coin_state = 0x636f696eull;
     // the inside-learning control (mnist_shuffle.cpp): while on, each digit's pixels are
     // shuffled by a permutation drawn fresh for that digit (same ink, no structure)
     int shuffle = 0;
