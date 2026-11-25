@@ -148,6 +148,20 @@ struct Blob {
     // top of what their inputs say. one word per tile (tile_count + 1), zero when unused;
     // every engine allocates it. a stand-in may leave it null.
     uint64_t* urge = nullptr;
+
+    // ideas 66-75 (fire_dynamics.cpp). each is made at birth only if its genome number is on,
+    // otherwise null and never touched.
+    // sent: what the hot loop reads in place of the spike ring when synapses tire or warm,
+    // same layout and index. warm: spikes that count a second time, same layout.
+    uint64_t* sent = nullptr;
+    uint64_t* warm = nullptr;
+    int16_t* tire = nullptr;        // per neuron, threshold added by recent firing, x16
+    int16_t* slow = nullptr;        // per neuron, the slow second potential
+    uint8_t* rebound = nullptr;     // per neuron, ticks left of the lowered threshold
+    uint64_t* up = nullptr;         // per tile word: neurons in the up state
+    uint64_t* any_branch = nullptr; // per tile words, fixed at birth: which neurons are
+    uint64_t* veto = nullptr;       // of that kind
+    uint64_t* coincide = nullptr;
 };
 
 // birth and death

@@ -178,6 +178,31 @@ struct Genome {
     // mode runs as usual and the table too, on neurons that are not button cells (the inside).
     // 3 the table is the only learning, on button cells only (the sheet frozen)
     int rule_on = 0;
+
+    // ideas 66-75, what a connection does over a few ticks and what a neuron computes
+    // (fire_dynamics.cpp, docs/results-2026-11-25-family-dynamics.md). 0 is off for every one,
+    // and off changes nothing.
+    int syn_tire_ticks = 0;      // 66: a spike from a source that fired in the last N ticks...
+    int syn_tire_keep_shift = 1; //     ...reaches its targets only with chance 2^-this
+    int syn_warm_ticks = 0;      // 67: a spike from a source that fired in the last N ticks...
+    int syn_warm_shift = 0;      //     ...counts twice, with chance 2^-this
+    int tire_jump = 0;           // 68: threshold steps added on firing, fading...
+    int tire_shift = 4;          //     ...by 2^-this of what is left per tick
+    int slow_leak_shift = 0;     // 69: a second potential leaking by 2^-this per tick...
+    int slow_share_shift = 6;    //     ...of which 2^-this is added to the first at the compare
+    int rebound_level = 0;       // 70: a potential below minus this (inhibited)...
+    int rebound_ticks = 4;       //     ...leaves the threshold lower for this many ticks...
+    int rebound_drop = 4;        //     ...by this much
+    int updown_drop = 0;         // 71: a neuron that fired is "up": its threshold is this much
+    int updown_floor = 0;        //     lower until its potential falls below this
+    int any_branch_percent = 0;  // 72: share of neurons driven by their best slot, not the sum
+    int veto_percent = 0;        // 73: share of neurons where one inhibitory spike in a slot
+                                 //     cancels that slot's excitation
+    int coincide_percent = 0;    // 74: share of neurons that fire only when two slots with
+                                 //     different delays both reach branch_threshold
+    int tile_winners = 0;        // 75: at most this many neurons of a tile keep their spike,
+                                 //     the ones furthest over threshold
+    int syn_sensors = 1;         // 66, 67: 1 sensor cells' spikes tire and warm too; 0 not
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

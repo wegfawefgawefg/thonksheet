@@ -1,0 +1,7 @@
+# ideas 66-75: the readout rule (learn mode 5, evidence counters, balance, 128 motor cells per
+# button) on a frozen sheet, with the mechanisms that moved the screen most. first line is
+# the baseline; each row gets its own learning-off twin.
+default: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128
+tiring neurons 4, fade 7: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tire_jump 4 --g.tire_shift 7
+slow 6, share 1/16: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.slow_leak_shift 6 --g.slow_share_shift 4
+winners 2: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tile_winners 2

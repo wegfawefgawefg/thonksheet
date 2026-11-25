@@ -5,10 +5,12 @@
 #endif
 
 #include "blob/blob.hpp"
+#include "blob/fire_dynamics.hpp"
 #include "blob/random_words.hpp"
 #include "blob/tick_steps.hpp"
 
-// integrate and fire. the hot loop: per neuron, 11 slots of AND + popcount.
+// integrate and fire. the hot loop: per neuron, 11 slots of AND + popcount. the extras of
+// ideas 66-75 are in fire_dynamics.cpp and change nothing while off.
 
 constexpr int POTENTIAL_MIN = -2048;
 constexpr int POTENTIAL_MAX = 16000;
@@ -99,17 +101,77 @@ static inline void unpack_flags(uint64_t word, uint8_t* flags) {
     }
 }
 
-void tick_fire(Blob& blob, uint64_t* out) {
+// one tile's drive from its 11 slots, reading maps from `ring` (the spike ring, or the
+// sent or warm ring of fire_dynamics.cpp, same layout). split: ideas 72-74, or null.
+static inline void tile_drive(const Blob& blob, int t, const uint64_t* ring, const int32_t* offset,
+                              int32_t* __restrict drive, int bonus, SlotSplit* split) {
     const Genome& g = blob.genome;
     const uint64_t* inh = blob.inhibitory;
-    const int gain = g.inhibit_gain, bt = g.branch_threshold, bonus = g.branch_bonus;
-    const int noise_shift = g.noise_shift;
+    const int gain = g.inhibit_gain, bt = g.branch_threshold;
     const int sl = g.strong_log;
     // every local delay the same: one word per slot for the whole tile
     const bool shared = g.local_delay_min == g.local_delay_max;
+    int64_t tile_base = (int64_t)t * SLOTS * TILE_NEURONS;
+    const uint64_t* tile_w0 = blob.w0 + tile_base;
+    const uint64_t* tile_w1 = blob.w1 + tile_base;
+    const uint8_t* tile_delay = blob.slot_delay + tile_base;
+    alignas(64) uint64_t words[TILE_NEURONS];
+    // the 9 local slots
+    for (int k = 0; k < LOCAL_SLOTS; k++) {
+        uint32_t src = blob.local_tile[t * LOCAL_SLOTS + k];
+        const uint64_t* a0 = tile_w0 + k * TILE_NEURONS;
+        const uint64_t* a1 = tile_w1 + k * TILE_NEURONS;
+        const uint8_t* delay = tile_delay + k * TILE_NEURONS;
+        if (shared && !split) {
+            uint64_t s = ring[offset[g.local_delay_min] + src];
+            add_slot_shared(drive, s & ~inh[src], s & inh[src], a0, a1, gain, bt, bonus, sl);
+            continue;
+        }
+        if (shared) {
+            uint64_t s = ring[offset[g.local_delay_min] + src];
+            for (int b = 0; b < TILE_NEURONS; b++) {
+                words[b] = s;
+            }
+        } else {
+            // each neuron picks its own age of this source tile
+            alignas(64) uint64_t column[HISTORY];
+            for (int d = 0; d < HISTORY; d++) {
+                column[d] = ring[offset[d] + src];
+            }
+            pick_by_delay(words, column, delay, g.local_delay_min, g.local_delay_max);
+        }
+        if (split) {
+            split_add_slot(drive, *split, words, inh[src], a0, a1, delay, gain, bt, bonus, sl);
+        } else {
+            add_slot_own(drive, words, inh[src], a0, a1, gain, bt, bonus, sl);
+        }
+    }
+    // the 2 far slots: each neuron its own tile and delay
+    for (int k = 0; k < FAR_SLOTS; k++) {
+        int slot = LOCAL_SLOTS + k;
+        const uint8_t* delay = tile_delay + slot * TILE_NEURONS;
+        const uint32_t* far = blob.far_tile + (int64_t)t * TILE_NEURONS * FAR_SLOTS + k;
+        for (int b = 0; b < TILE_NEURONS; b++) {
+            words[b] = ring[offset[delay[b]] + far[b * FAR_SLOTS]];
+        }
+        const uint64_t* a0 = tile_w0 + slot * TILE_NEURONS;
+        const uint64_t* a1 = tile_w1 + slot * TILE_NEURONS;
+        if (split) {
+            split_add_slot(drive, *split, words, 0, a0, a1, delay, gain, bt, bonus, sl);
+        } else {
+            add_far_slot(drive, words, a0, a1, bt, bonus, sl);
+        }
+    }
+}
 
-    // where in the ring block each delay reads: delay d is d ticks before the new map
-    const uint64_t* ring = blob.spikes[0];
+void tick_fire(Blob& blob, uint64_t* out) {
+    const Genome& g = blob.genome;
+    const int noise_shift = g.noise_shift;
+    const DynamicsOn dyn = dynamics_on(g);
+
+    // where in the ring block each delay reads: delay d is d ticks before the new map.
+    // tiring or warming synapses (66, 67) read what was sent instead of what fired
+    const uint64_t* ring = dyn.sent ? blob.sent : blob.spikes[0];
     int32_t offset[HISTORY];
     for (int d = 0; d < HISTORY; d++) {
         offset[d] = ((blob.now + 1 - d) & (HISTORY - 1)) * blob.spike_stride;
@@ -119,44 +181,23 @@ void tick_fire(Blob& blob, uint64_t* out) {
     uint64_t* noise_out = blob.noise_ring + (out - blob.spikes[0]);
 
     alignas(64) int32_t drive[TILE_NEURONS];
-    alignas(64) uint64_t words[TILE_NEURONS];
+    alignas(64) int32_t margin[TILE_NEURONS];
+    SlotSplit split;
     for (int t = 0; t < blob.tile_count; t++) {
-        int64_t tile_base = (int64_t)t * SLOTS * TILE_NEURONS;
-        const uint64_t* tile_w0 = blob.w0 + tile_base;
-        const uint64_t* tile_w1 = blob.w1 + tile_base;
-        const uint8_t* tile_delay = blob.slot_delay + tile_base;
         for (int b = 0; b < TILE_NEURONS; b++) {
             drive[b] = 0;
         }
-        // the 9 local slots
-        for (int k = 0; k < LOCAL_SLOTS; k++) {
-            uint32_t src = blob.local_tile[t * LOCAL_SLOTS + k];
-            const uint64_t* a0 = tile_w0 + k * TILE_NEURONS;
-            const uint64_t* a1 = tile_w1 + k * TILE_NEURONS;
-            if (shared) {
-                uint64_t s = ring[offset[g.local_delay_min] + src];
-                add_slot_shared(drive, s & ~inh[src], s & inh[src], a0, a1, gain, bt, bonus, sl);
-                continue;
-            }
-            // each neuron picks its own age of this source tile
-            alignas(64) uint64_t column[HISTORY];
-            for (int d = 0; d < HISTORY; d++) {
-                column[d] = ring[offset[d] + src];
-            }
-            pick_by_delay(words, column, tile_delay + k * TILE_NEURONS, g.local_delay_min,
-                          g.local_delay_max);
-            add_slot_own(drive, words, inh[src], a0, a1, gain, bt, bonus, sl);
+        uint64_t allowed = ~0ull; // 74: coincidence neurons without it may not fire
+        if (dyn.split) {
+            split_start(blob, t, split);
+            tile_drive(blob, t, ring, offset, drive, g.branch_bonus, &split);
+            allowed = split_finish(blob, t, split, drive);
+        } else {
+            tile_drive(blob, t, ring, offset, drive, g.branch_bonus, nullptr);
         }
-        // the 2 far slots: each neuron its own tile and delay
-        for (int k = 0; k < FAR_SLOTS; k++) {
-            int slot = LOCAL_SLOTS + k;
-            const uint8_t* delay = tile_delay + slot * TILE_NEURONS;
-            const uint32_t* far = blob.far_tile + (int64_t)t * TILE_NEURONS * FAR_SLOTS + k;
-            for (int b = 0; b < TILE_NEURONS; b++) {
-                words[b] = ring[offset[delay[b]] + far[b * FAR_SLOTS]];
-            }
-            add_far_slot(drive, words, tile_w0 + slot * TILE_NEURONS, tile_w1 + slot * TILE_NEURONS,
-                         bt, bonus, sl);
+        if (dyn.warm) {
+            // 67: spikes from warm sources count a second time
+            tile_drive(blob, t, blob.warm, offset, drive, 0, nullptr);
         }
 
         // leak, add, compare
@@ -166,15 +207,23 @@ void tick_fire(Blob& blob, uint64_t* out) {
         const uint8_t* __restrict leak = blob.leak_shift + t * TILE_NEURONS;
         uint8_t* __restrict cool = blob.cooldown + t * TILE_NEURONS;
         alignas(64) uint8_t would_flags[TILE_NEURONS], rested_flags[TILE_NEURONS];
+        uint64_t would = 0;
+        if (dyn.neuron) {
+            would = dynamics_compare(blob, t, drive, bias, margin);
+        } else {
+            for (int b = 0; b < TILE_NEURONS; b++) {
+                int p = pot[b];
+                p = p - (p >> leak[b]) + drive[b];
+                p = p < POTENTIAL_MIN ? POTENTIAL_MIN : (p > POTENTIAL_MAX ? POTENTIAL_MAX : p);
+                pot[b] = (int16_t)p;
+                would_flags[b] = p >= thr[b] + bias ? 1 : 0;
+            }
+            would = pack_flags(would_flags);
+        }
+        would &= allowed;
         for (int b = 0; b < TILE_NEURONS; b++) {
-            int p = pot[b];
-            p = p - (p >> leak[b]) + drive[b];
-            p = p < POTENTIAL_MIN ? POTENTIAL_MIN : (p > POTENTIAL_MAX ? POTENTIAL_MAX : p);
-            pot[b] = (int16_t)p;
-            would_flags[b] = p >= thr[b] + bias ? 1 : 0;
             rested_flags[b] = cool[b] == 0 ? 1 : 0;
         }
-        uint64_t would = pack_flags(would_flags);
         uint64_t rested = pack_flags(rested_flags);
 
         // sensors fire as the world says; their own guess is kept as the prediction
@@ -183,8 +232,14 @@ void tick_fire(Blob& blob, uint64_t* out) {
         // an urged cell (idea 60) fires like a noise spike: on top of its inputs, if rested
         uint64_t noise = (g.noise_on ? sparse_word(blob.rng, noise_shift) : 0) | blob.urge[t];
         uint64_t inner = (would | noise | blob.pacemaker[t]) & rested & ~sensor;
-        // the world's damage and being shown the answer (both null unless asked for)
+        // the world's damage (null unless asked for): a silenced neuron does not fire, nor
+        // compete for a tile's few spikes
         inner &= blob.silenced ? ~blob.silenced[t] : ~0ull;
+        if (g.tile_winners > 0) {
+            // 75: only the most driven few of the tile keep their spike
+            inner = dynamics_winners(inner, margin, g.tile_winners);
+        }
+        // being shown the answer (null unless asked for): these fire whatever the tile does
         inner |= blob.forced ? blob.forced[t] & ~sensor : 0;
         uint64_t fired = inner | (blob.sense_in[t] & sensor);
         out[t] = fired;
@@ -199,6 +254,12 @@ void tick_fire(Blob& blob, uint64_t* out) {
             cool[b] = (uint8_t)(fired_flags[b] ? cool_len[b] : (c > 0 ? c - 1 : 0));
             pot[b] = fired_flags[b] ? (int16_t)0 : pot[b];
         }
+        if (dyn.neuron) {
+            dynamics_after(blob, t, fired);
+        }
     }
     out[blob.tile_count] = 0;
+    if (dyn.sent) {
+        dynamics_sent(blob, (int)((out - blob.spikes[0]) / blob.spike_stride));
+    }
 }

@@ -1,5 +1,6 @@
 #include "blob/birth_shape.hpp"
 #include "blob/blob.hpp"
+#include "blob/fire_dynamics.hpp"
 #include "blob/random_words.hpp"
 #include "blob/tick_steps.hpp"
 #include "blob/weight_levels.hpp"
@@ -301,6 +302,7 @@ Blob* blob_birth(const Genome& genome, uint64_t seed) {
         wire(*blob);
     }
     set_sectors(*blob);
+    dynamics_birth(*blob, seed);
     return blob;
 }
 
@@ -320,6 +322,9 @@ void blob_free(Blob* blob) {
         blob->motor_attached, blob->motor_acted, blob->readout_last,
         blob->readout_row,    blob->readout_evidence, blob->readout_keep,
         blob->rule_words,
+        blob->sent,           blob->warm,             blob->tire,
+        blob->slow,           blob->rebound,          blob->up,
+        blob->any_branch,     blob->veto,             blob->coincide,
     };
     for (void* p : arrays) {
         std::free(p);
