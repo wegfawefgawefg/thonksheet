@@ -16,7 +16,7 @@
 #   scripts/gpu.sh speed            the speed table: 1, 64, 1,024, 16,384 lives, learning on and
 #                                   off, then the CPU engine on one core, same task (a few min)
 #   scripts/gpu.sh big              16,384 lives of echo k=2 with twins, 40,000 steps (the
-#                                   search's life; about 25 minutes on an RX 9070 XT)
+#                                   search's life; 40 minutes on the RX 9070 XT, 10.8 GB)
 #
 # Tasks on the GPU: echo, shuffled-echo, delayed-echo, both-not-either. The plain minimal
 # engine only (no far slots, delays, evidence counters, drop_mode 1 or noise_pair).
@@ -104,7 +104,7 @@ speed)
     ;;
 big)
     gpu --lives 16384 --twin --task echo --k 2 "${base[@]}" --steps 40000 --window 1000 \
-        --out out/gpu/big.csv
+        --out out/gpu/big.csv --windows out/gpu/big-windows.csv
     kernel_log "2 hours ago"
     ;;
 *)

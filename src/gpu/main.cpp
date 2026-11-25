@@ -55,12 +55,12 @@ int main(int argc, char** argv) {
         std::printf("%s: %zu lives in %zu groups, %.0f KB per life, setup %.2f s\n", g.name.c_str(),
                     lives.size(), b.groups.size(), (double)gpu_life_bytes(b.shape) / 1024.0, setup);
 
-        // step every group until every life is done. dispatches start at one tick and grow
-        // toward --dispatch-ms each; a dispatch never runs more than --max-ticks ticks.
         // checking: the newborn sheets first, before any tick
         for (GpuGroup& group : b.groups) {
             ok = ok && (!f.check || gpu_run_check(g, b, group, cpu, 0));
         }
+        // step every group until every life is done. dispatches start at one tick and grow
+        // toward --dispatch-ms each; a dispatch never runs more than --max-ticks ticks.
         int per_dispatch = f.check ? f.check_ticks : 1;
         std::vector<GpuLife> states;
         auto loop_start = std::chrono::steady_clock::now();
