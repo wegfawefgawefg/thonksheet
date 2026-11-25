@@ -204,3 +204,10 @@ inner neurons measurably better for a task than unsupervised wiring already make
     transplant beats the born sheet" (0.6) right on every seed. Mine, written in idea
     165 before the job: "if the bottom rung still reads 0.97 the cells are fine"; it
     reads 0.980 in the model and 0.966 in the sheet.
+37. **Why competitive learning lifts the time rows** (its bot's five predictions are in
+    docs/results-2026-11-25-timerule.md, written after the reproduction only, and
+    scored there). In short: "the delay alone" 0.4 and "the shape" 0.35, outcome both
+    (it gave that 0.1); the frozen sheet carries the gain, right; gone by 4 steps,
+    right; a time-shuffled life gives most of it, right; 6 rows move, wrong (9). My own
+    reading in the compete2 record (cells learn "this now and that some ticks ago"
+    through slot delays) was wrong: the loops are cells of the same cue wired together.

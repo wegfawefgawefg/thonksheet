@@ -635,3 +635,13 @@ by default:
 scripts/ladder2.sh full --seeds 5-12 --table-only     the tables of the results doc
 scripts/ladder2.sh smoke --quick                      one seed, one pass on 10,000 digits
 ```
+
+## The time-rule probes (idea 166)
+
+`scripts/timerule.sh repro|walk|walk8|controls|wiring|reach|readout|all` (header of the
+script; docs/results-2026-11-25-timerule.md). New in `blobprobe`: `timewire`
+(`src/probe/time_wiring.cpp`: after a life on delayed echo, which hidden cells carry the
+cue through the blanks and where their inputs come from), and for `transfer`:
+`--life-quiet 1`, `--then-keep 1` (the second phase keeps the life's readout instead of
+a fresh one) beside `--keep-output 1` (a fresh readout that keeps the life's close-vote
+gate).

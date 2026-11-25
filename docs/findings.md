@@ -271,6 +271,37 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
     base's speed.
   - Made before the runner-up output rule, the one-hop rule, competitive learning and
     prediction lines were merged; lives are 20,000 steps, half the standard.
+- **Why competitive learning lifts the time rows: it builds loops that keep a cue lit
+  for about two steps** (idea 166, queue item 2f, docs/results-2026-11-25-timerule.md,
+  `scripts/timerule.sh`). Seeds 5 to 12 unless said; I re-ran the reproduction table on
+  two seeds from the merged build (delayed echo 0.61 to 0.97, gap 0.56 to 0.89, the
+  prediction battery's row flat).
+  - The two earlier results do not disagree. On the suite's sheet the gain on delayed
+    echo is +0.33 at 2 steps, +0.07 at 3, +0.02 at 4, nothing at 8 or 16. The prediction
+    battery asked at 4 steps. Its sheet also fails at 2 steps for a second reason:
+    sensor groups of side 2 together with the sensor lattice over the top half, where
+    the rule drives the rate from 29 to 50 and the gain goes (either change alone keeps
+    two thirds).
+  - The frozen inside carries all of it. Fresh output on the frozen lived sheet against
+    born: delayed echo +0.36, gap +0.42, every seed. A life with the frames in shuffled
+    order gives +0.33 and +0.42; a life with no reward +0.30 and +0.38; churn nothing.
+    So it is learned from which cells are on together, not from order in time.
+  - What the cells wired (4 seeds, delayed echo): the hidden cells that hold a cue take
+    28 of their 49 excitatory inputs from other cells holding the same cue (born 3,
+    churn 3). Slot delays stay about 2 ticks. These are cell assemblies. A fresh reader
+    of the hidden cells reads the cue at the ask step at 0.998 against 0.722 born. The
+    earlier guess (a cell learns "this now and that some ticks ago" through slot
+    delays) is wrong.
+  - How far: 10 of 16 memory and time rows move by 0.05 or more, all ones a trace of
+    one or two steps answers: 1-back 0.726 to 0.978 (GRU 0.97), same or different in
+    turn 0.53 to 0.83, copy of 2 0.69 to 0.89, gap 0.54 to 0.94, 2-back 0.50 to 0.61,
+    recall past one 0.70 to 0.80. Beat falls (0.48 to 0.45, rate 58), sequence stays.
+  - With the runner-up output rule most rows gain a little more (copy of up to 3 +0.11,
+    delayed echo at 3 steps +0.10); 1-back loses 0.14 on every seed (that rule's
+    two-button cost).
+  - This is the first memory here that is learned inside by a local rule with no
+    reward, and not built by hand as hold cells are. Open (idea 172): what makes the
+    loop fade after two steps, and why the rate runs up on the other sheet.
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -693,13 +724,16 @@ docs/results-2026-11-25-mnist.md
 49. **Surprise fed back in as input makes the recent past readable.** [likely: 8 seeds,
     several worlds, rate unchanged] "I said on and it was off" lines are change
     detectors; a sheet that hears them carries what just happened and how long ago.
-50. **A rule that turns cells toward the input costs them the recent past.** [hint,
-    narrowed the same day: true for a frozen read on the prediction battery's sheet at a
-    4-step delay; on the suite's sheet at a 2-step delay the same rule, left on beside
-    the readout, lifts delayed echo 0.59 to 0.91 and gap 0.54 to 0.94. Which of shape,
-    delay and frozen-or-running decides is open: idea 166] Competitive learning lifts what a reader gets from one frame and lowers what it
-    gets about time (time since the cue 0.86 to 0.65). Feature learning and holding
-    compete for the same inputs of a cell unless something keeps them apart.
+50. **Competitive learning makes loops that hold what was on, for about two steps.**
+    [likely: 8 seeds, 16 rows, frozen, shuffled, reward-free and churn controls; wiring
+    looked at on 4 seeds] Cells that fire together on a cue wire to each other (28 of 49
+    inputs against 3 as born), and the loop keeps the cue readable one to two steps
+    after it is gone: delayed echo at 2 steps 0.59 to 0.91, 1-back 0.73 to 0.98, gap
+    0.54 to 0.94. Nothing at 4 steps or more, nothing for rhythm. It is learned from
+    co-activity, not from time order (a shuffled life gives the same). (This replaces
+    the first reading, "a rule that turns cells toward the input costs them the recent
+    past", which was one sheet shape at a 4-step delay where the rule drove the rate to
+    50 and the loops barely formed; there the trace does get shorter than born.)
 51. **The one-hop error teaches a cell what a few of its inputs can jointly decide, and
     little else so far.** [likely: toys and calc 8 and 2 seeds with coin and shuffled
     controls; two real-data tests, 8 seeds] Products of 2 or 3 nearby lines: yes, far

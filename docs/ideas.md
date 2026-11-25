@@ -784,7 +784,11 @@ co-activity runs ties the held units together and loses their order.
      delay and "rule still running" decides; add a shuffled-in-time control; run longer
      delays, beat, sequence, copy, recall and n-back; test the reading that a winner's
      counters learn "this now and that some ticks ago" by looking at what the cells
-     wired. *building*
+     wired. *done: docs/results-2026-11-25-timerule.md,
+     `scripts/timerule.sh`. The delay decides (gain +0.33 at 2 steps, +0.02 at 4), and
+     the other sheet's shape runs the rate up. The rule builds cell assemblies per cue
+     from co-activity, kept when frozen, the same after a time-shuffled life: a trace
+     of about two steps, not a time detector. 10 of 16 memory rows move.*
 167. **The rule's ladder: which step from backprop down to our one-hop rule loses the
      features?** Idea 165 showed a wiring exists; backprop finds it and our rules do
      not. In idea 165's model at its bottom rung (the engine's cell, every constraint),
@@ -821,3 +825,15 @@ co-activity runs ties the held units together and loses their order.
 171. **A critic that speaks only when something is at stake.** The critic teaches every
      press by a surprise that is noise on cue and blank steps; teach only when its level
      moved by more than its own usual swing. Parked with the critic. *parked*
+172. **Make the learned loops hold as long as the task needs.** Idea 166: competitive
+     learning builds a loop per cue that stays lit about two steps and then fades, with
+     no reward and no hold cells. Hand-built hold cells keep a cue 1,000 ticks. Find
+     what ends the loop: the threshold rising on every spike (regulation is built to
+     stop exactly this), the sector bias, tiring, the tile's winners, inhibition the
+     loop recruits, too few strong inputs inside the loop. Then find the smallest
+     change that lets a loop stay lit until another cue or the answer puts it out
+     (regulation that counts over a longer span, or acts on the tile and not the cell;
+     a loop that inhibits its rivals), scored on delayed echo at 2 to 50 steps, n-back,
+     recall, copy, with the frozen and shuffled controls, the rate held, and the rows
+     that must not break (exclusive-or, 16 cues, MNIST read). Also why the rate runs to
+     50 on sensor side 2 with the wide lattice. *building*
