@@ -458,6 +458,22 @@ not known to do it.
      for the whole map. Today the readout runs use flags chosen per task (long delays for
      the time tasks, more motor cells here, smaller line groups there). *idea: the combined
      engine is the first to be held to it*
+119. **The unattended search.** A loop that draws designs (genome numbers and mechanism
+     switches), scores each on a quick map of worlds, keeps the best and varies them, on
+     this PC and stevejobs, with a held-out set of worlds it never sees. A combination
+     search: it cannot invent a mechanism, only find which of ours go together. *running*
+120. **The rule as a table.** The learning rule itself as a small lookup table (what a
+     connection does given a few local bits: fired, source fired, good, bad, acted), so the
+     search can vary rules and not only numbers. *running*
+121. **Many lives on the GPU.** *done for the minimal engine and the Echo family
+     (`scripts/gpu.sh`, src/gpu/, shaders/gpu/). One workgroup steps one life; bit-exact
+     with the CPU engine (`blobgpu --check`, nine cases; full-length lives identical as
+     text). 9.5 million life-ticks a second at 1,000 lives or more, the work of about 44
+     unloaded cores; 16,384 lives and their twins (26 billion ticks) in 40 minutes with no
+     fault on the card. Echo over 16,384 seeds: 0.947 (sd 0.021). Not ported: evidence
+     counters, far slots, delays, worlds outside the Echo family.
+     docs/results-2026-11-25-gpu.md*
+122. (number not used)
 
 ### Outside the sheet (added 2026-11-25)
 
@@ -605,3 +621,8 @@ co-activity runs ties the held units together and loses their order.
      pixels). A sheet, or anything, that learns such a code with no reward, feeding the
      memory. This is the invariance problem restated as one organ's job. *queued behind the
      invariance battery*
+151. **The memory engine on the GPU, and any world.** The memory engine is table lookups and
+     small adds, the easiest thing here to run by the thousand. Port it, with a host-world
+     mode (engine on the card, world on the CPU, one exchange per step) so every world on
+     the map runs, not only Echo. Then the search can vary the memory's shape (what goes in
+     the address) on held-out worlds at ten million ticks a second. *building*
