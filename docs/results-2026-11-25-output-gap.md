@@ -82,7 +82,8 @@ MNIST test digits, seeds 5-12, born sheet, at 20,000 digits unless said.
   rung (0.856 against 0.864); centring the counts gets about 0.01 of it back late (2 seeds).
 - **A weighted vote on top** (`--g.readout_evidence_strong 2`, idea 147: each motor cell's
   best quarter of connections at strength 4): **0.837, 0.854, 0.863**, above the runner-up
-  rule alone on every seed, free per tick.
+  rule alone on every seed, free per tick; with competition on from the first digit 0.836,
+  0.854, 0.862.
 - **Toy rows**: 16 cues 0.305 to 0.605 (0.723 with the weighted vote), 8 cues 0.842 to 0.940,
   order 0.695 to 0.779, echo k=2 and k=4 unchanged; **exclusive-or 0.883 to 0.793** (the
   gate's cost; with two buttons the new rule is the gate), 0.725 with the weighted vote.
@@ -248,7 +249,7 @@ test accuracy, seeds 5-12:
 | competition on from the first digit | plain | 0.558 | 0.660 | 0.690 | 0.672 | 0.647 |
 | competition on from the first digit | gate | 0.603 | 0.789 | 0.811 | 0.798 | 0.708 |
 | competition on from the first digit | **runner-up + gate** | 0.582 | 0.757 | **0.816** | **0.837** | **0.844** |
-| competition on from the first digit | runner-up + gate + top quarter strong | COMPSTRONG |
+| competition on from the first digit | **runner-up + gate + top quarter strong** | 0.615 | 0.791 | **0.836** | **0.854** | **0.862** |
 | lived, then frozen | plain | 0.568 | 0.669 | 0.693 | 0.679 | 0.653 |
 | lived, then frozen | runner-up + gate | 0.554 | 0.758 | 0.818 | 0.837 | 0.845 |
 
