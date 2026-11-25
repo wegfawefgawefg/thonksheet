@@ -133,6 +133,9 @@ struct Genome {
     int readout_lock_hold = 3;    // a move against depth d goes with 2^-(this * d)
     int readout_decay = 0;        // per motor-cell update, this many random counters step
                                   // toward 0 (locked ones do not): forgetting makes room
+    int readout_decay_idle = 0;   // 1: only sources idle in the graded window decay
+    int time_percent = 0;         // time cells: share of excitatory inner neurons
+    int time_levels = 14;         // their log bins, 16 ticks up to 2^(4 + this)
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

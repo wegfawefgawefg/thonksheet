@@ -21,6 +21,13 @@ struct BlobLongMemory {
     uint64_t* cell = nullptr;   // mask per tile
     uint32_t* source = nullptr; // per neuron: the sensor cell it counts
     uint8_t* count = nullptr;   // per neuron
+    // time cells (genome time_percent, time_levels; idea 131 as log-spaced time cells,
+    // catalogue 62): per sensor cell, ticks since its last onset and since the one before;
+    // a time cell fires while its source's count lies in its bin [2^(4+k), 2^(5+k)) ticks
+    uint64_t* time_cell = nullptr; // mask per tile
+    uint8_t* bin = nullptr;        // per neuron: k, and bit 7 for "the onset before last"
+    uint32_t* since_last = nullptr;
+    uint32_t* since_prev = nullptr;
     // freezer: lock depth per evidence counter, laid out as readout_evidence
     uint8_t* lock = nullptr;
 };
@@ -32,5 +39,5 @@ void long_memory_after_fire(Blob& blob);
 int8_t long_memory_evidence_step(Blob& blob, int64_t at, int8_t value, int direction, int top);
 // forgetting as room (genome readout_decay): on each update of a motor cell, that many of
 // its counters, picked at random, step once toward 0, unless the freezer holds them
-void long_memory_evidence_decay(Blob& blob, int64_t row_at, int8_t* row);
+void long_memory_evidence_decay(Blob& blob, int n, int64_t row_at, int8_t* row);
 void long_memory_free(Blob& blob);
