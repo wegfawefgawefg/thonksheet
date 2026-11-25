@@ -394,3 +394,24 @@ is a mechanism to try. All are scored on the invariance battery (idea 101).
      so thick and thin, bright and dim drive it alike. *idea*
 Idea 100 (leak evidence to the same offset elsewhere) is the engineer's way; the brain is
 not known to do it.
+109. **The function battery.** The owner: "xor, 2 point, 3 point, 4 point pattern. 5 point
+     pattern. sin, cos, theres lots of cheap envs we can do. and we should be able to learn
+     all of em." Boolean functions of N cues (and, or, parity, majority, random truth
+     tables), counting, functions of a number (step, tent, sine, cosine, sums, products),
+     functions of the last few cues; each scored as readable, read, and learned. *building*
+110. **A shell of views.** [known] The owner: "you have a shape, and you rotate it, you still
+     know what it is. you form some imagination of a nd shell." As far as is known a brain
+     does not rotate a model; it ties together the views that follow each other as a thing
+     turns. Same mechanism as idea 102, tested on a viewpoint task. *the task is being built*
+111. **A place that holds.** [known: persistent activity] The default sheet keeps a cue
+     readable for 20 ticks and has lost it by 60. Search for sheets, or regions of a sheet,
+     that hold it: slow leak, dense local excitation with wider inhibition, up and down
+     states. Aimed at the time wall. *running: a 500-sheet search on how long a cue is held*
+112. **Different regions, different rules.** [known] The owner: "grid cells have a different
+     winner take all kind of activity bias too. that we wouldnt want everywhere in the brain
+     but in somewhere probably?" Give each sector its own genome numbers, so one region can
+     be winner-take-all and hold a bump of activity (a map, a memory) while another mixes
+     freely. The sectors already exist; the numbers are global today. *idea*
+113. **Screen the neuron and synapse family.** Ideas 66 to 76, each at several strengths,
+     through the feature and hold probes, then a combined search. *building*
+114. **Screen the wiring family.** Ideas 19 to 21 and 77 to 83, likewise. *building*
