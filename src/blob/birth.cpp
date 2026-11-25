@@ -1,3 +1,4 @@
+#include "blob/birth_shape.hpp"
 #include "blob/blob.hpp"
 #include "blob/random_words.hpp"
 #include "blob/tick_steps.hpp"
@@ -162,9 +163,9 @@ static void set_local_tiles(Blob& blob) {
 }
 
 // remove random connections until the neuron is under the cap
-static void enforce_fan_in(Blob& blob, int n) {
+void enforce_fan_in(Blob& blob, int n, int cap) {
     int count = count_fan_in(blob, n);
-    while (count > blob.genome.fan_in_max) {
+    while (count > cap) {
         int k = (int)rng_below(blob.rng, SLOTS);
         int64_t w = blob_weight_index(n, k);
         uint64_t conn = connected_bits(blob.w0[w], blob.w1[w]);
@@ -217,7 +218,7 @@ static void wire(Blob& blob) {
             blob.w0[blob_weight_index(n, LOCAL_SLOTS + k)] =
                 senders & sparse_word(blob.rng, g.far_connect_shift);
         }
-        enforce_fan_in(blob, n);
+        enforce_fan_in(blob, n, g.fan_in_max);
     }
 }
 
@@ -291,7 +292,13 @@ Blob* blob_birth(const Genome& genome, uint64_t seed) {
 
     set_kinds(*blob);
     set_local_tiles(*blob);
-    wire(*blob);
+    // shaped wiring (birth_shape.cpp) only when one of its numbers is set, so a default
+    // genome draws exactly what it always drew
+    if (wire_shape_on(blob->genome)) {
+        wire_shaped(*blob);
+    } else {
+        wire(*blob);
+    }
     set_sectors(*blob);
     return blob;
 }
