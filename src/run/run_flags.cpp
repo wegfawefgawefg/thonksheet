@@ -58,6 +58,8 @@ static const char* usage =
     "  --speed            ticks per second at 8x8, 16x16, 32x32 tiles; bytes per neuron\n"
     "  --speed-ms N       speed: time at each size (default 2000)\n"
     "  --frozen-readout   only connections into motor neurons learn (genome learn_mode 1)\n"
+    "  --rule-file PATH   the learning rule as a table (idea 120), with --g.rule_on 1, 2 or 3;\n"
+    "                     --rule-hex DIGITS gives the same table inline\n"
     "  --alive-ticks N    end of life: ticks counted for rate, silent, stuck (default 16384)\n"
     "  --rhythm-ticks N   end of life: idle ticks recorded for the rhythm (default 16384)\n"
     "Each life also writes <csv stem>-sum.csv: driver,key,value for every number printed.\n";
@@ -116,6 +118,9 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
         if (std::strncmp(flag, "--g.", 4) == 0 || std::strncmp(flag, "--m.", 4) == 0 ||
             std::strncmp(flag, "--t.", 4) == 0) {
             continue; // a genome number: apply_genome_args, apply_minimal_args, table_genome_args
+        }
+        if (std::strcmp(flag, "--rule-file") == 0 || std::strcmp(flag, "--rule-hex") == 0) {
+            continue; // the rule table (idea 120): rule_table_args
         }
         if (std::strcmp(flag, "--engine") == 0) {
             flags.engine = value;

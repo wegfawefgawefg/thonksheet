@@ -3,6 +3,9 @@
 // the stand-in only: coin flips and a scripted perfect player. The life protocols of the
 // suite (retention, idle, capacity, reach, speed) are in life_protocols.cpp.
 
+#ifdef BLOB_HAS_CORE
+#include "blob/learn_rule.hpp"
+#endif
 #include "run/drive.hpp"
 #include "run/life_protocols.hpp"
 #include "run/run_flags.hpp"
@@ -159,6 +162,9 @@ void drivers_wanted(const RunFlags& flags, bool* want) {
 int main(int argc, char** argv) {
     RunFlags flags;
     apply_genome_args(argc, argv, flags.genome);
+#ifdef BLOB_HAS_CORE
+    rule_table_args(argc, argv);
+#endif
     table_genome_args(argc, argv, table_genome);
     if (!run_flags_parse(argc, argv, flags)) {
         return 1;

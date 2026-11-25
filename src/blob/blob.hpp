@@ -127,6 +127,11 @@ struct Blob {
     int32_t* readout_row = nullptr;
     int8_t* readout_evidence = nullptr;
     uint16_t* readout_keep = nullptr;
+
+    // idea 120, the rule table (learn_rule.cpp): the sign of the last reward, and a scratch
+    // map (tile_count + 1 words) made on first use
+    int rule_last_valence = 0;
+    uint64_t* rule_words = nullptr;
 };
 
 // birth and death

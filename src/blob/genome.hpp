@@ -125,6 +125,11 @@ struct Genome {
     // are graded too, with the chance a noise spike has, and moved the other way.
     int noise_learn_sign = 1;
     int noise_learn_pair = 0;
+    // idea 120: the learning rule as a table, loaded with --rule-file (learn_rule.hpp).
+    // 0 off. 1 the table is the only learning, on every neuron but sensor cells. 2 the learn
+    // mode runs as usual and the table too, on neurons that are not button cells (the inside).
+    // 3 the table is the only learning, on button cells only (the sheet frozen)
+    int rule_on = 0;
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

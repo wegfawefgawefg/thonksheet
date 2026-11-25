@@ -102,6 +102,7 @@ static const GenomeField fields[] = {
     {"bad_cut_on", &Genome::bad_cut_on},
     {"noise_learn_sign", &Genome::noise_learn_sign},
     {"noise_learn_pair", &Genome::noise_learn_pair},
+    {"rule_on", &Genome::rule_on},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

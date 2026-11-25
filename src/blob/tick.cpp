@@ -1,4 +1,5 @@
 #include "blob/blob.hpp"
+#include "blob/learn_rule.hpp"
 #include "blob/tick_steps.hpp"
 
 // one tick: integrate and fire, regulate, learn.
@@ -8,6 +9,13 @@ static void tick_learn(Blob& blob, int read_now) {
     const Genome& g = blob.genome;
     int mode = g.learn_mode;
     int boost = blob.surprise_high ? g.surprise_boost : 0;
+    // idea 120: the rule table, alone (1, 3) or beside the learn mode on the inside (2)
+    if (g.rule_on) {
+        learn_rule(blob, blob.pending_valence, g.rule_on == 3 ? 1 : (g.rule_on == 2 ? 2 : 0));
+        if (g.rule_on != 2) {
+            return;
+        }
+    }
     if (mode == 2) {
         learn_flips(blob);
         return;
