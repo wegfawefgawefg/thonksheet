@@ -285,11 +285,13 @@ static void move_counters(CellReader& R, const Ladder& L, int m, int sign, int s
 
 // one digit learned, after cell_drives and button_scores gave `score` and the pick
 static void cells_learn(CellReader& R, const Ladder& L, const uint8_t* x20, const uint8_t* x15,
-                        const double* score, int pick, int label) {
+                        const double* score, int pick, int label, Curve& curve) {
     const Cells& C = L.cells;
     int valence = pick == label ? 1 : -1;
     int runner = -1;
     bool close = pick >= 0 && ladder_close(score, C.buttons, pick, runner);
+    curve.goods += valence > 0;
+    curve.close_goods += valence > 0 && close;
     if (R.rung == 5) {
         for (int m = 0; m < C.count; m++) {
             int rate = 1;
@@ -402,7 +404,7 @@ static void cells_run(CellReader& R, const Ladder& L, Curve& c) {
         if (R.vote >= 1) {
             regulate(R, L, i == 0);
         }
-        cells_learn(R, L, x20, x15, score.data(), pick, L.train.label[(size_t)r]);
+        cells_learn(R, L, x20, x15, score.data(), pick, L.train.label[(size_t)r], c);
     }
 }
 

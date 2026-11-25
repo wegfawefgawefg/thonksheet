@@ -79,9 +79,9 @@ void ladder_print(const char* name, const Curve& c) {
     for (int k = 0; k < LADDER_CHECKS; k++) {
         std::printf(" %7.4f", c.acc[k]);
     }
-    std::printf("   quiet %d %d %d %d %d  ties %.3f\n", c.quiet_buttons[0], c.quiet_buttons[1],
-                c.quiet_buttons[2], c.quiet_buttons[3], c.quiet_buttons[4],
-                c.ties[LADDER_CHECKS - 1]);
+    std::printf("   quiet %d %d %d %d %d  ties %.3f  close goods %.3f\n", c.quiet_buttons[0],
+                c.quiet_buttons[1], c.quiet_buttons[2], c.quiet_buttons[3], c.quiet_buttons[4],
+                c.ties[LADDER_CHECKS - 1], c.goods ? (double)c.close_goods / c.goods : 0.0);
     std::fflush(stdout);
 }
 

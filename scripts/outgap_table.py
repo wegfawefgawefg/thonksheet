@@ -41,9 +41,41 @@ def fmt(v):
     return "   -   " if v is None else "%7.4f" % v
 
 
+TOY_ROWS = ["k2", "k4", "k8", "k16", "xor", "order"]
+
+
+def toys(root):
+    """the toy rows: late score (blob, and its learning-off twin) per row, mean over seeds"""
+    names = sorted(n for n in os.listdir(root) if n.startswith("toys-"))
+    if not names:
+        return
+    print("toy rows: late score, mean over seeds (learning-off twin in brackets)")
+    print("%-24s %s" % ("", " ".join("%15s" % r for r in TOY_ROWS)))
+    for name in names:
+        d = os.path.join(root, name)
+        cols, seeds = [], set()
+        for row in TOY_ROWS:
+            blob, off = [], []
+            for f in os.listdir(d):
+                m = re.match(r"%s-seed(\d+)-sum\.csv$" % row, f)
+                if not m:
+                    continue
+                seeds.add(int(m.group(1)))
+                for line in open(os.path.join(d, f)):
+                    p = line.strip().split(",")
+                    if p[1:2] == ["late"]:
+                        (blob if p[0] == "blob" else off if p[0] == "learn_off" else []).append(
+                            float(p[2]))
+            cols.append("%7.3f (%5.3f)" % (sum(blob) / len(blob), sum(off) / len(off))
+                        if blob else "%15s" % "-")
+        print("%-24s %s   seeds %s" % (name[5:], " ".join(cols), ",".join(map(str, sorted(seeds)))))
+    print()
+
+
 def main():
     root = sys.argv[1] if len(sys.argv) > 1 else "out/output-gap"
     per_seed = "--seeds" in sys.argv
+    toys(root)
     for name in sorted(os.listdir(root)):
         d = os.path.join(root, name)
         if not os.path.isdir(d) or not (name.startswith("online-") or name.startswith("ladder-")):

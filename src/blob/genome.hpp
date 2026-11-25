@@ -114,6 +114,17 @@ struct Genome {
     int readout_balance = 0;         // 1: the other buttons move less, by their number
     int readout_far = 0;          // 1: a marked motor cell with an empty far slot gets one drawn,
                                   // so it hears two more tiles than its 9 local ones
+    // the output gap (docs/results-2026-11-25-output-gap.md; 0 is off and changes nothing).
+    // readout_opponent 1: motor cells on odd columns of the motor lattice vote against their
+    // button and learn the other way (blob/opponent.hpp). readout_good 2: on good the pressed
+    // button gains and only the runner-up loses (needs margin_percent for the runner-up's
+    // marks; with margin_win 2 only on a close vote)
+    int readout_opponent = 0;
+    // readout_halve 1: a counter reaching the clamp halves the cell's whole counter row.
+    // readout_keep_mul N: a motor cell wires N times the connections it was born with.
+    // (and readout_evidence_strong 2: the top quarter of what is wired at 4, the rest at 1)
+    int readout_halve = 0;
+    int readout_keep_mul = 1;
     // lose-shift and neighbours (idea 53, learn_lose_shift.cpp). 0 is off and changes nothing.
     int lose_shift_steps = 0; // on bad, threshold steps added to motor cells that just fired
     int win_stay_steps = 0;   // on good, threshold steps taken off them

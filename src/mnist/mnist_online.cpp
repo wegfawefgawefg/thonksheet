@@ -206,6 +206,10 @@ int mnist_online(int argc, char** argv) {
         std::printf("moved: 1 pixel %.4f  2 pixels %.4f  (mean of right, left, down, up)\n", m1,
                     m2);
     }
+    if (s.blob->margin_goods > 0) {
+        std::printf("close goods: %u of %u (%.3f)\n", s.blob->margin_thin, s.blob->margin_goods,
+                    (double)s.blob->margin_thin / s.blob->margin_goods);
+    }
     std::printf("total wall %.1f s\n", now_seconds() - t0);
     sheet_free(s);
     return 0;

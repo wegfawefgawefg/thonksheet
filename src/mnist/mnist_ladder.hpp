@@ -49,6 +49,7 @@ struct Curve {
     double acc[LADDER_CHECKS] = {};
     int quiet_buttons[LADDER_CHECKS] = {}; // buttons pressed on fewer than 1% of test digits
     double ties[LADDER_CHECKS] = {};       // share of test digits with no single winner
+    int64_t goods = 0, close_goods = 0;    // training goods, and those won by a close vote
 };
 
 // the record index of the i-th digit of the online stream: the recorded order first, then a
