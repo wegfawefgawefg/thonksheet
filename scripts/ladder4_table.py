@@ -123,14 +123,19 @@ def parse_ceiling(path):
 
 def transplant_table(outdir, task):
     lines = []
-    born = {}
-    for f in glob.glob(os.path.join(outdir, "bornread-%s-*.txt" % task)):
+    borns = {}  # by read tag ("" or "@tag")
+    for f in glob.glob(os.path.join(outdir, "bornread-%s*-*.txt" % task)):
+        name, seed = os.path.basename(f)[len("bornread-%s" % task):-4].rsplit("-", 1)
         r = parse_ceiling(f)
         if "reader" in r:
-            born[int(f.rsplit("-", 1)[1][:-4])] = r
+            borns.setdefault(name, {})[int(seed)] = r
+    born = borns.get("", {})
     keys = {}
-    for f in glob.glob(os.path.join(outdir, "transplant-%s-*.txt" % task)):
-        name = os.path.basename(f)[len("transplant-%s-" % task):-4]
+    files = [(f, "transplant") for f in glob.glob(os.path.join(outdir, "transplant-%s-*.txt" % task))]
+    files += [(f, "engine") for f in glob.glob(os.path.join(outdir, "engine-%s-*.txt" % task))]
+    for f, kind in files:
+        name = os.path.basename(f)[len("%s-%s-" % (kind, task)):-4]
+        name = name if kind == "transplant" else "engine " + name
         arm_ctrl, seed = name.rsplit("-", 1)
         r = parse_ceiling(f)
         if "reader" in r:
@@ -148,9 +153,11 @@ def transplant_table(outdir, task):
             g("moved2") if task == "mnist" else "-", g("rate")[:-2] if g("rate") != "-" else "-",
             diff({s: d[s]["reader"] for s in d}, {s: ref[s]["reader"] for s in ref})
             if ref is not None else ""))
-    row("born", born, None)
+    for tag in sorted(borns):
+        row("born" + tag, borns[tag], None)
     for k in sorted(keys):
-        row(k, keys[k], born)
+        tag = "@" + k.split("@", 1)[1] if "@" in k else ""
+        row(k, keys[k], borns.get(tag, {}))
     by_arm = {}
     for k in keys:
         arm, ctrl = k.rsplit("-", 1)

@@ -102,7 +102,9 @@ class Life:
         c = tile_cap(answer(self.model, x, self.W), self.tile_all, self.tiles, self.opt["cap"])
         return c, active(self.model, x, c)
 
-    def step(self, fam, xb):
+    def step(self, fam, xb, raw=None, perm=None):
+        """one batch: xb what is shown; in the shuffled life raw is the real digits and perm
+        their shuffles, so a second look is the real digit moved, then shuffled the same way"""
         o, L, S = self.opt, self.learners, self.store
         c, A = self.look(xb)
         shown = [c]
@@ -124,7 +126,9 @@ class Life:
             y = xb[:, self.target.clamp(min=0)]
             d = R.predict_pixel(c[:, L], A, y, (self.target >= 0).float(), o["rate"], S)
         elif fam == "f3":
-            xb2 = X.second_look(xb, self.gen)
+            xb2 = X.second_look(xb if raw is None else raw, self.gen)
+            if perm is not None:
+                xb2 = torch.gather(xb2, 1, perm)
             c2, A2 = self.look(xb2)
             shown.append(c2)
             d = R.two_looks(c[:, L], A, c2[:, L], A2, S, o["shift"])
@@ -145,8 +149,11 @@ class Life:
         for i, j in zip(cuts[:-1], cuts[1:]):
             xb = stream[i:j]
             if ctrl == "shuffled":
-                xb, _ = X.shuffled(xb, self.gen)
-            d, shown = self.step(fam, xb)
+                raw = xb
+                xb, perm = X.shuffled(xb, self.gen)
+                d, shown = self.step(fam, xb, raw, perm)
+            else:
+                d, shown = self.step(fam, xb)
             self.model.regulate(shown, rate=self.opt["reg"])
             self.store.apply(d, churn=ctrl == "churn")
             self.store.rewire(self.model)
@@ -168,7 +175,7 @@ class Life:
         self.W = self.model.src_sign * self.model.levels
 
 
-def read(life, sheet, born_levels, seed):
+def read(life, sheet, born_levels, seed, moved=True):
     """settle 3,000 digits with learning off, then the fresh linear reader (and on MNIST the
     same reader, refit identically, on the test digits moved 1 and 2 pixels)"""
     task, model = life.task, life.model
@@ -178,7 +185,7 @@ def read(life, sheet, born_levels, seed):
                                 for i in range(0, len(z), 1000)])
     f_tr, f_te = feat(x), feat(task.x_te)
     res = {"reader": D.reader(f_tr, y, f_te, task.y_te, task.classes, seed)}
-    if not task.pair and life.opt["moved"]:
+    if not task.pair and life.opt["moved"] and moved:
         for by, sets in X.moved_sets(task.x_te).items():
             f_m = torch.cat([feat(s) for s in sets])
             # the reader is deterministic for a seed: the same fit, scored on the moved digits
@@ -228,7 +235,7 @@ def run_one(task_name, fam, ctrl, seed, sheet_path, out_path, opt, wiring_out=No
         logf.flush()
         for n in marks:
             life.restore(snaps[n])
-            reads[n] = read(life, sheet, born_levels, seed)
+            reads[n] = read(life, sheet, born_levels, seed, moved=n == marks[-1])
             reads[n]["steps_per_cell"] = snaps[n]["steps"] / len(life.learners)
             logf.write("read %d: %s\n" % (n, json.dumps(reads[n])))
             logf.flush()

@@ -3,9 +3,9 @@
 See ladder4.sh.
 
   ladder4.py NAME [--quick] [--seeds 5,6,7] [--tasks mnist,pair] [--arms f0,f1,...]
-             [--ctrls life,churn,shuffled] [--parts model,bound,transplant] [--jobs 3]
+             [--ctrls life,churn,shuffled] [--parts model,bound,transplant,engine] [--jobs 3]
              [--life 60000] [--checkpoints 20000,60000] [--epochs 6] [--objectives ...]
-             [--transplant-arms f0,...] [--settle 3000] [--table-only]
+             [--transplant-arms f0,...] [--settle 3000] [--read TAG "FLAGS"] [--table-only]
   ladder4.py run TASK ARM CTRL SEED SHEET OUT [--life N] [--checkpoints a,b] [--limit N]
              [--wiring F] [--no-moved]
   ladder4.py bound TASK OBJECTIVE SEED SHEET OUT [--epochs N] [--limit N]
@@ -32,6 +32,11 @@ SHEET = ("--mnist-code t28 --g.sensor_w 64 --g.sensor_h 64 --g.motor_x 1 --g.mot
 READER = "--scale 2 --passes 10 --lr-1000 1 --views 1".split()
 PAIR = "--pair 2 --pair-mix 1".split()
 DEFAULTS = {"shift": 5.0, "rate": 0.125, "push": 0.25, "cap": 0.0, "batch": 32.0, "reg": 0.05}
+# the engine's own competitive learning lived in the real sheet (results-2026-11-25-compete.md):
+# A at a quarter of the updates, and B5 (with the tile's winners in the life and the read)
+ENGINE = {"compete": "--g.learn_mode 5 --g.compete_on 1 --g.compete_shift 5".split(),
+          "compete-tw": ("--g.learn_mode 5 --g.compete_on 1 --g.compete_shift 5 "
+                         "--g.tile_winners 4").split()}
 ARMS = ["f0", "f1", "f1g", "f2", "f3", "f4", "f5"]
 OBJECTIVES = ["real", "pixel", "looks", "apart", "bcm"]
 
@@ -110,29 +115,57 @@ def transplant_jobs(outdir, task, arm, ctrl, seed, opt):
                                                  str(opt["limit"] or 60000), "--settle",
                                                  str(opt["settle"])]
     base += PAIR if task == "pair" else ["--shift", "1"]
-    jobs = [(nice(base), os.path.join(outdir, "bornread-%s-%d.txt" % (task, seed)))]
+    base += opt["read_flags"]
+    tag = "@" + opt["read_tag"] if opt["read_tag"] else ""
+    jobs = [(nice(base), os.path.join(outdir, "bornread-%s%s-%d.txt" % (task, tag, seed)))]
     w = wiring_file(outdir, task, arm, ctrl, seed)
-    if os.path.exists(w):
-        jobs.append((nice(base + ["--wiring-load", w]),
-                     os.path.join(outdir, "transplant-%s-%s-%s-%d.txt" % (task, arm, ctrl, seed))))
+    done = os.path.join(outdir, "life-%s-%s-%s-%d.json" % (task, arm, ctrl, seed))
+    if os.path.exists(w) and os.path.exists(done):
+        jobs.append((nice(base + ["--wiring-load", w]), os.path.join(
+            outdir, "transplant-%s-%s-%s%s-%d.txt" % (task, arm, ctrl, tag, seed))))
     return jobs
 
 
-def wirings(outdir, unpack, names=None):
-    """wiring files are kept gzipped; unpacked while blobmnist reads them"""
+def engine_jobs(outdir, task, seed, opt):
+    """the engine's rule lived in the real sheet for --life digits, and on shuffled digits"""
+    jobs = []
+    for name, flags in ENGINE.items():
+        for ctrl in ("life", "shuffled"):
+            cmd = [MNIST, "ceiling"] + SHEET + READER + flags + [
+                "--seed", str(seed), "--fit", str(opt["limit"] or 60000), "--settle",
+                str(opt["settle"]), "--life", str(opt["life"])]
+            cmd += PAIR if task == "pair" else ["--shift", "1"]
+            cmd += ["--life-shuffle", "1"] if ctrl == "shuffled" else []
+            jobs.append((nice(cmd), os.path.join(outdir, "engine-%s-%s-%s-%d.txt" % (
+                task, name, ctrl, seed))))
+    return jobs
+
+
+def pack(outdir, only=None):
+    """wiring files are kept gzipped: pack those whose life has finished (its json is
+    written after its wiring), or only the given ones"""
     for f in sorted(os.listdir(outdir)):
-        if not f.startswith("wiring-"):
+        if not (f.startswith("wiring-") and f.endswith(".txt")):
             continue
-        w = os.path.join(outdir, f[:-3] if f.endswith(".gz") else f)
-        if unpack and f.endswith(".gz") and (names is None or w in names):
-            if not os.path.exists(w):
-                with gzip.open(w + ".gz", "rb") as a, open(w, "wb") as b:
-                    shutil.copyfileobj(a, b)
-        if not unpack and not f.endswith(".gz"):
-            if not os.path.exists(w + ".gz"):
-                with open(w, "rb") as a, gzip.open(w + ".gz", "wb") as b:
-                    shutil.copyfileobj(a, b)
-            os.remove(w)
+        w = os.path.join(outdir, f)
+        done = os.path.join(outdir, "life-" + f[len("wiring-"):-4] + ".json")
+        if (only is not None and w not in only) or not os.path.exists(done):
+            continue
+        if not os.path.exists(w + ".gz"):
+            with open(w, "rb") as a, gzip.open(w + ".gz", "wb") as b:
+                shutil.copyfileobj(a, b)
+        os.remove(w)
+
+
+def unpack(names):
+    """unpacked while blobmnist reads them; returns those this call unpacked"""
+    made = set()
+    for w in names:
+        if not os.path.exists(w) and os.path.exists(w + ".gz"):
+            with gzip.open(w + ".gz", "rb") as a, open(w, "wb") as b:
+                shutil.copyfileobj(a, b)
+            made.add(w)
+    return made
 
 
 def ladder(name, opt):
@@ -152,7 +185,10 @@ def ladder(name, opt):
                      for o in opt["objectives"] for s in opt["seeds"]]
         jobs.sort(key=lambda j: "bound-" not in j[1])  # the long ones first
         pool(jobs, opt["jobs"])
-        wirings(outdir, unpack=False)
+        pack(outdir)
+        if "engine" in opt["parts"]:
+            pool([j for t in opt["tasks"] for sd in opt["seeds"]
+                  for j in engine_jobs(outdir, t, sd, opt)], opt["jobs"])
         if "transplant" in opt["parts"]:
             tj, need = [], set()
             for task in opt["tasks"]:
@@ -160,7 +196,7 @@ def ladder(name, opt):
                     for a in opt["transplant_arms"]:
                         for c in opt["ctrls"]:
                             need.add(wiring_file(outdir, task, a, c, s))
-            wirings(outdir, unpack=True, names=need)
+            made = unpack(need)
             for task in opt["tasks"]:
                 for s in opt["seeds"]:
                     for a in opt["transplant_arms"]:
@@ -168,7 +204,7 @@ def ladder(name, opt):
                             tj += [j for j in transplant_jobs(outdir, task, a, c, s, opt)
                                    if j not in tj]
             pool(tj, opt["jobs"])
-            wirings(outdir, unpack=False)
+            pack(outdir, only=made)
     import ladder4_table
     text = ladder4_table.table(outdir, opt)
     with open(os.path.join(outdir, "table.txt"), "w") as f:
@@ -213,7 +249,7 @@ def main():
     opt = {"seeds": [5, 6, 7], "tasks": ["mnist", "pair"], "parts": ["model"], "jobs": 3,
            "arms": list(ARMS), "ctrls": ["life", "churn", "shuffled"], "life": 60000,
            "checkpoints": [20000, 60000], "epochs": 6, "objectives": list(OBJECTIVES),
-           "transplant_arms": ["f0"], "settle": 3000, "limit": 0, "table_only": False}
+           "transplant_arms": ["f0"], "settle": 3000, "read_tag": "", "read_flags": [], "limit": 0, "table_only": False}
     if "--quick" in args:
         opt.update(seeds=[5], life=2000, checkpoints=[1000, 2000], limit=10000, epochs=1,
                    settle=500, arms=["f0", "f3"], objectives=["looks"],
@@ -225,6 +261,10 @@ def main():
             opt["seeds"] = seeds_arg(args[i + 1])
         elif a in ("--tasks", "--parts", "--arms", "--ctrls", "--objectives", "--transplant-arms"):
             opt[a[2:].replace("-", "_")] = args[i + 1].split(",")
+        elif a == "--read":
+            # extra sheet flags for the transplant reads, and a tag for their files
+            opt["read_tag"], opt["read_flags"] = args[i + 1], args[i + 2].split()
+            i += 1
         elif a == "--checkpoints":
             opt["checkpoints"] = [int(v) for v in args[i + 1].split(",")]
         elif a in ("--jobs", "--life", "--epochs", "--settle", "--limit"):
