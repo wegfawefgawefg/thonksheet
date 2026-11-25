@@ -150,9 +150,11 @@ Both measures, seed 5 (`scripts/repeat.sh check`; one sheet read twice in bracke
 | base | 0.609 (0.536) | 0.694 (0.612) | 0.594 (0.520) | 0.547 (0.463) |
 | freeze | 0.504 (0.664) | 0.673 (0.793) | 0.571 (0.660) | 0.414 (0.662) |
 | freeze+show80 | 0.648 (0.853) | | 0.760 (0.892) | |
+| show80 | 0.795 (0.694) | | 0.790 (0.687) | |
 | still | 0.540 (1.000) | | 0.637 (1.000) | |
-SHOW80_CHECK
-Two held-still sheets answer differently (0.54) only because their thresholds and biases were
+
+By idea 165's own measure the longer showing alone lifts 0.61 / 0.59 to 0.80 / 0.79, and is the
+largest single change by either measure. Two held-still sheets answer differently (0.54) only because their thresholds and biases were
 frozen at different moments; each of them answers itself exactly. The reader, fit and scored
 in one sheet, gains in both cases.
 
