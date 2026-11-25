@@ -160,6 +160,15 @@ against 0.653, 0.671, 0.580, 0.565).
   --settings off,m2,m2coin --tasks parity4 --seeds 5,6 --steps 160000 --window 4000`: off
   0.475, m2 0.478, coin 0.498). The live readout stays at chance through the life too.
 
+- **The live readout learns the toys too, in the same life.** The life's own readout with
+  the rule on ends at 0.996 on xor (off 0.905) and 0.783 on parity 3 (off 0.538), seeds 5-8
+  ("life's own readout" in `out/hop/toys/table.txt`). On these worlds the rule is not only
+  a better sheet for a later reader: the readout that is learning beside it uses it.
+- **The rate does not move on the toys.** One life each, seed 5 (`blobrun --task
+  both-not-either ... --g.hop_on 1 --g.hop_teach 2 --out ...`, the toy life above):
+  xor 33.8 spikes per 1,024 neuron-ticks against 32.9 off; parity 3 34.0 against 33.3.
+  Thresholds at the cap 2.3% against 1.0%.
+
 **Which cells should count as near** (m2, seeds 5-8; `scripts/hop.sh toy toys-near0
 --settings m2 --tasks xor,parity3 --g.hop_near 0`, and `toys-nofired ... --g.hop_fired 0`):
 
@@ -216,3 +225,67 @@ read. "rate": hidden spikes per 1,000 cell-ticks at the end of the life (born 31
 off (`scripts/inside.sh teachoff --teach 2 --only mnist --kinds lived`; the readout gets
 0.68 and 0.70 right in its life): lived 0.9245 and 0.9246 against born 0.9255 and 0.9243
 (seeds 1, 2). Equal within a thousandth; wiring and rate as born.
+
+**Tuning, seeds 1 and 2** (test digits; a handful of settings; mean of 2 seeds, each seed in
+`out/hop/inside/NAME/`). Born: 0.9255 and 0.9243 (seeds 1, 2), the same sheet with the rule
+off in a taught life 0.9245 and 0.9246. "pixels": pixel inputs per hidden excitatory cell
+(born 7.3 of 34); "kept": share of born inputs still wired; "likeness": the compete doc's
+pixel likeness (born 0.05). Each line is `scripts/inside.sh NAME --teach T --g.hop_on 1
+FLAGS --only mnist`.
+
+| NAME | teach | flags | lived | coin | lived - coin | shuffled | rate lived / coin | pixels | kept | likeness | verdicts | re-picks |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| hop2 | 2 | (defaults: shift 3) | 0.9220 | 0.9325 | -0.0105 | 0.9173 | 30 / 36 | 3.7 | 0.10 | 0.22 | 19,600 | 1.27 M |
+| hop2nf | 2 | `--g.hop_fired 0` | 0.9244 | 0.9348 | -0.0104 | | 31 / 38 | 4.3 | 0.11 | 0.21 | 20,700 | 1.12 M |
+| hop2good | 2 | `--g.hop_good 1` | 0.9158 | | | | 29 | 3.5 | 0.09 | 0.21 | 60,000 | 2.93 M |
+| hop2s5 | 2 | `--g.hop_shift 5` | 0.9317 | 0.9342 | -0.0025 | | 34 / 38 | 5.1 | 0.13 | 0.22 | 20,500 | 0.61 M |
+| **hop2s7** | 2 | `--g.hop_shift 7` | **0.9355** | 0.9329 | +0.0026 | | 39 / 38 | 5.8 | 0.22 | 0.18 | 19,400 | 0.25 M |
+| hop2s9 | 2 | `--g.hop_shift 9` | 0.9342 | 0.9309 | +0.0034 | | 38 / 36 | 6.5 | 0.39 | 0.12 | 20,300 | 0.09 M |
+| hop1 | 1 | (defaults: shift 3) | 0.9210 | 0.9233 | -0.0023 | | 30 / 29 | 4.5 | 0.12 | 0.20 | 20,200 | 0.88 M |
+| hop1s5 | 1 | `--g.hop_shift 5` | 0.9331 | 0.9281 | +0.0050 | | 35 / 34 | 5.4 | 0.16 | 0.22 | 19,200 | 0.46 M |
+| **hop1s7** | 1 | `--g.hop_shift 7` | **0.9336** | 0.9303 | +0.0033 | | 38 / 38 | 5.9 | 0.26 | 0.18 | 17,600 | 0.20 M |
+
+## Step 4: on from the first digit of the online life
+
+`scripts/mnist.sh online --seed S --checks 1000,5000,20000,60000,120000 --g.hop_on 1
+--g.hop_teach 2 --g.hop_shift 7` (and `--g.hop_teach 1 --g.hop_shift 5`), seeds 5 and 6,
+against the same life with the rule off (the compete job's runs of the same command, same
+binary behaviour; `out/hop/online/`). The sheet's own readout, test digits, mean of 2 seeds
+(each seed in brackets):
+
+| digits seen | 1,000 | 5,000 | 20,000 | 60,000 | 120,000 |
+|---|---|---|---|---|---|
+| off | 0.556 (0.588, 0.523) | 0.713 (0.696, 0.730) | 0.718 (0.693, 0.743) | 0.693 (0.659, 0.727) | 0.667 (0.653, 0.681) |
+| on, told the right button, shift 7 | 0.567 (0.583, 0.550) | 0.697 (0.701, 0.694) | 0.702 (0.699, 0.705) | 0.679 (0.674, 0.683) | 0.637 (0.626, 0.649) |
+| on, told good or bad, shift 5 | 0.532 (0.564, 0.501) | 0.649 (0.605, 0.693) | 0.673 (0.645, 0.701) | 0.651 (0.625, 0.678) | 0.619 (0.606, 0.632) |
+| competitive learning on (compete doc) | 0.539 | 0.686 | 0.723 | 0.697 | 0.655 |
+
+No help to the readout. Told the right button it is the off curve within seed noise, a
+little lower late; told good or bad it is lower at every checkpoint (0.04 by 5,000 digits).
+Training time for 120,000 digits: off 375 s, on (shift 7) 383 s, on (good or bad, shift 5)
+384 s (+2%).
+
+## Cost
+
+On this PC (shared with other agents, nice 19, rough):
+
+| | rule off | rule on | |
+|---|---|---|---|
+| `blobbench speed --tiles 8 --g.learn_mode 5` (no verdicts: the near maps alone) | 66,700 | 61,600 | -7% (first form: 56,400, -16%) |
+| taught MNIST life, shift 7 (`blobmnist ceiling --life-teach 2` life lines) | 6,440 | 6,320 | -2% |
+| taught MNIST life, shift 3 | 6,440 | 6,150 | -5% |
+| the online MNIST life, 120,000 digits, shift 7 (training seconds) | 375 s | 383 s | -2% |
+| toy life, xor (about 500 verdicts in 40,000 steps) | 55,900 | 56,600 | 0 |
+| toy life, parity 3 (shift 3, 4,300 verdicts) | 43,400 | 37,300 | -14% |
+
+(ticks per second unless said.) A taught MNIST life is slow with or without the rule: the
+readout's own re-picks (`evidence_rewire_as`) are 58% of its time (perf, shift 3); the rule's
+re-picks (`select_top`) 6%, its verdict work 3%, the near maps 3%.
+
+What the rule does per verdict on MNIST: about 370 cells taught (a third of the 1,548
+learners), at shift 7 a counter step for one marked source in 128, and 13 re-picks (shift
+3: 65). The bounds are what keep re-picks rare: without them every taught cell would
+re-pick at every verdict (370 per verdict at 4 microseconds each, about 75 microseconds a
+tick, several times the tick itself). Memory: the tag store (704 bytes a neuron, shared
+with competitive learning and tags), 9 bytes a neuron of bounds, and 16 x 65 words of near
+maps.
