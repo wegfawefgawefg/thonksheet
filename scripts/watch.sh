@@ -4,6 +4,7 @@
 #   scripts/watch.sh                 echo with 2 cues
 #   scripts/watch.sh echo --k 4
 #   scripts/watch.sh cartpole
+#   scripts/watch.sh bandit          any world of scripts/task.sh (track, forage, pendulum, ...)
 # Agents must not run this: it opens a window. Use --capture or scripts/offscreen.sh.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -15,12 +16,14 @@ scripts/build.sh
 task="${1:-echo}"
 [ $# -gt 0 ] && shift
 # cartpole has 24 number lines, which need smaller line groups; it is run with the reward
-# that says "nearer upright and centred" and with each number as one lit line
+# that says "nearer upright and centred" and with each number as one lit line. mountain car
+# and pendulum have 16 number lines, forage a 5x5 bitmap: smaller groups too
 side=3
 extra=""
-if [ "$task" = cartpole ]; then
-    side=2
-    extra="--cart-reward lean --number-code place"
-fi
+case "$task" in
+cartpole) side=2; extra="--cart-reward lean --number-code place" ;;
+mountain-car | pendulum) side=2; extra="--number-code place" ;;
+forage) side=2 ;;
+esac
 exec ./build/blobview --task "$task" --ticks 20 --sensor-side "$side" --motor-side 3 --window 50 \
     --slow 400 $extra "$@"
