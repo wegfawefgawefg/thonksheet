@@ -109,6 +109,8 @@ static const GenomeField fields[] = {
     {"readout_lock_hold", &Genome::readout_lock_hold},
     {"readout_decay", &Genome::readout_decay},
     {"readout_decay_idle", &Genome::readout_decay_idle},
+    {"readout_lock_from", &Genome::readout_lock_from},
+    {"readout_lock_fade", &Genome::readout_lock_fade},
     {"time_percent", &Genome::time_percent},
     {"time_levels", &Genome::time_levels},
 };

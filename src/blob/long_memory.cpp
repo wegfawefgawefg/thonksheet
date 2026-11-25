@@ -188,6 +188,12 @@ void long_memory_evidence_decay(Blob& blob, int n, int64_t row_at, int8_t* row) 
     for (int i = 0; i < g.readout_decay; i++) {
         int k = (int)rng_below(blob.rng, SLOTS * TILE_NEURONS);
         if (lock && lock[row_at + k]) {
+            // a lock is spared; with readout_lock_fade it loses a level now and then, so
+            // only evidence that keeps being confirmed stays frozen
+            int fade = g.readout_lock_fade;
+            if (fade > 0 && (rng_next(blob.rng) & ((1ull << (fade > 62 ? 62 : fade)) - 1)) == 0) {
+                lock[row_at + k]--;
+            }
             continue;
         }
         // readout_decay_idle: a source active in the window just graded keeps its evidence
@@ -210,13 +216,17 @@ int8_t long_memory_evidence_step(Blob& blob, int64_t at, int8_t value, int direc
     }
     uint8_t* lock = lock_array(blob);
     int depth = lock[at];
-    bool further = (direction > 0 && value >= top) || (direction < 0 && value <= -top);
-    if (further) {
+    // confirming evidence: the push agrees with a counter at least lock_from strong (0: only
+    // at the end of the range). it deepens the lock now and then
+    int from = g.readout_lock_from > 0 && g.readout_lock_from < top ? g.readout_lock_from : top;
+    bool agree = (direction > 0 && value >= from) || (direction < 0 && value <= -from);
+    if (agree) {
         int most = g.readout_lock_levels > 3 ? 3 : g.readout_lock_levels;
         if (depth < most && (rng_next(blob.rng) & ((1ull << g.readout_lock_shift) - 1)) == 0) {
             lock[at] = (uint8_t)(depth + 1);
         }
-        return value;
+        bool end = (direction > 0 && value >= top) || (direction < 0 && value <= -top);
+        return end ? value : (int8_t)(value + direction);
     }
     if (depth > 0) {
         int shift = g.readout_lock_hold * depth;

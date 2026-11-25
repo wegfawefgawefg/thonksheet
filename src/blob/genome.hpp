@@ -134,6 +134,9 @@ struct Genome {
     int readout_decay = 0;        // per motor-cell update, this many random counters step
                                   // toward 0 (locked ones do not): forgetting makes room
     int readout_decay_idle = 0;   // 1: only sources idle in the graded window decay
+    int readout_lock_from = 0;    // a push agreeing with a counter this strong deepens a
+                                  // lock (0: only at the end of the range)
+    int readout_lock_fade = 0;    // a decay pick on a lock lowers it with 2^-this (0 never)
     int time_percent = 0;         // time cells: share of excitatory inner neurons
     int time_levels = 14;         // their log bins, 16 ticks up to 2^(4 + this)
 };
