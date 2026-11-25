@@ -69,7 +69,8 @@ if(probe_sources AND TARGET blobcore)
     # blobprobe linear runs real tasks through the plug (idea 58)
     if(TARGET blobworld)
         target_sources(blobprobe PRIVATE ${CMAKE_SOURCE_DIR}/src/run/task_ticker.cpp
-                       ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp)
+                       ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp
+                       ${CMAKE_SOURCE_DIR}/src/run/predict.cpp)
         target_include_directories(blobprobe PRIVATE src)
         target_link_libraries(blobprobe PRIVATE blobworld)
     endif()

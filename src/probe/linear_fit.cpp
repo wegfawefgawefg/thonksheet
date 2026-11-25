@@ -317,3 +317,9 @@ double linear_score(const LinearData& data) {
     }
     return fit_primal(data, s, all);
 }
+
+double linear_whole(const LinearData& data) {
+    Standard s;
+    standardize(data, s);
+    return fit_dual(data, s);
+}

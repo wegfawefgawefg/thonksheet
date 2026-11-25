@@ -93,7 +93,8 @@ static bool lay_sensors(Plug& plug, const Blob& blob, const TaskShape& shape) {
     plug.first_single = 2;
     plug.first_sheet = plug.first_single + shape.singles;
     plug.first_number = plug.first_sheet + shape.sheet_w * shape.sheet_h;
-    plug.sensor_lines = plug.first_number + numbers_total;
+    plug.first_extra = plug.first_number + numbers_total;
+    plug.sensor_lines = plug.first_extra + plug.settings.extra_lines;
     if (plug.sensor_lines > PLUG_MAX_SENSOR_LINES) {
         std::fprintf(stderr, "plug: %d sensor lines, at most %d\n", plug.sensor_lines,
                      PLUG_MAX_SENSOR_LINES);
@@ -111,6 +112,15 @@ static bool lay_sensors(Plug& plug, const Blob& blob, const TaskShape& shape) {
     for (int i = 0; ok && i < shape.numbers; i++) {
         ok = place_sensor_block(plug, blob, shelf, plug.first_number + i * shape.number_lines,
                                 shape.number_lines, 1);
+    }
+    // a caller's extra lines fill columns as tall as the shelf they land in, so they use the
+    // room beside a bitmap instead of starting a shelf below it
+    for (int i = 0, extra = plug.settings.extra_lines; ok && i < extra;) {
+        bool room = shelf.x < shelf.grid_w && shelf.height > 0;
+        int h = room ? shelf.height : shelf.grid_h - (shelf.y + shelf.height);
+        h = h < 1 ? 1 : (h < extra - i ? h : extra - i);
+        ok = place_sensor_block(plug, blob, shelf, plug.first_extra + i, 1, h);
+        i += h;
     }
     if (!ok) {
         std::fprintf(stderr,
@@ -210,11 +220,12 @@ static bool move_apart(Plug& plug, const Blob& blob, int distance) {
     int motor_reach = (plug.settings.motor_side - 1) * g.motor_stride;
 
     // the cue lines are the task's own; a task with none (beat) uses good and bad
-    int first_cue = plug.sensor_lines > plug.first_single ? plug.first_single : 0;
+    // (a caller's extra lines, idea 162, are not cues)
+    int first_cue = plug.first_extra > plug.first_single ? plug.first_single : 0;
     Span cues, sensors, motors;
     for (int line = 0; line < plug.sensor_lines; line++) {
         span_add(sensors, sensor_cell[line], sensor_reach);
-        if (line >= first_cue) {
+        if (line >= first_cue && line < plug.first_extra) {
             span_add(cues, sensor_cell[line], sensor_reach);
         }
     }

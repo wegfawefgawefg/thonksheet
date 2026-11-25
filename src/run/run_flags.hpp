@@ -1,6 +1,7 @@
 #pragma once
 
 #include "blob/genome.hpp"
+#include "world/predict_settings.hpp"
 #include "world/plug.hpp"
 #include "world/plug_babble.hpp"
 #include "world/task.hpp"
@@ -55,6 +56,7 @@ struct RunFlags {
     int damage_tile = 0;              // damage: 1 silences the tile of the first cue line
 
     BabbleSettings babble; // ideas 60 and 61: babbling and balanced good/bad, off by default
+    PredictSettings predict; // idea 162: every line is a target (run/predict.hpp), off by default
 };
 
 // false after printing a message (or the usage) to stderr

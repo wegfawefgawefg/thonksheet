@@ -204,6 +204,13 @@ void blob_tick(Blob& blob);
 // critic_on the world calls it at the end of every step, 0 included, after marking the press.
 void blob_reward(Blob& blob, int valence);
 
+// idea 162's predictor cells: the readout's error step (learn modes 5, 6) at once, outside
+// the tick, on the motor marks as they stand, reading `maps` (HISTORY spike maps, ring index
+// `now` the newest) in place of the blob's own, at chance 2^-shift. the world keeps the maps
+// of the step that made the guess and calls this when the answer arrives. nothing while
+// learning is off. defined in learn_readout.cpp
+void blob_readout_verdict(Blob& blob, int valence, uint64_t* const* maps, int now, int shift);
+
 // cell (x, y) on the sheet to a neuron index, and back
 inline int blob_neuron_at(const Blob& blob, int x, int y) {
     return ((y / 8) * blob.tiles_w + (x / 8)) * TILE_NEURONS + (y % 8) * 8 + (x % 8);

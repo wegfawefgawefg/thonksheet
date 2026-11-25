@@ -205,6 +205,7 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             std::fputs(usage, stderr);
             std::fputs(long_usage, stderr);
             std::fputs(calc_flags_usage, stderr);
+            std::fputs(predict_flags_usage, stderr);
             return false;
         }
         if (std::strcmp(flag, "--long") == 0) {
@@ -249,6 +250,14 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             std::strncmp(flag, "--y.", 4) == 0 || std::strncmp(flag, "--v.", 4) == 0) {
             continue; // a genome number: apply_genome_args, apply_minimal_args,
                       // table_genome_args, apply_nn_args, apply_memory_args, apply_vm_args
+        }
+        // idea 162's flags (run/predict_flags.cpp)
+        int predict = predict_parse_flag(flag, value, flags.predict);
+        if (predict != 0) {
+            if (predict < 0) {
+                return false;
+            }
+            continue;
         }
         // the calculation battery's own flags (world/task_calc_flags.cpp)
         int calc = calc_parse_flag(flag, value, flags.task_settings);

@@ -238,3 +238,25 @@ void learn_readout(Blob& blob, int valence) {
     blob.stats.strengthened += up;
     blob.stats.weakened += down;
 }
+
+// idea 162: the same step on another moment's maps (blob.hpp). the maps are swapped in for
+// the call and put back, so nothing else sees them
+void blob_readout_verdict(Blob& blob, int valence, uint64_t* const* maps, int now, int shift) {
+    if (!blob.genome.learning_on || valence == 0) {
+        return;
+    }
+    uint64_t* own[HISTORY];
+    int own_now = blob.now, own_shift = blob.genome.readout_shift;
+    for (int i = 0; i < HISTORY; i++) {
+        own[i] = blob.spikes[i];
+        blob.spikes[i] = maps[i];
+    }
+    blob.now = now;
+    blob.genome.readout_shift = shift;
+    learn_readout(blob, valence);
+    for (int i = 0; i < HISTORY; i++) {
+        blob.spikes[i] = own[i];
+    }
+    blob.now = own_now;
+    blob.genome.readout_shift = own_shift;
+}

@@ -3,6 +3,7 @@
 #include "run/drive.hpp"
 #include "run/life_end.hpp"
 #include "run/run_flags.hpp"
+#include "world/predict_settings.hpp"
 #include "world/task.hpp"
 
 #include <cstdint>
@@ -49,6 +50,7 @@ struct LifeResult {
     int extras = 0;
     std::vector<double> extra[TASK_MAX_EXTRA];
     const Task* extra_task = nullptr;
+    PredictScore predict; // idea 162: the last phase's predictor skill (none when off)
 };
 
 // --task for --steps, as blobrun has always run

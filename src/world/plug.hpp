@@ -45,6 +45,9 @@ struct PlugSettings {
     // noise on the input: each attached sensor cell, good and bad included, is flipped each
     // tick with chance input_noise / 1,024 (0 none). the same for every engine
     int input_noise = 0;
+    // lines a caller writes itself, laid after the numbers (idea 162: the last press and the
+    // prediction errors, src/run/predict.cpp). never set by the task; 0 none
+    int extra_lines = 0;
 };
 
 constexpr int PLUG_MAP_RINGS = 8, PLUG_MAP_ANGLES = 16;
@@ -56,6 +59,7 @@ struct Plug {
     // sensor lines, in the order above. line_cell_x/y is the group's top-left cell.
     int sensor_lines = 0;
     int first_single = 0, first_sheet = 0, first_number = 0;
+    int first_extra = 0; // settings.extra_lines start here (sensor_lines when there are none)
     int sensor_cell_x[PLUG_MAX_SENSOR_LINES] = {};
     int sensor_cell_y[PLUG_MAX_SENSOR_LINES] = {};
     int sensor_neuron[PLUG_MAX_SENSOR_LINES * PLUG_MAX_GROUP] = {};
