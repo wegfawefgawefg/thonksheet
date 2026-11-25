@@ -21,19 +21,23 @@ def parse_online(path):
 def parse_ladder(path):
     rows = {}
     for line in open(path):
-        m = re.match(r"(\d[a-z]?)\s+(.{40})\s*([\d.]+)(.*)", line)
+        # a reader's line: its label in the first 44 columns, then the accuracies
+        if not re.match(r"\d[a-z]{0,3} ", line) or len(line) < 50:
+            continue
+        m = re.search(r"((?:\s+\d\.\d{4}){5})", line) or re.search(r"(\s+\d\.\d{4})\s+\(offline", line)
         if not m:
             continue
-        key = m.group(1) + " " * (3 - len(m.group(1))) + m.group(2).strip()
-        rest = m.group(4)
+        key, rest = line[:m.start()].strip(), line[m.start():]
         if "offline" in rest:
-            rows[key] = [None, None, None, float(m.group(3)), None]
+            rows[key] = [None, None, None, float(rest.split()[0]), None]
             continue
-        vals = [float(m.group(3))] + [float(v) for v in rest.split("quiet")[0].split()]
+        vals = [float(v) for v in m.group(1).split()]
         quiet = rest.split("quiet")[1].split("ties")[0].split() if "quiet" in rest else []
         rows[key] = vals[:5]
         if quiet:
             rows[key + "  (quiet buttons)"] = [float(q) for q in quiet[:5]]
+        if "close goods" in rest:
+            rows[key + "  (close goods)"] = [None] * 4 + [float(rest.split("close goods")[1])]
     return rows
 
 
@@ -72,8 +76,67 @@ def toys(root):
     print()
 
 
+def load(d, parse):
+    runs = {}
+    if not os.path.isdir(d):
+        return runs
+    for f in sorted(os.listdir(d)):
+        m = re.match(r"seed(\d+)\.txt$", f)
+        if m and "total wall" in open(os.path.join(d, f)).read():
+            runs[int(m.group(1))] = parse(os.path.join(d, f))
+    return runs
+
+
+def mean_at(runs, key, i):
+    vals = [r[key][i] for r in runs.values() if key in r and r[key][i] is not None]
+    return (sum(vals) / len(vals), min(vals), max(vals), len(vals)) if vals else None
+
+
+def doc(root):
+    """the ladder as a markdown table: born and lived side by side, means over seeds at
+    20,000, 60,000 and 120,000 (rung 1: offline, one number); the engine rows after"""
+    born = load(os.path.join(root, "ladder-born"), parse_ladder)
+    lived = load(os.path.join(root, "ladder-lived"), parse_ladder)
+    engine = [("7  engine, plain", "online-born", "online-lived"),
+              ("7  engine, gate", "online-gate", None),
+              ("7  engine, runner-up + gate", "online-rival", "online-livedrival")]
+    print("born seeds %s; lived seeds %s" % (sorted(born), sorted(lived)))
+    print("| rung | born 20k | 60k | 120k | lived 20k | 60k | 120k |")
+    print("|---|---|---|---|---|---|---|")
+    keys = []
+    for r in list(born.values()) + list(lived.values()):
+        keys += [k for k in r if k not in keys and "  (" not in k]
+
+    def cells(runs, key):
+        out = []
+        for i in (2, 3, 4):
+            m = mean_at(runs, key, i)
+            out.append("%.3f" % m[0] if m else "")
+        if key.startswith("1 "):
+            m = mean_at(runs, key, 3)
+            out = ["%.3f (offline)" % m[0] if m else "", "", ""]
+        return out
+
+    for k in keys:
+        print("| %s | %s | %s |" % (k, " | ".join(cells(born, k)), " | ".join(cells(lived, k))))
+    for label, b, l in engine:
+        rb = load(os.path.join(root, b), parse_online)
+        rl = load(os.path.join(root, l), parse_online) if l else {}
+        key = "7  engine"
+        print("| %s | %s | %s |" % (label, " | ".join(cells(rb, key)), " | ".join(cells(rl, key))))
+    print()
+    print("seed spread (lowest-highest) at 20,000, born | lived:")
+    for k in keys:
+        sb, sl = mean_at(born, k, 2), mean_at(lived, k, 2)
+        print("  %-48s %s | %s" % (k, "%.3f-%.3f" % sb[1:3] if sb else "-",
+                                    "%.3f-%.3f" % sl[1:3] if sl else "-"))
+
+
 def main():
     root = sys.argv[1] if len(sys.argv) > 1 else "out/output-gap"
+    if "--doc" in sys.argv:
+        doc(root)
+        return
     per_seed = "--seeds" in sys.argv
     toys(root)
     for name in sorted(os.listdir(root)):
