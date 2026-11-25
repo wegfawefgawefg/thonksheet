@@ -1,0 +1,5 @@
+# idea 58, side checks: echo with 8 cues and shuffled echo (the lock). spread 256 is all that fits
+readout (today): --g.learn_mode 1
+error rule: --g.learn_mode 5 --g.readout_balance 1
+evidence counters: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1
+evidence counters, spread 256: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --motor-spread 256 --g.readout_balance 1
