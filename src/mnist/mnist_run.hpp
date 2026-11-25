@@ -36,6 +36,7 @@ struct Sheet {
     // the inside-learning control (mnist_shuffle.cpp): while on, each digit's pixels are
     // shuffled by a permutation drawn fresh for that digit (same ink, no structure)
     int shuffle = 0;
+    int teach = 0; // --life-teach: the life is judged (the readout and the hop rule learn)
     uint64_t shuffle_rng = 0;
     std::vector<int> shuffle_cells, shuffle_perm;
 };

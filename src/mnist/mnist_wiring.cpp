@@ -190,7 +190,7 @@ void life_run(Sheet& s, int64_t digits, int chunks, const std::vector<uint64_t>&
         Rows rows;
         double t0 = now_seconds();
         int64_t ticks0 = s.ticks;
-        sheet_train(s, part, false, &rows);
+        int64_t right = sheet_train(s, part, s.teach > 0, &rows);
         double secs = now_seconds() - t0;
         done += part;
         char label[64];
@@ -198,6 +198,18 @@ void life_run(Sheet& s, int64_t digits, int chunks, const std::vector<uint64_t>&
                       (double)(s.ticks - ticks0) / secs);
         activity_report(s, rows, label);
         wiring_report(s, born, label);
+        if (s.teach > 0) {
+            uint64_t c[7];
+            blob_hop_counts(*s.blob, c);
+            double cell_ticks = c[6] > 0 ? (double)c[6] : 1.0;
+            std::printf("%-24s readout right %.3f; hop: verdicts %llu, cells taught %llu, "
+                        "counter steps %llu, rewires %llu; near and not fired %.4f, near and "
+                        "fired %.4f of learner cell-ticks in the windows\n",
+                        label, part > 0 ? (double)right / (double)part : 0.0,
+                        (unsigned long long)c[0], (unsigned long long)c[1],
+                        (unsigned long long)c[2], (unsigned long long)c[3], c[4] / cell_ticks,
+                        c[5] / cell_ticks);
+        }
         std::fflush(stdout);
     }
 }

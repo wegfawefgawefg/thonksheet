@@ -77,6 +77,8 @@ static std::vector<double> live(Blob& blob, const RunFlags& flags, int64_t steps
         if (tt.valence != 0) {
             plug_mark_acted(tt.plug, blob, tt.move);
             plug_mark_vote(tt.plug, blob, tt.move);
+            plug_hop_lines(tt.plug, blob, tt.move, tt.right_move, tt.in.pattern,
+                           tt.in.pattern_tied, tt.task.pattern_graded);
             blob_reward(blob, tt.valence);
         }
         step++;

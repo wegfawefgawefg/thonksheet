@@ -104,6 +104,11 @@ void plug_mark_acted(const Plug& plug, Blob& blob, int move);
 // the step's vote for the blob's barely-correct rule: the pressed button's spikes, the
 // runner-up's, and the runner-up's cells (plug_vote.cpp; nothing unless the genome asks)
 void plug_mark_vote(const Plug& plug, Blob& blob, int move);
+// the lines of the step just judged, for the blob's one-hop error rule (plug_hop.cpp; nothing
+// unless the genome asks): the line pressed and the right one (right: the right move, or for a
+// pattern answer the right pattern); for a pattern, the bits that won, tied and are graded
+void plug_hop_lines(const Plug& plug, Blob& blob, int move, int right, uint64_t pattern,
+                    uint64_t tied, uint64_t graded);
 
 // task values to line bits, once per step
 void plug_set_lines(Plug& plug, const TaskSense& sense);

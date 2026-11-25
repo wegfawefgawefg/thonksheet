@@ -17,6 +17,11 @@
 //                  (--pretrain N, the older name, does the same)
 //   --life-shuffle 1   that life on digits whose pixels are shuffled, a fresh permutation
 //                  per digit (the control); the reader still sees real digits
+//   --life-teach 1|2   that life is judged: the readout learns from good and bad (give its
+//                  rule's flags), the genome's hop_teach is set to this (1 told good or bad,
+//                  2 told the right button), and before the read the motor cells go back to
+//                  their born wiring, so the reader cannot read what the output learned
+//                  (docs/results-2026-11-25-hop.md)
 //   --shift 1      the reader also scored on test digits moved 1 and 2 pixels
 //   --val 1        validation slice instead of the test set
 //   --scale M      how the reader scales features (mnist_learn.hpp; default 0)
@@ -30,7 +35,7 @@
 static const char* const ceiling_own[] = {"--fit",     "--settle",   "--test-count", "--passes",
                                           "--lr-1000", "--pretrain", "--shift",      "--val",
                                           "--gap",     "--views",    "--scale",
-                                          "--life",    "--life-shuffle"};
+                                          "--life",    "--life-shuffle", "--life-teach"};
 
 // a copy of rows with only the given columns
 static void pick_columns(const Rows& in, const std::vector<int>& cols, Rows& out) {
@@ -109,10 +114,15 @@ int mnist_ceiling(int argc, char** argv) {
     std::vector<uint64_t> born;
     wiring_snapshot(s, born);
     wiring_report(s, born, "as born");
+    s.teach = int_flag(argc, argv, "--life-teach", 0);
+    s.blob->genome.hop_teach = s.teach > 0 ? s.teach : s.blob->genome.hop_teach;
     if (pretrain > 0) {
         s.shuffle = int_flag(argc, argv, "--life-shuffle", 0);
         life_run(s, pretrain, 10, born);
         s.shuffle = 0;
+    }
+    if (s.teach > 0) {
+        blob_motor_reborn(*s.blob, s.flags.seed);
     }
     s.blob->genome.learning_on = 0; // frozen from here on
     sheet_train(s, settle, false, nullptr);

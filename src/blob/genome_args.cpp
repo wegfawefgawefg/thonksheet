@@ -187,6 +187,15 @@ static const GenomeField fields[] = {
     {"compete_shift", &Genome::compete_shift},
     {"compete_down_shift", &Genome::compete_down_shift},
     {"compete_inh", &Genome::compete_inh},
+    {"hop_on", &Genome::hop_on},
+    {"hop_teach", &Genome::hop_teach},
+    {"hop_good", &Genome::hop_good},
+    {"hop_wire_shift", &Genome::hop_wire_shift},
+    {"hop_near", &Genome::hop_near},
+    {"hop_fired", &Genome::hop_fired},
+    {"hop_window", &Genome::hop_window},
+    {"hop_shift", &Genome::hop_shift},
+    {"hop_coin", &Genome::hop_coin},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

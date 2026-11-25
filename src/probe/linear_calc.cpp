@@ -13,7 +13,10 @@
 // 0|1, --label text, --out csv (reader,key,value lines), --life N (N ticks of a
 // reward-free life under the genome's own learning rules before the frozen read: the
 // inside-learning test, docs/results-2026-11-25-compete.md; held-out cases are shown in it
-// too, never with an answer).
+// too, never with an answer). --life-teach 1|2: that life is judged as blobrun judges it,
+// the readout learns, and the genome's hop_teach is set to it (1 told good or bad, 2 told the
+// right answer); after it the motor cells are put back as born, so the reader cannot read
+// what the output learned (docs/results-2026-11-25-hop.md).
 
 #include "blob/blob.hpp"
 #include "probe/linear_fit.hpp"
@@ -30,7 +33,7 @@ int int_arg(int argc, char** argv, const char* name, int fallback);
 const char* text_arg(int argc, char** argv, const char* name, const char* fallback);
 
 static const char* const calc_only[] = {"--trials", "--settle", "--learning", "--label",
-                                        "--out",    "--life"};
+                                        "--out",    "--life",     "--life-teach"};
 
 struct CalcRows {
     int d = 0;                 // features per row
@@ -328,6 +331,8 @@ int probe_calc(int argc, char** argv) {
     std::string out_path = text_arg(argc, argv, "--out", "");
     int64_t life = int_arg(argc, argv, "--life", 0);
     bool learn_read = int_arg(argc, argv, "--learning", 0) != 0;
+    int teach = int_arg(argc, argv, "--life-teach", 0);
+    flags.genome.hop_teach = teach > 0 ? teach : flags.genome.hop_teach;
     if (!learn_read && life == 0) {
         flags.genome.learning_on = 0;
     }
@@ -341,11 +346,26 @@ int probe_calc(int argc, char** argv) {
     }
     int out_bits = tt.task.calc.out_bits, lines = tt.task.calc.lines;
     int steps = tt.task.calc.steps;
-    // the life: the world as usual, its verdicts never delivered
+    // the life: the world as usual, its verdicts never delivered (unless taught)
     for (int64_t i = 0; i < life; i++) {
         ticker_before_tick(tt, *blob);
         blob_tick(*blob);
-        ticker_after_tick(tt, *blob);
+        if (ticker_after_tick(tt, *blob) && teach > 0 && tt.valence != 0) {
+            plug_mark_pattern(tt.plug, *blob, tt.in.pattern, tt.in.pattern_tied,
+                              tt.task.pattern_graded);
+            plug_hop_lines(tt.plug, *blob, tt.move, tt.right_move, tt.in.pattern,
+                           tt.in.pattern_tied, tt.task.pattern_graded);
+            blob_reward(*blob, tt.valence);
+        }
+    }
+    if (teach > 0) {
+        uint64_t c[7];
+        blob_hop_counts(*blob, c);
+        std::printf("taught life %lld ticks: hop verdicts %llu, cells taught %llu, steps %llu, "
+                    "rewires %llu\n", (long long)life, (unsigned long long)c[0],
+                    (unsigned long long)c[1], (unsigned long long)c[2], (unsigned long long)c[3]);
+        blob_motor_reborn(*blob, flags.seed);
+        plug_mark_motors(tt.plug, *blob, true); // every motor cell a button's cell again
     }
     if (!learn_read) {
         blob->genome.learning_on = 0;

@@ -286,6 +286,26 @@ struct Genome {
     int compete_shift = 3;      // a spike (or a loss) moves the cell with chance 2^-this
     int compete_down_shift = 2;
     int compete_inh = 0;
+
+    // the error sent one hop (direct feedback alignment in bits, Nokland 2016, with marks as
+    // in e-prop; learn_hop.cpp, docs/results-2026-11-25-hop.md), any learn mode. the world
+    // names the lines pressed and right at each verdict; each error line is wired to a hidden
+    // excitatory cell with chance 2^-hop_wire_shift, its sign drawn from a hash of the cell
+    // and the line (no memory). a cell's teaching bit is the sign of its wires times the
+    // errors: fire more, or less. its marked sources (on while the cell was near its bar in
+    // the last hop_window ticks) move hidden counters (the tag store) by that sign with
+    // chance 2^-hop_shift, and the cell rewires its top counters at its born counts, only
+    // when a counter crossed a wired one. 0 is off and changes nothing.
+    int hop_on = 0;
+    int hop_teach = 1;      // 1: told good or bad (bad: the pressed line should be lower);
+                            // 2: told the right line too (it should have been higher)
+    int hop_good = 0;       // 1: on good, the pressed line should have been higher
+    int hop_wire_shift = 1; // each error line reaches a cell with chance 2^-this
+    int hop_near = 2;       // "near": potential within this many eighths of the bar under it
+    int hop_fired = 1;      // 1: a cell that fired is near too; 0: only those that did not
+    int hop_window = 12;    // ticks before the verdict whose marks count (1..15)
+    int hop_shift = 3;      // chance per marked source per verdict, 2^-this
+    int hop_coin = 0;       // control: every error goes to a random line instead
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

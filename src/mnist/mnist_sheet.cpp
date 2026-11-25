@@ -104,6 +104,7 @@ static int one_digit(Sheet& s, bool learn, Rows* counts, std::vector<uint8_t>& c
     if (learn && tt.valence != 0) {
         plug_mark_acted(tt.plug, b, tt.move);
         plug_mark_vote(tt.plug, b, tt.move);
+        plug_hop_lines(tt.plug, b, tt.move, tt.right_move, 0, 0, 0);
         blob_reward(b, tt.valence);
     }
     if (counts) {
