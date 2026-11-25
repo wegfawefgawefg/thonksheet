@@ -21,6 +21,20 @@ static void put_bits(uint32_t& lines, int& at, uint64_t value, int n) {
     at += n;
 }
 
+// two operands: a's lines then b's, or with lay 1 bit by bit side by side (a0 b0 a1 b1 ..)
+// so each bit's pair sits together on the sheet
+static void put_operands(uint32_t& lines, int& at, uint64_t a, uint64_t b, int n, int lay) {
+    if (lay == 0) {
+        put_bits(lines, at, a, n);
+        put_bits(lines, at, b, n);
+        return;
+    }
+    for (int i = 0; i < n; i++) {
+        put_bits(lines, at, a >> i, 1);
+        put_bits(lines, at, b >> i, 1);
+    }
+}
+
 // line `at + value` of `n` is on
 static void put_place(uint32_t& lines, int& at, int value, int n) {
     lines |= 1u << (at + value);
@@ -208,8 +222,7 @@ bool calc_case(const CalcSettings& s, uint64_t id, CalcTrial& t) {
     case CalcOp::xor_bits:
     case CalcOp::max2: {
         uint64_t a = field(id, shift, n), b = field(id, shift, n);
-        put_bits(last, at, a, n);
-        put_bits(last, at, b, n);
+        put_operands(last, at, a, b, n, s.lay);
         t.answer = s.op == CalcOp::add        ? a + b
                    : s.op == CalcOp::sub      ? (a - b) & mask
                    : s.op == CalcOp::mul      ? a * b
@@ -239,8 +252,7 @@ bool calc_case(const CalcSettings& s, uint64_t id, CalcTrial& t) {
         uint64_t op = field(id, shift, ob);
         uint64_t a = field(id, shift, n), b = field(id, shift, n);
         put_bits(last, at, op, ob);
-        put_bits(last, at, a, n);
-        put_bits(last, at, b, n);
+        put_operands(last, at, a, b, n, s.lay);
         // the 4-op alu is add, sub, and, xor
         static const int four[4] = {0, 1, 2, 4};
         t.answer = alu(ob == 2 ? four[op] : (int)op, a, b, mask);

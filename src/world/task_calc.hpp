@@ -63,6 +63,8 @@ struct CalcSettings {
     // held-out cases come in balls: a held case's input lines within this many flips are
     // held too, so the nearest seen case is further away (exact case sets only)
     int ball = 0;
+    // two operands on the sheet: 0 all of a, then all of b; 1 in pairs, a0 b0 a1 b1 ...
+    int lay = 0;
 };
 
 struct CalcState {

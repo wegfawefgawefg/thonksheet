@@ -33,7 +33,9 @@ const char* const calc_flags_usage =
     "  --calc-form F      bits (two motor lines per output bit, default) or buttons (one\n"
     "                     button per possible answer, at most 16; for one-button engines)\n"
     "  --calc-ball R      held-out cases bring every case within R line flips along\n"
-    "                     (default 0), so no seen case is that near one\n";
+    "                     (default 0), so no seen case is that near one\n"
+    "  --calc-lay L       two operands as all of a then all of b (0, default) or in pairs\n"
+    "                     a0 b0 a1 b1 ... (1)\n";
 
 static bool whole_number(const char* text, int& out) {
     char* end = nullptr;
@@ -89,6 +91,7 @@ int calc_parse_flag(const char* flag, const char* value, TaskSettings& settings)
                   : std::strcmp(flag, "--calc-list") == 0 ? &c.list
                   : std::strcmp(flag, "--calc-hold") == 0 ? &c.hold
                   : std::strcmp(flag, "--calc-ball") == 0 ? &c.ball
+                  : std::strcmp(flag, "--calc-lay") == 0  ? &c.lay
                                                           : nullptr;
     if (!target) {
         return 0;
