@@ -23,6 +23,10 @@
 #   scripts/search.sh mini kill                            stop now (runs in flight lost)
 #   scripts/search.sh mini pull                            bring its results here and merge
 #   scripts/search.sh mini log                             the last lines of its log
+#   scripts/search.sh mini push-results                    give it this PC's results (then
+#                                                          restart it so it reads them)
+# Both machines can run the same search; the full engine is slow there (no AVX-512), so
+# the main search runs blob here and minimal,table there (--engines on run / mini start).
 # To add a world or a number to a running search: edit scripts/search/quick-map.txt or a
 # space file here, then `mini stop`, wait until `mini status` says not running, `mini start`.
 set -euo pipefail
@@ -92,14 +96,19 @@ mini)
         rsync -a --exclude tmp/ "mini:~/$dir/out/search/$name/" "out/search/mini-$name/"
         python3 scripts/search.py merge "out/search/mini-$name" --name "$name"
         ;;
+    push-results)
+        # give it this PC's results (it reads them when it next starts)
+        rsync -a --exclude tmp/ --exclude run.pid --exclude STOP "out/search/$name/" "mini:~/$dir/out/search/from-pc-$name/"
+        ssh mini "$remote && python3 scripts/search.py merge out/search/from-pc-$name --name $name"
+        ;;
     *)
-        sed -n '17,24p' "$0"
+        sed -n '17,31p' "$0"
         exit 1
         ;;
     esac
     ;;
 *)
-    sed -n '2,28p' "$0"
+    sed -n '2,31p' "$0"
     exit 1
     ;;
 esac

@@ -30,8 +30,14 @@ scripts/search.sh mini status | log | stop | kill | pull
 `mini start` copies this checkout there, builds it, and starts the search under `nohup
 caffeinate`, so it keeps going after the ssh session ends. `mini pull` copies its folder
 back to `out/search/mini-main/` and merges it into `out/search/main/`; run `report` after.
-Both machines can work on the same search: run it on both and `pull` now and then (merging
-only appends what is missing). Results are byte-identical between the machines.
+`mini push-results` sends this PC's folder the other way (restart it to read them).
+Both machines can work on the same search, each on some of the engines (merging only
+appends what is missing). Results are byte-identical between the machines.
+
+Split the engines by machine. Under the load of 2026-11-25 a full-engine world took 150 s
+on the second machine against 13.5 s here (no AVX-512 there, and it ran at load 60 to 90
+on 14 cores), so one pass of the map for the full engine was 34 minutes there. The main
+search runs `--engines blob` here (2 jobs) and `--engines minimal,table` there.
 
 Everything a search has done is in `out/search/<name>/`: `results.jsonl` (one line per
 finished run, keyed by its exact command), `candidates.jsonl`, `decisions.jsonl` (each
