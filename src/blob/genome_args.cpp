@@ -102,6 +102,23 @@ static const GenomeField fields[] = {
     {"bad_cut_on", &Genome::bad_cut_on},
     {"noise_learn_sign", &Genome::noise_learn_sign},
     {"noise_learn_pair", &Genome::noise_learn_pair},
+    {"syn_tire_ticks", &Genome::syn_tire_ticks},
+    {"syn_tire_keep_shift", &Genome::syn_tire_keep_shift},
+    {"syn_warm_ticks", &Genome::syn_warm_ticks},
+    {"syn_warm_shift", &Genome::syn_warm_shift},
+    {"tire_jump", &Genome::tire_jump},
+    {"tire_shift", &Genome::tire_shift},
+    {"slow_leak_shift", &Genome::slow_leak_shift},
+    {"slow_share_shift", &Genome::slow_share_shift},
+    {"rebound_level", &Genome::rebound_level},
+    {"rebound_ticks", &Genome::rebound_ticks},
+    {"rebound_drop", &Genome::rebound_drop},
+    {"updown_drop", &Genome::updown_drop},
+    {"updown_floor", &Genome::updown_floor},
+    {"any_branch_percent", &Genome::any_branch_percent},
+    {"veto_percent", &Genome::veto_percent},
+    {"coincide_percent", &Genome::coincide_percent},
+    {"tile_winners", &Genome::tile_winners},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {
