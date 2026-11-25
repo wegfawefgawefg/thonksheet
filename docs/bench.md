@@ -76,6 +76,14 @@ through the same plug and told only good and bad, run on the whole map unchanged
 (`mlp-fixed` and `gru-fixed` in the scoreboard). Where that fails without being redesigned
 is where a design of ours could be doing something different in kind.
 
+## Nothing frozen
+
+A design that graduates learns everywhere, all the time: no part switched off, no training
+phase and testing phase, no reset between tasks. Runs with the inside of the sheet held
+fixed are a diagnostic, for finding where learning happens; they are never the design.
+Scorecards say which they are. The reference numbers that matter are with everything
+learning.
+
 ## Honesty
 
 - Predictions before results. Nulls and failures stay on the list.

@@ -8,14 +8,23 @@ Grades: **solid** (two or more independent results), **likely** (one clean resul
 
 ## The headline (2026-11-25)
 
-**A sheet that was never taught anything, plus a readout that adds up evidence, learns
-things no input line carries.** With every connection inside the sheet frozen as born, a
-rule at the motor cells learns exclusive-or of two cues (0.88), which cue came first (0.70,
+**The output can now learn online, from good and bad alone, things no input line carries.**
+In a test with the inside of the sheet held fixed as born (a way to find where learning
+happens, not a goal), a rule at the motor cells learns exclusive-or of two cues (0.88), which cue came first (0.70,
 0.84 with long delays), Echo with the cue three tiles from the button (0.85), four cues
 (1.00) and eight (0.84), and shuffled Echo with no locked lives (1.00 on eight seeds of
 eight). The same sheet with the old readout scored chance on all of these. The owner's
 thesis, that a rich enough sheet turns learning into selection, holds for everything a
 plain linear reader can get out of the sheet. docs/results-2026-11-24-readout.md
+
+**What this is not.** The goal is a brain that learns everywhere, all the time, on any task
+(the owner, 2026-11-25: "i didnt say it needs to be never taught ... the whole point is it
+should be able to learn new things right? run nonstop. online learning for any task"). The
+readout does learn that way: it never stops, it picks up a second task without losing the
+first. The inside does not yet. Held fixed, it can only offer what it was born with, which
+is why a shape in a new place, a long gap and sixteen cues fail. Letting the old inner rule
+run alongside helps reach and hurts the feature tasks. Making the inside learn usefully,
+online, is the open problem and the next target.
 
 The full suite on that rule (`blob-readout` in docs/scoreboard.md, 8 seeds, sheet frozen)
 agrees and adds: a second task is learned after the first (0.99) with the first still there
