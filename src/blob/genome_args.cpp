@@ -102,6 +102,13 @@ static const GenomeField fields[] = {
     {"bad_cut_on", &Genome::bad_cut_on},
     {"noise_learn_sign", &Genome::noise_learn_sign},
     {"noise_learn_pair", &Genome::noise_learn_pair},
+    {"replay_depth", &Genome::replay_depth},
+    {"replay_shift", &Genome::replay_shift},
+    {"replay_thin", &Genome::replay_thin},
+    {"replay_new", &Genome::replay_new},
+    {"replay_quiet", &Genome::replay_quiet},
+    {"replay_until", &Genome::replay_until},
+    {"replay_reset", &Genome::replay_reset},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

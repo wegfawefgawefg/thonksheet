@@ -315,6 +315,7 @@ void blob_free(Blob* blob) {
     for (void* p : arrays) {
         std::free(p);
     }
+    std::free(blob->replay); // one block (blob/replay.hpp)
     delete blob;
 }
 

@@ -13,6 +13,7 @@ static void tick_learn(Blob& blob, int read_now) {
         return;
     }
     if (mode == 5 || mode == 6) {
+        learn_replay(blob, blob.pending_valence); // idea 62; returns at once while off
         learn_readout(blob, blob.pending_valence);
         if (mode == 5) {
             return;

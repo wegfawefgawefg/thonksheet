@@ -36,6 +36,8 @@ struct FlipTrial {
     uint32_t kept = 0, undone = 0;
 };
 
+struct ReplayState; // idea 62, blob/replay.hpp
+
 struct Blob {
     Genome genome;
     int tiles_w = 0, tiles_h = 0;
@@ -127,6 +129,9 @@ struct Blob {
     int32_t* readout_row = nullptr;
     int8_t* readout_evidence = nullptr;
     uint16_t* readout_keep = nullptr;
+    // reverse replay (idea 62): one block, made on first use, freed with the blob
+    // (blob/replay.hpp)
+    ReplayState* replay = nullptr;
 };
 
 // birth and death
