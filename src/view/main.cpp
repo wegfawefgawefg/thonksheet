@@ -51,6 +51,45 @@ static void print_task(const ViewFrame& f) {
     }
 }
 
+// a capture's readability numbers on stdout, by distance from the cue tile, as blobprobe
+// feature prints them
+static void print_readable(const ViewFrame& f) {
+    for (int i = 0; i < READ_FEATURES; ++i) {
+        const Readability& r = f.readable[i];
+        if (r.tile.empty()) {
+            continue;
+        }
+        std::printf("blobview: readable %-6s %4d tries, by distance:", feature_names[i], r.tries);
+        for (int d = 0; d < r.distances; ++d) {
+            std::printf(" %6.2f", r.by_distance[d]);
+        }
+        std::printf("\n");
+    }
+}
+
+// --select-button: the first cell of that button, once the readout's cells are known
+static bool pick_start_button(State& s) {
+    if (s.options.select_button < 0 || s.readout_pick >= 0) {
+        return false;
+    }
+    const std::vector<ReadoutCell>& cells = s.frame.readout.cells;
+    for (int i = 0; i < static_cast<int>(cells.size()); ++i) {
+        if (cells[i].button == s.options.select_button) {
+            pick_readout_cell(s, i);
+            return true;
+        }
+    }
+    return false;
+}
+
+// a capture's measurement at the end: ask, then tick until it is done
+static void capture_measure(Sim& sim, int feature) {
+    sim_probe_ask(sim, feature);
+    for (int64_t i = 0; i < 10000000 && (sim.probe.on || sim.probe.pending >= 0); ++i) {
+        sim_tick(sim);
+    }
+}
+
 static int fail(const char* why) {
     std::fprintf(stderr, "blobview: %s\n", why);
     return 1;
@@ -72,7 +111,7 @@ int main(int argc, char** argv) {
     state.sim.shared.selected = o.select;
     state.sim.shared.slow_tps = o.slow_tps;
     state.sim.shared.input_on = o.input;
-    state.learning = state.sim.settings.genome.learning_on != 0;
+    state.learning = state.sim.settings.engine.genome.learning_on != 0;
     set_mode(state, o.mode);
 
     // init window, renderer and input. A capture opens no window and never touches a display.
@@ -102,10 +141,24 @@ int main(int argc, char** argv) {
     if (capturing) {
         const double secs = sim_run_capture(state.sim, o.until);
         state.clock.ticks_per_second = secs > 0 ? static_cast<float>(o.until / secs) : 0.0f;
+        if (o.measure >= 0) {
+            capture_measure(state.sim, o.measure);
+            state.view.tint = o.measure;
+        }
+        if (o.probe.feature >= 0) {
+            state.view.tint = o.probe.feature;
+        }
         sim_fill(state.sim, state.frame, o.select);
+        if (pick_start_button(state)) {
+            sim_fill(state.sim, state.frame, state.sim.shared.selected.load());
+        }
         frame_derive(state.frame);
         print_task(state.frame);
+        print_readable(state.frame);
     } else {
+        if (o.probe.feature >= 0) {
+            state.view.tint = o.probe.feature;
+        }
         sim_start(state.sim);
     }
 
@@ -127,6 +180,7 @@ int main(int argc, char** argv) {
         // viewer works out from it
         if (!capturing && state.mode != RUN_TURBO && sim_take(state.sim, state.frame)) {
             frame_derive(state.frame);
+            pick_start_button(state);
         }
 
         // the panels

@@ -85,3 +85,5 @@ A request that becomes work also gets a line in `docs/plan.md`.
 - "i didnt say it needs to be never taught wtf? the whole point is it should be able to learn
   new things right? run nonstop. online learning for any task" -> frozen-sheet runs are a
   diagnostic only; `docs/bench.md` "Nothing frozen"; the findings headline reworded.
+- "env ideas shape identification. square. triangle. lines dot. object tracking." -> idea 136,
+  the seeing battery, queued behind the invariance battery.

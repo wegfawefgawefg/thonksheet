@@ -2,6 +2,7 @@
 // thread while the blob is between ticks.
 
 #include "blob/blob.hpp"
+#include "engine.hpp"
 #include "view_frame.hpp"
 
 #include <algorithm>
@@ -24,18 +25,25 @@ static void hist_add(Histogram& h, int value, uint32_t count = 1) {
     h.high = std::max(h.high, value);
 }
 
+// what every engine's shell has: the sheet's size and the kinds of cell. sectors only where
+// the engine keeps them in the shell (the full engine and the fake)
 static void fill_shape(ViewFrame& f, const Blob& b) {
     f.tiles_w = b.tiles_w;
     f.tiles_h = b.tiles_h;
     f.tile_count = b.tile_count;
     f.neuron_count = b.neuron_count;
-    f.sector_count = b.sector_count;
-    f.sector_tiles = b.genome.sector_tiles;
     f.tick = b.stats.tick;
     f.inhibitory.assign(b.inhibitory, b.inhibitory + b.tile_count);
     f.sensor.assign(b.sensor, b.sensor + b.tile_count);
     f.motor.assign(b.motor, b.motor + b.tile_count);
-    f.tile_sector.assign(b.tile_sector, b.tile_sector + b.tile_count);
+    const bool sectors = b.tile_sector != nullptr && b.sector_activity != nullptr;
+    f.sector_count = sectors ? b.sector_count : 0;
+    f.sector_tiles = sectors ? b.genome.sector_tiles : 1;
+    if (sectors) {
+        f.tile_sector.assign(b.tile_sector, b.tile_sector + b.tile_count);
+    } else {
+        f.tile_sector.assign(b.tile_count, 0);
+    }
 }
 
 // activity against target per sector; the target is the genome's rate times the sector's
@@ -119,7 +127,7 @@ static int slot_delay(const Blob& b, int neuron, int slot) {
     return b.slot_delay[blob_weight_index(neuron, slot)];
 }
 
-static Link make_link(const Blob& b, int neuron, int strength, bool far) {
+Link make_link(const Blob& b, int neuron, int strength, bool far) {
     Link l;
     l.x = static_cast<int16_t>(blob_neuron_x(b, neuron));
     l.y = static_cast<int16_t>(blob_neuron_y(b, neuron));
@@ -177,11 +185,22 @@ static void fill_links(Selected& s, const Blob& b, int n) {
     }
 }
 
-static void fill_selected(Selected& s, const Blob& b, int n) {
-    if (n < 0 || n >= b.neuron_count) {
-        s = Selected{};
-        return;
-    }
+// where the picked neuron is and what kind it is, for any engine; the rest starts empty
+void fill_selected_place(Selected& s, const Blob& b, int n) {
+    std::vector<Link> sources = std::move(s.sources), targets = std::move(s.targets);
+    std::vector<EvidenceCell> evidence = std::move(s.evidence);
+    std::vector<uint8_t> table = std::move(s.table), input_on = std::move(s.table_input_on);
+    s = Selected{};
+    s.sources = std::move(sources);
+    s.targets = std::move(targets);
+    s.evidence = std::move(evidence);
+    s.table = std::move(table);
+    s.table_input_on = std::move(input_on);
+    s.sources.clear();
+    s.targets.clear();
+    s.evidence.clear();
+    s.table.clear();
+    s.table_input_on.clear();
     s.neuron = n;
     s.x = blob_neuron_x(b, n);
     s.y = blob_neuron_y(b, n);
@@ -192,6 +211,10 @@ static void fill_selected(Selected& s, const Blob& b, int n) {
              : (b.motor[s.tile] & mask)      ? KIND_MOTOR
              : (b.inhibitory[s.tile] & mask) ? KIND_INHIBITORY
                                              : KIND_EXCITATORY;
+}
+
+static void fill_selected(Selected& s, const Blob& b, int n) {
+    fill_selected_place(s, b, n);
     s.sector = static_cast<int>(b.tile_sector[s.tile]);
     s.threshold = b.threshold[n];
     s.potential = b.potential[n];
@@ -208,12 +231,32 @@ static void fill_selected(Selected& s, const Blob& b, int n) {
     fill_links(s, b, n);
 }
 
-void frame_fill(ViewFrame& frame, const Blob& blob, int selected, bool heavy, bool real) {
-    frame.real = real;
+void frame_fill(ViewFrame& frame, const Blob& blob, int selected, bool heavy, int engine) {
+    frame.real = engine != ENGINE_FAKE;
+    frame.engine = engine;
+    frame.lines_known = engine_lines(static_cast<Engine>(engine));
     fill_shape(frame, blob);
-    fill_sectors(frame, blob);
-    if (heavy) {
-        fill_histograms(frame, blob);
+    const bool full = engine == ENGINE_FAKE || engine == ENGINE_BLOB;
+    frame.has = full                       ? HAS_SECTORS | HAS_WEIGHTS | HAS_THRESHOLDS | HAS_FAN_IN
+                : engine == ENGINE_MINIMAL ? HAS_THRESHOLDS | HAS_FAN_IN
+                                           : 0u;
+    if (full) {
+        fill_sectors(frame, blob);
+    } else {
+        frame.sectors.clear();
     }
-    fill_selected(frame.selected, blob, selected);
+    if (heavy && full) {
+        fill_histograms(frame, blob);
+    } else if (heavy && engine == ENGINE_MINIMAL) {
+        fill_histograms_minimal(frame, blob);
+    }
+    if (selected < 0 || selected >= blob.neuron_count) {
+        frame.selected = Selected{};
+    } else if (full) {
+        fill_selected(frame.selected, blob, selected);
+    } else if (engine == ENGINE_MINIMAL) {
+        fill_selected_minimal(frame.selected, blob, selected);
+    } else if (engine == ENGINE_TABLE) {
+        fill_selected_table(frame.selected, blob, selected);
+    }
 }
