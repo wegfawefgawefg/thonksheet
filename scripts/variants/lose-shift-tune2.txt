@@ -1,0 +1,9 @@
+# idea 53, second tuning round on the same tuning seeds (see lose-shift-tune.txt). round 1:
+# fires 1 costs straight lives, fires 2 does not; win-stay helps echo but locks crossed lives.
+baseline:
+ls8 f2: --g.lose_shift_steps 8 --g.lose_shift_fires 2
+ls16 f2: --g.lose_shift_steps 16 --g.lose_shift_fires 2
+ls8 f3: --g.lose_shift_steps 8 --g.lose_shift_fires 3
+ls16 f3: --g.lose_shift_steps 16 --g.lose_shift_fires 3
+ls8 f2 ws2: --g.lose_shift_steps 8 --g.lose_shift_fires 2 --g.win_stay_steps 2
+ls8 f2 cut: --g.lose_shift_steps 8 --g.lose_shift_fires 2 --g.bad_cut_on 1

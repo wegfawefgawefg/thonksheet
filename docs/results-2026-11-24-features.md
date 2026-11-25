@@ -60,3 +60,20 @@ Growth and pruning off gives the "as born" numbers again in every case.
 
 One seed and an ideal reader. The effects are large; they want more seeds, and the same
 probe on the minimal and table engines.
+
+## Three more seeds
+
+`scripts/feature.sh --seed N` for seeds 2, 3 and 4. Mean readability at the tile next to
+the input, with the lowest and highest seed in brackets. Seed 1 is in the table above.
+
+| feature | as born | all delays 1 | delays 4 to 8 |
+| --- | --- | --- | --- |
+| which | 9.8 (8.8 to 10.5) | 16.7 | 18.9 |
+| order | 3.17 (2.96 to 3.29) | 2.71 (2.19 to 3.00) | 5.95 (5.43 to 6.44) |
+| xor | 1.75 (1.68 to 1.79) | 1.82 (1.72 to 1.87) | 1.29 (1.16 to 1.38) |
+| gap | 1.66 (1.61 to 1.76) | 0.79 (0.71 to 0.89) | 4.54 (3.71 to 5.29) |
+
+The single-seed reading holds on every seed, with little spread: the features are there at
+birth; long delays double order and take gap from below 1 to above 4; they cost
+exclusive-or a little. ("Which" with delays changed is measured with learning on, so it is
+not comparable with its as-born column.)

@@ -38,6 +38,7 @@ LEARNING_ONLY = {
     "readout_good", "readout_new", "readout_budget", "readout_far",
     "readout_center", "readout_evidence", "readout_evidence_bits", "readout_evidence_strong",
     "readout_balance",
+    "lose_shift_steps", "win_stay_steps", "lose_shift_fires", "bad_cut_on",
 }
 
 

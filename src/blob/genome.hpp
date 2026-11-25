@@ -114,6 +114,17 @@ struct Genome {
     int readout_balance = 0;         // 1: the other buttons move less, by their number
     int readout_far = 0;          // 1: a marked motor cell with an empty far slot gets one drawn,
                                   // so it hears two more tiles than its 9 local ones
+    // lose-shift and neighbours (idea 53, learn_lose_shift.cpp). 0 is off and changes nothing.
+    int lose_shift_steps = 0; // on bad, threshold steps added to motor cells that just fired
+    int win_stay_steps = 0;   // on good, threshold steps taken off them
+    int lose_shift_fires = 1; // "just fired": at least this many spikes (1..3) in the last 16 ticks
+    int bad_cut_on = 0; // bad may remove strength-1 links, only into recently fired motor cells
+    // idea 57 (docs/results-2026-11-24-noise-sign.md), modes 3 and 4 only.
+    // noise_learn_sign -1 turns the rule over: better than the mean weakens, worse strengthens.
+    // noise_learn_pair 1 takes the mean out of the rule: neurons that stayed quiet on a tick
+    // are graded too, with the chance a noise spike has, and moved the other way.
+    int noise_learn_sign = 1;
+    int noise_learn_pair = 0;
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

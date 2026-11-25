@@ -96,6 +96,12 @@ static const GenomeField fields[] = {
     {"readout_evidence", &Genome::readout_evidence},
     {"readout_evidence_bits", &Genome::readout_evidence_bits},
     {"readout_evidence_strong", &Genome::readout_evidence_strong},
+    {"lose_shift_steps", &Genome::lose_shift_steps},
+    {"win_stay_steps", &Genome::win_stay_steps},
+    {"lose_shift_fires", &Genome::lose_shift_fires},
+    {"bad_cut_on", &Genome::bad_cut_on},
+    {"noise_learn_sign", &Genome::noise_learn_sign},
+    {"noise_learn_pair", &Genome::noise_learn_pair},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

@@ -82,6 +82,15 @@ if(table_sources AND TARGET blobcore)
     add_executable(tablebench ${CMAKE_SOURCE_DIR}/src/table/bench/tablebench.cpp)
     target_compile_options(tablebench PRIVATE ${warnings} ${speed})
     target_link_libraries(tablebench PRIVATE blobtable blobcore)
+    # tableprobe: idea 57, where noise-graded credit goes (src/table/probe/)
+    file(GLOB table_probe_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/table/probe/*.cpp)
+    if(table_probe_sources AND TARGET blobworld)
+        add_executable(tableprobe ${table_probe_sources}
+                       ${CMAKE_SOURCE_DIR}/src/run/task_ticker.cpp
+                       ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp)
+        target_compile_options(tableprobe PRIVATE ${warnings} ${speed})
+        target_link_libraries(tableprobe PRIVATE blobtable blobworld blobcore)
+    endif()
 endif()
 
 # blobminimal: the minimal engine (popcount neurons, one bit per source, noise-graded credit

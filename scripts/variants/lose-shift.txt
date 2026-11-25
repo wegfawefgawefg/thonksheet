@@ -1,0 +1,9 @@
+# idea 53 on report seeds. settings picked on tuning seeds (lose-shift-tune*.txt):
+# lose-shift 16 threshold steps on cells with 2+ spikes in the last 16 ticks; win-stay 2 steps
+# (alone it uses 1+ spikes; with lose-shift both use 2+); bad cut at the bad broadcast's chance.
+baseline:
+lose-shift: --g.lose_shift_steps 16 --g.lose_shift_fires 2
+win-stay: --g.win_stay_steps 2
+bad cut: --g.bad_cut_on 1
+lose-shift + win-stay: --g.lose_shift_steps 16 --g.lose_shift_fires 2 --g.win_stay_steps 2
+lose-shift + bad cut: --g.lose_shift_steps 16 --g.lose_shift_fires 2 --g.bad_cut_on 1

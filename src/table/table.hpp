@@ -55,7 +55,8 @@ struct TableGenome {
     int learn_mode = 0;       // 0 plain: graded neurons' used counters move toward what they did
                               // on good, away on bad. 1 noise is the experiment: only neurons
                               // whose output noise flipped are graded, against average reward.
-                              // 2 the same as 1 with the sign turned over
+                              // 2 the same as 1 with the sign turned over. 3 as 1, with
+                              // unflipped neurons graded at the flip chance (mean taken out)
     int grade = 2;            // mode 0, who is graded on a tick: 0 neurons that fired, 1 also
                               // quiet ones with an input on, 2 every neuron, 3 every neuron on
                               // good but only the ones that fired on bad
