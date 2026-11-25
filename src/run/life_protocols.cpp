@@ -274,6 +274,9 @@ int protocol_run(const RunFlags& flags) {
     if (flags.protocol == Protocol::speed) {
         return protocol_speed(flags);
     }
+    if (flags.protocol == Protocol::longlife) {
+        return protocol_long(flags);
+    }
     FILE* sum = summary_open(flags.out);
     if (!sum) {
         return 1;
@@ -292,6 +295,7 @@ int protocol_run(const RunFlags& flags) {
         break;
     case Protocol::reach:
     case Protocol::speed:
+    case Protocol::longlife:
         break;
     }
     std::fclose(sum);

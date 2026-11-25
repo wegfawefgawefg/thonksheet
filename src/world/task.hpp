@@ -1,5 +1,6 @@
 #pragma once
 
+#include "world/task_long.hpp"
 #include "world/world_random.hpp"
 
 #include <cstdint>
@@ -21,6 +22,11 @@ enum class TaskKind {
     both_not_either, // two cues; one button when exactly one is on, the other otherwise
     gap,             // one cue blinks twice; answer whether the gap was short or long
     place,           // a small shape at one of several places; answer which shape
+    hold,            // long memory (task_long.hpp): a cue held over a long blank gap
+    pairs,           // a stream of new pattern-button pairs, old ones re-asked by age
+    once,            // a pattern shown once with its answer, asked much later
+    rare,            // patterns asked one step in a thousand among common ones
+    drift,           // fixed pairs; half change button late in life
     count,
 };
 
@@ -73,6 +79,7 @@ struct TaskSettings {
     // every step up, bad on a fall), 2 lean (every step: good if the pole and cart ended
     // nearer upright-and-centred than they began or are already there, bad if further)
     int cart_reward = 0;
+    LongSettings longs; // hold, pairs, once, rare, drift (task_long.hpp)
 };
 
 // fixed point for cartpole: 16 fractional bits
@@ -109,6 +116,8 @@ struct Task {
 
     // window score, meaning depends on the kind (see task_window_score)
     int64_t tally[4] = {};
+
+    LongState longs; // hold, pairs, once, rare, drift
 };
 
 const char* task_name(TaskKind kind);

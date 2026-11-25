@@ -78,7 +78,12 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
         const char* flag = argv[i];
         if (std::strcmp(flag, "--help") == 0 || std::strcmp(flag, "-h") == 0) {
             std::fputs(usage, stderr);
+            std::fputs(long_usage, stderr);
             return false;
+        }
+        if (std::strcmp(flag, "--long") == 0) {
+            flags.protocol = Protocol::longlife;
+            continue;
         }
         if (std::strcmp(flag, "--no-baselines") == 0) {
             flags.baselines = false;
@@ -239,6 +244,7 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.alive_ticks = (int)v;
         } else if (std::strcmp(flag, "--rhythm-ticks") == 0) {
             flags.rhythm_ticks = (int)v;
+        } else if (long_flag(flag, v, flags.task_settings.longs)) {
         } else {
             std::fprintf(stderr, "blobrun: unknown flag %s\n%s", flag, usage);
             return false;

@@ -165,7 +165,8 @@ int main(int argc, char** argv) {
     }
     if (flags.out.empty()) {
         // protocols other than one plain life are named before the task
-        const char* const protocol_names[] = {"", "retention-", "idle-", "capacity-", "", ""};
+        const char* const protocol_names[] = {"", "retention-", "idle-", "capacity-",
+                                              "", "",           "long-"};
         std::string what = protocol_names[(int)flags.protocol];
         what += task_name(flags.task);
         what = flags.protocol == Protocol::reach ? "reach" : what;

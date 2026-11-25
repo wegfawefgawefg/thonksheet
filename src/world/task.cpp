@@ -4,8 +4,9 @@
 
 // names as typed on the blobrun command line
 static const char* const task_names[(int)TaskKind::count] = {
-    "echo",  "shuffled-echo", "delayed-echo", "go-no-go",        "beat", "sequence",
-    "catch", "cartpole",      "order",        "both-not-either", "gap",  "place",
+    "echo",     "shuffled-echo", "delayed-echo",    "go-no-go", "beat",  "sequence", "catch",
+    "cartpole", "order",         "both-not-either", "gap",      "place", "hold",     "pairs",
+    "once",     "rare",          "drift",
 };
 
 const char* task_name(TaskKind kind) {
@@ -50,6 +51,13 @@ void task_reset(Task& task, TaskKind kind, const TaskSettings& settings, uint64_
     case TaskKind::place:
         feature_reset(task);
         break;
+    case TaskKind::hold:
+    case TaskKind::pairs:
+    case TaskKind::once:
+    case TaskKind::rare:
+    case TaskKind::drift:
+        long_reset(task);
+        break;
     case TaskKind::count:
         break;
     }
@@ -74,6 +82,12 @@ TaskShape task_shape(const Task& task) {
     case TaskKind::gap:
     case TaskKind::place:
         return feature_shape(task);
+    case TaskKind::hold:
+    case TaskKind::pairs:
+    case TaskKind::once:
+    case TaskKind::rare:
+    case TaskKind::drift:
+        return long_shape(task);
     case TaskKind::count:
         break;
     }
@@ -105,6 +119,13 @@ void task_sense(const Task& task, TaskSense& sense) {
     case TaskKind::place:
         feature_sense(task, sense);
         break;
+    case TaskKind::hold:
+    case TaskKind::pairs:
+    case TaskKind::once:
+    case TaskKind::rare:
+    case TaskKind::drift:
+        long_sense(task, sense);
+        break;
     case TaskKind::count:
         break;
     }
@@ -129,6 +150,12 @@ int task_perfect_move(const Task& task) {
     case TaskKind::gap:
     case TaskKind::place:
         return feature_perfect_move(task);
+    case TaskKind::hold:
+    case TaskKind::pairs:
+    case TaskKind::once:
+    case TaskKind::rare:
+    case TaskKind::drift:
+        return long_perfect_move(task);
     case TaskKind::count:
         break;
     }
@@ -160,6 +187,13 @@ int task_step(Task& task, const TaskStepIn& in) {
     case TaskKind::place:
         valence = feature_step(task, in);
         break;
+    case TaskKind::hold:
+    case TaskKind::pairs:
+    case TaskKind::once:
+    case TaskKind::rare:
+    case TaskKind::drift:
+        valence = long_step(task, in);
+        break;
     case TaskKind::count:
         break;
     }
@@ -185,6 +219,11 @@ double task_window_score(Task& task) {
     case TaskKind::both_not_either:
     case TaskKind::gap:
     case TaskKind::place:
+    case TaskKind::hold:
+    case TaskKind::pairs:
+    case TaskKind::once:
+    case TaskKind::rare:
+    case TaskKind::drift:
         // right answers over chances to answer
         score = ratio(t[0], t[1]);
         break;
