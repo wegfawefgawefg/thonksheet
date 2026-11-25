@@ -14,7 +14,7 @@
 // then the task's on/off lines, then its bitmap, then its numbers, each number a row of
 // threshold lines. A task that uses no reward leaves good and bad unattached.
 
-constexpr int PLUG_MAX_SENSOR_LINES = 256;
+constexpr int PLUG_MAX_SENSOR_LINES = 1024; // mnist's 28x28 and good, bad
 constexpr int PLUG_MAX_MOTOR_LINES = 64;
 constexpr int PLUG_MAX_SIDE = 4;
 constexpr int PLUG_MAX_GROUP = PLUG_MAX_SIDE * PLUG_MAX_SIDE;

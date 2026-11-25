@@ -21,11 +21,12 @@ enum class TaskKind {
     both_not_either, // two cues; one button when exactly one is on, the other otherwise
     gap,             // one cue blinks twice; answer whether the gap was short or long
     place,           // a small shape at one of several places; answer which shape
+    mnist,           // a handwritten digit on the sheet; press its button (task_mnist.cpp)
     count,
 };
 
 constexpr int TASK_MAX_SINGLES = 32;
-constexpr int TASK_MAX_SHEET = 256;
+constexpr int TASK_MAX_SHEET = 1024; // mnist's 28x28
 constexpr int TASK_MAX_NUMBERS = 4;
 constexpr int TASK_MAX_MOTORS = 16;
 constexpr int TASK_MAX_PATTERN = 64;
@@ -73,6 +74,13 @@ struct TaskSettings {
     // every step up, bad on a fall), 2 lean (every step: good if the pole and cart ended
     // nearer upright-and-centred than they began or are already there, bad if further)
     int cart_reward = 0;
+    // mnist: how a digit becomes bits (MnistCode in mnist_data.hpp); the held-out test
+    // digits, unrewarded; digits [first, first + count) of the set (count 0: the rest); every
+    // digit moved by (dx, dy) pixels
+    int mnist_code = 0;
+    int mnist_test = 0;
+    int mnist_first = 0, mnist_count = 0;
+    int mnist_dx = 0, mnist_dy = 0;
 };
 
 // fixed point for cartpole: 16 fractional bits
@@ -109,6 +117,11 @@ struct Task {
 
     // window score, meaning depends on the kind (see task_window_score)
     int64_t tally[4] = {};
+
+    // mnist: digits shown since the last restart, the order's seed, the digit on the sheet
+    int64_t shown = 0;
+    uint64_t order_seed = 0;
+    int image = 0;
 };
 
 const char* task_name(TaskKind kind);
@@ -155,3 +168,12 @@ TaskShape feature_shape(const Task& task);
 void feature_sense(const Task& task, TaskSense& sense);
 int feature_perfect_move(const Task& task);
 int feature_step(Task& task, const TaskStepIn& in);
+
+void mnist_reset(Task& task);
+TaskShape mnist_shape(const Task& task);
+void mnist_sense(const Task& task, TaskSense& sense);
+int mnist_perfect_move(const Task& task);
+int mnist_step(Task& task, const TaskStepIn& in);
+// a new phase on the same task: train or test digits, which of them, moved how; the order
+// and the tallies start over
+void mnist_restart(Task& task, int test, int first, int count, int dx, int dy);
