@@ -137,6 +137,7 @@ struct Genome {
     int replay_until = 0; // tick at which the walk stops for good (0: never)
     int replay_reset = 0; // at replay_until: 1 the motor cells go back to born wiring and the
                           // readout's counters are cleared; 2 the same, then all learning stops
+    int replay_shuffle = 0; // control: 1 gives each motor spike walked a random sign
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

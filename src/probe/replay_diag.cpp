@@ -90,6 +90,30 @@ int probe_replay(int argc, char** argv) {
                 (long long)inner, (double)connections / (double)(inner ? inner : 1),
                 (long long)rows, (long long)gained, (long long)lost,
                 100.0 * (double)lost / (double)(connections ? connections : 1));
+    // where the wiring moved: connections gained per inner neuron, by tile row (the cues sit
+    // in the top half, the motor cells in the bottom half)
+    const ReplayState* r = blob->replay;
+    if (r) {
+        std::printf("gained per inner neuron by tile row:");
+        for (int ty = 0; ty < blob->tiles_h; ty++) {
+            int64_t row_gained = 0, row_inner = 0;
+            for (int tx = 0; tx < blob->tiles_w; tx++) {
+                int t = ty * blob->tiles_w + tx;
+                uint64_t in = ~blob->sensor[t] & ~blob->motor[t];
+                row_inner += __builtin_popcountll(in);
+                for (int k = 0; k < SLOTS; k++) {
+                    for (int b = 0; b < TILE_NEURONS; b++) {
+                        int64_t w = blob_weight_index(t * TILE_NEURONS + b, k);
+                        uint64_t was = r->born_w0[w] | r->born_w1[w];
+                        uint64_t is = blob->w0[w] | blob->w1[w];
+                        row_gained += ((in >> b) & 1) ? __builtin_popcountll(is & ~was) : 0;
+                    }
+                }
+            }
+            std::printf(" %.2f", (double)row_gained / (double)(row_inner ? row_inner : 1));
+        }
+        std::printf("\n");
+    }
     blob_free(blob);
     return 0;
 }

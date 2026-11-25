@@ -64,8 +64,15 @@ static void seed_motor(Blob& blob, ReplayState& r, int valence, int ages) {
             uint64_t fired = map_at(blob, a)[t];
             uint64_t o = g.replay_quiet ? other : other & fired;
             o &= o && thin ? sparse_word(blob.rng, thin) : ~0ull;
-            r.walk[pressed_sign][a * stride + t] |= pressed & fired;
-            r.walk[1 - pressed_sign][a * stride + t] |= o;
+            uint64_t mine = pressed & fired, theirs = o;
+            // the control: the same spikes, each with a sign drawn at random
+            if (g.replay_shuffle && (mine | theirs)) {
+                uint64_t all = mine | theirs, coin = rng_next(blob.rng);
+                mine = all & coin;
+                theirs = all & ~coin;
+            }
+            r.walk[pressed_sign][a * stride + t] |= mine;
+            r.walk[1 - pressed_sign][a * stride + t] |= theirs;
         }
     }
 }
