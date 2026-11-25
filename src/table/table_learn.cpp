@@ -26,6 +26,10 @@
 void table_reward(Blob& blob, int valence) {
     TableBlob& tb = table_of(blob);
     const TableGenome& tg = tb.tg;
+    // integrator cells clear on any good or bad, learning or not: it is activity, not wiring
+    if (valence != 0) {
+        table_memory_reward(tb);
+    }
     if (!tg.learning_on || valence == 0) {
         return;
     }
@@ -84,7 +88,7 @@ void table_reward(Blob& blob, int valence) {
                 if (fire && !((may_rise >> bit) & 1)) {
                     continue;
                 }
-                tb.stats.learned += table_step(tb, n, entry, fire ? +1 : -1);
+                tb.stats.learned += table_step_locked(tb, n, entry, fire ? +1 : -1);
             }
         }
     }
@@ -149,7 +153,7 @@ void table_grow(TableBlob& tb) {
             }
             int dspan = tb.tg.local_delay_max - tb.tg.local_delay_min + 1;
             int delay = tb.tg.local_delay_min + (int)rng_below(tb.rng, (uint32_t)dspan);
-            tb.input[(int64_t)n * tb.inputs + j] = ((uint32_t)m << 4) | (uint32_t)delay;
+            tb.input[(int64_t)n * tb.inputs + j] = ((uint32_t)m << 5) | (uint32_t)delay;
             tb.stats.grown++;
         }
     }

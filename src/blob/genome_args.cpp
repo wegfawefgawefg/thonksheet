@@ -102,6 +102,11 @@ static const GenomeField fields[] = {
     {"bad_cut_on", &Genome::bad_cut_on},
     {"noise_learn_sign", &Genome::noise_learn_sign},
     {"noise_learn_pair", &Genome::noise_learn_pair},
+    {"hold_percent", &Genome::hold_percent},
+    {"hold_cap", &Genome::hold_cap},
+    {"readout_lock_levels", &Genome::readout_lock_levels},
+    {"readout_lock_shift", &Genome::readout_lock_shift},
+    {"readout_lock_hold", &Genome::readout_lock_hold},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

@@ -42,6 +42,15 @@ static const TableField fields[] = {
     {"grow_shift", &TableGenome::grow_shift},
     {"report", &TableGenome::report},
     {"report_ticks", &TableGenome::report_ticks},
+    {"timeline_levels", &TableGenome::timeline_levels},
+    {"timeline_mode", &TableGenome::timeline_mode},
+    {"timeline_percent", &TableGenome::timeline_percent},
+    {"timeline_source", &TableGenome::timeline_source},
+    {"hold_percent", &TableGenome::hold_percent},
+    {"hold_cap", &TableGenome::hold_cap},
+    {"lock_levels", &TableGenome::lock_levels},
+    {"lock_shift", &TableGenome::lock_shift},
+    {"lock_hold", &TableGenome::lock_hold},
 };
 
 void table_genome_args(int argc, char** argv, TableGenome& tg) {
@@ -127,10 +136,11 @@ static uint32_t draw_input(TableBlob& tb, int x, int y) {
             delay = tg.local_delay_min + (int)rng_below(tb.rng, (uint32_t)dspan);
         }
         if (on_sheet(b, sx, sy)) {
-            return ((uint32_t)blob_neuron_at(b, sx, sy) << 4) | (uint32_t)delay;
+            return table_memory_input(tb, (uint32_t)blob_neuron_at(b, sx, sy), (uint32_t)delay,
+                                      x, y);
         }
     }
-    return ((uint32_t)b.tile_count * TILE_NEURONS << 4) | 1u; // the zero word
+    return ((uint32_t)b.tile_count * TILE_NEURONS << 5) | 1u; // the zero word
 }
 
 static void fill_tables(TableBlob& tb) {
@@ -232,6 +242,7 @@ Blob* table_birth(const Genome& genome, const TableGenome& tg_in, uint64_t seed)
         tb->fire_count = (uint32_t*)zeroed(sizeof(uint32_t) * (size_t)n_all);
         tb->visited = (uint64_t*)zeroed(sizeof(uint64_t) * (size_t)n_all * tb->words_per_plane);
     }
+    table_memory_birth(*tb);
     return &b;
 }
 
@@ -262,6 +273,7 @@ void table_free(Blob* blob) {
     std::free(tb.bar);
     std::free(tb.sector_free);
     std::free(tb.sector_fired);
+    table_memory_free(tb);
     delete &tb;
 }
 

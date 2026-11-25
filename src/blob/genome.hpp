@@ -125,6 +125,12 @@ struct Genome {
     // are graded too, with the chance a noise spike has, and moved the other way.
     int noise_learn_sign = 1;
     int noise_learn_pair = 0;
+    // long memory (long_memory.cpp). 0 is off and changes nothing.
+    int hold_percent = 0;         // integrator cells: share of excitatory inner neurons
+    int hold_cap = 15;            // their onset count stops here
+    int readout_lock_levels = 0;  // the freezer on readout evidence: lock depth, up to 3
+    int readout_lock_shift = 4;   // a push at the end of the range deepens with 2^-this
+    int readout_lock_hold = 3;    // a move against depth d goes with 2^-(this * d)
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

@@ -1,4 +1,5 @@
 #include "blob/blob.hpp"
+#include "blob/long_memory.hpp"
 #include "blob/tick_steps.hpp"
 
 // one tick: integrate and fire, regulate, learn.
@@ -47,6 +48,7 @@ void blob_tick(Blob& blob) {
 
     tick_fire(blob, blob.spikes[next]);
     blob.now = next;
+    long_memory_after_fire(blob);
 
     // "fired recently": OR of the last recent_ticks maps
     for (int t = 0; t <= blob.tile_count; t++) {

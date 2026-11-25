@@ -127,6 +127,10 @@ struct Blob {
     int32_t* readout_row = nullptr;
     int8_t* readout_evidence = nullptr;
     uint16_t* readout_keep = nullptr;
+
+    // long memory (long_memory.hpp): integrator cells and the evidence freezer. null until
+    // one of their genome switches is on
+    struct BlobLongMemory* long_memory = nullptr;
 };
 
 // birth and death

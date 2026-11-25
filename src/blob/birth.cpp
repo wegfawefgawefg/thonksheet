@@ -1,4 +1,5 @@
 #include "blob/blob.hpp"
+#include "blob/long_memory.hpp"
 #include "blob/random_words.hpp"
 #include "blob/tick_steps.hpp"
 #include "blob/weight_levels.hpp"
@@ -315,6 +316,7 @@ void blob_free(Blob* blob) {
     for (void* p : arrays) {
         std::free(p);
     }
+    long_memory_free(*blob);
     delete blob;
 }
 
