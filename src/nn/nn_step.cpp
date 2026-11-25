@@ -84,15 +84,8 @@ static void decide(NnBlob& nb, int buttons, int perfect_move) {
     nb.action = a;
     nb.acted = true;
     nb.decisions++;
-
-    // the labelled extra: cross-entropy on the right button
-    if (nb.s.teach && nb.lr > 0 && perfect_move >= 0 && perfect_move < buttons) {
-        float d[NN_OUT] = {};
-        for (int o = 0; o < buttons; o++) {
-            d[o] = (nb.prob[o] - (o == perfect_move ? 1.0f : 0.0f)) / t;
-        }
-        learn_from(nb, d);
-    }
+    // the labelled extra learns from it when the world judges this step (nn_reward)
+    nb.label = perfect_move >= 0 && perfect_move < buttons ? perfect_move : -1;
 }
 
 void nn_tick(Blob& blob, const Plug& plug, int perfect_move) {
@@ -152,15 +145,27 @@ void nn_reward(Blob& blob, int valence) {
         return;
     }
     nb.acted = false;
-    if (nb.s.teach || nb.lr <= 0) {
+    if (nb.lr <= 0) {
+        return;
+    }
+    float t = nb.s.temperature > 0 ? nb.s.temperature : 1.0f;
+    float d[NN_OUT] = {};
+    if (nb.s.teach) {
+        // the labelled extra: on a judged step, cross-entropy on the right button in place
+        // of good or bad. steps the world does not judge teach nothing, as for the reference
+        if (nb.label < 0) {
+            return;
+        }
+        for (int o = 0; o < nb.buttons; o++) {
+            d[o] = (nb.prob[o] - (o == nb.label ? 1.0f : 0.0f)) / t;
+        }
+        learn_from(nb, d);
         return;
     }
     // REINFORCE: loss -(r - b) log p(a), b the running average of r
     float r = (float)valence;
     float advantage = r - nb.baseline;
     nb.baseline += nb.s.baseline_rate * (r - nb.baseline);
-    float t = nb.s.temperature > 0 ? nb.s.temperature : 1.0f;
-    float d[NN_OUT] = {};
     for (int o = 0; o < nb.buttons; o++) {
         d[o] = advantage * (nb.prob[o] - (o == nb.action ? 1.0f : 0.0f)) / t;
     }

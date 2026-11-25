@@ -20,8 +20,9 @@
 //    backprop, one update per reward (Adam or plain SGD), on the step just judged.
 //  - mlp: inputs -> 128 relu -> buttons. gru: inputs -> GRU of 128 -> buttons, its state
 //    never reset, backprop through the last `window` steps.
-//  - teach 1 is the labelled extra, not the reference: cross-entropy on the right button
-//    (the perfect player's move) every step that has one; good and bad are ignored.
+//  - teach 1 is the labelled extra, not the reference: on every step the world judges, it
+//    learns by cross-entropy on the right button (the perfect player's move) in place of
+//    good or bad. steps the world leaves unjudged (held-out places) teach nothing.
 //
 // It stands behind the Blob shell like the other engines: the shell is the first member of
 // NnBlob. It reads the plug for which cells belong to which button and for the step clock
@@ -88,6 +89,7 @@ struct NnBlob {
     int buttons = 0;
     float prob[NN_OUT] = {};
     int action = -1;
+    int label = -1;     // teach: the right button this step, -1 none
     bool acted = false; // a decision not yet judged
     float baseline = 0;
 
