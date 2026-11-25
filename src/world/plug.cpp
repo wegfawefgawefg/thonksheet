@@ -1,4 +1,5 @@
 #include "world/plug.hpp"
+#include "blob/opponent.hpp"
 
 #include <cstdio>
 
@@ -414,9 +415,18 @@ void plug_write(Plug& plug, Blob& blob) {
 }
 
 void plug_count(Plug& plug, const Blob& blob) {
+    plug.signed_vote = blob.genome.readout_opponent != 0;
     for (int line = 0; line < plug.motor_lines; line++) {
         const int* neurons = nullptr;
         int group = plug_motor_cells(plug, line, &neurons);
+        if (plug.signed_vote) {
+            for (int k = 0; k < group; k++) {
+                int fired = blob_fired(blob, neurons[k]);
+                plug.motor_count[line] += motor_against(blob, neurons[k]) ? -fired : fired;
+                plug.motor_gross[line] += fired;
+            }
+            continue;
+        }
         for (int k = 0; k < group; k++) {
             plug.motor_count[line] += blob_fired(blob, neurons[k]);
         }
@@ -426,21 +436,24 @@ void plug_count(Plug& plug, const Blob& blob) {
 void plug_clear_counts(Plug& plug) {
     for (int line = 0; line < plug.motor_lines; line++) {
         plug.motor_count[line] = 0;
+        plug.motor_gross[line] = 0;
     }
 }
 
 int plug_choice(Plug& plug) {
     int best = -1;
-    int best_count = 0;
+    // a signed vote may be negative: the highest wins, and no spikes at all is a tie
+    int best_count = plug.signed_vote ? -(1 << 30) : 0;
     bool tie = false;
     for (int line = 0; line < plug.motor_lines; line++) {
         int c = plug.motor_count[line];
         plug.last_count[line] = c;
+        plug.last_gross[line] = plug.motor_gross[line];
         if (c > best_count) {
             best = line;
             best_count = c;
             tie = false;
-        } else if (c == best_count && c > 0) {
+        } else if (c == best_count && (c > 0 || plug.signed_vote)) {
             tie = true;
         }
     }

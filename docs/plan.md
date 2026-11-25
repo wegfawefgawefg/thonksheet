@@ -43,13 +43,13 @@ when one hands back, its result is merged and recorded and the next item starts.
 are ordered by the one question above. An item is struck when done, with where the result
 is.
 
-Running (four, plus item B which has no jobs left and has been asked to hand back), as
-of 2026-11-25 afternoon:
-- Queued item 3 (idea 162): every line is a target.
-- Item B below (idea 155).
-- Queued item 2c (idea 161): why our output cannot read what the inside learned.
+Running (four), as of 2026-11-25 afternoon:
+- Queued item 3 (idea 162): every line is a target (its agent stopped; the coordinator
+  finishes the runs and the write-up, then sends its errors down idea 159's wires).
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
-- Queued item 2b (idea 159): the error sent one hop to every hidden cell.
+- Queued item 2d (idea 163): what stops the one-hop error on real data.
+- Queued item 2a: the competitive-learning follow-ups (rate-matched and churn controls,
+  held-out calculation columns on 8 seeds, a cheap read-off, the time suite).
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
 153, 154), both merged; their slots went to items B and C. The calculation battery
 (ideas 133, 134; docs/results-2026-11-25-calculation.md), merged; its slot went to
@@ -78,7 +78,11 @@ so they come first):
   tiring neurons (or time and hold cells), winners in the tile, the critic. Does it hold
   together on the whole map, and does the replay runaway stop under it? Scored with the
   references beside it.
-- B. *(running, as idea 155)* One inner rule from tags and reverse replay; then the
+- B. *(done, merged: docs/results-2026-11-25-inner-rule.md; the merge ties the tags and
+  is not better than its parents; first clear transfer to related tasks; MNIST 0.938 but
+  coin rewards match it. Left over, low in the queue as item 22: pieces table on report
+  seeds, 160,000-step lives, one `--life N --life-reward 0|1|coin` flag in place of
+  `--live` and `--life`)* One inner rule from tags and reverse replay; then the
   inside-learning test on MNIST and held-out rows. (Was: reverse replay made safe: zero-sum steps per neuron or a threshold that rises with
   gain; the unsigned half separated from the signed half; the inside-learning test on
   MNIST (0.924 and 0.943 to beat) and on held-out rows.)
@@ -95,16 +99,25 @@ Queued, in order:
    and on the held-out columns. Every item below is scored with it.
 2. *(done, passes: 0.952 against 0.926 born and 0.939 shuffled, 8 seeds; idea 158)* Competitive learning with local inhibition, no reward: units that win on an input
    move toward it (in bits: gain the input's bits, lose others, under a budget).
-2a. Follow-ups to item 2, in this order, as one job after 2b and 2c are placed: a
+2a. *(running; docs/results-2026-11-25-compete2.md when done)* Follow-ups to item 2, in this order, as one job after 2b and 2c are placed: a
    rate-matched control (half the margin is not yet separated from a doubled firing
    rate); a cheap read-off (the rule costs 1.9 times per tick); the rule in the time suite
    (half of each cell's inputs become pixels: does delayed echo or order pay?); a
    shuffled control for the calculation rows.
-2c. *(running)* Why our output cannot read what the inside learned (idea 161): a
+2c. *(done, merged: docs/results-2026-11-25-output-gap.md; the gap is the rule's good
+   half; the runner-up rule lifts MNIST online to 0.852 at 120,000 digits with no drift.
+   Left, as item 9: the runner-up rule on the critic's actor, on the calculation
+   battery's many outputs, on lives past 120,000, the exclusive-or cost, the sign, and
+   making the output use the lived sheet's lead)* Why our output cannot read what the inside learned (idea 161): a
    linear reader gets 0.95 from the lived sheet, the sheet's own readout 0.72 and falling.
    Takes in item 9 (the weighted vote, the drift). This gap is now the largest number on
    the board.
-2b. *(running, idea 159)* The error sent one hop, to every hidden cell (was item 5; owner,
+2d. *(running, idea 163)* What stops the one-hop error on real data: cell width, a
+   second set of cells one hop from the error, a real-data task a straight line fails,
+   parity of 4, shuffled-input controls on the toys.
+2b. *(done, merged: docs/results-2026-11-25-hop.md; teaches the inside products on toys
+   and held-out calculation cases far above its coin control; on MNIST the coin control
+   gets nearly all the gain)* The error sent one hop, to every hidden cell (was item 5; owner,
    2026-11-25: "do we need some sort of hyper truncated bit backprop... maybe backprop
    isnt the issue but the whole requirement that it goes all the way back"). Each hidden
    cell has a few fixed random wires from the output's error lines (which button should
@@ -133,7 +146,10 @@ Queued, in order:
 6. Credit by code (idea 138).
 7. Units pay the units that set them up (idea 139).
 8. A memory that knows near from far (idea 152), scored on MNIST.
-9. The output: a weighted vote (147) and the drift on long lives (146).
+9. The output, what idea 161 left: the runner-up rule (`readout_good 2`) on the whole
+   suite and as the one default (it costs exclusive-or 0.09), on the critic's actor, on
+   the calculation battery, past 120,000 digits; the sign of a connection; scaling each
+   source by its own spread so the output can use the lived sheet's lead.
 10. *(done as item C)* Finish the critic. What is left of it, as a later job: more
     information per press (a critic level per button), a cheaper step end (it costs 2 to
     4 times the readout alone), exploration for goal-only worlds, and the viewer's critic
@@ -157,6 +173,9 @@ Queued, in order:
 20. Loop audit: cut mechanisms and suite rows that have earned nothing; one page.
 21. Long memory, whatever its wind-up leaves unfinished: the forgetting curve to a
     million steps, the freezer.
+22. Inner-rule leftovers (idea 155): `JOBS=3 scripts/inner.sh pieces`; `SEEDS=5-8 JOBS=2
+    scripts/inner.sh long`; the random-neuron control on the transfer rows; fold
+    `blobmnist ceiling --live` into `--life N --life-reward 0|1|coin`.
 
 ## Earlier: first blob (docs/effort-2026-11-24-first-blob.md)
 

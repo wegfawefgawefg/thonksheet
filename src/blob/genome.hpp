@@ -114,6 +114,17 @@ struct Genome {
     int readout_balance = 0;         // 1: the other buttons move less, by their number
     int readout_far = 0;          // 1: a marked motor cell with an empty far slot gets one drawn,
                                   // so it hears two more tiles than its 9 local ones
+    // the output gap (docs/results-2026-11-25-output-gap.md; 0 is off and changes nothing).
+    // readout_opponent 1: motor cells on odd columns of the motor lattice vote against their
+    // button and learn the other way (blob/opponent.hpp). readout_good 2: on good the pressed
+    // button gains and only the runner-up loses (needs margin_percent for the runner-up's
+    // marks; with margin_win 2 only on a close vote)
+    int readout_opponent = 0;
+    // readout_halve 1: a counter reaching the clamp halves the cell's whole counter row.
+    // readout_keep_mul N: a motor cell wires N times the connections it was born with.
+    // (and readout_evidence_strong 2: the top quarter of what is wired at 4, the rest at 1)
+    int readout_halve = 0;
+    int readout_keep_mul = 1;
     // lose-shift and neighbours (idea 53, learn_lose_shift.cpp). 0 is off and changes nothing.
     int lose_shift_steps = 0; // on bad, threshold steps added to motor cells that just fired
     int win_stay_steps = 0;   // on good, threshold steps taken off them
@@ -274,6 +285,22 @@ struct Genome {
     int critic_wide = 0;           // 1: every non-motor cell of the motor region is a critic
                                    // cell (768 by default), not only those between (256)
 
+    // one inner rule (idea 155; learn_tags.cpp, tag_store.cpp): the tags above with the
+    // pieces of reverse replay, each behind its own number. the defaults are the tags as
+    // they were, and change nothing.
+    int tag_exact = 0;   // 1: spike-exact (the walk's credit): a button cell's feedback goes
+                         // only along an edge whose source fired one slot delay before one of
+                         // the cell's spikes in the step, and a tagged neuron moves counters
+                         // only for sources that fired one delay before its own spikes
+    int tag_grow = 1;    // 0: only wired sources' counters move, so nothing new is wired in
+    int tag_counts = 0;  // 0: born counts of excitatory, inhibitory and strong connections
+                         // kept; 1: the two kinds' counts kept, strength from the counter
+                         // (drive can grow); 2: one count for both kinds, strength from the
+                         // counter, nothing at zero wired (the walk's read-off)
+    int tag_shuffle = 0; // control: each button cell sends feedback with a random role
+                         // (pressed or other), as many pressed roles expected as real
+    int tag_random = 0;  // control: as many neurons as were tagged, drawn at random among the
+                         // learners that fired in the step, carry the tags instead
     // competitive learning (learn_compete.cpp, docs/results-2026-11-25-compete.md), any learn
     // mode, no reward anywhere. a hidden cell (not sensor, motor or pacemaker; excitatory
     // unless compete_inh) that fires moves its hidden counters (the tag store) toward what
@@ -286,6 +313,26 @@ struct Genome {
     int compete_shift = 3;      // a spike (or a loss) moves the cell with chance 2^-this
     int compete_down_shift = 2;
     int compete_inh = 0;
+
+    // the error sent one hop (direct feedback alignment in bits, Nokland 2016, with marks as
+    // in e-prop; learn_hop.cpp, docs/results-2026-11-25-hop.md), any learn mode. the world
+    // names the lines pressed and right at each verdict; each error line is wired to a hidden
+    // excitatory cell with chance 2^-hop_wire_shift, its sign drawn from a hash of the cell
+    // and the line (no memory). a cell's teaching bit is the sign of its wires times the
+    // errors: fire more, or less. its marked sources (on while the cell was near its bar in
+    // the last hop_window ticks) move hidden counters (the tag store) by that sign with
+    // chance 2^-hop_shift, and the cell rewires its top counters at its born counts, only
+    // when a counter crossed a wired one. 0 is off and changes nothing.
+    int hop_on = 0;
+    int hop_teach = 1;      // 1: told good or bad (bad: the pressed line should be lower);
+                            // 2: told the right line too (it should have been higher)
+    int hop_good = 0;       // 1: on good, the pressed line should have been higher
+    int hop_wire_shift = 1; // each error line reaches a cell with chance 2^-this
+    int hop_near = 2;       // "near": potential within this many eighths of the bar under it
+    int hop_fired = 1;      // 1: a cell that fired is near too; 0: only those that did not
+    int hop_window = 12;    // ticks before the verdict whose marks count (1..15)
+    int hop_shift = 3;      // chance per marked source per verdict, 2^-this
+    int hop_coin = 0;       // control: every error goes to a random line instead
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

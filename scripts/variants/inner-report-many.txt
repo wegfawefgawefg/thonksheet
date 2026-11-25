@@ -1,0 +1,8 @@
+# idea 155, the report (seeds 5-12), 256 motor cells over all buttons, for 8 and 16 cues and shuffled
+# echo (the rest: inner-report.txt). first line is the frozen-sheet readout. tags: contrast, no
+# inhibitory learning, min 4; walk d1: reverse replay one step; inner: the merged rule
+# (tags with the walk's spike-exact credit), the one setting chosen on seeds 1-4.
+readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 256
+tags: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 256 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4
+walk d1: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 256 --g.replay_depth 1
+inner: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 256 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1

@@ -1,4 +1,5 @@
 #include "blob/blob.hpp"
+#include "blob/opponent.hpp"
 #include "blob/random_words.hpp"
 #include "blob/tick_steps.hpp"
 #include "blob/weight_levels.hpp"
@@ -206,6 +207,9 @@ void learn_readout(Blob& blob, int valence) {
             other_shift--;
         }
     }
+    // readout_good 2: on good only the runner-up's cells lose, at the pressed button's rate
+    bool rival = valence > 0 && g.readout_good == 2 && marked;
+    other_shift = rival ? g.readout_shift : other_shift;
     // pressed cells move with the valence, the other cells against it
     uint32_t up = 0, down = 0;
     for (int t = 0; t < blob.tile_count; t++) {
@@ -213,6 +217,9 @@ void learn_readout(Blob& blob, int valence) {
             marked ? blob.motor_acted[t] & blob.motor_attached[t] : blob.motor[t] & trace[t];
         uint64_t other =
             marked ? blob.motor_attached[t] & ~blob.motor_acted[t] : blob.motor[t] & ~trace[t];
+        if (rival) {
+            other &= blob.motor_runner ? blob.motor_runner[t] : 0;
+        }
         if (g.readout_far && marked) {
             uint64_t cells = blob.motor_attached[t];
             while (cells) {
@@ -223,13 +230,15 @@ void learn_readout(Blob& blob, int valence) {
         while (pressed) {
             int n = t * TILE_NEURONS + __builtin_ctzll(pressed);
             pressed &= pressed - 1;
-            (valence > 0 ? up : down) +=
-                move_inputs(blob, n, valence, trace, ages, g.readout_shift);
+            // readout_opponent: a cell that votes against its button learns the other way
+            int sign = motor_against(blob, n) ? -valence : valence;
+            (sign > 0 ? up : down) += move_inputs(blob, n, sign, trace, ages, g.readout_shift);
         }
         while (other) {
             int n = t * TILE_NEURONS + __builtin_ctzll(other);
             other &= other - 1;
-            (valence > 0 ? down : up) += move_inputs(blob, n, -valence, trace, ages, other_shift);
+            int sign = motor_against(blob, n) ? valence : -valence;
+            (sign > 0 ? up : down) += move_inputs(blob, n, sign, trace, ages, other_shift);
         }
     }
     if (g.readout_center && blob.readout_last) {

@@ -47,6 +47,7 @@ LEARNING_ONLY = {
     "margin_percent", "margin_win", "margin_rival", "margin_rival_shift",
     "tag_mode", "tag_hops", "tag_thin", "tag_min", "tag_shift", "tag_far", "tag_inh",
     "tag_avg_shift", "tag_bits", "tag_verdict",
+    "tag_exact", "tag_grow", "tag_counts", "tag_shuffle", "tag_random",
     "replay_depth", "replay_shift", "replay_thin", "replay_new", "replay_quiet",
     "replay_until", "replay_reset", "replay_shuffle", "replay_strong_budget", "rule_on",
     "critic_on", "critic_reward", "critic_margin", "critic_center", "critic_average_shift",

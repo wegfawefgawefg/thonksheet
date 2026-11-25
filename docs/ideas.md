@@ -616,11 +616,15 @@ co-activity runs ties the held units together and loses their order.
 146. **Why the readout drifts down on a long life.** On MNIST it peaks at 20,000 digits and
      then loses a point every 20,000 more. Not the counter clamp. Suspects: the motor
      cells' threshold regulation; sources dropped and re-wired at the budget's edge. The
-     same thing may be hiding in every long life. *queued: small, first when a core frees*
+     same thing may be hiding in every long life. *answered 2026-11-25 by idea 161: the
+     good half of the rule pushing the nine other buttons down; `readout_good 2` removes
+     it to 120,000 digits.*
 147. **A weighted vote.** Wired strength set by where the counter stands (1, 4, 5 are already
      in the weight planes), so a motor cell is a weighted vote and not a count. Aimed at the
      25 points between the sheet's readout (0.71) and what a linear reader gets from the
-     same sheet (0.92). *queued*
+     same sheet (0.92). *built 2026-11-25 as `--g.readout_evidence_strong 2` (top quarter
+     at strength 4): on the runner-up rule MNIST +0.011 to +0.015 and 16 cues 0.605 to
+     0.723, exclusive-or 0.793 to 0.725. A trade, not a free gain.*
 148. **Search richness on digits.** The rich sheets found for order and gap read digits
      worse than the default. Score the search on the digit ceiling. *queued*
 149. **A suite a lookup table cannot pass.** The memory engine passes tiers 1, 2, 4, 7 and 8
@@ -671,14 +675,20 @@ co-activity runs ties the held units together and loses their order.
      growable reach, with the tags' contrast between buttons, their threshold, no learning
      by inhibitory neurons and fixed counts per neuron. Scored on the rows where each one
      alone loses (order, echo at 2 tiles, long lives), on MNIST's ceiling, and on held-out
-     rows. *building*
+     rows. *done 2026-11-25: `--g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1`,
+     `scripts/inner.sh`, docs/results-2026-11-25-inner-rule.md. It ties the plain tags and
+     gains none of the walk's reach, so the merge is not kept as the default. Its tests
+     gave more than the rule: transfer to related tasks (parity of 3 after exclusive-or
+     0.856 against 0.552), a random-neuron control, and MNIST 0.938 that coin rewards
+     match. Left: pieces on report seeds, long lives, a form of the walk's reach at fixed
+     counts.*
 156. **The vm's four walls.** Time (give the state a clock: a counter field in the address,
      or the time cells of idea 131 as input); credit one step back (the critic's surprise
      as the verdict); several items in order (marks that do not halve each other: a slot
      per position); a learned gate on what to keep. *queued*
 157. **Why the output declines on a long life.** With the gate, buttons die one by one. A
      floor per button, or balancing the good half by how often each button is right.
-     Replaces idea 146. *queued*
+     Replaces idea 146. *answered by idea 161: the runner-up rule; no button goes quiet.*
 158. **Competitive learning with local inhibition, no reward.** [Rumelhart and Zipser
      1985; Kohonen; in bits] A hidden cell that fires among its tile's winners moves
      hidden counters toward the sources that were just on and rewires its top counters at
@@ -691,7 +701,11 @@ co-activity runs ties the held units together and loses their order.
      2016; e-prop, Bellec 2020; in bits] Fixed random wires from the output's error lines
      to each hidden cell, a fading mark on each connection that just helped its cell
      fire, a hidden counter moved by the sign on the wire when the error arrives. The
-     owner's "hyper truncated bit backprop". *queued, next slot*
+     owner's "hyper truncated bit backprop". *done 2026-11-25: `--g.hop_on 1
+     --g.hop_teach 1|2`, `scripts/hop.sh`, docs/results-2026-11-25-hop.md. Teaches the
+     inside products on the toys (parity of 3 0.55 to 0.82, coin 0.59) and on held-out
+     calculation cases (xor4 0.63 to 0.87, coin 0.67). On MNIST its coin control gets
+     nearly all of its gain. Next: idea 163.*
 160. **The shuffled-input control.** Any life that claims to teach the inside is repeated
      on inputs shuffled afresh each time and read on real inputs. *done, part of
      `scripts/inside.sh`; a rate-matched control is still to add.*
@@ -699,7 +713,11 @@ co-activity runs ties the held units together and loses their order.
      from the lived sheet and the sheet's own readout 0.72, falling on long lives. The
      motor cells hear only nearby cells, with one-bit connections and a vote. Candidates:
      a weighted vote (147), motor cells that hear the whole sheet, the drift (146, 157).
-     *queued with the output item*
+     *done 2026-11-25: docs/results-2026-11-25-output-gap.md, `scripts/outgap.sh`,
+     `blobmnist ladder`. The gap is the rule's good half (0.28 of it). Fix:
+     `--g.readout_good 2 --g.margin_percent 20 --g.margin_win 2`, MNIST online 0.852 at
+     120,000 digits (was 0.649), no drift. Open: the sign, the lived sheet's lead, the
+     exclusive-or cost, long lives past 120,000, the rule on the critic and on calc.*
 162. **Every line is a target.** [predictive coding; Sutton's many predictions at many
      horizons ("Horde"); in bits] Owner, 2026-11-25: "in all of our envs we should extract
      rich signal. thonksheet shouldnt just output policy right. shouldnt it predict current
@@ -712,3 +730,10 @@ co-activity runs ties the held units together and loses their order.
      errors go to the inside (as lines, and one hop to every hidden cell once idea 159 is
      in). The critic is then just the predictor of the reward line. Takes in queue item 3
      and idea 137. *building*
+163. **What stops the one-hop error on real data.** Three suspects from idea 159's MNIST
+     result: one cell hears about 6 pixels and cannot become what the error asks for
+     (try wider cells, and a second set of cells that hear the taught ones, each still
+     one hop from the error); MNIST is nearly solved by a straight-line reader, so it
+     cannot show a product being learned (score on a real-data task a straight line
+     fails); the errors come from a readout that is mostly right and has dead buttons.
+     Also parity of 4, and shuffled-input controls for the toys. *building*

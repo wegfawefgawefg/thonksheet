@@ -47,6 +47,13 @@ void learn_tags(Blob& blob, int valence);
 void learn_replay(Blob& blob, int valence);
 // competitive learning on hidden cells, no reward (genome compete_on, learn_compete.cpp)
 void learn_compete(Blob& blob, int read_now);
+// the error sent one hop (genome hop_on, learn_hop.cpp): after the fire step, which learners
+// were near their bar; in the learning step, the error of a judged step moves marked counters
+void hop_after_fire(Blob& blob);
+void learn_hop(Blob& blob);
+// a neuron's wiring was re-picked from the tag store by someone: its cached bounds are stale
+void hop_stale(Blob& blob, int n);
+void hop_free(Blob& blob);
 // lose-shift, win-stay and bad cut on motor cells (idea 53); does nothing while all are off
 void learn_lose_shift(Blob& blob, int boost);
 

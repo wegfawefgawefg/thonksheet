@@ -46,6 +46,10 @@ int8_t* evidence_row(Blob& blob, int n) {
             }
         }
         int have = count_fan_in(blob, n);
+        // readout_keep_mul (the output gap job): a motor cell keeps this many times its born count
+        bool motor = (blob.motor[n / TILE_NEURONS] >> (n % TILE_NEURONS)) & 1;
+        int mul = motor && blob.genome.readout_keep_mul > 1 ? blob.genome.readout_keep_mul : 1;
+        have = have * mul > EVIDENCE_ROW ? EVIDENCE_ROW : have * mul;
         blob.readout_keep[row] = (uint16_t)(have > 0 ? have : 1);
     }
     return c;
@@ -73,25 +77,38 @@ void evidence_add(Blob& blob, int n, int slot, uint64_t up, uint64_t down) {
         }
         return;
     }
+    bool full = false;
     while (up) {
         int b = __builtin_ctzll(up);
         up &= up - 1;
         c[b] = (int8_t)(c[b] < top ? c[b] + 1 : top);
+        full = full || c[b] == top;
     }
     while (down) {
         int b = __builtin_ctzll(down);
         down &= down - 1;
         c[b] = (int8_t)(c[b] > -top ? c[b] - 1 : -top);
+        full = full || c[b] == -top;
+    }
+    // readout_halve (the output gap job): a counter at the clamp halves the cell's whole row,
+    // so the order of its sources is kept and the top of the budget does not fill with ties
+    if (full && blob.genome.readout_halve) {
+        int8_t* row = c - slot * TILE_NEURONS;
+        for (int j = 0; j < EVIDENCE_ROW; j++) {
+            row[j] = (int8_t)(row[j] / 2);
+        }
     }
 }
 
 // wire the top of the budget: the highest counters, at least 1, at most `keep` of them
 void evidence_rewire(Blob& blob, int n) {
-    evidence_rewire_as(blob, n, blob.genome.readout_evidence_strong != 0 ? 1 : 0);
+    int strong = blob.genome.readout_evidence_strong;
+    evidence_rewire_as(blob, n, strong == 2 ? 3 : (strong != 0 ? 1 : 0));
 }
 
 // the same at a given strength: 0 all at 1, 1 all at 4, 2 by counter (1..3 at 1, 4 at 4, 5 and
-// up at 5, so a row read off before anything moved gives back the wiring it was born with)
+// up at 5, so a row read off before anything moved gives back the wiring it was born with),
+// 3 the top quarter of what is wired (by counter) at 4 and the rest at 1: a weighted vote
 void evidence_rewire_as(Blob& blob, int n, int strength) {
     int8_t* c = evidence_row(blob, n);
     if (!c) {
@@ -163,6 +180,33 @@ void evidence_rewire_as(Blob& blob, int n, int strength) {
         } else {
             blob.w0[w] = strength == 1 ? 0 : wired;
             blob.w1[w] = strength == 1 ? wired : 0;
+        }
+    }
+    if (strength == 3) {
+        // the strongest quarter of the wired sources moves from the 1 plane to the 4 plane
+        int top_count[128] = {}, wired_n = 0;
+        for (int k = 0; k < SLOTS; k++) {
+            uint64_t wired = blob.w0[blob_weight_index(n, k)];
+            wired_n += __builtin_popcountll(wired);
+            while (wired) {
+                int b = __builtin_ctzll(wired);
+                wired &= wired - 1;
+                int v = c[k * TILE_NEURONS + b];
+                top_count[v > 0 ? v : 0]++;
+            }
+        }
+        int quota = wired_n / 4, scut = 127, have = 0;
+        while (scut > 1 && have + top_count[scut] <= quota) {
+            have += top_count[scut--];
+        }
+        for (int k = 0; k < SLOTS; k++) {
+            int64_t w = blob_weight_index(n, k);
+            uint64_t over = 0;
+            for (int b = 0; b < TILE_NEURONS; b++) {
+                over |= (uint64_t)(c[k * TILE_NEURONS + b] > scut) << b;
+            }
+            blob.w1[w] = blob.w0[w] & over;
+            blob.w0[w] &= ~over;
         }
     }
     blob.fan_in[n] = (uint16_t)count_fan_in(blob, n);

@@ -10,6 +10,11 @@
 // wires exactly as many excitatory and as many inhibitory sources as it was born with, and as
 // many of each strong, the highest counters winning. at a tie the sources already wired (or strong)
 // stay first and the rest are drawn by chance, so the counts hold and ties do not churn.
+//
+// tag_counts (idea 155, to see what the fixed counts do): 1 keeps the two kinds' counts but
+// reads strength off the counter (1..3 at 1, 4..7 at 4, 8 and up at 5), so drive can grow;
+// 2 also keeps one count for both kinds and wires nothing at zero or below, the walk's
+// read-off (replay_wire.cpp) on these counters.
 
 constexpr int TAG_ROW = SLOTS * TILE_NEURONS;
 
@@ -39,7 +44,7 @@ static uint64_t slot_kind(const Blob& blob, int n, int k) {
 // strength of its connection (0, 1, 4 or 5). the counts it keeps are those it has now,
 // connections and strong ones, separately for excitatory and inhibitory sources, so its
 // balance of excitation and inhibition is the one it was born with
-static int8_t* tag_row(Blob& blob, int n) {
+int8_t* tag_row(Blob& blob, int n) {
     int8_t* c = blob.tag_evidence + (size_t)n * TAG_ROW;
     if (blob.tag_made[n]) {
         return c;
@@ -162,16 +167,48 @@ void tag_rewire(Blob& blob, int n) {
         wired[k] = connected_bits(blob.w0[w], blob.w1[w]);
         strong_now[k] = blob.w1[w];
     }
+    int counts = blob.genome.tag_counts;
+    if (counts == 2) {
+        // one count for both kinds, nothing at zero or below
+        uint64_t both[SLOTS];
+        for (int k = 0; k < SLOTS; k++) {
+            both[k] = usable[0][k] | usable[1][k];
+            wire[1][k] = 0;
+        }
+        select_top(blob, c, both, wired, blob.tag_keep[2 * n] + blob.tag_keep[2 * n + 1], 1,
+                   wire[0]);
+    }
     // excitatory and inhibitory sources each keep their own counts
     for (int i = 0; i < 2; i++) {
-        select_top(blob, c, usable[i], wired, blob.tag_keep[2 * n + i], -128, wire[i]);
-        select_top(blob, c, wire[i], strong_now, blob.tag_strong[2 * n + i], -128, strong[i]);
+        if (counts != 2) {
+            select_top(blob, c, usable[i], wired, blob.tag_keep[2 * n + i], -128, wire[i]);
+        }
+        if (counts == 0) {
+            select_top(blob, c, wire[i], strong_now, blob.tag_strong[2 * n + i], -128, strong[i]);
+        }
     }
     for (int k = 0; k < SLOTS; k++) {
         int64_t w = blob_weight_index(n, k);
-        uint64_t s = strong[0][k] | strong[1][k];
-        blob.w1[w] = s;
-        blob.w0[w] = (wire[0][k] | wire[1][k]) & ~s;
+        uint64_t on = wire[0][k] | wire[1][k];
+        if (counts == 0) {
+            uint64_t s = strong[0][k] | strong[1][k];
+            blob.w1[w] = s;
+            blob.w0[w] = on & ~s;
+            continue;
+        }
+        // strength from the counter
+        uint64_t four = 0, five = 0;
+        for (uint64_t m = on; m; m &= m - 1) {
+            int b = __builtin_ctzll(m);
+            int v = c[k * TILE_NEURONS + b];
+            four |= (uint64_t)(v >= 4) << b;
+            five |= (uint64_t)(v >= 8) << b;
+        }
+        blob.w1[w] = four;
+        blob.w0[w] = (on & ~four) | five;
     }
     blob.fan_in[n] = (uint16_t)count_fan_in(blob, n);
+    if (blob.hop) {
+        hop_stale(blob, n); // the one-hop rule keeps bounds on this neuron's counters
+    }
 }

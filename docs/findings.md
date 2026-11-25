@@ -48,8 +48,81 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   0.998 against 0.855 as born; the sheet stays at its target rate through 160,000 steps.
   Two independent rules now pass the inside-learning test, and they are the same idea:
   one step of signed credit from the action's cells into hidden counters under a budget.
-  Neither transfers to a task it was not rewarded on, and neither helps MNIST (the
+  Neither transfers to an unrelated task, and neither helps MNIST by its credit (the
   reward-free rule below does).
+- **Merging the two gives the tags again, and the first clear transfer** (idea 155,
+  docs/results-2026-11-25-inner-rule.md, `scripts/inner.sh`). The tags with the walk's
+  spike-exact credit tie the tags on 11 rows (exclusive-or 0.991, eight cues 0.952) and
+  take none of the walk's reach (echo at 5 tiles 0.757 against the walk's 0.876); on the
+  tuning seeds the plain tags scored a little higher. What is new is in the tests around
+  it, seeds 5 to 12, fresh output on the frozen sheet:
+  - Related tasks transfer: after a life of exclusive-or, parity of 3 reads 0.856
+    against 0.552 as born (better than after a parity-of-3 life, 0.693); after eight
+    cues, other pairings of the same cues read 0.950 against 0.796. A new line the life
+    never showed gains little (0.760 against 0.712).
+  - A random-neuron control (the same amount of rewiring given to random cells that
+    fired) shows where credit matters: it is the whole gain on eight cues and on echo at
+    5 tiles (control 0.809 and 0.579, no gain), and only a quarter of it on exclusive-or
+    (control 0.961 of 0.993).
+  - On MNIST after 20,000 rewarded digits a linear reader gets 0.938 against 0.926 as
+    born, but coin rewards give 0.936 and random neurons 0.939. So the gain is rewiring
+    of busy cells at fixed counts, not credit: the same thing competitive learning does
+    on purpose and better (0.952).
+  - A life that alternates two tasks every 1,000 steps keeps both (exclusive-or 0.994,
+    eight cues 0.883) and lifts a third it never saw (parity of 3, 0.726).
+  Not run: the piece-by-piece table on report seeds, 160,000-step lives, a second hop.
+- **The output's error, sent one hop to every hidden cell, teaches the inside a
+  product** (idea 159, the owner's "hyper truncated bit backprop";
+  docs/results-2026-11-25-hop.md, `scripts/hop.sh`, `src/blob/learn_hop.cpp`). The error
+  per button line (-1, 0, +1) reaches each hidden cell through fixed random signed wires
+  that are a hash and cost no memory; the cell moves hidden counters of the sources that
+  were on while it was near its bar, at its born counts. Nothing goes backwards and
+  nothing is stored per connection. Fresh output on the frozen lived sheet:
+  - Toys, seeds 5 to 12: exclusive-or 0.998 (born 0.855, coin control 0.930); parity of 3
+    0.816 (born 0.552, coin 0.587), 0.897 when only cells that came near and did not fire
+    are marked. Told only good or bad: 0.983 and 0.667. Every seed above its coin. Parity
+    of 4: no.
+  - Calculation, cases never shown, seeds 5 and 6: xor4 0.633 to 0.871 (coin 0.667), add4
+    0.565 to 0.660 (coin 0.554). These are products of lines that sit apart, which the
+    born sheet lacks and no earlier rule reached.
+  - MNIST, seeds 5 to 12: lived 0.9355 against born 0.9251, but the coin control (the same
+    errors on random lines) gets 0.9346. The errors add 0.001 told the answer, 0.003 told
+    good or bad, 0.003 with the rate held at target. With competitive learning on, nothing
+    is added (0.9530 against 0.9519). The sheet's own online readout is not helped.
+  - Cost: 7 in 100 on the tick, 2 to 5 in 100 on a taught MNIST life. The firing rate
+    does not move.
+  A reading, not yet tested: a toy answer is a conjunction of a few nearby lines, which
+  one cell with 34 inputs can become; a digit class is a sum over hundreds of pixels and
+  a cell hears about 6, so the error asks it to be something it cannot be. And a linear
+  reader of the born sheet is already at 0.925, so MNIST leaves little for products of
+  nearby pixels to add. The calculation battery's held-out columns are the sharper test
+  of whether the inside learned.
+- **The output's gap is its good half, and it is mostly closed** (idea 161,
+  docs/results-2026-11-25-output-gap.md, `scripts/outgap.sh`). A ladder of readers on the
+  same recorded sheet, from a float reader fit offline down to the engine's motor cells
+  (born sheet, 20,000 digits, seeds 5 to 12): offline 0.926; online float 0.905; integer
+  weights told the right button 0.864; the engine's good-and-bad rule on the same reader
+  0.577; motor cells' own fields 0.60 to 0.69; the engine 0.692. One step holds nearly all
+  of it: 0.28 lost where "on every good the pressed button gains and the nine others
+  lose". A button that wins keeps winning, and once accuracy is over one half a seldom
+  pressed button is pushed down more often than up, so 3 or 4 buttons die on every seed.
+  Hearing only nearby cells costs nothing; one-bit connections cost nothing on that rule.
+  - The fix, `--g.readout_good 2 --g.margin_percent 20 --g.margin_win 2`: on a good that
+    was close, the pressed button gains and only the runner-up loses. MNIST online
+    0.822, 0.845, 0.852 at 20,000, 60,000, 120,000 digits (plain 0.692, 0.673, 0.649; the
+    gate alone 0.811, 0.799, 0.759). No drift and no quiet button on any seed, and it is
+    cheaper per digit (1.2 ms against 3.2). With a weighted vote on top
+    (`--g.readout_evidence_strong 2`): 0.837, 0.854, 0.863.
+  - Toy rows, seeds 5 to 12: 8 cues 0.842 to 0.940, 16 cues 0.305 to 0.605 (0.723 with
+    the weighted vote), order 0.695 to 0.779; exclusive-or falls 0.883 to 0.793, the
+    gate's known cost (with two buttons the rule is the gate). So it is not yet one
+    default for every row.
+  - Still open: the sign (a one-bit excitatory connection can only add evidence; a
+    reader held to weights of zero or more loses 0.17; opponent cells did not get it
+    back); the engine reads 0.09 better than the agent's copy of it under the gate and
+    nobody knows why; and the output still does not use the lived sheet's lead (0.845
+    lived against 0.852 born), which survives float readers and is lost at the first
+    integer one.
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -352,7 +425,14 @@ docs/results-2026-11-25-mnist.md
 29. **Credit one step back reaches the inside; further back does not.** [likely: one
     engine, 8 seeds, with a fresh-output check] See "Where it stands". The step back must
     use evidence counters on inner neurons (principle 14 again) and only walk from spikes.
-    Open: the runaway on long lives; the half that unsigned rewiring explains; transfer.
+    Open: the runaway on long lives; the half that unsigned rewiring explains.
+    Transfer (idea 155): clear to related tasks on the same lines, none shown to
+    unrelated ones. A random-neuron control says credit is the whole gain on reach and
+    on eight cues and a quarter of it on exclusive-or. The walk's reach does not come
+    from spike-exact credit: the tags given it do not gain it.
+    Credit need not follow the wiring back at all (idea 159): a fixed random hop from
+    the error to every cell teaches products of a few nearby lines, ties the tags on
+    exclusive-or, and reaches cells with no spike path into the button.
 30. **Holding needs a slow variable inside the neuron, not a ringing sheet.** [likely: two
     independent mechanisms, 8 seeds each for the first] Tiring neurons, a slow second
     potential, or non-leaking cells each make delayed echo learnable. The ringing sheet
@@ -390,7 +470,8 @@ docs/results-2026-11-25-mnist.md
     running the sheet hot, where reverse replay (which lets strength grow) runs away.
     Inhibitory neurons should not learn from these credits.
 39. **Finding 17, restated: do not strengthen on good unconditionally.** [likely] Only when
-    the vote was close.
+    the vote was close. It holds for the inside too: "on good, the pressed line should
+    have been higher" sent down the one-hop wires costs exclusive-or 0.98 to 0.92.
 40. **A state that addresses its own next step holds, once an operation can leave bits
     alone and the input writes into the state.** [likely: one engine, 8 seeds] Matching by
     nearness and waiting for the input to settle is what lets it survive noise and answer
@@ -413,11 +494,35 @@ docs/results-2026-11-25-mnist.md
     one data set] Competition in the tile, hidden counters, and rewiring at the born
     counts: lived 0.952 against born 0.926 on MNIST. The same idea without a budget or
     counters (co-activity wiring) gets half the gain. Second result for finding 38.
+    Third result (idea 155): a reward-driven rule lifts the MNIST reader by the same
+    route whatever the reward says (0.938 real rewards, 0.936 coin, 0.939 random
+    neurons). Rewiring busy cells at fixed counts is the active part.
 44. **Every inside-learning claim needs a shuffled-input control and a rate-matched one.**
     [likely] A life on shuffled digits lifts the reader by 0.014 with nothing to learn
     (cells drift toward being a random projection of the input), and a rule that leaves
     cells firing faster changes what a reader sees. Only what is left after both is
-    learned structure.
+    learned structure. For a reward-driven rule add two more: coin rewards, and the
+    same rewiring given to random cells that fired (idea 155 built both: `tag_random`,
+    `tag_shuffle`, `--live-coin`). For an error-driven rule, the same errors sent to random
+    lines (`hop_coin`): on MNIST that control explains nearly all of the gain.
+45. **An error-driven inner rule must move slowly when verdicts are many.** [hint: one
+    rule, one world] At a step chance of 1 in 8, 20,000 MNIST verdicts replaced 90 in 100
+    of the born inputs and the lived sheet fell under born; at 1 in 128 it is above.
+46. **"Near the bar and did not fire" is the useful mark for an error-driven rule.**
+    [hint] Parity of 3: 0.90 against 0.82 with the cells that fired included. In bits it
+    is one word per tile per tick.
+47. **Rewiring busy cells at their born counts lifts a linear reader whatever drives it.**
+    [likely: three rules, 8 seeds each on MNIST] Tags with coin rewards 0.936, one-hop
+    error on random lines 0.935, real signals 0.938 and 0.936, born 0.925. A teaching
+    signal has shown its worth only where it beats that: the toys and the held-out
+    calculation columns, not MNIST.
+48. **With many buttons, a good should move only the competitors.** [likely: MNIST 8
+    seeds and the toy rows] On a close good the pressed button gains and the runner-up
+    loses; nothing else moves. Pushing every other button down on every good drains the
+    seldom pressed ones, and moving on comfortable goods makes winners richer. This
+    joins principles 17 and 39: 17 was right for 2 buttons and wrong for 10; 39 (only
+    when the vote was close) is half of it; who pays is the other half. The long-life
+    drift (ideas 146, 157) was this, not the counter clamp and not the budget.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 

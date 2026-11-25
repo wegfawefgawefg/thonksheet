@@ -16,6 +16,10 @@ PROBE = os.path.join(BUILD, "blobprobe")
 SHEET = ("--mnist-code t28 --g.sensor_w 64 --g.sensor_h 64 --g.motor_x 1 --g.motor_y 1 "
          "--g.motor_w 64 --g.motor_h 64 --motor-spread 102 --g.local_connect_shift 4").split()
 READER = "--scale 2 --passes 10 --lr-1000 1 --views 1".split()
+# a taught life (--teach): the readout of scripts/mnist.sh learns from good and bad in it
+RULE = ("--g.learn_mode 5 --g.readout_evidence 2 --g.readout_evidence_strong 0 "
+        "--g.readout_evidence_bits 8 --g.readout_shift 6 --g.readout_balance 1 "
+        "--g.readout_good 1").split()
 # the calculation battery's probe (scripts/calc.py)
 CALC_BASE = "--ticks 20 --sensor-side 3 --motor-side 3 --motor-spread 128".split()
 CALC = {
@@ -32,6 +36,11 @@ def mnist_cmd(kind, seed, opt, flags, out):
         cmd += ["--life", str(opt["life"])]
     if kind == "shuffled":
         cmd += ["--life-shuffle", "1"]
+    if opt.get("teach") and kind != "born":
+        # judged: the readout learns, the rule hears the errors, motor cells reset after
+        cmd += RULE + ["--life-teach", str(opt["teach"])]
+    if kind == "coin":
+        cmd += ["--g.hop_coin", "1"]
     return cmd + opt.get("mnist_extra", []) + flags, out
 
 
@@ -65,7 +74,9 @@ def mnist_score(path):
     lives = [l for l in text.splitlines() if l.startswith("life ")]
     born = [l for l in text.splitlines() if l.startswith("as born")]
     frozen = [l for l in text.splitlines() if l.startswith("frozen")]
-    wiring = (lives[-1] if lives else born[0] if born else "")
+    # the last tenth's lines (activity, wiring, and in a taught life the readout and rule)
+    last = [l for l in lives if lives and l.split()[:2] == lives[-1].split()[:2]]
+    wiring = ("\n            ".join(last[1:]) if lives else born[0] if born else "")
     return (float(m.group(1)) if m else None), wiring, (frozen[0] if frozen else "")
 
 
@@ -87,25 +98,36 @@ def table(opt, outdir):
     lines = []
     if "mnist" in opt["parts"]:
         scored = "validation" if "--val" in opt.get("mnist_extra", []) else "test digits"
+        teach = opt.get("teach")
+        life = ("taught life %d digits (--life-teach %d), motor cells put back as born" % (
+            opt["life"], teach) if teach else "life %d digits, no reward" % opt["life"])
         lines += ["MNIST, %s: a fresh linear reader of the non-sensor cells, fit on %d "
-                  "training digits; life %d digits, no reward" % (scored, opt["fit"], opt["life"]),
-                  "seed   born    lived   shuffled  lived-born  lived-shuffled"]
+                  "training digits; %s" % (scored, opt["fit"], life),
+                  "seed   born    lived   shuffled  lived-born  lived-shuffled" +
+                  ("  coin    lived-coin" if teach else "")]
         rows = []
         for s in opt["seeds"]:
             v = [mnist_score(os.path.join(outdir, "mnist-%s-%d.txt" % (k, s)))[0]
-                 for k in ("born", "lived", "shuffled")]
+                 for k in ("born", "lived", "shuffled", "coin")]
             rows.append(v)
             d1 = v[1] - v[0] if None not in v[:2] else None
-            d2 = v[1] - v[2] if None not in v[1:] else None
+            d2 = v[1] - v[2] if None not in v[1:3] else None
+            d3 = v[1] - v[3] if None not in (v[1], v[3]) else None
             lines.append("%-5d %s  %s  %s    %s      %s" % (
                 s, fmt(v[0]), fmt(v[1]), fmt(v[2]),
-                "  -  " if d1 is None else "%+.4f" % d1, "  -  " if d2 is None else "%+.4f" % d2))
-        full = [r for r in rows if None not in r]
+                "  -  " if d1 is None else "%+.4f" % d1, "  -  " if d2 is None else "%+.4f" % d2) +
+                ("        %s  %s" % (fmt(v[3]), "  -  " if d3 is None else "%+.4f" % d3)
+                 if teach else ""))
+        full = [r for r in rows if None not in r[:3]]
         if full:
             mean = [sum(r[i] for r in full) / len(full) for i in range(3)]
+            coins = [r for r in full if r[3] is not None]
+            cm = sum(r[3] for r in coins) / len(coins) if coins else None
+            cl = sum(r[1] for r in coins) / len(coins) if coins else None
             lines.append("mean  %s  %s  %s    %+.4f      %+.4f   (%d seeds)" % (
                 fmt(mean[0]), fmt(mean[1]), fmt(mean[2]), mean[1] - mean[0], mean[1] - mean[2],
-                len(full)))
+                len(full)) + ("  coin %s, lived-coin %+.4f (%d seeds)" % (fmt(cm), cl - cm, len(coins))
+                              if teach and coins else ""))
         base = os.path.join(ROOT, "out", "inside", "baselines.txt")
         if os.path.exists(base):
             for line in open(base).read().splitlines():
@@ -113,7 +135,7 @@ def table(opt, outdir):
                     lines.append("baseline  " + line[:45].rstrip())
         s = opt["seeds"][0]
         lines.append("wiring and activity, seed %d (last life line; frozen fit digits):" % s)
-        for k in ("born", "lived", "shuffled"):
+        for k in ("born", "lived", "shuffled") + (("coin",) if opt.get("teach") else ()):
             _, w, f = mnist_score(os.path.join(outdir, "mnist-%s-%d.txt" % (k, s)))
             lines.append("  %-9s %s" % (k, w))
             lines.append("  %-9s %s" % ("", f))
@@ -154,7 +176,7 @@ def main():
                      else [int(x) for x in args[i + 1].split(",")])
             opt["seeds" if a == "--seeds" else "seeds_calc"] = seeds
             i += 2
-        elif a in ("--life", "--fit", "--trials", "--calc-life", "--jobs"):
+        elif a in ("--life", "--fit", "--trials", "--calc-life", "--jobs", "--teach"):
             opt[a[2:].replace("-", "_")] = int(args[i + 1])
             i += 2
         elif a == "--only":
@@ -192,7 +214,8 @@ def main():
                     subprocess.run(["nice", "-n", "19", MNIST, "baselines", "--mnist-code", "t28"],
                                    stdout=f, cwd=ROOT)
             for s in opt["seeds"]:
-                for k in opt.get("kinds", ("born", "lived", "shuffled")):
+                kinds = ("born", "lived", "shuffled") + (("coin",) if opt.get("teach") else ())
+                for k in opt.get("kinds", kinds):
                     jobs.append(mnist_cmd(k, s, opt, flags,
                                           os.path.join(outdir, "mnist-%s-%d.txt" % (k, s))))
         if "calc" in opt["parts"]:

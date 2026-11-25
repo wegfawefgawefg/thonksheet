@@ -166,3 +166,17 @@ inner neurons measurably better for a task than unsupervised wiring already make
     (80%); it beats its shuffled control by 0.005 or more (60%); it beats co-activity
     wiring (35%); no held-out calculation column moves by more than 0.03 (75%).
    - *Scored 2026-11-25, 8 seeds: beats born, right, and by +0.026; stays under 0.943, wrong (0.952); beats shuffled, right (+0.013 on every seed); beats co-activity wiring, right (0.952 against 0.937); calculation columns still, wrong (xor of 4 bits +0.06 to +0.19).*
+31. **The error one hop to every hidden cell** (written by its bot before scoring;
+    docs/results-2026-11-25-hop.md): on MNIST told the answer, lived beats born by 0.005
+    (55%) and its coin control by 0.005 (45%); told good or bad, 35% and 30%; reaches
+    competitive learning's 0.952 (10%); adds 0.003 to competitive learning (30%);
+    exclusive-or lifted by 0.05 (60%), parity of 3 (35%), parity of 4 (20%); held-out
+    calculation columns rise 0.03 over born (50%) and over the coin (30%); the online
+    readout gains 0.02 (25%); cost under 20 in 100 (70%).
+   - *Scored 2026-11-25: beats born, right (+0.010, +0.009); beats its coin on MNIST, wrong both ways (+0.001, +0.003); 0.952 not reached; nothing added to competitive learning; exclusive-or right (+0.14); parity of 3 right (+0.26); parity of 4 no; calculation right and by far more than guessed (xor4 +0.24 over born, +0.20 over coin); online readout wrong; cost right (2 to 7 in 100). The toys and held-out columns were underrated, MNIST overrated.*
+32. **Where the output's 0.2 goes** (written by its bot before any ladder run;
+    docs/results-2026-11-25-output-gap.md): the largest loss is at one-bit connections
+    (35%), at good-or-bad with ten buttons (25%), at spikes and regulation (20%), at
+    local hearing (15%); good-or-bad costs about 0.06; the drift first shows at the
+    good-or-bad rung (50%); the lived sheet loses its lead by the one-bit rung.
+   - *Scored 2026-11-25: the largest loss was the second choice, good-or-bad, and 0.28 not 0.06; one-bit connections and local hearing cost nothing on the plain rule; the drift is only in the engine on the plain rule, wrong; the lived lead is gone at the first integer rung, earlier than guessed.*

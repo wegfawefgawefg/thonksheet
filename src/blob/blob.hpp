@@ -191,6 +191,9 @@ struct Blob {
 
     // actor and critic (genome critic_on, blob/critic.hpp): made on the first step, one block
     struct CriticState* critic = nullptr;
+
+    // the error sent one hop (genome hop_on, learn_hop.cpp): made on first use
+    struct HopState* hop = nullptr;
 };
 
 // birth and death
@@ -285,6 +288,19 @@ inline void blob_motor_acted(Blob& blob, int neuron) {
 // margin_percent: the step's vote (spikes of the pressed button and of the runner-up) and the
 // runner-up's cells. defined in learn_margin.cpp; does nothing while margin_percent is 0
 void blob_mark_vote(Blob& blob, int pressed, int runner, const int* runner_cells, int count);
+
+// hop_on: the motor lines of the step about to be rewarded, as bit masks: which the blob
+// pressed (for a pattern answer, the group of each graded bit that won) and which were right.
+// written by the world before blob_reward; does nothing while hop_on is 0 (learn_hop.cpp)
+void blob_hop_lines(Blob& blob, uint64_t pressed, uint64_t right, int lines);
+// hop_on: what the rule has done so far: verdicts that taught, cells taught, counter steps,
+// rewires, and over the windows read, near cell-ticks and fired cell-ticks of the learners
+// against all learner cell-ticks (all zero while off)
+void blob_hop_counts(const Blob& blob, uint64_t out[7]);
+
+// the motor cells' wiring put back as born (born again from the same genome and seed) and
+// the readout's counters dropped, for a frozen read after a taught life (motor_reborn.cpp)
+void blob_motor_reborn(Blob& blob, uint64_t seed);
 
 // strength of the connection in one slot from source bit `bit`: 0, 1, 4 or 5
 inline int blob_weight(const Blob& blob, int neuron, int slot, int bit) {
