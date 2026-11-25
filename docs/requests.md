@@ -79,3 +79,6 @@ A request that becomes work also gets a line in `docs/plan.md`.
 - The method: "we should be perhaps running more bots, giving them each less of this full
   machine. you ideate some things. they implement. they run a suite of tests. you analyze,
   see if anything comes of it, and keep exploring other experiments." -> `docs/bench.md`.
+- "come up with a real suite / curriculum of these envs ... as we solve basic ones we need to
+  graduate ... beat mnist ... the general goal here is, to find a set of rules that works on
+  any task" -> `docs/task-map.md` (kinds of task, tiers, milestones, holes); ideas 115, 116.

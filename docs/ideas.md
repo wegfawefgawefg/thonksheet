@@ -415,3 +415,13 @@ not known to do it.
 113. **Screen the neuron and synapse family.** Ideas 66 to 76, each at several strengths,
      through the feature and hold probes, then a combined search. *building*
 114. **Screen the wiring family.** Ideas 19 to 21 and 77 to 83, likewise. *building*
+115. **MNIST.** The owner: "wed be cool as fuck if we beat mnist." Digits onto the sensor
+     sheet, ten buttons, good and bad only. Three numbers: what a linear reader gets from a
+     never-taught sheet, what the evidence readout learns, and how long it takes. Targets: a
+     linear classifier on pixels (about 92%), then a small two-layer network (about 97%).
+     *building*
+116. **The rest of the map.** Worlds for relation (same or different, odd one out, bigger
+     than), number, parts and wholes (grammar), chance (answers right only most of the
+     time), context (a cue that changes what another means), longer memory (copy, recall,
+     n-back), no teacher (predict the next input, fill in a gap), being shown the answer,
+     and damage to the sheet. `docs/task-map.md` lists the tiers. *building*
