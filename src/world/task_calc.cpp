@@ -2,6 +2,7 @@
 #include "world/task.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <vector>
 
@@ -155,6 +156,15 @@ void calc_reset(Task& task) {
                      calc_op_name(s.op));
         c.buttons = 0;
     }
+    c.taught = c.cases > CALC_EXACT_CASES ? ~0u : 0u;
+    CalcTrial t;
+    for (uint64_t id = 0; s.form == 1 && c.cases <= CALC_EXACT_CASES && id < c.cases; id++) {
+        if (calc_case(s, id, t) && !is_held(task, id)) {
+            for (int i = 0; i < c.buttons; i++) {
+                c.taught |= (uint32_t)(c.answer_of[i] == t.answer) << i;
+            }
+        }
+    }
     new_trial(task);
 }
 
@@ -201,6 +211,10 @@ int calc_step(Task& task, const TaskStepIn& in) {
         wrong = pressed ? (c.answer_of[in.move] ^ c.answer) & all : all;
     }
     int h = c.held ? 1 : 0;
+    if (buttons && c.held && c.button >= 0 && !((c.taught >> c.button) & 1)) {
+        new_trial(task); // an answer no seen case has: not scored
+        return 0;
+    }
     c.trials[h]++;
     c.whole[h] += wrong == 0;
     c.bits[h] += c.out_bits - __builtin_popcountll(wrong);
@@ -223,6 +237,11 @@ static double ratio(int64_t num, int64_t den) {
     return den > 0 ? (double)num / (double)den : 0.0;
 }
 
+// held-out scores: not a number when there was nothing held out to score
+static double or_none(int64_t num, int64_t den) {
+    return den > 0 ? (double)num / (double)den : std::nan("");
+}
+
 // score: share of output bits right on seen cases. extras: whole answers right on seen
 // cases, bits right on held-out ones, whole answers right on held-out ones, then each bit
 // on seen cases, then each bit on held-out ones
@@ -231,11 +250,11 @@ double calc_window_score(Task& task) {
     int out = c.out_bits;
     double score = ratio(c.bits[0], c.trials[0] * out);
     task.extra[0] = ratio(c.whole[0], c.trials[0]);
-    task.extra[1] = ratio(c.bits[1], c.trials[1] * out);
-    task.extra[2] = ratio(c.whole[1], c.trials[1]);
+    task.extra[1] = or_none(c.bits[1], c.trials[1] * out);
+    task.extra[2] = or_none(c.whole[1], c.trials[1]);
     for (int b = 0; b < out; b++) {
         task.extra[3 + b] = ratio(c.bit_right[0][b], c.trials[0]);
-        task.extra[3 + out + b] = ratio(c.bit_right[1][b], c.trials[1]);
+        task.extra[3 + out + b] = or_none(c.bit_right[1][b], c.trials[1]);
     }
     task.extras = 3 + 2 * out;
     for (int h = 0; h < 2; h++) {

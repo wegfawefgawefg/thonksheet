@@ -1,18 +1,24 @@
 #include "run/life.hpp"
 #include "run/life_protocols.hpp"
 
+#include <cmath>
 #include <cstdio>
 #include <string>
 
 // extra scores per window (the calculation battery: whole answers, held-out cases, each
 // output bit). early and late are the means of the first and last `edge` windows.
 
+// windows with nothing to score (not a number) are left out; none at all is not a number
 static double mean_of(const std::vector<double>& v, size_t from, size_t to) {
     double sum = 0.0;
+    int count = 0;
     for (size_t i = from; i < to && i < v.size(); i++) {
-        sum += v[i];
+        if (v[i] == v[i]) {
+            sum += v[i];
+            count++;
+        }
     }
-    return to > from ? sum / (double)(to - from) : 0.0;
+    return count > 0 ? sum / count : std::nan("");
 }
 
 void life_extra_report(const std::string& csv_path, const bool* ran, const LifeResult* results,

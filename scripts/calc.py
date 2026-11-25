@@ -174,7 +174,8 @@ def collect(mems, configs, seeds, outdir):
                         for k, v in keys.items():
                             rows[driver + "." + k] = v
                 for k, v in rows.items():
-                    per.setdefault(k, []).append(v)
+                    if v == v:  # a held-out score with nothing held out is nan
+                        per.setdefault(k, []).append(v)
             res.setdefault(mem["name"], {})[config] = {k: mean(v) for k, v in per.items()}
             res[mem["name"]][config]["n"] = max((len(v) for v in per.values()), default=0)
     return res

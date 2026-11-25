@@ -81,6 +81,9 @@ struct CalcState {
     int buttons = 0;
     uint64_t answer_of[16] = {};
     int button = -1;
+    // buttons some seen case answers with; a held case whose answer no seen case has is not
+    // scored in the button form (its button was never rewarded, so nothing could know it)
+    uint32_t taught = 0;
     // tallies for the window: [0] seen, [1] held out
     int64_t trials[2] = {}, whole[2] = {}, bits[2] = {};
     int64_t bit_right[2][CALC_MAX_OUT] = {};
