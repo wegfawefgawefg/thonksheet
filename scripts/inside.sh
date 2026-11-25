@@ -13,11 +13,17 @@
 #     where their inputs come from (out/inside/NAME/mnist-*.txt).
 #   calc: the calculation battery's sheet reader (blobprobe calc) on xor4, parity4, add4,
 #     born against after a life of --calc-life ticks, seen and held-out cases.
+#   --teach 1|2 (MNIST only): the life is judged. The readout of scripts/mnist.sh learns
+#     from good and bad, the one-hop rule hears the errors (1 told good or bad, 2 told the
+#     right button), and the motor cells go back to their born wiring before the read. Adds
+#     the coin control: the same life with every error sent to a random line
+#     (docs/results-2026-11-25-hop.md).
 # Every flag it does not know goes to every run: that is the rule under test.
 #   scripts/inside.sh cowire                                  the default rule (co-activity)
 #   scripts/inside.sh compete --g.learn_mode 5 --g.compete_shift 4
 #   scripts/inside.sh NAME --seeds 5-12 --only mnist ...      more seeds, one part
 #   scripts/inside.sh NAME --table-only                       print what is there
+#   scripts/inside.sh hop2 --teach 2 --g.hop_on 1 --only mnist    the one-hop rule, told the answer
 # Options: --seeds 1,2 (MNIST; default 1,2), --calc-seeds 5,6, --life 60000 (digits),
 #   --fit 60000, --calc-life 200000 (ticks), --trials 3000, --members xor4,parity4,add4,
 #   --only mnist|calc, --kinds born,lived,shuffled (MNIST runs to make), --jobs 3 (runs at
