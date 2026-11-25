@@ -54,7 +54,34 @@ static bool pick_cells(Predictor& p, const Plug& plug, const Blob& blob) {
     return true;
 }
 
-static bool start(Predictor& p, const PredictSettings& s, const Plug& plug, const Blob& blob,
+// idea 164: the errors go one hop to the hidden cells; their timing is horizon 1's (the
+// marks are the step the prediction was made in, still in the blob's rings at the next
+// step's start). with a reach, each line's place is the centre of its sensor group
+static bool hop_start(const Predictor& p, const Plug& plug, Blob& blob) {
+    if (!p.s.hop) {
+        return true;
+    }
+    if (p.s.horizon[0] != 1 || p.targets > HOP_MAX_PRED) {
+        std::fprintf(stderr, "predict: --predict-hop needs horizon 1 and at most %d lines\n",
+                     HOP_MAX_PRED);
+        return false;
+    }
+    if (!blob.genome.hop_on) {
+        std::fprintf(stderr, "predict: --predict-hop does nothing without --g.hop_on 1\n");
+    }
+    if (p.s.hop_reach > 0) {
+        int16_t x[HOP_MAX_PRED], y[HOP_MAX_PRED];
+        int half = plug.settings.sensor_side / 2;
+        for (int l = 0; l < p.targets; l++) {
+            x[l] = (int16_t)(plug.sensor_cell_x[p.target_line[l]] + half);
+            y[l] = (int16_t)(plug.sensor_cell_y[p.target_line[l]] + half);
+        }
+        blob_hop_error_places(blob, x, y, p.targets, p.s.hop_reach);
+    }
+    return true;
+}
+
+static bool start(Predictor& p, const PredictSettings& s, const Plug& plug, Blob& blob,
                   int64_t steps) {
     p.s = s;
     // targets: good and bad when attached, then the task's own lines
@@ -107,7 +134,7 @@ static bool start(Predictor& p, const PredictSettings& s, const Plug& plug, cons
         return false;
     }
     p.bits = p.targets * s.horizons;
-    if (p.bits < 1 || !pick_cells(p, plug, blob)) {
+    if (p.bits < 1 || !pick_cells(p, plug, blob) || !hop_start(p, plug, blob)) {
         return false;
     }
     p.score.cells_per_group = p.cells_per_group;
@@ -236,6 +263,9 @@ void predict_step_begin(Predictor& p, Plug& plug, Blob& blob) {
         }
         if (any_wrong) {
             verdict(p, blob, i, from, wrong, -1);
+        }
+        if (i == 0 && p.s.hop) {
+            blob_hop_errors(blob, p.error, p.targets); // idea 164, taught on the next tick
         }
         if (any_right && blob.genome.readout_good) {
             verdict(p, blob, i, from, right, +1);

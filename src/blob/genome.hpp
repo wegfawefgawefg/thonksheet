@@ -325,7 +325,9 @@ struct Genome {
     // when a counter crossed a wired one. 0 is off and changes nothing.
     int hop_on = 0;
     int hop_teach = 1;      // 1: told good or bad (bad: the pressed line should be lower);
-                            // 2: told the right line too (it should have been higher)
+                            // 2: told the right line too (it should have been higher);
+                            // 0: the buttons send nothing (idea 164: prediction errors only,
+                            // blob_hop_errors)
     int hop_good = 0;       // 1: on good, the pressed line should have been higher
     int hop_wire_shift = 1; // each error line reaches a cell with chance 2^-this
     int hop_near = 2;       // "near": potential within this many eighths of the bar under it
