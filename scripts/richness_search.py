@@ -37,10 +37,10 @@ RANGES = {
     "threshold_min": (2, 8),
     "threshold_max": (8, 20),
     "leak_shift_min": (1, 2),
-    "leak_shift_max": (2, 5),
+    "leak_shift_max": (2, 7),
     "cooldown_min": (1, 2),
     "cooldown_max": (2, 8),
-    "local_connect_shift": (2, 4),
+    "local_connect_shift": (1, 4),
     "strong_shift": (1, 3),
     "far_percent": (0, 60),
     "far_reach_tiles": (2, 6),
@@ -75,8 +75,13 @@ def draw(rng):
 
 
 def probe(genome, feature, seed, tries):
+    # "hold60" is the hold feature read 60 quiet ticks after the cue
+    extra = []
+    if feature.startswith("hold") and feature != "hold":
+        extra = ["--hold-gap", feature[4:]]
+        feature = "hold"
     cmd = ["nice", "-n", "19", os.path.join(ROOT, "build", "blobprobe"), "feature",
-           "--feature", feature, "--seed", str(seed), "--tries", str(tries),
+           "--feature", feature, *extra, "--seed", str(seed), "--tries", str(tries),
            "--settle", "5000", "--label", "x", "--g.learning_on", "0"]
     for k, v in genome.items():
         cmd += ["--g." + k, str(v)]
@@ -191,7 +196,7 @@ def cmd_check(args):
     score = [sum(all_ranks[f][i] for f in FEATURES) for i in range(len(rows))]
     best = [0] + sorted(range(len(rows)), key=lambda i: -score[i])[:args.top]
     seeds = [int(s) for s in args.seeds.split(",")]
-    path = os.path.join(OUT, "check.csv")
+    path = os.path.join(OUT, os.path.basename(CSV)[:-4] + "-check.csv")
     jobs = [({k: int(rows[i][k]) for k in RANGES}, s) for i in best for s in seeds]
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
         results = list(pool.map(lambda j: measure(j[0], j[1], args.tries), jobs))
@@ -204,7 +209,11 @@ def cmd_check(args):
 
 
 def main():
+    global FEATURES, CSV
     p = argparse.ArgumentParser()
+    p.add_argument("--name", default="samples", help="which search: out/richness/<name>.csv")
+    p.add_argument("--features", default=",".join(FEATURES),
+                   help="comma list: which, order, xor, gap, holdN (N quiet ticks)")
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run")
     r.add_argument("--samples", type=int, default=300)
@@ -223,6 +232,8 @@ def main():
     c.add_argument("--tries", type=int, default=1500)
     c.set_defaults(fn=cmd_check)
     args = p.parse_args()
+    FEATURES = args.features.split(",")
+    CSV = os.path.join(OUT, args.name + ".csv")
     args.fn(args)
 
 
