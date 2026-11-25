@@ -129,6 +129,7 @@ static const GenomeField fields[] = {
     {"explore_shift", &Genome::explore_shift},
     {"explore_scale", &Genome::explore_scale},
     {"critic_opponent", &Genome::critic_opponent},
+    {"critic_wide", &Genome::critic_wide},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

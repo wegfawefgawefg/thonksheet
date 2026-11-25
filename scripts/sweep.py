@@ -41,7 +41,7 @@ LEARNING_ONLY = {
     "lose_shift_steps", "win_stay_steps", "lose_shift_fires", "bad_cut_on",
     "critic_on", "critic_reward", "critic_margin", "critic_center", "critic_average_shift",
     "critic_shift", "critic_trace_steps", "critic_fade", "actor_form", "actor_trace_steps",
-    "actor_fade", "explore_shift", "explore_scale", "critic_opponent",
+    "actor_fade", "explore_shift", "explore_scale", "critic_opponent", "critic_wide",
 }
 
 

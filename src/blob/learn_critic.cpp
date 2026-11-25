@@ -15,7 +15,8 @@ static int clamp_int(int v, int lo, int hi) {
 
 // the critic cells: the motor region's cells at half the motor stride both ways, between
 // the buttons' lattice cells. none when the stride is 1 (every cell there is a motor cell).
-// with critic_opponent, every other one on that lattice (a checkerboard) counts against
+// critic_wide: every cell of the motor region that is not a motor cell (3 in 4 of them).
+// with critic_opponent, every other block of the motor lattice (a checkerboard) counts against
 static void mark_cells(const Blob& blob, uint64_t* cells, uint64_t* minus) {
     const Genome& g = blob.genome;
     int s = g.motor_stride, off = g.motor_stride / 2;
@@ -24,7 +25,8 @@ static void mark_cells(const Blob& blob, uint64_t* cells, uint64_t* minus) {
     }
     for (int y = g.motor_y; y < g.motor_y + g.motor_h && y < blob.tiles_h * 8; y++) {
         for (int x = g.motor_x; x < g.motor_x + g.motor_w && x < blob.tiles_w * 8; x++) {
-            if ((x - g.motor_x) % s != off || (y - g.motor_y) % s != off) {
+            bool between = (x - g.motor_x) % s == off && (y - g.motor_y) % s == off;
+            if (!between && !g.critic_wide) {
                 continue;
             }
             int n = blob_neuron_at(blob, x, y);

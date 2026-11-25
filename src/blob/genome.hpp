@@ -181,6 +181,8 @@ struct Genome {
                                    // level stands above its mean; 0 keeps it fixed
     int critic_opponent = 1;       // 1: half the critic cells (a checkerboard) learn the other
                                    // way and count against, so what all cells share cancels
+    int critic_wide = 0;           // 1: every non-motor cell of the motor region is a critic
+                                   // cell (768 by default), not only those between (256)
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs
