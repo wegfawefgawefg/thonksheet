@@ -36,6 +36,12 @@ void learn_readout(Blob& blob, int valence);
 // readout_evidence: hidden counters per motor-cell source (learn_evidence.cpp)
 void evidence_add(Blob& blob, int n, int slot, uint64_t up, uint64_t down);
 void evidence_rewire(Blob& blob, int n);
+// barely correct: on a good won by a thin vote, deepen the winner's helping counters
+// (learn_margin.cpp)
+bool learn_margin(Blob& blob);
+// action-feedback tags: the chosen button's feedback tags inner neurons, the verdict moves
+// their hidden counters (learn_tags.cpp, tag_store.cpp)
+void learn_tags(Blob& blob, int valence);
 // reverse replay (idea 62, learn_replay.cpp): walks the readout's error back through the
 // spike ring before the readout moves; does nothing while replay_depth and replay_until are 0
 void learn_replay(Blob& blob, int valence);

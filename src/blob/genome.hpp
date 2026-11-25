@@ -126,6 +126,37 @@ struct Genome {
     int noise_learn_sign = 1;
     int noise_learn_pair = 0;
 
+    // barely correct (Baldassi et al. 2007; learn_margin.cpp), learn modes 5 and 6 with
+    // readout_evidence. on good, when the pressed button won by less than margin_percent of
+    // its own spikes, its cells deepen the counters of their wired, active, excitatory sources
+    // (margin_win), and the runner-up's cells push active excitatory sources down
+    // (margin_rival 1: unwired ones only, hidden; 2: every active one, sign-aware) with
+    // chance 2^-(readout_shift + margin_rival_shift). margin_win 2: the stop-learning gate
+    // only; the readout's own move on good (readout_good 1) runs only on a thin vote.
+    // 0 is off and changes nothing.
+    int margin_percent = 0;
+    int margin_win = 1;
+    int margin_rival = 0;
+    int margin_rival_shift = 1;
+    // action-feedback tags (AGREL / BrainProp; learn_tags.cpp), learn modes 5 and 6. at each
+    // verdict the chosen button's cells send feedback back along their wired, active inputs
+    // (summed, signed by the edge: an inhibitory source gets the opposite sign); neurons whose
+    // feedback reaches tag_min are tagged. tag_hops 2 sends it one step further, thinned by
+    // 2^-tag_thin per edge. the verdict against a running mean then moves the tagged
+    // neurons' hidden counters for their active inputs: toward on better, away on worse, with
+    // chance 2^-tag_shift; each neuron wires its top counters at its born count and born
+    // strong count. tag_mode 0 off (changes nothing), 1 feedback from the chosen button only,
+    // 2 the chosen button's feedback less the other buttons'.
+    int tag_mode = 0;
+    int tag_hops = 1;
+    int tag_thin = 1;
+    int tag_min = 1;
+    int tag_shift = 4;
+    int tag_far = 1;     // 1: feedback also runs back along far slots
+    int tag_inh = 1;     // 1: inhibitory neurons are tagged (opposite sign) and learn; 0: never
+    int tag_avg_shift = 5; // the running mean of rewards spans about 2^this verdicts
+    int tag_bits = 6;    // counter size, signed (2..8)
+    int tag_verdict = 0; // 0 against the running mean, as above; 1 every bad moves, no good does
     // wiring at birth (ideas 19-21, 77-80, 83; birth_shape.cpp). all 0 is today's wiring and
     // draws exactly what it drew before. a shaped neuron keeps today's expected count of local
     // connections; only where they come from changes. "doubling": 2x likelier.

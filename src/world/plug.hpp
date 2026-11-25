@@ -78,6 +78,8 @@ struct Plug {
     int spread_first[PLUG_MAX_MOTOR_LINES + 1] = {};
     int spread_neuron[PLUG_MAX_SPREAD] = {};
 
+    // each line's spikes in the step plug_choice last read (the vote; plug_vote.cpp)
+    int last_count[PLUG_MAX_MOTOR_LINES] = {};
     // --bitmap-map logpolar: the task's own bitmap size, and for each mapped line the task
     // pixels it is the OR of (a bit each)
     int map_src_w = 0, map_src_h = 0;
@@ -99,6 +101,9 @@ int plug_motor_cells(const Plug& plug, int line, const int** cells);
 // cells after a step (move -1: none). only learn modes 5 and 6 read them (idea 58).
 void plug_mark_motors(const Plug& plug, Blob& blob, bool on);
 void plug_mark_acted(const Plug& plug, Blob& blob, int move);
+// the step's vote for the blob's barely-correct rule: the pressed button's spikes, the
+// runner-up's, and the runner-up's cells (plug_vote.cpp; nothing unless the genome asks)
+void plug_mark_vote(const Plug& plug, Blob& blob, int move);
 
 // task values to line bits, once per step
 void plug_set_lines(Plug& plug, const TaskSense& sense);

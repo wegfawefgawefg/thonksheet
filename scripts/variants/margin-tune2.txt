@@ -1,0 +1,10 @@
+# barely correct, round 2 on seeds 1-4: with the counter fix (readout_evidence 2), never /
+# always / only-when-thin moves on good (the stop-learning gate, margin_win 2)
+readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1
+readout, fix: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1
+fix, good always: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --g.readout_good 1
+fix, deepen 10: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --g.margin_percent 10
+fix, gate 10: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --g.readout_good 1 --g.margin_percent 10 --g.margin_win 2
+fix, gate 20: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --g.readout_good 1 --g.margin_percent 20 --g.margin_win 2
+deepen 10: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.margin_percent 10
+gate 20: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --g.readout_good 1 --g.margin_percent 20 --g.margin_win 2

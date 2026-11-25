@@ -416,6 +416,7 @@ int plug_choice(Plug& plug) {
     bool tie = false;
     for (int line = 0; line < plug.motor_lines; line++) {
         int c = plug.motor_count[line];
+        plug.last_count[line] = c;
         if (c > best_count) {
             best = line;
             best_count = c;
