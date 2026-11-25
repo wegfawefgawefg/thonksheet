@@ -498,3 +498,14 @@ would be cool if we can arbitrarily learn calculations."
 134. **An answer that is a pattern.** Several independent yes/no outputs read at once, each
      graded. Fills the "whole pattern out" hole in the task map; needed for calculation,
      for copying, and later for generating sound or text. *building, with 133*
+135. **The state is the address of what to do next.** [the owner's vvm, 2026; kin to
+     Kanerva's memory and to production systems] A different route to a general learner,
+     not a sheet: one state (a long bit vector) and a bank of operations found by content.
+     Each step the state looks up the few operations nearest to it, one is chosen and
+     applied to the state, and the result is the next state and the next address. No
+     program counter, no separate memory: thinking is the state walking through the bank.
+     His version was trained by gradient descent and never learned. Here the bank would
+     learn by local rules: evidence on which operation helped from which state, and new
+     operations written in one go. Aimed at holding, at multi-step calculation, at acting.
+     The owner: "i suspect it can actually work. but idk how. its a whole other route to a
+     general learner i think." *building*
