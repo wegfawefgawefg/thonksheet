@@ -61,3 +61,12 @@ vm: --engine vm
 # the critic with glue: the world's verdict still teaches the readout (error rule, nothing on
 # good) and reaches the walk and the integrators; the surprise teaches the actor, good half on
 critickw: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.critic_on 1 --g.critic_keep_world 1 --g.actor_good 1
+
+# putting them together, one at a time (chosen on seeds 1-4)
+c1: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.time_percent 10 --g.hold_percent 10
+c1tags: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.time_percent 10 --g.hold_percent 10 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4
+c1replay: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.time_percent 10 --g.hold_percent 10 --g.replay_depth 1
+c1win: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.time_percent 10 --g.hold_percent 10 --g.tile_winners 2
+c1margin: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.time_percent 10 --g.hold_percent 10 --g.readout_good 1 --g.margin_percent 20 --g.margin_win 2
+c1critic: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.time_percent 10 --g.hold_percent 10 --g.critic_on 1 --g.readout_good 1
+c1tire: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.time_percent 10 --g.hold_percent 10 --g.tire_jump 4 --g.tire_shift 7
