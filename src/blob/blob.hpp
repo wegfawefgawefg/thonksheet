@@ -114,6 +114,19 @@ struct Blob {
 
     uint64_t rng[4] = {};
     BlobStats stats;
+
+    // learn modes 5, 6 (idea 58), written by the world like sense_in: the motor cells that
+    // belong to a task's buttons, and those of the button just pressed. null in engines
+    // that do not have them; tile_count + 1 words each.
+    uint64_t* motor_attached = nullptr;
+    uint64_t* motor_acted = nullptr;
+    // readout_center: the maps of the last rewarded window, HISTORY x (tile_count + 1)
+    uint64_t* readout_last = nullptr;
+    // readout_evidence: per motor cell (row by neuron, -1 if not motor) a signed counter per
+    // possible source, SLOTS x 64, and the count of connections it keeps. made on first use
+    int32_t* readout_row = nullptr;
+    int8_t* readout_evidence = nullptr;
+    uint16_t* readout_keep = nullptr;
 };
 
 // birth and death
@@ -171,6 +184,30 @@ inline void blob_detach_all(Blob& blob) {
         blob.sense_attached[t] = 0;
         blob.sense_in[t] = 0;
     }
+}
+
+// mark a motor neuron as one of a button's cells (on) or not
+inline void blob_motor_attach(Blob& blob, int neuron, bool on) {
+    if (!blob.motor_attached) {
+        return;
+    }
+    uint64_t bit = 1ull << (neuron % TILE_NEURONS);
+    uint64_t& w = blob.motor_attached[neuron / TILE_NEURONS];
+    w = on ? w | bit : w & ~bit;
+}
+
+// mark a motor neuron as a cell of the button just pressed; -1 clears them all
+inline void blob_motor_acted(Blob& blob, int neuron) {
+    if (!blob.motor_acted) {
+        return;
+    }
+    if (neuron < 0) {
+        for (int t = 0; t <= blob.tile_count; t++) {
+            blob.motor_acted[t] = 0;
+        }
+        return;
+    }
+    blob.motor_acted[neuron / TILE_NEURONS] |= 1ull << (neuron % TILE_NEURONS);
 }
 
 // strength of the connection in one slot from source bit `bit`: 0, 1, 4 or 5

@@ -1,0 +1,7 @@
+# idea 58: the whole sheet learning (design rule everywhere) with and without the best
+# readout rule at the motor cells. learn_mode 6 = mode 0 plus the rule at the buttons' cells.
+design rule (mode 0): --g.learn_mode 0
+design rule + evidence counters: --g.learn_mode 6 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1
+design rule, spread 128: --g.learn_mode 0 --motor-spread 128
+design rule + evidence counters, spread 128: --g.learn_mode 6 --g.readout_evidence 1 --g.readout_shift 4 --motor-spread 128 --g.readout_balance 1
+frozen sheet + evidence counters, spread 128: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --motor-spread 128 --g.readout_balance 1

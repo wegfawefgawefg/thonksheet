@@ -106,6 +106,9 @@ inner neurons measurably better for a task than unsupervised wiring already make
     sheet** to above 0.75, with the motor cells within a tile of the cue. (55%)
 17. **Spreading a button's motor cells through the sheet matters more than the rule.**
     (45%)
+    - *Scored: both wrong. The plain error rule gets 0.53 and 0.57; it took evidence
+      counters to reach 0.70 and 0.88. Spreading cells does nothing for the old rule and
+      adds a little to the new one, mostly through their number.*
 
 ## 2026-11-24, before evidence counters
 
@@ -121,4 +124,14 @@ inner neurons measurably better for a task than unsupervised wiring already make
     from about 0.55 to above 0.8 in at least two of the three engines. (50%)
 22. **Balancing good and bad lets something beat a coin on cartpole.** At least one engine
     ends above 25 steps per fall under the lean reward. (35%)
+
+## 2026-11-25, before reverse replay and more worlds
+
+23. **Walking credit backward teaches the inside.** With the readout from idea 58, letting
+    its error move counters on inner neurons along the recorded ticks beats the frozen
+    sheet on order or exclusive-or by more than 0.05, and does not make reach worse. (40%)
+24. **The new readout learns the bandit and the two-step chain, and still fails cartpole.**
+    (60%)
+25. **Longer lives alone do not rescue cartpole** for the old rules: a million steps ends
+    no better than 40,000. (70%)
 

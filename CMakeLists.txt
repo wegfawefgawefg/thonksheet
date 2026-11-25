@@ -60,6 +60,13 @@ if(probe_sources AND TARGET blobcore)
     add_executable(blobprobe ${probe_sources})
     target_compile_options(blobprobe PRIVATE ${warnings} ${speed})
     target_link_libraries(blobprobe PRIVATE blobcore)
+    # blobprobe linear runs real tasks through the plug (idea 58)
+    if(TARGET blobworld)
+        target_sources(blobprobe PRIVATE ${CMAKE_SOURCE_DIR}/src/run/task_ticker.cpp
+                       ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp)
+        target_include_directories(blobprobe PRIVATE src)
+        target_link_libraries(blobprobe PRIVATE blobworld)
+    endif()
 endif()
 
 # blobtable: idea 26, table neurons, standing behind the same Blob struct (src/table/).

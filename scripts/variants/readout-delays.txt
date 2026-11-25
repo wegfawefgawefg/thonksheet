@@ -1,0 +1,6 @@
+# idea 58: the best frozen-sheet readout with long local delays (4 to 8 ticks), which tripled
+# how readable order and gap are in the feature probe. delays are not learning numbers, so
+# the delay rows get their own learning-off twin.
+evidence counters, spread 128: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --motor-spread 128 --g.readout_balance 1
+same, delays 4-8: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --motor-spread 128 --g.local_delay_min 4 --g.local_delay_max 8 --g.readout_balance 1
+error rule, spread 128, delays 4-8: --g.learn_mode 5 --motor-spread 128 --g.local_delay_min 4 --g.local_delay_max 8 --g.readout_balance 1

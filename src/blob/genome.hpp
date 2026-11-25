@@ -94,6 +94,26 @@ struct Genome {
     int noise_trace_ticks = 16;   // modes 3, 4: how far back a noise spike counts (1..16)
     int reward_average_shift = 5; // modes 3, 4: running mean of rewards over ~2^this events
 
+    // learn mode 5: an error rule at the motor cells, nothing else learns (idea 58,
+    // learn_readout.cpp). 6: the same at the motor cells, and the design rule everywhere.
+    int readout_shift = 6;        // chance per eligible input per update
+    int readout_trace_ticks = 15; // the ticks before the reward that count as "active" (1..15)
+    int readout_counts = 1;       // 1: one chance per tick a source fired; 0: one if it fired at all
+    int readout_know_button = 1;  // 1: the world marks the pressed button's motor cells. 0: a
+                                  // motor cell only knows whether it fired itself
+    int readout_good = 0;         // 1: on good the pressed button gains and the others lose
+    int readout_new = 1;          // 1: gaining may wire a source in that was not connected
+    int readout_budget = 0;       // 1: a motor cell keeps its count of connections; a new
+                                  // one costs an idle one, a lost one is replaced by an idle one
+    int readout_center = 0;       // 1: a source moves by its spikes now less those in the last
+                                  // rewarded window (needs readout_counts)
+    int readout_evidence = 0;        // 1: the rule moves hidden counters per source; a cell
+                                     // wires the top of its budget (learn_evidence.cpp)
+    int readout_evidence_bits = 6;   // counter size, signed (2..8)
+    int readout_evidence_strong = 1; // wired sources at strength 4 (0: at 1)
+    int readout_balance = 0;         // 1: the other buttons move less, by their number
+    int readout_far = 0;          // 1: a marked motor cell with an empty far slot gets one drawn,
+                                  // so it hears two more tiles than its 9 local ones
     // lose-shift and neighbours (idea 53, learn_lose_shift.cpp). 0 is off and changes nothing.
     int lose_shift_steps = 0; // on bad, threshold steps added to motor cells that just fired
     int win_stay_steps = 0;   // on good, threshold steps taken off them

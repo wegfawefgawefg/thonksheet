@@ -215,7 +215,12 @@ Status words: idea, building, tried (with result), kept, dropped.
     distance, order, exclusive-or and gap. Candidates: an error rule (on bad, the button
     that fired loses its active inputs and the other gains them); a budget on the readout;
     more motor cells per button, spread through the sheet so some sit where the feature is;
-    pooling cells. *building*
+    pooling cells. *tried: it works. An error rule that moves hidden evidence counters, with
+    128 motor cells per button, on a frozen sheet: exclusive-or 0.88, order 0.70 (0.84 with
+    long delays), Echo at 3 tiles 0.85, 4 cues 1.00, 8 cues 0.84, shuffled Echo 1.00 on every
+    seed. The old readout scored chance on all of these. Needs the world to mark which
+    button was pressed. A budget, pooling and far slots at the readout did nothing; gap
+    stays near chance. docs/results-2026-11-24-readout.md*
 59. **Evidence before commitment.** [known family, new on this sheet] credit. A connection
     is one bit, so one lucky or unlucky reward flips it. Give each possible source a small
     hidden counter (4 to 8 bits): good adds for sources that were active before the neuron
@@ -232,3 +237,21 @@ Status words: idea, building, tried (with result), kept, dropped.
     reward bad arrives on 73% of steps whatever is done, so it says little. Thin out
     whichever signal is commoner until the two balance, at the plug, so every engine gets
     it. *building*
+62. **Credit walks backward through the recorded ticks.** [ours; reverse replay is known in
+    biology] credit to the inside. The sheet keeps its last 16 spike maps. When the readout
+    is wrong, walk them backward: the motor cells that should change name the sources that
+    were active one delay earlier, those name theirs, and so on for a few steps, moving
+    evidence counters along the paths that actually fired. A backward pass with no
+    gradients, only along edges that carried a spike, costing about one tick per step back
+    and only on a reward. Aimed at teaching neurons inside the sheet. *building*
+63. **More worlds.** The rungs between Echo and cartpole are missing. A two-armed bandit
+    (no cue; which button pays), a two-step chain (press A then B), a track (move toward a
+    target with feedback each step), a small grid to forage in, mountain car, pendulum. And
+    long lives: proper RL takes hundreds of thousands of steps on cartpole. *building*
+64. **Does it survive growing?** Everything was tuned at 4,096 neurons. Run the same tasks at
+    16,384 and 65,536. *tried on Echo with 2 cues, seeds 5 to 7, late score. Minimal engine:
+    0.94, 0.93, 0.92 at 4,096 / 16,384 / 65,536 neurons, every seed within 0.91 to 0.97.
+    Full engine: 0.84, 0.81, 0.82, with seeds anywhere from 0.63 to 0.99 at every size. So
+    neither falls apart when the sheet grows 16 times around the same task; the full
+    engine is erratic at every size. Only Echo, only 3 seeds, and the input and output
+    areas stayed the same size.*

@@ -80,6 +80,7 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
                 continue;
             }
             if (tt.valence != 0) {
+                plug_mark_acted(tt.plug, *blob, tt.move);
                 reward(driver, *blob, tt.valence);
             }
             step++;
