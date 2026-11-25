@@ -173,6 +173,11 @@ struct Genome {
     int replay_shuffle = 0; // control: 1 gives each motor spike walked a random sign
     int replay_strong_budget = 0; // 1: a walked neuron keeps its count of strong connections
                                   // too, and none goes to 5 (replay_wire.cpp)
+    // idea 120: the learning rule as a table, loaded with --rule-file (learn_rule.hpp).
+    // 0 off. 1 the table is the only learning, on every neuron but sensor cells. 2 the learn
+    // mode runs as usual and the table too, on neurons that are not button cells (the inside).
+    // 3 the table is the only learning, on button cells only (the sheet frozen)
+    int rule_on = 0;
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

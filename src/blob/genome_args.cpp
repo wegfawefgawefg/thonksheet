@@ -124,6 +124,7 @@ static const GenomeField fields[] = {
     {"replay_reset", &Genome::replay_reset},
     {"replay_shuffle", &Genome::replay_shuffle},
     {"replay_strong_budget", &Genome::replay_strong_budget},
+    {"rule_on", &Genome::rule_on},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

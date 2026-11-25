@@ -139,6 +139,11 @@ struct Blob {
     // tile_count + 1 words each. every engine's fire step reads them.
     uint64_t* silenced = nullptr;
     uint64_t* forced = nullptr;
+
+    // idea 120, the rule table (learn_rule.cpp): the sign of the last reward, and a scratch
+    // map (tile_count + 1 words) made on first use
+    int rule_last_valence = 0;
+    uint64_t* rule_words = nullptr;
 };
 
 // birth and death
