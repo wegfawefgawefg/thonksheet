@@ -330,6 +330,23 @@ Definitions: `docs/curriculum.md`, "Calculation". Results:
   3 there are 23 task lines; every member of the battery fits.
 - **Flags** live in `world/task_calc_flags.cpp` (one hook in `run_flags.cpp`), so every
   program that parses blobrun's flags (probes included) has them.
+- **A button per answer** (`--calc-form buttons`): `pattern_bits` 0 and one motor line per
+  possible answer (every pattern of up to 4 bits, or the distinct answers of a small case
+  set, at most 16), graded whole. For the engines that press one button (memory, mlp,
+  gru). A held-out case whose answer no seen case gives is not scored (nan in the
+  summary; nan windows are left out of means). A member with too many answers asks the
+  plug for 1,000 motor lines, so the plug refuses it with a message.
+- **Held-out balls** (`--calc-ball R`, exact case sets only): held cases are taken in hash
+  order and each brings every valid case within R line flips. R = 0 is the old draw.
+- **Layout** (`--calc-lay 1`): two operands bit by bit side by side (a0 b0 a1 b1 ...).
+- **`blobprobe calc`** reports five readers: the best constant answer, the nearest stored
+  seen trial (Hamming distance over every step's lines; ties vote per bit), a ridge reader
+  of the input lines, one of the sheet, and for programs the sheet asked for the
+  instruction one step back. Each: bits and whole answers, seen (later trials) and held
+  out, and every bit, to `--out` as `reader,key,value`.
+- `scripts/calc.py`: `CALC_BUILD=dir` runs another build's binaries (used while a run of
+  the default build was going); a run cut off leaves a summary without its scores and is
+  run again.
 
 ```
 scripts/calc.sh main                       the battery, seeds 5-12, 2 runs at a time
