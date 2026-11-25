@@ -9,7 +9,44 @@ evidence counters, balance, 128 motor cells per button):
    cells send feedback back along their own wiring, the inner neurons that fed the answer are
    tagged, and the verdict moves the tagged neurons' hidden counters.
 
-<!-- SHORT -->
+## Short version
+
+Seeds 5-12 unless said; settings chosen on seeds 1-4; one setting on every row.
+
+- **Tags teach the inside, and the sheet keeps it.** With feedback from the pressed button's
+  cells *against the other buttons'* (the readout's own "know which action was taken", one
+  hop inward), inhibitory neurons left out, and a neuron tagged only when at least four more
+  of its edges feed the chosen button than the others: exclusive-or 0.883 to **0.996**, 8
+  cues 0.842 to **0.953**, 16 cues 0.305 to 0.416, echo at 5 tiles 0.587 to 0.781, learned
+  several times faster. A fresh readout on the frozen lived sheet reads exclusive-or at
+  **0.998** (0.855 on the born sheet; 0.96 already in its first 5,000 steps) and 8 cues at
+  0.969 (0.813), and the feature probe reads exclusive-or from the cue tile at 2.71 against
+  1.56. It costs echo at 2 tiles (0.905 to 0.794) and a little order (-0.04, borderline);
+  gap is untouched. No locks, healthy sheet, and **no runaway** over 160,000 steps.
+- **Against the old inner rule (mode 6)**: tags win exclusive-or (0.996 against 0.627),
+  order (0.657 against 0.539) and capacity; mode 6 wins reach (0.99, 0.97, 0.87 at 2, 3, 5
+  tiles against 0.79, 0.87, 0.78) at the price of a hot sheet (49.6 spikes per 1,024 where 32
+  is the target).
+- **Tags and the backward walk (reverse replay) are the same mechanism in two dressings**:
+  one step of signed credit from the action's cells into hidden counters. Tags win the
+  conjunction and many cues, the walk wins reach; the walk runs the sheet hot over long
+  lives, tags do not (fixed excitatory, inhibitory and strong counts).
+- **Barely correct, as Baldassi's deepening** (on a thin good, hold the winner's helping
+  synapses deeper): a small gain where there are many buttons (8 cues +0.04, 16 +0.05) and a
+  large loss on order (0.695 to 0.521). As **Brader's stop-learning gate** (good moves the
+  readout, but only when the vote was close): **16 cues 0.305 to 0.604** (held: 8 pairs to
+  16), order 0.695 to **0.775**, 8 cues reached in a tenth of the steps, **MNIST 0.71 to
+  0.81** at its peak; but exclusive-or 0.88 to 0.80, and a slow fall after the peak
+  everywhere. **It does not stop the MNIST drift.** The lock does not come back with either
+  form (shuffled echo 1.00 on 16 of 16 lives); always moving on good is worse everywhere but
+  16 cues.
+- **Both together** keep tags' exclusive-or and the gate's 16 cues (0.631, the best) but
+  collapse midway on shuffled echo (14 of 16 lives fall from 1.00 to 0.54-0.72) and lose on
+  8 cues and retention. Not a combination to keep as is.
+- **How close to backprop**: for one hidden layer, a one-bit, sign-only, budgeted version of
+  the chosen-output gradient with a global baseline. Exact in direction for that layer, none
+  of backprop's precision (magnitudes, depth, per-input error, time). Section below.
+- 32 and 64 cues cannot be run: the world caps a task at 16 buttons.
 
 ## What was built
 
@@ -320,7 +357,32 @@ Order, never rewarded in that life, is not damaged near the cue and is carried a
 further. (The probe is an ideal reader per tile; it does not say a readout can use it. The
 fresh-readout check below does.)
 
-<!-- FRESH -->
+### Did the inside learn? A fresh readout on the frozen lived sheet
+
+`blobprobe transfer` (`out/tags/transfer.py`): a 40,000-step life with tags; then the inside
+frozen, every motor cell's wiring put back as born, the readout's counters wiped, and a fresh
+readout (the plain frozen-sheet rule, no tags) learns for 20,000 steps. Against the same
+fresh readout on the sheet as born. Seeds 5-12; "first quarter" is the mean of the first
+5 of 20 windows.
+
+| life, then fresh readout on | born: first quarter / late | lived: first quarter / late | lived - born, late |
+|---|---|---|---|
+| exclusive-or, then exclusive-or | 0.685 / 0.855 | **0.961 / 0.998** | +0.142 ±0.010 (t 14.7) |
+| exclusive-or, then order | 0.562 / 0.669 | 0.591 / 0.702 | +0.033 ±0.032 (noise) |
+| order, then order | 0.562 / 0.669 | 0.560 / 0.649 | -0.020 ±0.019 (noise) |
+| 8 cues, then 8 cues | 0.594 / 0.813 | **0.845 / 0.969** | +0.157 ±0.012 (t 13.6) |
+
+**Yes: the inside learned, and it is in the sheet, not in the readout.** A readout that has
+never seen the task reads exclusive-or at 0.96 in its first 5,000 steps on the lived sheet
+(0.69 on the born one) and ends at 0.998 on every seed; 8 cues at 0.97 against 0.81. The gain
+is for the task the life was rewarded on. It does not carry over to order, and it does not
+cost order either (the backward walk's sheet, walked on echo, lost order 0.62 to 0.57).
+On order itself tags learn nothing the sheet keeps, which fits the main table.
+
+MNIST with tags (validation, seed 1, 20,000 digits): gate + tags 0.815 against the gate's
+0.816; always-on-good + tags 0.669 against 0.719. Nothing gained there; with ten buttons and
+the motor cells spread among the image, many of their sources are sensor cells, which are
+never tagged. Not looked into further.
 
 ## Both together
 
@@ -332,7 +394,39 @@ ends at 0.82. Moving on good (even only when thin) plus moving the inside on goo
 against the running mean) is two positive loops at once; each alone is stable on those
 rows.
 
-<!-- LONG -->
+## The sheet's health, and long lives
+
+**At the end of the 40,000-step report lives** (summary files, seeds 5-12): with tags the
+rate is on target (exclusive-or 33.3 spikes per 1,024 against a target of 32; echo at 5 tiles
+32.7), nothing is silent or stuck, connections per neuron 62.6-63.0 (born 62.8; the counts
+hold exactly), strength-4 share unchanged (0.28), thresholds at their cap 1.7% (readout
+1.1%). Mode 6 on the same rows: 49.6 spikes per 1,024, 56-86% of neurons at the connection
+cap, 14-16% of thresholds at the cap. The gate changes nothing inside.
+
+**Long lives** (160,000 steps, windows of 4,000, seeds 5-8, run on stevejobs,
+`out/tags/long.sh`, `long2.sh`):
+
+| | late score | spikes per 1,024 | stuck | thresholds at cap | connections |
+|---|---|---|---|---|---|
+| exclusive-or, readout | 0.860 | 32.8 | 0 | 0.8% | 62.8 |
+| exclusive-or, tags | **0.994** | 33.4 | 0 | 1.8% | 62.6 |
+| exclusive-or, gate | 0.799 | 32.9 | 0 | 0.8% | 63.0 |
+| exclusive-or, tags + gate | 0.966 | 33.4 | 0 | 1.8% | 63.0 |
+| echo, 3 tiles, tags | 0.881 | 32.9 | 0 | 0.8% | 62.5 |
+| echo, 5 tiles, tags | <!-- E5 --> | | | | |
+| echo, 3 tiles, frozen (replay doc) | 0.863 | 32.8 | 0 | 0.6% | |
+| echo, 3 tiles, walk depth 2 (replay doc) | 0.805 | **112** | **12.9%** | **30.8%** | |
+
+**Tags do not run the sheet hot.** Four times the report life on the reach task where the
+walk ran away, the rate stays at 32.9 and nothing sticks; the score holds (0.881, the
+frozen sheet's long life is 0.863). Exclusive-or with tags stays at 0.99. The gate alone
+ends lower than the readout over a long life (0.80 against 0.86 on exclusive-or): the slow
+fall seen on MNIST and on 8 cues.
+
+The difference from the walk that matters here is almost certainly the fixed strong and
+excitatory counts: the walk reads strength off the counter, so the paths it credits get
+stronger and fire together; tags may only change which sources are wired and strong, never
+how many.
 
 ## How close are tags to backprop?
 
@@ -423,4 +517,132 @@ over long lives; the wiring-based tag with fixed counts is calmer and better on 
 conjunction and on many cues. Neither helps order or gap. A merged rule would take the
 walk's spike-exact credit and the tags' fixed E/I and strong counts.
 
-On the runaway: <!-- RUNAWAY -->
+On the runaway: tags do not have it (long lives above: 32.9 spikes per 1,024 and nothing
+stuck after 160,000 steps of echo at 3 tiles, where the depth-2 walk reached 112 and 12.9%).
+
+## Cost
+
+- **Memory**: tags give every neuron the readout's counter row (704 bytes), plus 4 counts
+  (8 bytes), a made flag and a feedback scratch (3 bytes): about 715 bytes per neuron, made
+  on the first verdict, against about 210 for the whole engine. Bit-sliced 6-bit counters
+  would be 528. The margin rule adds one map (the runner-up's cells) and three ints.
+- **Speed** (this PC, load about 7.6 on 32 threads, one life at a time, 10,000 steps, seed
+  5, two passes that agree within 7%; `out/tags/speed.sh`):
+
+  | ticks per second | readout | tags | gate | tags + gate | mode 6 |
+  |---|---|---|---|---|---|
+  | exclusive-or | 51,000 | 50,300 | 36,700 | 39,000 | 35,700 |
+  | 8 cues | 42,700 | 37,000 | 39,000 | 26,500 | 29,000 |
+
+  The tick is untouched; all of it is reward-time work. Tags cost 1-13%: in a 20,000-step
+  life (seed 5, tags with the gate) 8% of steps move anything on exclusive-or, 30% on 8
+  cues, 39% on echo at 5 tiles (the expectation draw), and each such verdict moves about
+  200, 220 and 80 neurons. The gate costs 9-28%: it adds a full readout move (both buttons'
+  cells, every counter row rewired with the fix) on every thin good, 12-20% of goods in those
+  lives and more early on.
+
+## The critic (asked after the merge)
+
+Not tried. The actor (`src/blob/learn_actor.cpp`) credits the press made one to four steps
+back, while the vote the world writes (`plug_mark_vote`) is the latest step's only; gating
+the actor's good half by "the vote was close" needs the vote kept per step in the critic's
+step ring (two ints per kept step in `CriticState`, someone else's file). The obvious next
+test: with the critic on, run the actor's positive-surprise half only when that step's vote
+was under 20%.
+
+## What should change elsewhere (for the coordinator; not edited here)
+
+- `docs/findings.md`, **finding 17** ("do not strengthen your own answer on good"): sharpen
+  to "...unconditionally." Strengthening on every good settles every shuffled-echo life at
+  0.70 and costs 0.29 on 8 cues; strengthening only when the vote was close (under 20% of the
+  winner's spikes) keeps 16 of 16 shuffled lives at 1.00, doubles 16 cues (0.31 to 0.60),
+  lifts order (0.70 to 0.78) and MNIST's online readout (0.71 to 0.81), and costs
+  exclusive-or 0.08. Baldassi's own form (deepen hidden states of the helping synapses only)
+  is a small gain on many cues and a large loss on order. [likely: one engine, several
+  worlds]
+- **The wall "Reading a thin signal: broken at the output, standing inside"**: the inside now
+  learns from outcomes online, two ways that agree (tags here, the walk on main): one step of
+  signed credit from the action's cells, against the other buttons, into hidden counters on
+  the neurons that feed them. Tags: exclusive-or 0.996 and 8 cues 0.953, kept by the sheet
+  (fresh readout 0.998 and 0.969), no runaway in 4x lives. Still standing: order, gap, reach
+  at 2-3 tiles for tags; nothing carries to a different task.
+- **New principle candidate**: "Credit inward must be a contrast between actions."
+  Feedback from the chosen button alone hurt (order -0.19, 8 cues -0.23, seeds 1-4); the
+  chosen button against the others helped (8 cues +0.06 to +0.10). Finding 15, one hop in.
+  [likely]
+- **New principle candidate**: "A neuron that learns inside must keep its shape": exact
+  counts of excitatory and inhibitory sources and of strong ones. With one count for both
+  kinds the sheet ran at 1.8 times its target rate; the walk, whose strength grows, runs hot
+  on reach; tags with the shape fixed stayed on target for 160,000 steps. [hint: one rule,
+  one comparison]
+- **Inhibitory neurons should not learn from these credits** (tags: order 0.62 against 0.71
+  with and without, seeds 1-4). [hint]
+- Finding 1 (pay for what you keep) gains a second instance from inside the sheet.
+- **Walls, "More than four things"**: 16 cues are held (0.60 against a line of 0.53) with
+  the gate; 32 and more need the world's 16-button cap raised (`TASK_MAX_MOTORS`, also the
+  reference networks' output size) and more motor cells.
+- **MNIST** (results-2026-11-25-mnist.md): the online readout's peak is 0.81 with the gate
+  (0.71 before); the drift is not stopped by it; buttons die (2-3 of 10 pressed on under 5%
+  of their digits after three passes).
+- `docs/predictions.md`, `docs/ideas.md`: record entry 98 (tags) as tried and kept in the
+  contrast form; entry 15/16 (barely correct) as tried: deepening no, the gate yes with a
+  drift; entry 89 (DRTP) still untried.
+- `docs/task-map.md`: nothing new, except that the 16-button cap is a hard limit for
+  capacity rows.
+- `docs/plan.md`: the merged rule (the walk's spike-exact credit with tags' fixed counts),
+  and a fix for the drift, are the next two jobs.
+
+## What I would try next
+
+1. **A merged inner rule**: the walk's spike-exact credit (source fired one delay before the
+   motor spike) with tags' contrast, `tag_min`, no inhibitory learning and fixed E/I and
+   strong counts. The walk's reach with tags' stability is the obvious prize.
+2. **The drift under the gate**: keep every button alive (a floor on each button's top
+   counters, or balance the good half by how often each button is right). MNIST to 180,000
+   digits and 8 cues long lives are the tests.
+3. **The gate as the critic's good half** (above).
+4. **Tags with shuffled signs**, the control the walk had: how much of exclusive-or is churn.
+5. Why tags cost echo at 2 tiles while helping at 5: per-tile linear probe of the lived
+   sheet at each distance.
+6. Bit-slice the counters (528 bytes) and touch only rows whose counters cross the line.
+
+## Script lines
+
+```
+scripts/tags.sh life both-not-either                         readout + tags, one life
+scripts/tags.sh gate echo --k 16 --motor-spread 256          readout + the stop-learning gate
+scripts/tags.sh deepen echo --k 8 --motor-spread 256         Baldassi's deepening
+scripts/tags.sh both order                                   tags + gate
+scripts/tags.sh transfer both-not-either both-not-either     fresh readout, born vs lived
+scripts/tags.sh feature both-not-either xor                  feature probe, born vs lived
+scripts/tags.sh mnist                                        MNIST online with the gate
+scripts/tags.sh tables                                       the report tables (seeds 5-12)
+```
+
+Helpers and raw outputs in the worktree's `out/tags/` (tuning: `tune.sh`, `*tune*.log`;
+report: `report-here.log`, `report/`; retention, transfer, features: `queue2.sh`,
+`queue3.sh`, `protocol.py`, `transfer.py`, `feature/`; MNIST: `mnist.sh`, `mnist/`; speed:
+`speed.sh`; stevejobs: `~/thonk-tags/out/`).
+
+## Rough
+
+- The readout and mode 6 report rows are the readout job's runs, reused. Two were rerun
+  here and matched byte for byte; the four merge-reference lives match after both merges.
+- MNIST is one seed (1), chosen on validation, reported on test. The drift numbers are one
+  life each.
+- The tag error-only rows were run straight on the report seeds as a diagnostic, not tuned.
+- Long lives are 4 seeds and only for the four main variants on exclusive-or plus tags on
+  echo at 3 and 5 tiles; the 8-cue long lives were stopped for machine time. Their speed
+  numbers are from stevejobs under load and only compare with each other.
+- The world's 16-button cap was found when a "32-cue" sweep returned the 16-cue numbers to
+  the last digit; those runs are discarded.
+- `--motor-spread 256` with two buttons (shuffled echo) gives the same 128 cells each as
+  spread 128.
+- The gate's chosen 20% was best on MNIST, order and 16 cues; 10% was better on 8 cues (0.94
+  against 0.88, seeds 1-4). One setting is reported throughout.
+- Deepening uses the evidence counters without the fix (readout_evidence 1), the gate with
+  it (2); the fix made no difference on 8 or 16 cues (seeds 1-4) in either.
+- Changes outside src/blob: `src/world/plug.hpp` (one field), `plug.cpp` (one line),
+  `plug_vote.cpp` (new), `src/run/life.cpp` and `src/mnist/mnist_sheet.cpp` (one line each),
+  `src/probe/feature.cpp` (one line), `src/probe/main.cpp` (one table line),
+  `src/probe/lived_sheet.cpp` (new), `scripts/sweep.py` (names in LEARNING_ONLY).
