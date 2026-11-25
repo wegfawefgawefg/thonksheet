@@ -4,6 +4,8 @@
 //   W      one task step (pauses; with --task)
 //   A / D  slow motion slower / faster                        F  full speed, nothing drawn
 //   T  tile lines   G  sector lines   R  raster rows: neurons / tiles   Z  reset zoom
+//   V  pick the next button's cell (the readout)   Q  its evidence picture on / off
+//   C  readability tint: the next feature (measured if it has not been)   X  measure again
 //   left click   pick a neuron (sheet or raster)    esc  drop the pick, else quit
 //   wheel        zoom the sheet or the raster rows  right drag  pan them
 //   F11          fullscreen
@@ -17,6 +19,45 @@
 
 static void select_neuron(State& s, int neuron) {
     s.sim.shared.selected = neuron;
+}
+
+void pick_readout_cell(State& s, int index) {
+    const std::vector<ReadoutCell>& cells = s.frame.readout.cells;
+    if (cells.empty()) {
+        return;
+    }
+    const int count = static_cast<int>(cells.size());
+    // V walks the buttons in turn (the cells are listed button by button, the same number
+    // each): the next button's cell of the same rank, then the next rank
+    if (index < 0) {
+        const int buttons = std::max<int>(1, static_cast<int>(s.frame.readout.buttons.size()));
+        const int per = std::max(1, count / buttons);
+        int button = 0, rank = 0;
+        if (s.readout_pick >= 0) {
+            button = s.readout_pick / per + 1;
+            rank = s.readout_pick % per;
+            if (button >= buttons) {
+                button = 0;
+                rank = (rank + 1) % per;
+            }
+        }
+        index = (button * per + rank) % count;
+    }
+    s.readout_pick = std::clamp(index, 0, count - 1);
+    const ReadoutCell& c = cells[s.readout_pick];
+    select_neuron(s, ((c.y / 8) * s.frame.tiles_w + c.x / 8) * 64 + (c.y % 8) * 8 + c.x % 8);
+}
+
+void measure_now(State& s, int feature) {
+    s.sim.shared.measure = feature;
+}
+
+void cycle_tint(State& s) {
+    s.view.tint = s.view.tint + 1 >= READ_FEATURES ? -1 : s.view.tint + 1;
+    const int t = s.view.tint;
+    if (t >= 0 && s.frame.readable[t].tile.empty() && s.frame.reading != t) {
+        measure_now(s, t);
+    }
 }
 
 static void zoom_sheet(State& s, float mx, float my, float wheel) {
@@ -104,6 +145,15 @@ static void key(State& s, SDL_Keycode k, SDL_Window* window) {
     } else if (k == SDLK_R) {
         s.view.raster_rows = 1 - s.view.raster_rows;
         s.view.raster_first = s.view.raster_count = 0;
+    } else if (k == SDLK_V) {
+        pick_readout_cell(s, -1);
+    } else if (k == SDLK_Q) {
+        s.view.evidence = !s.view.evidence;
+    } else if (k == SDLK_C) {
+        cycle_tint(s);
+    } else if (k == SDLK_X && s.frame.real) {
+        measure_now(s, s.view.tint >= 0 ? s.view.tint : 0);
+        s.view.tint = s.view.tint >= 0 ? s.view.tint : 0;
     } else if (k == SDLK_Z) {
         s.view.zoom = 1;
         s.view.pan_x = s.view.pan_y = 0;

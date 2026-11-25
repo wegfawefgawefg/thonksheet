@@ -17,22 +17,11 @@ void tape_init(Tape& tape, int row_words) {
     tape.long_lines.assign(LONG_POINTS, LinePoint{});
 }
 
-void tape_record(Tape& tape, const Blob& blob) {
-    // the newest spike map into the next row
+void tape_record(Tape& tape, const Blob& blob, const LinePoint& p) {
+    // the newest spike map into the next row, and this tick's counts
     const int row = static_cast<int>(tape.ticks % static_cast<uint64_t>(tape.len));
     std::memcpy(&tape.words[static_cast<size_t>(row) * tape.row_words], blob.spikes[blob.now],
                 sizeof(uint64_t) * tape.row_words);
-
-    // this tick's counts, and the broadcasts that are on
-    LinePoint p;
-    p.v[LINE_FIRED] = static_cast<float>(blob.stats.fired);
-    p.v[LINE_SURPRISE] = static_cast<float>(blob.stats.surprise);
-    p.v[LINE_GROWN] = static_cast<float>(blob.stats.grown);
-    p.v[LINE_PRUNED] = static_cast<float>(blob.stats.pruned);
-    p.v[LINE_STRENGTHENED] = static_cast<float>(blob.stats.strengthened);
-    p.v[LINE_WEAKENED] = static_cast<float>(blob.stats.weakened);
-    p.v[LINE_GOOD] = blob.good_ticks > 0 ? 1.0f : 0.0f;
-    p.v[LINE_BAD] = blob.bad_ticks > 0 ? 1.0f : 0.0f;
     tape.lines[row] = p;
     ++tape.ticks;
 
@@ -76,6 +65,9 @@ void tape_copy_new(Tape& to, const Tape& from) {
 
 void frame_copy(ViewFrame& to, const ViewFrame& from) {
     to.real = from.real;
+    to.engine = from.engine;
+    to.has = from.has;
+    to.lines_known = from.lines_known;
     to.tiles_w = from.tiles_w;
     to.tiles_h = from.tiles_h;
     to.tile_count = from.tile_count;
@@ -101,6 +93,11 @@ void frame_copy(ViewFrame& to, const ViewFrame& from) {
     to.selected = from.selected;
     to.task = from.task;
     task_scores_copy(to.scores, from.scores);
+    to.readout = from.readout;
+    for (int i = 0; i < READ_FEATURES; ++i) {
+        to.readable[i] = from.readable[i];
+    }
+    to.reading = from.reading;
 }
 
 bool tape_fired(const Tape& tape, int age, int neuron) {

@@ -38,6 +38,9 @@ struct ViewSettings {
     int recur_ticks = 256;     // ticks across the recurrence square
     bool lines_long = false;   // lines over the long history instead of the tape
     bool task_marks = true;    // the task's lines and their names on the sheet
+    bool buttons = true;       // each button's cells in its own colour
+    bool evidence = true;      // a picked cell's evidence over the sheet
+    int tint = -1;             // the feature whose readability tints the tiles, -1 none
 };
 
 // where cell (0, 0) lands and how many pixels a cell is
