@@ -25,6 +25,9 @@ struct GpuShape {
     int ev = 0;      // 1: evidence counters
     int ev_bits = 1; // planes per slot: the widest counters of the batch
     int ev_rows = 1; // rows of counters per life
+    // the memory engine (gpu_memory.hpp): engine 1, and its sizes per life, the largest
+    int engine = 0; // 0 the minimal engine, 1 the memory engine
+    int in_words = 1, motor_cells = 1, tables = 1, counters = 1, entries = 1, pos = 1;
 };
 
 // what one life holds on the device, host side, ready to upload
@@ -81,6 +84,11 @@ bool gpu_batch_open(GpuContext& g, GpuBatch& b, const GpuShape& shape, const Gpu
                     const uint64_t* motor = nullptr, int ev_on_max = 0);
 // rows of evidence counters a batch needs: every non-sensor neuron (ev_on 2) or the motor cells
 int gpu_ev_rows(const uint64_t* sensor, const uint64_t* motor, int tiles, int ev_on_max);
+// for an engine that fills a group itself: a device buffer of these bytes (data null: zeros),
+// the group's exchange buffers, and its descriptor set (every binding filled)
+bool gpu_buffer_new(GpuContext& g, GpuBuffer& buf, const void* data, uint64_t bytes);
+bool gpu_group_exchange(GpuContext& g, GpuBatch& b, GpuGroup& gr);
+bool gpu_group_bind(GpuContext& g, GpuBatch& b, GpuGroup& gr);
 // a group's buffers, filled from its lives (lives[0] is the group's first). lives whose masks
 // are empty are born on the GPU (all of a group or none).
 bool gpu_group_add(GpuContext& g, GpuBatch& b, int first, const GpuLifeData* lives, int count);

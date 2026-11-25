@@ -100,13 +100,14 @@ static bool make_pipeline(GpuContext& g, GpuBatch& b, const char* spv, int wave,
         return false;
     }
     const GpuShape& s = b.shape;
-    int32_t values[10] = {s.workgroup, s.tiles, s.stride, s.tiles_w, s.host,
-                          s.slots,     s.delay, s.ev,     s.ev_bits, s.ev_rows};
-    VkSpecializationMapEntry entries[10];
-    for (uint32_t i = 0; i < 10; i++) {
+    int32_t values[16] = {s.workgroup, s.tiles,    s.stride,  s.tiles_w, s.host,     s.slots,
+                          s.delay,     s.ev,       s.ev_bits, s.ev_rows, s.in_words, s.motor_cells,
+                          s.tables,    s.counters, s.entries, s.pos};
+    VkSpecializationMapEntry entries[16];
+    for (uint32_t i = 0; i < 16; i++) {
         entries[i] = VkSpecializationMapEntry{i, i * 4, 4};
     }
-    VkSpecializationInfo spec{10, entries, sizeof(values), values};
+    VkSpecializationInfo spec{16, entries, sizeof(values), values};
     VkComputePipelineCreateInfo info{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
     info.stage =
         VkPipelineShaderStageCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
@@ -141,7 +142,7 @@ bool gpu_batch_open(GpuContext& g, GpuBatch& b, const GpuShape& shape, const Gpu
     b.shape = shape;
     b.params = params;
     if (!make_layout(g, b) || !make_pipeline(g, b, life_spv, shape.wave, b.pipeline) ||
-        !make_pipeline(g, b, birth_spv, 0, b.birth)) {
+        (birth_spv && !make_pipeline(g, b, birth_spv, 0, b.birth))) {
         return false;
     }
     // evidence rows: which neurons, the row before each tile, the motor cells
@@ -195,6 +196,51 @@ static bool upload_new(GpuContext& g, GpuBuffer& buf, const void* data, uint64_t
     return gpu_buffer(g, buf, bytes, false) && gpu_upload(g, buf, 0, data, bytes);
 }
 
+bool gpu_buffer_new(GpuContext& g, GpuBuffer& buf, const void* data, uint64_t bytes) {
+    bytes = bytes < 8 ? 8 : bytes;
+    return data ? upload_new(g, buf, data, bytes) : zeros_new(g, buf, bytes);
+}
+
+bool gpu_group_exchange(GpuContext& g, GpuBatch& b, GpuGroup& gr) {
+    const size_t xn = b.shape.host ? (size_t)gr.count : 1, tiles1 = (size_t)b.shape.tiles + 1;
+    bool ok = gpu_buffer(g, gr.xin, sizeof(GpuExchangeIn) * xn, true) &&
+              gpu_buffer(g, gr.xwords, 8 * tiles1 * xn, true) &&
+              gpu_buffer_read_back(g, gr.xout, sizeof(GpuExchangeOut) * xn);
+    if (ok) {
+        std::memset(gr.xin.mapped, 0, sizeof(GpuExchangeIn) * xn);
+        std::memset(gr.xwords.mapped, 0, 8 * tiles1 * xn);
+        std::memset(gr.xout.mapped, 0, sizeof(GpuExchangeOut) * xn);
+    }
+    return ok;
+}
+
+bool gpu_group_bind(GpuContext& g, GpuBatch& b, GpuGroup& gr) {
+    VkDescriptorSetAllocateInfo alloc{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+    alloc.descriptorPool = b.pool;
+    alloc.descriptorSetCount = 1;
+    alloc.pSetLayouts = &b.set_layout;
+    if (!gpu_ok(g, vkAllocateDescriptorSets(g.device, &alloc, &gr.set), "descriptor set")) {
+        return false;
+    }
+    GpuBuffer* order[BINDINGS] = {
+        &gr.params, &b.world,       &gr.genomes,  &gr.lives,  &gr.masks,    &gr.thresholds,
+        &gr.rings,  &gr.inhibitory, &gr.scores,   &gr.xin,    &gr.xwords,   &gr.xout,
+        &b.ev_meta, &gr.ev_planes,  &gr.ev_lines, &gr.delays, &gr.far_tiles};
+    VkDescriptorBufferInfo infos[BINDINGS];
+    VkWriteDescriptorSet writes[BINDINGS];
+    for (int i = 0; i < BINDINGS; i++) {
+        infos[i] = VkDescriptorBufferInfo{order[i]->buffer, 0, VK_WHOLE_SIZE};
+        writes[i] = VkWriteDescriptorSet{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+        writes[i].dstSet = gr.set;
+        writes[i].dstBinding = (uint32_t)i;
+        writes[i].descriptorCount = 1;
+        writes[i].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        writes[i].pBufferInfo = &infos[i];
+    }
+    vkUpdateDescriptorSets(g.device, BINDINGS, writes, 0, nullptr);
+    return true;
+}
+
 bool gpu_group_add(GpuContext& g, GpuBatch& b, int first, const GpuLifeData* lives, int count) {
     if ((int)b.groups.size() >= MAX_GROUPS) {
         std::fprintf(stderr, "blobgpu: more than %d groups\n", MAX_GROUPS);
@@ -242,45 +288,16 @@ bool gpu_group_add(GpuContext& g, GpuBatch& b, int first, const GpuLifeData* liv
              upload_new(g, gr.inhibitory, inhibitory.data(), inhibitory.size() * 8);
     }
     // the exchange: host-visible, written and read in place between dispatches
-    size_t xn = s.host ? n : 1;
-    ok = ok && gpu_buffer(g, gr.xin, sizeof(GpuExchangeIn) * xn, true) &&
-         gpu_buffer(g, gr.xwords, 8 * tiles1 * xn, true) &&
-         gpu_buffer_read_back(g, gr.xout, sizeof(GpuExchangeOut) * xn);
+    ok = ok && gpu_group_exchange(g, b, gr);
     // the grown-back pieces: zeros, or what birth fills
     size_t ew = (size_t)ev_words(s);
     ok = ok && zeros_new(g, gr.ev_planes, ew ? ew * n * 8 : 8) &&
          zeros_new(g, gr.ev_lines, s.ev ? (size_t)s.ev_rows * n : 8) &&
          zeros_new(g, gr.delays, s.delay ? mw * n : 8) &&
          zeros_new(g, gr.far_tiles, s.slots > 9 ? (size_t)far_words(s) * n * 4 : 8);
-    if (!ok) {
+    if (!ok || !gpu_group_bind(g, b, gr)) {
         return false;
     }
-    std::memset(gr.xin.mapped, 0, sizeof(GpuExchangeIn) * xn);
-    std::memset(gr.xwords.mapped, 0, 8 * tiles1 * xn);
-    std::memset(gr.xout.mapped, 0, sizeof(GpuExchangeOut) * xn);
-    VkDescriptorSetAllocateInfo alloc{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
-    alloc.descriptorPool = b.pool;
-    alloc.descriptorSetCount = 1;
-    alloc.pSetLayouts = &b.set_layout;
-    if (!gpu_ok(g, vkAllocateDescriptorSets(g.device, &alloc, &gr.set), "descriptor set")) {
-        return false;
-    }
-    GpuBuffer* order[BINDINGS] = {
-        &gr.params, &b.world,       &gr.genomes,  &gr.lives,  &gr.masks,    &gr.thresholds,
-        &gr.rings,  &gr.inhibitory, &gr.scores,   &gr.xin,    &gr.xwords,   &gr.xout,
-        &b.ev_meta, &gr.ev_planes,  &gr.ev_lines, &gr.delays, &gr.far_tiles};
-    VkDescriptorBufferInfo infos[BINDINGS];
-    VkWriteDescriptorSet writes[BINDINGS];
-    for (int i = 0; i < BINDINGS; i++) {
-        infos[i] = VkDescriptorBufferInfo{order[i]->buffer, 0, VK_WHOLE_SIZE};
-        writes[i] = VkWriteDescriptorSet{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        writes[i].dstSet = gr.set;
-        writes[i].dstBinding = (uint32_t)i;
-        writes[i].descriptorCount = 1;
-        writes[i].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        writes[i].pBufferInfo = &infos[i];
-    }
-    vkUpdateDescriptorSets(g.device, BINDINGS, writes, 0, nullptr);
     // the birth shader: one thread per life, 64 lives a workgroup
     return !born_here || dispatch(g, b, gr, b.birth, (uint32_t)(count + 63) / 64, 0);
 }
@@ -362,7 +379,9 @@ void gpu_batch_close(GpuContext& g, GpuBatch& b) {
     gpu_free(g, b.world);
     gpu_free(g, b.ev_meta);
     vkDestroyPipeline(g.device, b.pipeline, nullptr);
-    vkDestroyPipeline(g.device, b.birth, nullptr);
+    if (b.birth != VK_NULL_HANDLE) {
+        vkDestroyPipeline(g.device, b.birth, nullptr);
+    }
     vkDestroyDescriptorPool(g.device, b.pool, nullptr);
     vkDestroyPipelineLayout(g.device, b.layout, nullptr);
     vkDestroyDescriptorSetLayout(g.device, b.set_layout, nullptr);

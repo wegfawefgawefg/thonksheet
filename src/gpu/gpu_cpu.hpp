@@ -23,6 +23,7 @@ struct CpuLife {
     bool done = false;
     std::vector<double> scores;         // one per window
     int pending = 0, pending_move = -1; // cpu_life_step: the reward held back
+    bool memory = false;                // the memory engine (--engine memory)
 };
 
 bool cpu_life_start(CpuLife& c, const GpuLifeSpec& spec, const RunFlags& flags);

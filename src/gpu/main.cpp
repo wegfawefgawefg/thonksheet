@@ -6,6 +6,7 @@
 // docs/results-2026-11-25-gpu.md; scripts/gpu.sh runs it.
 
 #include "gpu/gpu_host_run.hpp"
+#include "gpu/gpu_memory.hpp"
 #include "gpu/gpu_report.hpp"
 #include "gpu/gpu_run.hpp"
 
@@ -79,21 +80,75 @@ static int64_t shader_world_loop(GpuContext& g, GpuBatch& b, const GpuFlags& f,
     return ok ? ticks : -1;
 }
 
+// the memory engine: every life's genome runs as written, and every life shares one sheet
+static bool memory_supported(const std::vector<GpuLifeSpec>& lives) {
+    for (size_t i = 0; i < lives.size(); i++) {
+        std::string why;
+        const Genome &a = lives[i].genome, &b = lives[0].genome;
+        if (!gpu_memory_supported(lives[i].yg, why)) {
+            std::fprintf(stderr, "blobgpu: life %zu: %s\n", i, why.c_str());
+            return false;
+        }
+        if (a.tiles_w != b.tiles_w || a.tiles_h != b.tiles_h || a.sensor_x != b.sensor_x ||
+            a.sensor_y != b.sensor_y || a.sensor_w != b.sensor_w || a.sensor_h != b.sensor_h ||
+            a.motor_x != b.motor_x || a.motor_y != b.motor_y || a.motor_w != b.motor_w ||
+            a.motor_h != b.motor_h || a.sensor_stride != b.sensor_stride ||
+            a.motor_stride != b.motor_stride) {
+            std::fprintf(stderr, "blobgpu: life %zu has another sheet; a batch shares one\n", i);
+            return false;
+        }
+    }
+    return true;
+}
+
+// the memory engine's batch: births on the CPU; checking, the CPU lives beside them
+static bool memory_open(GpuContext& g, GpuBatch& b, const GpuFlags& f,
+                        std::vector<HostWorld>& worlds, const std::vector<GpuLifeSpec>& lives,
+                        std::vector<CpuLife>& cpu) {
+    if (!gpu_memory_open(g, b, f, worlds, lives, BLOBGPU_SHADER_DIR "/memory_life.comp.spv") ||
+        !gpu_memory_upload(g, b, f, worlds, lives)) {
+        return false;
+    }
+    if (!f.check) {
+        return true;
+    }
+    cpu.resize(lives.size());
+    for (size_t i = 0; i < lives.size(); i++) {
+        if (!cpu_life_start(cpu[i], lives[i], worlds[(size_t)lives[i].world].flags)) {
+            return false;
+        }
+    }
+    // the newborn stores
+    for (GpuGroup& group : b.groups) {
+        for (int i = 0; i < group.count; i++) {
+            std::string why;
+            if (!gpu_memory_matches(g, b, group, i, *cpu[(size_t)(group.first + i)].blob, why)) {
+                std::fprintf(stderr, "check: life %d differs at birth: %s\n", group.first + i,
+                             why.c_str());
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 int main(int argc, char** argv) {
     GpuFlags f;
     Genome genome;
     MinimalGenome mg;
-    if (!gpu_flags_parse(argc, argv, f, genome, mg)) {
+    MemoryGenome yg;
+    if (!gpu_flags_parse(argc, argv, f, genome, mg, yg)) {
         return 1;
     }
+    const bool memory = gpu_memory_engine(f);
     // the Echo family runs in the shader unless --host or --tasks says otherwise
     std::vector<HostWorld> worlds;
     GpuSettings settings;
     std::vector<GpuLifeSpec> lives;
-    if (!gpu_lives_list(f, genome, mg, 1, settings, lives)) {
+    if (!gpu_lives_list(f, genome, mg, yg, 1, settings, lives)) {
         return 1;
     }
-    f.host = f.host || !gpu_world_in_shader(f.run.task);
+    f.host = f.host || memory || !gpu_world_in_shader(f.run.task);
     for (const GpuLifeSpec& life : lives) {
         f.host = f.host || gpu_needs_host(life.mg);
     }
@@ -102,7 +157,7 @@ int main(int argc, char** argv) {
     }
     int world_count = worlds.empty() ? 1 : (int)worlds.size();
     settings = GpuSettings{};
-    if (!gpu_lives_list(f, genome, mg, world_count, settings, lives)) {
+    if (!gpu_lives_list(f, genome, mg, yg, world_count, settings, lives)) {
         return 1;
     }
     std::vector<std::string> names;
@@ -120,7 +175,7 @@ int main(int argc, char** argv) {
         std::printf("cpu: %zu lives, %lld ticks in %.2f s ticking: %.0f life-ticks/s\n",
                     lives.size(), (long long)ticks, tick_seconds, (double)ticks / tick_seconds);
     } else {
-        if (!gpu_run_supported(lives)) {
+        if (memory ? !memory_supported(lives) : !gpu_run_supported(lives)) {
             return 1;
         }
         GpuContext g;
@@ -128,19 +183,25 @@ int main(int argc, char** argv) {
         std::vector<CpuLife> cpu;
         std::string spv = f.shader.empty() ? BLOBGPU_SHADER_DIR "/minimal_life.comp.spv" : f.shader;
         const char* birth_spv = BLOBGPU_SHADER_DIR "/minimal_birth.comp.spv";
-        bool ok =
-            gpu_open(g, f.device == GpuDevice::lavapipe, f.validate) &&
-            (f.host ? host_run_open(g, b, f, worlds, lives, spv.c_str(), birth_spv)
-                    : gpu_run_open(g, b, f, lives, spv.c_str(), birth_spv)) &&
-            gpu_run_upload(g, b, f, lives, f.check ? &cpu : nullptr, f.host ? &worlds : nullptr);
+        bool ok = gpu_open(g, f.device == GpuDevice::lavapipe, f.validate);
+        if (ok && memory) {
+            ok = memory_open(g, b, f, worlds, lives, cpu);
+        } else if (ok) {
+            ok = (f.host ? host_run_open(g, b, f, worlds, lives, spv.c_str(), birth_spv)
+                         : gpu_run_open(g, b, f, lives, spv.c_str(), birth_spv)) &&
+                 gpu_run_upload(g, b, f, lives, f.check ? &cpu : nullptr,
+                                f.host ? &worlds : nullptr);
+        }
         double setup = seconds_since(start);
         std::printf("%s: %zu lives in %zu groups, %.0f KB per life, setup %.2f s%s\n",
                     g.name.c_str(), lives.size(), b.groups.size(),
-                    (double)gpu_life_bytes(b.shape) / 1024.0, setup, f.host ? ", host worlds" : "");
+                    (double)(memory ? gpu_memory_life_bytes(b.shape) : gpu_life_bytes(b.shape)) /
+                        1024.0,
+                    setup, f.host ? ", host worlds" : "");
 
         // checking: the newborn sheets first, before any tick
         for (GpuGroup& group : b.groups) {
-            ok = ok && (!f.check || gpu_run_check(g, b, group, cpu, 0, f.host));
+            ok = ok && (!f.check || memory || gpu_run_check(g, b, group, cpu, 0, f.host));
         }
         int dispatches = 0;
         double longest = 0;

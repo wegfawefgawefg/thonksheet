@@ -1,5 +1,6 @@
 #include "gpu/gpu_cpu.hpp"
 
+#include "memory/memory.hpp"
 #include "minimal/minimal.hpp"
 #include "world/plug.hpp"
 
@@ -15,7 +16,9 @@ bool cpu_life_start(CpuLife& c, const GpuLifeSpec& spec, const RunFlags& flags) 
     c.flags.seed = spec.seed;
     c.flags.task_seed = spec.seed;
     c.flags.genome = spec.genome;
-    c.blob = minimal_birth(spec.genome, spec.mg, spec.seed);
+    c.memory = flags.engine == "memory";
+    c.blob = c.memory ? memory_birth(spec.genome, spec.yg, spec.seed)
+                      : minimal_birth(spec.genome, spec.mg, spec.seed);
     c.ticker = new TaskTicker{};
     return ticker_start(*c.ticker, *c.blob, c.flags);
 }
@@ -27,14 +30,14 @@ int64_t cpu_life_ticks(CpuLife& c, int64_t ticks) {
     // life_run's loop for one phase
     while (ran < ticks && !c.done) {
         ticker_before_tick(tt, blob);
-        minimal_tick(blob);
+        c.memory ? memory_tick(blob) : minimal_tick(blob);
         ran++;
         if (!ticker_after_tick(tt, blob)) {
             continue;
         }
         if (tt.valence != 0) {
             plug_mark_acted(tt.plug, blob, tt.move);
-            minimal_reward(blob, tt.valence);
+            c.memory ? memory_reward(blob, tt.valence) : minimal_reward(blob, tt.valence);
         }
         c.step++;
         if (c.step % c.flags.window == 0) {
@@ -51,13 +54,13 @@ int64_t cpu_life_step(CpuLife& c) {
     Blob& blob = *c.blob;
     if (c.pending != 0) {
         plug_mark_acted(tt.plug, blob, c.pending_move);
-        minimal_reward(blob, c.pending);
+        c.memory ? memory_reward(blob, c.pending) : minimal_reward(blob, c.pending);
         c.pending = 0;
     }
     int64_t ran = 0;
     while (!c.done) {
         ticker_before_tick(tt, blob);
-        minimal_tick(blob);
+        c.memory ? memory_tick(blob) : minimal_tick(blob);
         ran++;
         if (!ticker_after_tick(tt, blob)) {
             continue;
@@ -77,7 +80,7 @@ int64_t cpu_life_step(CpuLife& c) {
 
 void cpu_life_free(CpuLife& c) {
     if (c.blob) {
-        minimal_free(c.blob);
+        c.memory ? memory_free(c.blob) : minimal_free(c.blob);
     }
     delete c.ticker;
     c = CpuLife{};

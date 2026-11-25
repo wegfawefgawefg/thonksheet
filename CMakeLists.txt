@@ -172,13 +172,13 @@ find_package(Vulkan QUIET)
 find_program(GPU_GLSLANG glslangValidator)
 file(GLOB gpu_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/gpu/*.cpp)
 if(gpu_sources AND Vulkan_FOUND AND GPU_GLSLANG AND NOT THONK_NO_VIEW AND TARGET blobminimal
-   AND TARGET blobworld AND TARGET blobcore)
+   AND TARGET blobmemory AND TARGET blobworld AND TARGET blobcore)
     add_executable(blobgpu ${gpu_sources} ${CMAKE_SOURCE_DIR}/src/run/task_ticker.cpp
                    ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp)
     target_include_directories(blobgpu PRIVATE src)
     target_compile_options(blobgpu PRIVATE ${warnings} ${speed})
     find_package(Threads REQUIRED)
-    target_link_libraries(blobgpu PRIVATE blobminimal blobworld blobcore Vulkan::Vulkan
+    target_link_libraries(blobgpu PRIVATE blobmemory blobminimal blobworld blobcore Vulkan::Vulkan
                           Threads::Threads)
     target_compile_definitions(blobgpu PRIVATE BLOBGPU_SHADER_DIR="${CMAKE_BINARY_DIR}/shaders/gpu")
     file(GLOB gpu_shader_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/shaders/gpu/*.comp)

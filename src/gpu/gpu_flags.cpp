@@ -38,6 +38,7 @@ static const char* usage =
     "  --host-threads N   CPU threads for the host worlds (default 4, at most 4)\n"
     "blobrun flags: --task, --k, --delay, --steps, --ticks, --window, --edge, --sensor-side,\n"
     "  --motor-side, --reward-ticks, --rest-ticks, --cue-offset, --g.name V, --m.name V\n"
+    "  --engine E         minimal (default) or memory (src/memory/, host worlds, --y.name V)\n"
     "tasks in the shader: echo, shuffled-echo, delayed-echo, both-not-either; every other\n"
     "  task (and these with --host) runs as a host world\n";
 
@@ -45,7 +46,8 @@ static bool is(const char* a, const char* b) {
     return std::strcmp(a, b) == 0;
 }
 
-bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, MinimalGenome& mg) {
+bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, MinimalGenome& mg,
+                     MemoryGenome& yg) {
     // blobgpu's own flags out; the rest go to blobrun's parser
     std::vector<char*> rest = {argv[0]};
     for (int i = 1; i < argc; i++) {
@@ -138,6 +140,11 @@ bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, Minimal
         return false;
     }
     apply_minimal_args(count, rest.data(), mg);
+    apply_memory_args(count, rest.data(), yg);
+    if (f.run.engine != "minimal" && f.run.engine != "memory" && f.run.engine != "blob") {
+        std::fprintf(stderr, "blobgpu: --engine is minimal (default) or memory\n");
+        return false;
+    }
     if (f.tiles > 0) {
         f.run.genome.tiles_w = f.tiles;
         f.run.genome.tiles_h = f.tiles;
@@ -209,13 +216,16 @@ static bool apply_row(const GpuSettings& s, const std::vector<std::string>& row,
             life.seed = std::strtoull(row[c].c_str(), nullptr, 10);
             continue;
         }
-        std::string flag =
-            name.rfind("g.", 0) == 0 || name.rfind("m.", 0) == 0 ? "--" + name : "--m." + name;
+        bool named =
+            name.rfind("g.", 0) == 0 || name.rfind("m.", 0) == 0 || name.rfind("y.", 0) == 0;
+        std::string flag = named ? "--" + name : "--m." + name;
         std::string value = row[c];
         char program[] = "blobgpu";
         char* args[] = {program, flag.data(), value.data()};
         if (flag.rfind("--g.", 0) == 0) {
             apply_genome_args(3, args, life.genome);
+        } else if (flag.rfind("--y.", 0) == 0) {
+            apply_memory_args(3, args, life.yg); // exits on an unknown name
         } else {
             apply_minimal_args(3, args, life.mg); // exits on an unknown name
         }
@@ -223,15 +233,16 @@ static bool apply_row(const GpuSettings& s, const std::vector<std::string>& row,
     return true;
 }
 
-bool gpu_lives_list(const GpuFlags& f, const Genome& genome, const MinimalGenome& mg, int worlds,
-                    GpuSettings& settings, std::vector<GpuLifeSpec>& lives) {
+bool gpu_lives_list(const GpuFlags& f, const Genome& genome, const MinimalGenome& mg,
+                    const MemoryGenome& yg, int worlds, GpuSettings& settings,
+                    std::vector<GpuLifeSpec>& lives) {
     lives.clear();
     if (!f.settings.empty()) {
         if (!read_settings(f.settings, settings)) {
             return false;
         }
         for (size_t r = 0; r < settings.rows.size(); r++) {
-            GpuLifeSpec life{f.seed_from + r, genome, mg};
+            GpuLifeSpec life{f.seed_from + r, genome, mg, 0, yg};
             apply_row(settings, settings.rows[r], life);
             if (f.device != GpuDevice::cpu || f.check) {
                 life.mg.rng_mode = 1;
@@ -240,7 +251,7 @@ bool gpu_lives_list(const GpuFlags& f, const Genome& genome, const MinimalGenome
         }
     } else {
         for (int i = 0; i < f.lives; i++) {
-            lives.push_back(GpuLifeSpec{f.seed_from + (uint64_t)i, genome, mg});
+            lives.push_back(GpuLifeSpec{f.seed_from + (uint64_t)i, genome, mg, 0, yg});
         }
     }
     if (lives.empty()) {
@@ -252,6 +263,7 @@ bool gpu_lives_list(const GpuFlags& f, const Genome& genome, const MinimalGenome
         for (size_t i = 0; i < learning; i++) {
             GpuLifeSpec twin = lives[i];
             twin.mg.learning_on = 0;
+            twin.yg.learning_on = 0;
             lives.push_back(twin);
         }
     }

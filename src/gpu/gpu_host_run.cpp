@@ -1,5 +1,6 @@
 #include "gpu/gpu_host_run.hpp"
 
+#include "gpu/gpu_memory.hpp"
 #include "minimal/minimal.hpp"
 
 #include <chrono>
@@ -109,11 +110,15 @@ static bool check_part(GpuContext& g, GpuBatch& b, GpuGroup& group, int from, in
         }
         CpuLife& c = cpu[life];
         int ran = (int)cpu_life_step(c);
-        if (!gpu_group_read(g, b, group, i, data)) {
+        std::string why;
+        bool same = false;
+        if (b.shape.engine == 1) {
+            same = gpu_memory_matches(g, b, group, i, *c.blob, why);
+        } else if (gpu_group_read(g, b, group, i, data)) {
+            same = cpu_life_matches(c, data, b, ran < 31 ? ran : 31, true, why);
+        } else {
             return false;
         }
-        std::string why;
-        bool same = cpu_life_matches(c, data, b, ran < 31 ? ran : 31, true, why);
         const HostLife& h = host[life];
         const Task &a = h.task, &z = c.ticker->task;
         if (same && (a.random.state != z.random.state || a.cue != z.cue || a.phase != z.phase ||
@@ -287,12 +292,13 @@ bool host_run(GpuContext& g, GpuBatch& b, const GpuFlags& f, const std::vector<H
     out.seconds = seconds_since(start);
     for (GpuGroup& group : b.groups) {
         std::vector<GpuLife> s((size_t)group.count);
-        if (ok && gpu_group_lives(g, group, s.data())) {
+        if (ok && b.shape.engine == 0 && gpu_group_lives(g, group, s.data())) {
             for (const GpuLife& L : s) {
                 out.ticks += (int64_t)L.tick;
             }
         }
     }
+    out.ticks = ok && b.shape.engine == 1 ? gpu_memory_ticks(g, b) : out.ticks;
     for (size_t i = 0; i < lives.size(); i++) {
         scores[i] = host[i].scores;
     }

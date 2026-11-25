@@ -45,9 +45,15 @@ struct GpuSettings {
     std::vector<std::vector<std::string>> rows;
 };
 
-bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, MinimalGenome& mg);
+bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, MinimalGenome& mg,
+                     MemoryGenome& yg);
+// --engine memory (src/memory/, gpu_memory.hpp); otherwise the minimal engine
+inline bool gpu_memory_engine(const GpuFlags& f) {
+    return f.run.engine == "memory";
+}
 // the lives of the batch: from the settings file if given, else seeds seed_from.. with the
 // command line's genomes. twins come after all the learning lives. with several worlds the
 // whole list repeats per world: life (world * (twin ? 2 : 1) + is_twin) * rows + row.
-bool gpu_lives_list(const GpuFlags& f, const Genome& genome, const MinimalGenome& mg, int worlds,
-                    GpuSettings& settings, std::vector<GpuLifeSpec>& lives);
+bool gpu_lives_list(const GpuFlags& f, const Genome& genome, const MinimalGenome& mg,
+                    const MemoryGenome& yg, int worlds, GpuSettings& settings,
+                    std::vector<GpuLifeSpec>& lives);

@@ -7,10 +7,13 @@
 #   scripts/gpu.sh check            the shader against the CPU engine, tick by tick: nine cases
 #                                   of the Echo family in the shader and nine of host worlds, on
 #                                   lavapipe (software Vulkan) first, then on the GPU
-#   scripts/gpu.sh check host       only the host-world cases (check shader: only the others)
+#   scripts/gpu.sh check host       only the host-world cases (check shader: only the others);
+#                                   host worlds include the evidence counters, far slots and
+#                                   delays, and the memory engine (--engine memory)
 #   scripts/gpu.sh against          host worlds against blobrun --engine minimal --m.rng_mode 1
-#                                   as text: echo, order, gap, both-not-either, catch, cartpole,
-#                                   seeds 5-8 and twins, 2,000 steps (out/gpu/against/)
+#                                   (or --engine memory) as text: six worlds, evidence, far slots,
+#                                   delays, and the memory engine on five worlds; seeds 5-8 and
+#                                   twins, 2,000 steps (out/gpu/against/)
 #   scripts/gpu.sh run --lives 4096 --task shuffled-echo --steps 40000 --twin
 #                                   any batch; blobrun's flags (--task --k --steps --ticks
 #                                   --window --g.name --m.name ...); rows to out/gpu/lives.csv
@@ -112,15 +115,24 @@ check_host() {
         --tasks both-not-either,echo:k=4 "${b[@]}"
     one far-delays --settings out/gpu/settings-far.csv --twin --rest-ticks 2 \
         --tasks echo:k=4,gap,order "${b[@]}"
+    # the memory engine: the default store, the cheap one, other depths, codes and credit
+    printf 'seed,y.tables,y.table_bits,y.depth,y.code,y.others_up,y.trace_across,y.predict,y.predict_bits,y.now_only,y.explore_max,y.counter_max,y.taps\n1,256,10,4,0,0,2,1,12,1,32,31,16\n2,128,8,4,0,0,2,1,12,1,32,31,16\n3,200,9,3,1,1,1,0,12,2,64,15,8\n4,64,12,2,0,0,0,1,6,0,16,63,32\n' \
+        >out/gpu/settings-memory.csv
+    one memory --engine memory --settings out/gpu/settings-memory.csv --twin --rest-ticks 1 \
+        --tasks echo:k=4,gap,catch:catch-size=4/4,sequence "${b[@]}"
+    one memory-worlds --engine memory --lives 1 --seed-from 5 --twin --rest-ticks 2 \
+        --tasks echo:k=4,cartpole:sensor-side=2:cart-reward=lean,delayed-echo,order,both-not-either \
+        "${b[@]}"
 }
 
 # one world, seeds 5-8 and their twins, on the GPU and in blobrun; the windows compared as text
 against() {
     local name=$1
     shift
-    local dir=out/gpu/against cpu_args=()
+    local dir=out/gpu/against cpu_args=() engine=(--engine minimal --m.rng_mode 1)
     mkdir -p $dir
     for a in "$@"; do [ "$a" = --host ] || cpu_args+=("$a"); done
+    [[ " $* " == *" --engine memory "* ]] && engine=()
     gpu --lives 4 --seed-from 5 --twin "$@" --out $dir/$name.csv --windows $dir/$name-w.csv |
         grep -E "^gpu" || true
     awk -F, 'NR > 1 { s[$1 "," $3 "," $4 "," $2] = $5 }
@@ -129,7 +141,7 @@ against() {
         $dir/$name-w.csv | sort -t, -k1,1n -k2,2n >$dir/$name-gpu.txt
     : >$dir/$name-cpu.txt
     for seed in 5 6 7 8; do
-        nice -n 19 build/blobrun --engine minimal --m.rng_mode 1 --seed $seed "${cpu_args[@]}" \
+        nice -n 19 build/blobrun "${engine[@]}" --seed $seed "${cpu_args[@]}" \
             --out $dir/$name-br-s$seed.csv --alive-ticks 0 --rhythm-ticks 0 >/dev/null
         awk -F, -v s=$seed 'NR > 1 { print s "," $1 "," $2 "," $3 "," $4 }' \
             $dir/$name-br-s$seed.csv >>$dir/$name-cpu.txt
@@ -186,6 +198,13 @@ against)
     against delays --task gap "${b[@]}" --m.delay_max 8
     against far-delays-evidence --task order "${b[@]}" --m.far_slots 2 --m.far_percent 100 \
         --m.delay_max 6 --m.ev_on 1 --m.ev_bits 6 --m.ev_init 4 --m.ev_spikes 1
+    # the memory engine, against blobrun --engine memory
+    against memory-echo4 --engine memory --task echo --k 4 "${b[@]}"
+    against memory-catch --engine memory --task catch --catch-size 4 4 "${b[@]}"
+    against memory-cartpole --engine memory --task cartpole --cart-reward lean \
+        --number-code place "${b[@]}" --sensor-side 2
+    against memory-sequence --engine memory --task sequence "${b[@]}"
+    against memory-delayed --engine memory --task delayed-echo "${b[@]}"
     kernel_log
     ;;
 run)

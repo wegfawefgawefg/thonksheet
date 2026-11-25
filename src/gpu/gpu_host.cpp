@@ -107,6 +107,10 @@ bool host_worlds_build(std::vector<HostWorld>& worlds, Blob& born, std::vector<u
             bool reward_line = line == PLUG_GOOD_LINE || line == PLUG_BAD_LINE;
             if (w.plug.attached[line]) {
                 w.attached |= reward_line ? 1u << line : 1u << 31;
+                // line 2's row: every attached sensor cell (the memory engine's sense_attached)
+                for (int k = 0; k < group; k++) {
+                    set_bit(out + 3 * tiles1, w.plug.sensor_neuron[line * PLUG_MAX_GROUP + k]);
+                }
             }
             for (int k = 0; reward_line && k < group; k++) {
                 set_bit(out + (1 + line) * tiles1, w.plug.sensor_neuron[line * PLUG_MAX_GROUP + k]);
