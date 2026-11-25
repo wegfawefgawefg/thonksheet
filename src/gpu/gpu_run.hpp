@@ -12,8 +12,9 @@
 bool gpu_run_supported(const std::vector<GpuLifeSpec>& lives);
 // the world from the first life, the pipeline and the shared tables
 bool gpu_run_open(GpuContext& g, GpuBatch& b, const GpuFlags& f,
-                  const std::vector<GpuLifeSpec>& lives, const char* spv);
-// born on the CPU and uploaded a group at a time. check: the CPU lives are kept, born again
+                  const std::vector<GpuLifeSpec>& lives, const char* life_spv,
+                  const char* birth_spv);
+// born on the GPU (or the CPU, --birth cpu) a group at a time. check: the CPU lives are kept
 bool gpu_run_upload(GpuContext& g, GpuBatch& b, const GpuFlags& f,
                     const std::vector<GpuLifeSpec>& lives, std::vector<CpuLife>* check);
 // every life's window scores, read back

@@ -43,6 +43,8 @@ struct GpuGenome {
     int32_t up_shift, down_shift, noise_shift, credit_ticks;
     int32_t learn_shift, avg_shift, grade_mode, cowire_on;
     int32_t cowire_shift, cowire_needs_input, noise_sign, pad;
+    // birth only (minimal_birth.comp)
+    int32_t budget, threshold_min, threshold_max, inhibitory_percent;
 };
 
 // one life's small state: the engine's clock and reward average, the task, the ticker
@@ -61,5 +63,5 @@ struct GpuLife {
 };
 
 static_assert(sizeof(GpuParams) == 64, "mirrors minimal_layout.glsl");
-static_assert(sizeof(GpuGenome) == 64, "mirrors minimal_layout.glsl");
+static_assert(sizeof(GpuGenome) == 80, "mirrors minimal_layout.glsl");
 static_assert(sizeof(GpuLife) == 216, "mirrors minimal_layout.glsl");

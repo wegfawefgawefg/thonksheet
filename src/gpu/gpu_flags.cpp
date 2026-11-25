@@ -22,7 +22,9 @@ static const char* usage =
     "  --check            run the CPU engine alongside, compare every tick (small batches)\n"
     "  --workgroup N      threads per life (default 256)\n"
     "  --group N          lives per dispatch at most (default: as many as one buffer holds)\n"
-    "  --birth-threads N  CPU threads making the lives (default 2)\n"
+    "  --birth B          gpu (default): lives are born by a shader; cpu: by the CPU engine and\n"
+    "                     copied up (the same sheets, slower)\n"
+    "  --birth-threads N  CPU threads for --birth cpu (default 2)\n"
     "  --wave N           ask for subgroups of N lanes (32 or 64 on the GPU; default: driver)\n"
     "  --dispatch-ms N    aim for submits about N ms long (default 50)\n"
     "  --max-ticks N      ticks per dispatch at most (default 4096)\n"
@@ -56,8 +58,9 @@ bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, Minimal
         bool mine = is(a, "--lives") || is(a, "--seed-from") || is(a, "--tiles") ||
                     is(a, "--settings") || is(a, "--out") || is(a, "--windows") ||
                     is(a, "--device") || is(a, "--workgroup") || is(a, "--wave") ||
-                    is(a, "--birth-threads") || is(a, "--group") || is(a, "--dispatch-ms") ||
-                    is(a, "--max-ticks") || is(a, "--check-ticks") || is(a, "--shader");
+                    is(a, "--birth-threads") || is(a, "--birth") || is(a, "--group") ||
+                    is(a, "--dispatch-ms") || is(a, "--max-ticks") || is(a, "--check-ticks") ||
+                    is(a, "--shader");
         if (!mine) {
             rest.push_back(argv[i]);
             continue;
@@ -69,6 +72,12 @@ bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, Minimal
         i++;
         if (is(a, "--settings")) {
             f.settings = v;
+        } else if (is(a, "--birth")) {
+            if (!is(v, "gpu") && !is(v, "cpu")) {
+                std::fprintf(stderr, "blobgpu: --birth is gpu or cpu\n");
+                return false;
+            }
+            f.birth_gpu = is(v, "gpu");
         } else if (is(a, "--shader")) {
             f.shader = v;
         } else if (is(a, "--out")) {

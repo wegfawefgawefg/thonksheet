@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <string>
 
 // CPU lives for the check and the speed table.
 
@@ -107,6 +108,10 @@ bool cpu_life_matches(const CpuLife& c, const GpuLifeData& gpu, int recent, std:
     }
     if (std::memcmp(m.threshold, gpu.threshold.data(), n) != 0) {
         why = "thresholds";
+        return false;
+    }
+    if (!same_words(b.inhibitory, gpu.inhibitory.data(), (size_t)b.tile_count + 1, at)) {
+        why = "inhibitory word of tile " + std::to_string(at);
         return false;
     }
     const Task& task = c.ticker->task;

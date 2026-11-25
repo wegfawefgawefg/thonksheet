@@ -24,9 +24,9 @@ struct GpuShape {
 struct GpuLifeData {
     GpuGenome genome;
     GpuLife life;
-    std::vector<uint64_t> mask;       // tiles * 9 * 64
+    std::vector<uint64_t> mask;       // tiles * 9 * 64; empty: born on the GPU
     std::vector<uint8_t> threshold;   // tiles * 64
-    std::vector<uint64_t> ring;       // 2 * 32 * stride: spikes then noise
+    std::vector<uint64_t> ring;       // read back only (a newborn ring is zeros)
     std::vector<uint64_t> inhibitory; // tiles + 1
 };
 
@@ -45,7 +45,8 @@ struct GpuBatch {
     VkDescriptorSetLayout set_layout = VK_NULL_HANDLE;
     VkPipelineLayout layout = VK_NULL_HANDLE;
     VkDescriptorPool pool = VK_NULL_HANDLE;
-    VkPipeline pipeline = VK_NULL_HANDLE;
+    VkPipeline pipeline = VK_NULL_HANDLE; // minimal_life.comp: ticks
+    VkPipeline birth = VK_NULL_HANDLE;    // minimal_birth.comp
 };
 
 // lives per group for this device and shape
@@ -53,10 +54,12 @@ int gpu_group_size(const GpuContext& g, const GpuShape& shape);
 // bytes one life takes on the device
 uint64_t gpu_life_bytes(const GpuShape& shape);
 
-// pipeline and the shared world table. spv: path to minimal_life.comp.spv
+// pipelines and the shared world table, from minimal_life.comp.spv and minimal_birth.comp.spv
 bool gpu_batch_open(GpuContext& g, GpuBatch& b, const GpuShape& shape, const GpuParams& params,
-                    const std::vector<uint64_t>& world_words, const char* spv);
-// a group's buffers, filled from its lives (lives[0] is the group's first)
+                    const std::vector<uint64_t>& world_words, const char* life_spv,
+                    const char* birth_spv);
+// a group's buffers, filled from its lives (lives[0] is the group's first). lives whose masks
+// are empty are born on the GPU (all of a group or none).
 bool gpu_group_add(GpuContext& g, GpuBatch& b, int first, const GpuLifeData* lives, int count);
 // step one group by up to `ticks` ticks (one submit, waited for)
 bool gpu_group_step(GpuContext& g, GpuBatch& b, GpuGroup& group, int ticks);

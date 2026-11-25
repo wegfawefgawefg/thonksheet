@@ -4,7 +4,8 @@
 #include <cstring>
 #include <vector>
 
-// the compute pipeline, the groups' buffers and descriptor sets, and one dispatch.
+// the compute pipelines (a life's ticks, a life's birth), the groups' buffers and
+// descriptor sets, and one dispatch.
 
 constexpr int BINDINGS = 9;
 constexpr int MAX_GROUPS = 256;
@@ -46,18 +47,8 @@ static bool read_file(const char* path, std::vector<uint32_t>& out) {
     return got == out.size();
 }
 
-static bool make_pipeline(GpuContext& g, GpuBatch& b, const char* spv) {
-    std::vector<uint32_t> code;
-    if (!read_file(spv, code)) {
-        return false;
-    }
-    VkShaderModuleCreateInfo module_info{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
-    module_info.codeSize = code.size() * 4;
-    module_info.pCode = code.data();
-    VkShaderModule module = VK_NULL_HANDLE;
-    if (!gpu_ok(g, vkCreateShaderModule(g.device, &module_info, nullptr, &module), "shader")) {
-        return false;
-    }
+// the descriptor set layout every pipeline shares, the pipeline layout and the pool
+static bool make_layout(GpuContext& g, GpuBatch& b) {
     VkDescriptorSetLayoutBinding bindings[BINDINGS];
     for (int i = 0; i < BINDINGS; i++) {
         bindings[i] = VkDescriptorSetLayoutBinding{(uint32_t)i, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
@@ -72,13 +63,33 @@ static bool make_pipeline(GpuContext& g, GpuBatch& b, const char* spv) {
     layout_info.pSetLayouts = &b.set_layout;
     layout_info.pushConstantRangeCount = 1;
     layout_info.pPushConstantRanges = &push;
-    if (!gpu_ok(g, vkCreateDescriptorSetLayout(g.device, &set_info, nullptr, &b.set_layout),
-                "set layout") ||
-        !gpu_ok(g, vkCreatePipelineLayout(g.device, &layout_info, nullptr, &b.layout),
-                "pipeline layout")) {
+    VkDescriptorPoolSize size{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BINDINGS * MAX_GROUPS};
+    VkDescriptorPoolCreateInfo pool_info{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
+    pool_info.maxSets = MAX_GROUPS;
+    pool_info.poolSizeCount = 1;
+    pool_info.pPoolSizes = &size;
+    return gpu_ok(g, vkCreateDescriptorSetLayout(g.device, &set_info, nullptr, &b.set_layout),
+                  "set layout") &&
+           gpu_ok(g, vkCreatePipelineLayout(g.device, &layout_info, nullptr, &b.layout),
+                  "pipeline layout") &&
+           gpu_ok(g, vkCreateDescriptorPool(g.device, &pool_info, nullptr, &b.pool),
+                  "descriptor pool");
+}
+
+// one compute pipeline from a .spv. specialization: workgroup size, tiles, ring stride,
+// tiles across (a shader with a fixed workgroup size ignores the first)
+static bool make_pipeline(GpuContext& g, GpuBatch& b, const char* spv, int wave, VkPipeline& out) {
+    std::vector<uint32_t> code;
+    if (!read_file(spv, code)) {
         return false;
     }
-    // specialization: workgroup size, tiles, ring stride, tiles across
+    VkShaderModuleCreateInfo module_info{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+    module_info.codeSize = code.size() * 4;
+    module_info.pCode = code.data();
+    VkShaderModule module = VK_NULL_HANDLE;
+    if (!gpu_ok(g, vkCreateShaderModule(g.device, &module_info, nullptr, &module), "shader")) {
+        return false;
+    }
     int32_t values[4] = {b.shape.workgroup, b.shape.tiles, b.shape.stride, b.shape.tiles_w};
     VkSpecializationMapEntry entries[4] = {{0, 0, 4}, {1, 4, 4}, {2, 8, 4}, {3, 12, 4}};
     VkSpecializationInfo spec{4, entries, sizeof(values), values};
@@ -89,36 +100,51 @@ static bool make_pipeline(GpuContext& g, GpuBatch& b, const char* spv) {
     info.stage.module = module;
     info.stage.pName = "main";
     info.stage.pSpecializationInfo = &spec;
-    VkPipelineShaderStageRequiredSubgroupSizeCreateInfo wave{
+    VkPipelineShaderStageRequiredSubgroupSizeCreateInfo size{
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO};
-    wave.requiredSubgroupSize = (uint32_t)b.shape.wave;
-    info.stage.pNext = b.shape.wave > 0 ? &wave : nullptr;
+    size.requiredSubgroupSize = (uint32_t)wave;
+    info.stage.pNext = wave > 0 ? &size : nullptr;
     info.layout = b.layout;
-    bool ok = gpu_ok(
-        g, vkCreateComputePipelines(g.device, VK_NULL_HANDLE, 1, &info, nullptr, &b.pipeline),
-        "compute pipeline");
+    bool ok = gpu_ok(g, vkCreateComputePipelines(g.device, VK_NULL_HANDLE, 1, &info, nullptr, &out),
+                     "compute pipeline");
     vkDestroyShaderModule(g.device, module, nullptr);
-    if (!ok) {
-        return false;
-    }
-    VkDescriptorPoolSize size{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BINDINGS * MAX_GROUPS};
-    VkDescriptorPoolCreateInfo pool_info{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
-    pool_info.maxSets = MAX_GROUPS;
-    pool_info.poolSizeCount = 1;
-    pool_info.pPoolSizes = &size;
-    return gpu_ok(g, vkCreateDescriptorPool(g.device, &pool_info, nullptr, &b.pool),
-                  "descriptor pool");
+    return ok;
 }
 
 bool gpu_batch_open(GpuContext& g, GpuBatch& b, const GpuShape& shape, const GpuParams& params,
-                    const std::vector<uint64_t>& world_words, const char* spv) {
+                    const std::vector<uint64_t>& world_words, const char* life_spv,
+                    const char* birth_spv) {
     b.shape = shape;
     b.params = params;
-    if (!make_pipeline(g, b, spv)) {
+    if (!make_layout(g, b) || !make_pipeline(g, b, life_spv, shape.wave, b.pipeline) ||
+        !make_pipeline(g, b, birth_spv, 0, b.birth)) {
         return false;
     }
     return gpu_buffer(g, b.world, world_words.size() * 8, false) &&
            gpu_upload(g, b.world, 0, world_words.data(), world_words.size() * 8);
+}
+
+// a new device buffer of zeros
+static bool zeros_new(GpuContext& g, GpuBuffer& buf, uint64_t bytes) {
+    if (!gpu_buffer(g, buf, bytes, false) || !gpu_begin(g)) {
+        return false;
+    }
+    vkCmdFillBuffer(g.command, buf.buffer, 0, VK_WHOLE_SIZE, 0);
+    return gpu_submit(g);
+}
+
+// one dispatch of a pipeline over a group
+static bool dispatch(GpuContext& g, GpuBatch& b, GpuGroup& group, VkPipeline pipeline,
+                     uint32_t workgroups, int32_t push) {
+    if (!gpu_begin(g)) {
+        return false;
+    }
+    vkCmdBindPipeline(g.command, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+    vkCmdBindDescriptorSets(g.command, VK_PIPELINE_BIND_POINT_COMPUTE, b.layout, 0, 1, &group.set,
+                            0, nullptr);
+    vkCmdPushConstants(g.command, b.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, 4, &push);
+    vkCmdDispatch(g.command, workgroups, 1, 1);
+    return gpu_submit(g);
 }
 
 // a new device buffer holding these bytes
@@ -146,25 +172,32 @@ bool gpu_group_add(GpuContext& g, GpuBatch& b, int first, const GpuLifeData* liv
     // every life's part of each buffer, side by side
     std::vector<GpuGenome> genomes(n);
     std::vector<GpuLife> states(n);
-    std::vector<uint64_t> masks(mw * n), rings(rw * n), inhibitory(tiles1 * n);
-    std::vector<uint8_t> thresholds(nt * n);
-    std::vector<uint32_t> scores(windows * 2 * n, 0);
     for (size_t i = 0; i < n; i++) {
         genomes[i] = lives[i].genome;
         states[i] = lives[i].life;
-        std::memcpy(&masks[mw * i], lives[i].mask.data(), mw * 8);
-        std::memcpy(&rings[rw * i], lives[i].ring.data(), rw * 8);
-        std::memcpy(&inhibitory[tiles1 * i], lives[i].inhibitory.data(), tiles1 * 8);
-        std::memcpy(&thresholds[nt * i], lives[i].threshold.data(), nt);
     }
     bool ok = upload_new(g, gr.params, &p, sizeof(p)) &&
               upload_new(g, gr.genomes, genomes.data(), sizeof(GpuGenome) * n) &&
               upload_new(g, gr.lives, states.data(), sizeof(GpuLife) * n) &&
-              upload_new(g, gr.masks, masks.data(), masks.size() * 8) &&
-              upload_new(g, gr.thresholds, thresholds.data(), thresholds.size()) &&
-              upload_new(g, gr.rings, rings.data(), rings.size() * 8) &&
-              upload_new(g, gr.inhibitory, inhibitory.data(), inhibitory.size() * 8) &&
-              upload_new(g, gr.scores, scores.data(), scores.size() * 4);
+              zeros_new(g, gr.rings, rw * n * 8) && zeros_new(g, gr.scores, windows * 8 * n);
+    const bool born_here = lives[0].mask.empty();
+    if (born_here) {
+        // born on the GPU below, from zeros
+        ok = ok && zeros_new(g, gr.masks, mw * n * 8) && zeros_new(g, gr.thresholds, nt * n) &&
+             zeros_new(g, gr.inhibitory, tiles1 * n * 8);
+    } else {
+        // born on the CPU: copied in as they are
+        std::vector<uint64_t> masks(mw * n), inhibitory(tiles1 * n);
+        std::vector<uint8_t> thresholds(nt * n);
+        for (size_t i = 0; i < n; i++) {
+            std::memcpy(&masks[mw * i], lives[i].mask.data(), mw * 8);
+            std::memcpy(&inhibitory[tiles1 * i], lives[i].inhibitory.data(), tiles1 * 8);
+            std::memcpy(&thresholds[nt * i], lives[i].threshold.data(), nt);
+        }
+        ok = ok && upload_new(g, gr.masks, masks.data(), masks.size() * 8) &&
+             upload_new(g, gr.thresholds, thresholds.data(), thresholds.size()) &&
+             upload_new(g, gr.inhibitory, inhibitory.data(), inhibitory.size() * 8);
+    }
     if (!ok) {
         return false;
     }
@@ -189,20 +222,12 @@ bool gpu_group_add(GpuContext& g, GpuBatch& b, int first, const GpuLifeData* liv
         writes[i].pBufferInfo = &infos[i];
     }
     vkUpdateDescriptorSets(g.device, BINDINGS, writes, 0, nullptr);
-    return true;
+    // the birth shader: one thread per life, 64 lives a workgroup
+    return !born_here || dispatch(g, b, gr, b.birth, (uint32_t)(count + 63) / 64, 0);
 }
 
 bool gpu_group_step(GpuContext& g, GpuBatch& b, GpuGroup& group, int ticks) {
-    if (!gpu_begin(g)) {
-        return false;
-    }
-    vkCmdBindPipeline(g.command, VK_PIPELINE_BIND_POINT_COMPUTE, b.pipeline);
-    vkCmdBindDescriptorSets(g.command, VK_PIPELINE_BIND_POINT_COMPUTE, b.layout, 0, 1, &group.set,
-                            0, nullptr);
-    int32_t push = ticks;
-    vkCmdPushConstants(g.command, b.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, 4, &push);
-    vkCmdDispatch(g.command, (uint32_t)group.count, 1, 1);
-    return gpu_submit(g);
+    return dispatch(g, b, group, b.pipeline, (uint32_t)group.count, ticks);
 }
 
 bool gpu_group_lives(GpuContext& g, GpuGroup& group, GpuLife* out) {
@@ -222,7 +247,8 @@ bool gpu_group_read(GpuContext& g, const GpuBatch& b, GpuGroup& group, int index
            gpu_download(g, group.masks, i * mw * 8, out.mask.data(), mw * 8) &&
            gpu_download(g, group.thresholds, i * s.tiles * 64, out.threshold.data(),
                         (uint64_t)s.tiles * 64) &&
-           gpu_download(g, group.rings, i * rw * 8, out.ring.data(), rw * 8);
+           gpu_download(g, group.rings, i * rw * 8, out.ring.data(), rw * 8) &&
+           gpu_download(g, group.inhibitory, i * tiles1 * 8, out.inhibitory.data(), tiles1 * 8);
 }
 
 bool gpu_group_scores(GpuContext& g, const GpuBatch& b, GpuGroup& group, uint32_t* out) {
@@ -246,6 +272,7 @@ void gpu_batch_close(GpuContext& g, GpuBatch& b) {
     }
     gpu_free(g, b.world);
     vkDestroyPipeline(g.device, b.pipeline, nullptr);
+    vkDestroyPipeline(g.device, b.birth, nullptr);
     vkDestroyDescriptorPool(g.device, b.pool, nullptr);
     vkDestroyPipelineLayout(g.device, b.layout, nullptr);
     vkDestroyDescriptorSetLayout(g.device, b.set_layout, nullptr);

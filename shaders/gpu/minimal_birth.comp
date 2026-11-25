@@ -1,0 +1,86 @@
+#version 460
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
+#extension GL_EXT_shader_8bit_storage : require
+#extension GL_GOOGLE_include_directive : require
+
+// Births on the GPU: minimal_birth's set_kinds and wire (src/minimal/minimal_birth.cpp) for
+// the plain engine, one thread per life, drawing from the life's own stream in the CPU's
+// order, so a life is born bit for bit as on the CPU. The buffers start as zeros. Far slots
+// and delays (which draw in between) are not ported.
+
+layout(local_size_x = 64) in;
+layout(constant_id = 1) const int TILES = 64;
+layout(constant_id = 2) const int STRIDE = 72;
+layout(constant_id = 3) const int TILES_W = 8;
+
+layout(push_constant) uniform Push {
+    int unused;
+}
+push;
+
+#include "minimal_layout.glsl"
+#include "minimal_random.glsl"
+
+const int N = TILES * 64;
+
+int local_tile(int t, int k) {
+    int x = t % TILES_W + k % 3 - 1, y = t / TILES_W + k / 3 - 1;
+    bool on = x >= 0 && y >= 0 && x < TILES_W && y < TILES / TILES_W;
+    return on ? y * TILES_W + x : TILES;
+}
+
+bool is_sensor(int n) {
+    return ((world_words[n >> 6] >> (n & 63)) & 1UL) != 0UL;
+}
+
+void main() {
+    const uint life = gl_GlobalInvocationID.x;
+    if (int(life) >= P.lives) {
+        return;
+    }
+    const Genome G = genomes[life];
+    Rng r = rng_seed(lives[life].key);
+
+    // set_kinds: inhibitory senders (never a sensor) and a threshold for every neuron
+    const uint spread = uint(G.threshold_max - G.threshold_min + 1);
+    uint64_t inhibitory_word = 0UL;
+    for (int n = 0; n < N; n++) {
+        int b = n & 63;
+        if (!is_sensor(n) && int(rng_below(r, 100u)) < G.inhibitory_percent) {
+            inhibitory_word |= 1UL << b;
+        }
+        thresholds[life * uint(N) + uint(n)] =
+            uint8_t(G.threshold_min + int(rng_below(r, spread)));
+        if (b == 63) {
+            inhibitory[life * uint(TILES + 1) + uint(n >> 6)] = inhibitory_word;
+            inhibitory_word = 0UL;
+        }
+    }
+
+    // wire: every non-sensor neuron gets `budget` random sources over its 9 slots
+    const uint mask_base = life * uint(TILES * 9 * 64);
+    for (int n = 0; n < N; n++) {
+        if (is_sensor(n)) {
+            continue;
+        }
+        int t = n >> 6, b = n & 63;
+        uint64_t w[9];
+        for (int k = 0; k < 9; k++) {
+            w[k] = 0UL;
+        }
+        int have = 0;
+        for (int tries = 0; have < G.budget && tries < 100000; tries++) {
+            int k = int(rng_below(r, 9u));
+            uint64_t bit = 1UL << rng_below(r, 64u);
+            uint64_t allowed = local_tile(t, k) == TILES ? 0UL : (k == 4 ? ~(1UL << b) : ~0UL);
+            if ((allowed & bit) != 0UL && (w[k] & bit) == 0UL) {
+                w[k] |= bit;
+                have++;
+            }
+        }
+        for (int k = 0; k < 9; k++) {
+            masks[mask_base + uint((t * 9 + k) * 64 + b)] = w[k];
+        }
+    }
+}

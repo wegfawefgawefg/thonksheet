@@ -48,7 +48,8 @@ int main(int argc, char** argv) {
         std::vector<CpuLife> cpu;
         std::string spv = f.shader.empty() ? BLOBGPU_SHADER_DIR "/minimal_life.comp.spv" : f.shader;
         bool ok = gpu_open(g, f.device == GpuDevice::lavapipe, f.validate) &&
-                  gpu_run_open(g, b, f, lives, spv.c_str()) &&
+                  gpu_run_open(g, b, f, lives, spv.c_str(),
+                               BLOBGPU_SHADER_DIR "/minimal_birth.comp.spv") &&
                   gpu_run_upload(g, b, f, lives, f.check ? &cpu : nullptr);
         double setup = seconds_since(start);
         std::printf("%s: %zu lives in %zu groups, %.0f KB per life, setup %.2f s\n", g.name.c_str(),
@@ -56,6 +57,10 @@ int main(int argc, char** argv) {
 
         // step every group until every life is done. dispatches start at one tick and grow
         // toward --dispatch-ms each; a dispatch never runs more than --max-ticks ticks.
+        // checking: the newborn sheets first, before any tick
+        for (GpuGroup& group : b.groups) {
+            ok = ok && (!f.check || gpu_run_check(g, b, group, cpu, 0));
+        }
         int per_dispatch = f.check ? f.check_ticks : 1;
         std::vector<GpuLife> states;
         auto loop_start = std::chrono::steady_clock::now();

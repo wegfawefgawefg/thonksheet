@@ -115,49 +115,63 @@ bool gpu_world_build(GpuWorld& w, Blob& blob, const RunFlags& flags, std::string
     return true;
 }
 
-void gpu_life_pack(GpuLifeData& out, const MinimalBlob& m, const RunFlags& flags,
-                   uint64_t task_seed) {
-    const MinimalGenome& mg = m.mg;
-    GpuGenome& g = out.genome;
+static int clamp_int(int v, int lo, int hi) {
+    return v < lo ? lo : (v > hi ? hi : v);
+}
+
+// the numbers the shaders read, clamped as minimal_birth's sanitize() clamps them (the plain
+// engine: delay_max 1). change both together.
+static void genome_numbers(GpuGenome& g, const MinimalGenome& mg, const Genome& sheet) {
     g = GpuGenome{};
-    g.learning_on = mg.learning_on;
+    g.learning_on = sheet.learning_on && mg.learning_on;
     g.budget_on = mg.budget_on;
-    g.inhibit_gain = mg.inhibit_gain;
-    g.threshold_cap = mg.threshold_cap;
+    g.inhibit_gain = clamp_int(mg.inhibit_gain, 0, 64);
+    g.threshold_min = clamp_int(mg.threshold_min, 1, 255);
+    g.threshold_max = clamp_int(mg.threshold_max, g.threshold_min, 255);
+    g.threshold_cap = clamp_int(mg.threshold_cap, g.threshold_max, 255);
     g.up_shift = mg.up_shift;
     g.down_shift = mg.down_shift;
     g.noise_shift = mg.noise_shift;
-    g.credit_ticks = mg.credit_ticks;
+    g.credit_ticks = clamp_int(mg.credit_ticks, 1, MIN_HISTORY - 2);
     g.learn_shift = mg.learn_shift;
-    g.avg_shift = mg.avg_shift;
+    g.avg_shift = clamp_int(mg.avg_shift, 0, 16);
     g.grade_mode = mg.grade_mode;
     g.cowire_on = mg.cowire_on;
     g.cowire_shift = mg.cowire_shift;
     g.cowire_needs_input = mg.cowire_needs_input;
     g.noise_sign = mg.noise_sign;
+    g.budget = clamp_int(mg.budget, 1, MIN_SLOTS * TILE_NEURONS - 1);
+    g.inhibitory_percent = sheet.inhibitory_percent;
+}
 
+// a newborn life's clock, reward average and task
+static void life_start(GpuLife& L, uint64_t seed, const RunFlags& flags) {
     Task task;
-    task_reset(task, flags.task, flags.task_settings, task_seed);
-    GpuLife& L = out.life;
+    task_reset(task, flags.task, flags.task_settings, seed);
     L = GpuLife{};
-    L.key = m.rng_key;
-    L.tick = m.shell.stats.tick;
+    L.key = seed ^ 0x4d696e696d616c00ull; // minimal_birth's rng_key
     L.world = task.random.state;
-    L.now = m.now;
-    L.reward_avg = m.reward_avg;
     L.cue = task.cue;
     L.phase = task.phase;
     L.trial = (int32_t)task.trial_lines[1];
     for (int i = 0; i < GPU_MAX_MOTORS; i++) {
         L.button_of[i] = task.button_of[i];
     }
+}
 
+void gpu_life_unborn(GpuLifeData& out, const GpuLifeSpec& spec, const RunFlags& flags) {
+    genome_numbers(out.genome, spec.mg, spec.genome);
+    life_start(out.life, spec.seed, flags);
+    out.mask.clear();
+}
+
+void gpu_life_pack(GpuLifeData& out, const MinimalBlob& m, const RunFlags& flags,
+                   uint64_t task_seed) {
+    genome_numbers(out.genome, m.mg, m.shell.genome);
+    life_start(out.life, task_seed, flags);
+    out.life.key = m.rng_key;
     const size_t tiles = (size_t)m.shell.tile_count, n = tiles * TILE_NEURONS;
     out.mask.assign(m.mask, m.mask + n * MIN_SLOTS);
     out.threshold.assign(m.threshold, m.threshold + n);
-    size_t ring = (size_t)m.stride * MIN_HISTORY;
-    out.ring.resize(2 * ring);
-    std::memcpy(out.ring.data(), m.spikes, ring * 8);
-    std::memcpy(out.ring.data() + ring, m.noise, ring * 8);
     out.inhibitory.assign(m.shell.inhibitory, m.shell.inhibitory + tiles + 1);
 }

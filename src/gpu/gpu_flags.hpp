@@ -22,6 +22,7 @@ struct GpuFlags {
     GpuDevice device = GpuDevice::gpu;
     int workgroup = 256;   // threads per life
     int group = 0;         // lives per dispatch at most (0: as many as fit)
+    bool birth_gpu = true; // births on the GPU (false: on the CPU, copied up)
     int birth_threads = 2; // CPU threads for births
     int wave = 0;          // subgroup size to ask for, 0 the driver's
     int dispatch_ms = 50;  // aim for submits about this long

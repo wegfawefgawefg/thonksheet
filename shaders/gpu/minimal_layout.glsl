@@ -27,6 +27,7 @@ struct Genome {
     int up_shift, down_shift, noise_shift, credit_ticks;
     int learn_shift, avg_shift, grade_mode, cowire_on;
     int cowire_shift, cowire_needs_input, noise_sign, pad;
+    int budget, threshold_min, threshold_max, inhibitory_percent; // birth only
 };
 
 struct Life {
@@ -68,7 +69,7 @@ layout(std430, binding = 5) buffer Thresholds {
 layout(std430, binding = 6) coherent buffer Rings {
     uint64_t rings[];
 };
-layout(std430, binding = 7) readonly buffer Inhibitory {
+layout(std430, binding = 7) buffer Inhibitory { // written by births only
     uint64_t inhibitory[];
 };
 // per life per window: right answers, chances to answer

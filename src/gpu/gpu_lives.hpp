@@ -31,6 +31,8 @@ struct GpuWorld {
 bool gpu_genome_supported(const MinimalGenome& mg, std::string& why);
 // the world from a born life (the plug is attached to it and detached again)
 bool gpu_world_build(GpuWorld& w, Blob& blob, const RunFlags& flags, std::string& why);
-// a born life, copied out for upload (its task started from task_seed)
+// a life to be born on the GPU: its numbers and its task, no sheet yet
+void gpu_life_unborn(GpuLifeData& out, const GpuLifeSpec& spec, const RunFlags& flags);
+// a life born on the CPU, copied out for upload (its task started from task_seed)
 void gpu_life_pack(GpuLifeData& out, const MinimalBlob& m, const RunFlags& flags,
                    uint64_t task_seed);

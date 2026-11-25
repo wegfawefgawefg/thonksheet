@@ -32,7 +32,8 @@ bool gpu_run_supported(const std::vector<GpuLifeSpec>& lives) {
 }
 
 bool gpu_run_open(GpuContext& g, GpuBatch& b, const GpuFlags& f,
-                  const std::vector<GpuLifeSpec>& lives, const char* spv) {
+                  const std::vector<GpuLifeSpec>& lives, const char* life_spv,
+                  const char* birth_spv) {
     Blob* first = minimal_birth(lives[0].genome, lives[0].mg, lives[0].seed);
     RunFlags rf = f.run;
     rf.task_seed = lives[0].seed;
@@ -46,7 +47,7 @@ bool gpu_run_open(GpuContext& g, GpuBatch& b, const GpuFlags& f,
     }
     w.shape.workgroup = f.workgroup;
     w.shape.wave = f.wave;
-    return gpu_batch_open(g, b, w.shape, w.params, w.words, spv);
+    return gpu_batch_open(g, b, w.shape, w.params, w.words, life_spv, birth_spv);
 }
 
 // lives [first, first + count) born and packed, every `step`-th one from `from`
@@ -54,6 +55,10 @@ static void birth_some(const GpuFlags& f, const std::vector<GpuLifeSpec>& lives,
                        int count, int from, int step, GpuLifeData* out) {
     for (int i = from; i < count; i += step) {
         const GpuLifeSpec& spec = lives[(size_t)(first + i)];
+        if (f.birth_gpu) {
+            gpu_life_unborn(out[i], spec, f.run);
+            continue;
+        }
         Blob* blob = minimal_birth(spec.genome, spec.mg, spec.seed);
         RunFlags rf = f.run;
         rf.task_seed = spec.seed;
@@ -90,8 +95,12 @@ bool gpu_run_upload(GpuContext& g, GpuBatch& b, const GpuFlags& f,
         }
         sent += std::chrono::duration<double>(std::chrono::steady_clock::now() - u).count();
     }
-    std::printf("births %.2f s on %d threads, packing and upload %.2f s\n", born, f.birth_threads,
-                sent);
+    if (f.birth_gpu) {
+        std::printf("births on the GPU, with upload %.2f s\n", sent);
+    } else {
+        std::printf("births %.2f s on %d CPU threads, packing and upload %.2f s\n", born,
+                    f.birth_threads, sent);
+    }
     if (check) {
         check->resize(lives.size());
         for (size_t i = 0; i < lives.size(); i++) {
