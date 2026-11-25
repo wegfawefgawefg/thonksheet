@@ -160,3 +160,9 @@ inner neurons measurably better for a task than unsupervised wiring already make
     bits. Written by the calculation bot before its whole-answer runs
     (docs/results-2026-11-25-calculation.md).
    - *Scored 2026-11-25: right in shape. Equal to per-bit grading at 1 bit, a little lost at 2 (0.84 against 0.99), at the learning-off twin from 3 bits on (0.39 to 0.55); moves on good partly rescue 3 and 4 bits, not 6 or 8.*
+30. **Competitive learning on MNIST** (written by its bot before scoring;
+    docs/results-2026-11-25-compete.md): the lived sheet beats the born sheet's 0.924 by
+    0.005 or more (70%), best guess +0.010; it stays under the random projection's 0.943
+    (80%); it beats its shuffled control by 0.005 or more (60%); it beats co-activity
+    wiring (35%); no held-out calculation column moves by more than 0.03 (75%).
+   - *Scored 2026-11-25, 8 seeds: beats born, right, and by +0.026; stays under 0.943, wrong (0.952); beats shuffled, right (+0.013 on every seed); beats co-activity wiring, right (0.952 against 0.937); calculation columns still, wrong (xor of 4 bits +0.06 to +0.19).*

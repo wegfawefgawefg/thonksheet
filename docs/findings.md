@@ -41,7 +41,8 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   0.998 against 0.855 as born; the sheet stays at its target rate through 160,000 steps.
   Two independent rules now pass the inside-learning test, and they are the same idea:
   one step of signed credit from the action's cells into hidden counters under a budget.
-  Neither transfers to a task it was not rewarded on, and neither helps MNIST.
+  Neither transfers to a task it was not rewarded on, and neither helps MNIST (the
+  reward-free rule below does).
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -51,6 +52,37 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   items in order.
 - **Learning on good only when the vote was close** doubles the pairs held (16 cues 0.31
   to 0.60) and lifts MNIST's online readout 0.71 to 0.81, without the lock.
+
+**The inside learns features from the input alone (2026-11-25, late;
+`docs/results-2026-11-25-compete.md`, `scripts/inside.sh`).** Competitive learning with no
+reward: a hidden cell that fires among its tile's winners moves hidden counters toward the
+sources that were just on, and rewires its top counters at the counts it was born with.
+After a life of 60,000 MNIST digits, frozen, a fresh linear reader gets 0.952 on the test
+digits, on every one of seeds 5 to 12 (0.950 to 0.954). The sheet as born: 0.926. The
+control, the same life on digits with their pixels shuffled afresh each time: 0.939. A
+random projection: 0.943. A two-layer net by backprop, one pass: 0.955. It is the first
+result here where the lived inside beats the born inside on real data, and it used no
+reward and no error.
+- What the cells learned: the pixels one cell listens to go from scattered (correlation
+  between them 0.05, spread 4.1 pixels) to patches that light together (0.26, 2.5
+  pixels). The shuffled life leaves them scattered.
+- Held-out calculation cases move too (2 seeds, no shuffled control): xor of 4 bits 0.60
+  to 0.67 becomes 0.73 to 0.80, add of 4 bits 0.52 to 0.61 becomes 0.61 to 0.69.
+- The old co-activity wiring passes the same test, which had not been measured: 0.937
+  (born 0.924, shuffled 0.926; 2 seeds). The budget and counters double its gain.
+- **Caveat one, the rate.** The learned cells fire at twice their target (63 against 33
+  spikes per 1,000 cell-ticks). Held at target, lived still beats born by 0.013, but
+  beats the shuffled control by 0.012 without tile winners and only 0.002 with them (2
+  seeds each). A higher rate alone does not help (the born sheet pushed to 63 reads
+  0.910). So about half of the headline gain is structure and half is not yet separated
+  from rate.
+- **Caveat two, our own output cannot use it.** With the rule on from the first digit of
+  the rewarded online life, the sheet's own readout scores the same as with it off (0.72
+  at 20,000 digits, falling to 0.66 to 0.68 by 120,000). A linear reader gets 0.95 from
+  the same cells. The gap between what the sheet holds and what our output rule reads is
+  now the largest number on the board.
+- Cost: 1.9 times slower per tick at the cheaper setting (a quarter of the updates, same
+  score), because each update re-picks a cell's wiring from 704 counters.
 
 **The references on every row (2026-11-25, `docs/scoreboard.md`).** The GRU, the plain
 two-layer net and the memory engine now have the whole suite, eight seeds, on the
@@ -367,6 +399,15 @@ docs/results-2026-11-25-mnist.md
     grading reaches 0.94). Moving on good as well partly rescues 3 and 4 bits, not 6 or 8.
     A verdict per two-valued output is being shown the answer, bit by bit. A wide answer
     needs that, or a rule that splits one verdict among many outputs.
+43. **A reward-free rule teaches the inside when it keeps its counts.** [likely: 8 seeds,
+    one data set] Competition in the tile, hidden counters, and rewiring at the born
+    counts: lived 0.952 against born 0.926 on MNIST. The same idea without a budget or
+    counters (co-activity wiring) gets half the gain. Second result for finding 38.
+44. **Every inside-learning claim needs a shuffled-input control and a rate-matched one.**
+    [likely] A life on shuffled digits lifts the reader by 0.014 with nothing to learn
+    (cells drift toward being a random projection of the input), and a rule that leaves
+    cells firing faster changes what a reader sees. Only what is left after both is
+    learned structure.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 

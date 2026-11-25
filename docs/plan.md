@@ -46,12 +46,13 @@ is.
 Running (four), as of 2026-11-25 night:
 - Item B below (idea 155) and item C below (the critic).
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
-- Queued items 1 and 2 as one job: the inside-learning test as a script, then competitive
-  learning with local inhibition scored by it.
+- Queued item 2b (idea 159): the error sent one hop to every hidden cell.
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
 153, 154), both merged; their slots went to items B and C. The calculation battery
 (ideas 133, 134; docs/results-2026-11-25-calculation.md), merged; its slot went to
-queued items 1 and 2.
+queued items 1 and 2. Those are done and merged too (`scripts/inside.sh`; competitive
+learning lifts the lived sheet to 0.952 on MNIST against 0.926 as born, idea 158,
+docs/results-2026-11-25-compete.md); their slot went to item 2b.
 Also running unattended, not an agent: the readout suite on stevejobs (`thonk-ref`, log
 `out/readout.log` there; pull with `MINI_DIR=thonk-ref scripts/mini.sh pull`). The memory,
 GRU and plain-net suites on the integrated code are done and on the scoreboard. The search
@@ -86,12 +87,21 @@ so they come first):
   says about the tests is in `docs/findings.md`, "The references on every row".
 
 Queued, in order:
-1. *(running, with item 2)* The inside-learning test as one script: after a life, freeze, wipe the output, fit a
+1. *(done: `scripts/inside.sh`)* The inside-learning test as one script: after a life, freeze, wipe the output, fit a
    fresh output, and compare with the machine as born and a random projection, on MNIST
    and on the held-out columns. Every item below is scored with it.
-2. *(running)* Competitive learning with local inhibition, no reward: units that win on an input
+2. *(done, passes: 0.952 against 0.926 born and 0.939 shuffled, 8 seeds; idea 158)* Competitive learning with local inhibition, no reward: units that win on an input
    move toward it (in bits: gain the input's bits, lose others, under a budget).
-2b. *(next free slot)* The error sent one hop, to every hidden cell (was item 5; owner,
+2a. Follow-ups to item 2, in this order, as one job after 2b and 2c are placed: a
+   rate-matched control (half the margin is not yet separated from a doubled firing
+   rate); a cheap read-off (the rule costs 1.9 times per tick); the rule in the time suite
+   (half of each cell's inputs become pixels: does delayed echo or order pay?); a
+   shuffled control for the calculation rows.
+2c. *(next free slot)* Why our output cannot read what the inside learned (idea 161): a
+   linear reader gets 0.95 from the lived sheet, the sheet's own readout 0.72 and falling.
+   Takes in item 9 (the weighted vote, the drift). This gap is now the largest number on
+   the board.
+2b. *(running, idea 159)* The error sent one hop, to every hidden cell (was item 5; owner,
    2026-11-25: "do we need some sort of hyper truncated bit backprop... maybe backprop
    isnt the issue but the whole requirement that it goes all the way back"). Each hidden
    cell has a few fixed random wires from the output's error lines (which button should
