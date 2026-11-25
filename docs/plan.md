@@ -109,7 +109,10 @@ Queued, in order:
 16. Copy, vary, keep a frozen copy; never erase (140, 141).
 17. Look one step ahead (144), on the acting worlds.
 18. Position tolerance learned from motion (idea 104) on the invariance battery.
-19. A red-team agent: beat the best design by any means that keeps the rules (127).
+19. A red-team agent: beat the best design by any means that keeps the rules (127). It
+    also takes the rows no reference learns (analogy, how-many-hard, the shown-the-answer
+    rows, fill-in, the pendulum, the sine band): for each, a learner that passes it or
+    the reason none can, and the row fixed or struck.
 20. Loop audit: cut mechanisms and suite rows that have earned nothing; one page.
 21. Long memory, whatever its wind-up leaves unfinished: the forgetting curve to a
     million steps, the freezer.
