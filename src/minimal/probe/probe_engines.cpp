@@ -260,6 +260,31 @@ void print_wiring(const ProbeArgs& args, const Blob& blob, const char* label) {
                         m.ev_rows, m.mg.ev_bits, 100.0 * low, 100.0 * high,
                         (unsigned long long)m.stats.ev_moved);
         }
+        if (blob.motor_attached) {
+            // the readout's cells: what they wire from the task's sensor lines and from
+            // inhibitory senders, and how hard they are to fire
+            int cells = 0;
+            int64_t sensed = 0, inhibit = 0;
+            std::vector<int> cell_thr;
+            for (int n = 0; n < blob.neuron_count; n++) {
+                if (!((blob.motor_attached[n / TILE_NEURONS] >> (n % TILE_NEURONS)) & 1)) {
+                    continue;
+                }
+                cells++;
+                cell_thr.push_back(m.threshold[n]);
+                for (int k = 0; k < m.slots; k++) {
+                    uint64_t w = m.mask[min_index(m, n, k)];
+                    uint32_t src = min_source_tile(m, n, k);
+                    sensed += __builtin_popcountll(w & blob.sense_attached[src]);
+                    inhibit += __builtin_popcountll(w & blob.inhibitory[src]);
+                }
+            }
+            std::printf("\n  readout: %d cells, per cell %.1f from sensor lines, %.1f inhibitory",
+                        cells, (double)sensed / (cells ? cells : 1),
+                        (double)inhibit / (cells ? cells : 1));
+            std::printf("\n");
+            print_spread("cell thresh", cell_thr);
+        }
     }
     std::printf("\n  bytes per neuron %.1f\n", probe_bytes_per_neuron(args, blob));
 }

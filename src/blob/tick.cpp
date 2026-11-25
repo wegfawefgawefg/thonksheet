@@ -1,4 +1,6 @@
 #include "blob/blob.hpp"
+#include "blob/learn_rule.hpp"
+#include "blob/long_memory.hpp"
 #include "blob/tick_steps.hpp"
 
 // one tick: integrate and fire, regulate, learn.
@@ -8,6 +10,13 @@ static void tick_learn(Blob& blob, int read_now) {
     const Genome& g = blob.genome;
     int mode = g.learn_mode;
     int boost = blob.surprise_high ? g.surprise_boost : 0;
+    // idea 120: the rule table, alone (1, 3) or beside the learn mode on the inside (2)
+    if (g.rule_on) {
+        learn_rule(blob, blob.pending_valence, g.rule_on == 3 ? 1 : (g.rule_on == 2 ? 2 : 0));
+        if (g.rule_on != 2) {
+            return;
+        }
+    }
     if (mode == 2) {
         learn_flips(blob);
         return;
@@ -17,6 +26,7 @@ static void tick_learn(Blob& blob, int read_now) {
         if (g.tag_mode && blob.pending_valence != 0) {
             learn_tags(blob, blob.pending_valence);
         }
+        learn_replay(blob, blob.pending_valence); // idea 62; returns at once while off
         // barely correct: a good won by a thin vote; with margin_win 2 a comfortable good
         // skips the readout's own move on good (stop learning)
         bool thin = true;
@@ -59,6 +69,7 @@ void blob_tick(Blob& blob) {
 
     tick_fire(blob, blob.spikes[next]);
     blob.now = next;
+    long_memory_after_fire(blob);
 
     // "fired recently": OR of the last recent_ticks maps
     for (int t = 0; t <= blob.tile_count; t++) {

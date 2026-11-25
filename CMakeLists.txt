@@ -85,6 +85,10 @@ if(table_sources AND TARGET blobcore)
     if(TARGET blobrun)
         target_link_libraries(blobrun PRIVATE blobtable)
     endif()
+    # blobprobe invariance reads any engine's sheet
+    if(TARGET blobprobe)
+        target_link_libraries(blobprobe PRIVATE blobtable)
+    endif()
     add_executable(tablebench ${CMAKE_SOURCE_DIR}/src/table/bench/tablebench.cpp)
     target_compile_options(tablebench PRIVATE ${warnings} ${speed})
     target_link_libraries(tablebench PRIVATE blobtable blobcore)
@@ -110,11 +114,16 @@ if(minimal_sources)
         target_link_libraries(blobrun PRIVATE blobminimal)
         target_compile_definitions(blobrun PRIVATE BLOB_HAS_MINIMAL=1)
     endif()
+    if(TARGET blobprobe)
+        target_link_libraries(blobprobe PRIVATE blobminimal)
+        target_compile_definitions(blobprobe PRIVATE BLOB_HAS_MINIMAL=1)
+    endif()
     file(GLOB minimal_probe_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/minimal/probe/*.cpp)
     if(minimal_probe_sources AND TARGET blobcore AND TARGET blobworld)
         add_executable(minimalprobe ${minimal_probe_sources}
                        ${CMAKE_SOURCE_DIR}/src/run/task_ticker.cpp
-                       ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp)
+                       ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp
+                       ${CMAKE_SOURCE_DIR}/src/probe/linear_fit.cpp)
         target_compile_options(minimalprobe PRIVATE ${warnings} ${speed})
         target_link_libraries(minimalprobe PRIVATE blobminimal blobworld blobcore)
     endif()
@@ -164,4 +173,39 @@ if(mnist_sources AND TARGET blobcore AND TARGET blobworld)
     target_include_directories(blobmnist PRIVATE src)
     target_compile_options(blobmnist PRIVATE ${warnings} ${speed})
     target_link_libraries(blobmnist PRIVATE blobworld blobcore)
+endif()
+
+# blobgpu: the minimal engine on a Vulkan compute device, many lives at once, headless only
+# (src/gpu/, shaders/gpu/). Skipped without Vulkan or glslangValidator, or with THONK_NO_VIEW.
+find_package(Vulkan QUIET)
+find_program(GPU_GLSLANG glslangValidator)
+file(GLOB gpu_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/gpu/*.cpp)
+if(gpu_sources AND Vulkan_FOUND AND GPU_GLSLANG AND NOT THONK_NO_VIEW AND TARGET blobminimal
+   AND TARGET blobmemory AND TARGET blobworld AND TARGET blobcore)
+    add_executable(blobgpu ${gpu_sources} ${CMAKE_SOURCE_DIR}/src/run/task_ticker.cpp
+                   ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp)
+    target_include_directories(blobgpu PRIVATE src)
+    target_compile_options(blobgpu PRIVATE ${warnings} ${speed})
+    find_package(Threads REQUIRED)
+    target_link_libraries(blobgpu PRIVATE blobmemory blobminimal blobworld blobcore Vulkan::Vulkan
+                          Threads::Threads)
+    target_compile_definitions(blobgpu PRIVATE BLOBGPU_SHADER_DIR="${CMAKE_BINARY_DIR}/shaders/gpu")
+    file(GLOB gpu_shader_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/shaders/gpu/*.comp)
+    file(GLOB gpu_shader_includes CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/shaders/gpu/*.glsl)
+    set(gpu_shader_outputs)
+    foreach(source ${gpu_shader_sources})
+        get_filename_component(name ${source} NAME)
+        set(output ${CMAKE_BINARY_DIR}/shaders/gpu/${name}.spv)
+        add_custom_command(OUTPUT ${output}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/shaders/gpu
+            COMMAND ${GPU_GLSLANG} -V --target-env vulkan1.3 -I${CMAKE_SOURCE_DIR}/shaders/gpu
+                    -o ${output} ${source}
+            DEPENDS ${source} ${gpu_shader_includes}
+            COMMENT "glslang gpu/${name}")
+        list(APPEND gpu_shader_outputs ${output})
+    endforeach()
+    add_custom_target(blobgpu_shaders ALL DEPENDS ${gpu_shader_outputs})
+    add_dependencies(blobgpu blobgpu_shaders)
+else()
+    message(STATUS "blobgpu skipped: needs Vulkan, glslangValidator and the minimal engine")
 endif()

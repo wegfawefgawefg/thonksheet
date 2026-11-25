@@ -84,6 +84,141 @@ Coin flips score about 0.44 (ties are no move), the scripted player 1.00.
   carrying a shape learned at some places to places it was never taught at. Trial: 2 steps;
   about a third of trials are scored.
 
+## The function battery
+
+Worlds where the right button is a fixed function of what was shown, cheap to run and
+graded in difficulty, so we can see exactly where a sheet stops (`scripts/functions.sh`,
+results in `docs/results-2026-11-25-function-battery.md`). Four task kinds, one trial shape:
+one blank step that parts it from the last trial, the steps that show the input, and an
+answer step with the ask line on. Only the press on the answer step counts; presses before
+it are ignored. The right button is good, any other bad, no move a miss. Score: right
+answers over trials. Everything is integer, so the same flags give the same csv.
+
+How inputs are drawn: uniformly, when that already gives every answer equally often
+(parity, for instance); otherwise an answer is drawn first, uniformly among the answers
+some input has, then an input with that answer, uniformly. So always pressing one button
+scores one over the number of answers, and that is the chance level the ladder uses. Coin
+flips score a little under it (ties are no move); the scripted player scores 1.00 on every
+member (checked on all 79, 20,000 steps).
+
+- **Points** (`--task points --fn F --fn-lines N`, N from 1 to 10). N cue lines, each on or
+  off, shown together with the ask line for one step. Trial: 2 steps. Two buttons (button 1
+  when F is true) for:
+  - `and` (all on), `or` (any on), `parity` (an odd number on), `majority` (more than half
+    on; half of an even N is not), `exactly` (exactly `--fn-k` on, default 1);
+  - `table`: a truth table drawn once per life from the task seed, any but the two
+    constant ones; `table-lin`: a random threshold unit (a weight of plus or minus 1 to 4 on
+    every line, the bar at the weighted sum of one random input; redrawn if constant), so
+    one threshold unit can always do it; `table-nonlin`: a random table that a perceptron
+    on the lines cannot get in 2,000 passes, so one threshold unit cannot (exact for
+    N up to 4; for larger N almost every table is like this anyway).
+  And with more buttons: `count`, how many lines are on (N + 1 buttons); `first`, the index
+  of the first line on (N buttons; all off is never shown). `points --fn parity
+  --fn-lines 2` is both-not-either exactly: the same lines in the same places, the same
+  draws, a byte-identical csv.
+- **Number** (`--task number --fn F --fn-lines L --fn-bands K`). x, a whole number from 0
+  to L - 1, lights one line of L (place code: one line per value). The lines sit on a sheet
+  8 wide in a snake (left to right, then right to left on the next row), so x and x + 1
+  are always neighbours; at 3x3 sensor groups only 5 fit a row, so the battery uses 2x2.
+  f is worked out at the centre of x's share of [0, 1), u = (2x + 1) / 2L, in units of
+  1/4096: `identity` u; `step` 0 below the middle, the top above (always 2 buttons);
+  `tent` up to the middle and back down; `sine` and `cosine` 0.5 + 0.5 sin or cos of one
+  full turn (a table of 128 values); `square` u squared. The answer is which of K equal
+  bands of [0, 1) f falls in, one button each. `--fn-hold H`: H values of x, drawn once per
+  life from the task seed, are never rewarded, and only trials on them are scored (as in
+  place). A held value lies inside a band (both neighbours taught and in the same band, so
+  filling in between taught values gives the right answer), and no two are side by side.
+  Trial: 2 steps. With place coding every taught x is its own line, so on taught values
+  this is a lookup a linear reader of the input lines can always do; the held-out values
+  are the real question.
+- **Two numbers** (`--task two-numbers --fn F --fn-lines L --fn-bands K`, L up to 32). x1
+  and x2 the same way, x1's rows of the sheet above x2's. `sum` (x1 + x2), `diff` (x1 - x2,
+  signed), `larger` (the larger of the two), `product`: the band of K over the result's
+  whole range. `compare`: button 0 if x1 is larger, 1 if x2 is; equal pairs are never
+  shown. Sum, difference and compare are a weighted sum of the input lines; product and
+  larger need lines to be combined.
+- **Past** (`--task past --fn F --fn-gap G`). Lines A, B and ask. Each item lights A or B
+  (a coin flip) for one step; items are G blank steps apart, so (G + 1) x ticks-per-step
+  ticks (20 x (G + 1) in the battery); the last item comes with the ask. `recall`: button
+  1 if the first of 2 items was B (holding one item); `same`: the last 2 items are the same
+  (exclusive-or in time); `majority` (more B than A) and `parity` (an odd number of B)
+  over `--fn-items` items (default 3, up to 4). Trial: 1 + items + (items - 1) G steps.
+
+The battery (`scripts/functions.py`, `members`) runs points with N = 2 to 8 (and, or at 2,
+4, 8; parity at 2, 3, 4, 5, 6, 8; majority, exactly-1 and both tables at 3, 4, 5, 6, 8;
+count at 2, 3, 4, 6, 8; first at 3, 4, 6, 8), identity at L = 8, 16, 32 and K = 2, 4, 8,
+the other one-number functions at L = 16 (step K = 2, the rest K = 4), the same with 3
+held-out values (identity also at K = 2), two numbers at L = 8 with K = 2 and 4 (compare
+with 2), and the past functions at gaps 0 and 2: 79 members. Each is scored three ways:
+(a) `blobprobe reader`, a ridge reader of every non-sensor neuron's spike count over the
+answer step of a frozen sheet as born, fitted on the first 60% of 3,000 trials, the ridge
+picked on the next 15%, scored on the last 25% (and on every held-out trial), beside the
+same reader on the input lines of every step of the trial; (b) the readout rule on a
+frozen sheet; (c) the minimal engine and table neurons with their own rules. A member is
+"got" at a level when its late score is at least halfway from chance to 1.0.
+
+## Invariance
+
+The invariance battery (idea 101; `scripts/invariance.sh`). One task kind, `--task
+inv-<kind>`. Each shows one of `--inv-shapes` things (2 by default; shapes up to 4, view
+objects up to 3) in one version of one change; the button is which thing. Some versions are
+rewarded. The others, the held-out set, are never rewarded (no good, no bad) and are the
+only trials scored, so the score is carrying what was learned to versions never taught.
+Versions are drawn evenly. The rewarded versions' score is kept apart (`taught_late` in a
+summary). `--inv-hold 2,3` sets the held-out versions, `--inv-hold r4` draws 4 per life.
+Coin flips score about 0.47 (ties are no move), the scripted player 1.00, on every kind.
+
+**Picture kinds.** A 16x12 bitmap (`--sensor-side 1`, one sensor cell a line) and an ask
+line. A trial is one blank step, then one step with the picture and the ask on; only that
+step's press counts. The shapes are 4x4 templates of 7 pixels, each drawn at 2x2 lines a
+pixel unless said: shape 0 `.### ##.. .#.. .#..`, shape 1 `...# #### .#.. .#..` (they share
+5 pixels), shapes 2 and 3 for `--inv-shapes 4`. Every shape is chiral and none is a turn or
+mirror image of another. The pair was chosen so a linear reader of the input lines cannot
+carry them to a held-out version of any picture kind; most pairs it can.
+
+- **position.** The shape's corner on a 2-line grid, 5 across by 3 down: 15 places. 4
+  drawn per life are held out.
+- **scale.** About the middle, 1x, 2x, 3x (1, 2, 3 lines a pixel). 1x is held out.
+- **rotation.** About the middle, 0, 1/4, 1/2, 3/4 turn, plain and mirrored (versions 0-3
+  plain, 4-7 mirrored). Half and three-quarter turns are held out, both ways.
+- **bright.** Each pixel lights 4, 2 or 1 of its 2x2 lines. 1 is held out. A linear reader
+  of the input lines carries this one (the lit lines are a subset of the taught ones); it
+  stays as a control and because the readout does not.
+- **clutter.** 0, 3, 8 or 16 extra 2x2 blocks on a 6x6 grid of blocks around and among the
+  shape, never on its own pixels, drawn per trial. 8 and 16 are held out. Mostly carried
+  by a linear reader too (added cells shift a linear sum only a little).
+- **mixed** (place and scale at once). 1x or 2x at one of four places along the middle
+  row, two left, two right. Taught: 1x on the left, 2x on the right; held out: 1x on the
+  right, 2x on the left. Each place and each size was taught, only not together.
+- **view.** Three small 3D objects, 8 points each on a 4x4x4 grid, a post with an arm (along
+  x at the top, along z at the top, along x at the foot), seen straight on after turning
+  about the vertical axis by k/8 of a turn, each point a 2x2 block. Object 0 seen from the
+  front looks like object 1 seen from the side but for one point. Views 2, 3, 4 (a quarter
+  to a half turn) are held out.
+
+**With motion** (`--inv-motion P`, percent of all steps; the battery uses 50, stretches of
+`--inv-motion-steps` 8). Whenever moving steps are under P percent, a stretch runs before
+the next trial: one shape, no ask, no reward, drifting a notch each step through the
+versions and bouncing at the ends: sliding a line (position), growing a quarter line
+between 1x and 3x (scale), turning 1/16 (rotation and view), one line a pixel dimmer or
+brighter, one clutter block more or less, sliding and growing at once (mixed). The drift
+passes through held-out versions too; that is what a rule that ties together what follows
+what has to learn from. Mirrored and plain never turn into each other.
+
+**Time kinds.** A tune is three notes (A, B, C) in an order and then all three together
+for one note, so every note was last on at the same moment: tune 0 is A B C ABC, tune 1 is C
+B A ABC (2 and 3: B A C, A C B). A trial is a blank step, two steps in which the tune
+plays tick by tick (one step for shift), and the ask step with every note off; only the
+ask step's press counts. These sense every tick.
+
+- **shift.** Lines A, B, C, ask (`--sensor-side 3`). Notes 3 ticks; the tune starts 0, 4
+  or 8 ticks into its step. 4 is held out.
+- **tempo.** Same lines. Notes 2, 4, 6 or 8 ticks, the tune ending as the ask comes on. 2
+  (faster than any taught) is held out.
+- **pitch.** A 16x8 bitmap (`--sensor-side 1`) whose columns are frequency lines, and the
+  ask. Notes 6 ticks; note A is column 2v, B 2v + 2, C 2v + 4 for version v = 0..5. 2 drawn
+  per life are held out.
+
 ## Reach
 
 - **Readable.** `blobrun --reach`: `blobprobe carry`'s measure
@@ -109,6 +244,86 @@ Coin flips score about 0.44 (ties are no move), the scripted player 1.00.
 15. **Flying.** Hold height with thrust; then a lander.
 16. **Jumping.** Clear gaps by timing a jump.
 17. **Walking.** A small 2D walker with joint motors. Hard; last.
+
+## More worlds: the rungs between Echo and cartpole (idea 63)
+
+Built 2026-11-25 (`src/world/task_bandit.cpp`, `task_move.cpp`, `task_classic.cpp`; all
+integers or 16.16 fixed point; `scripts/task.sh <world>`, the whole set with
+`scripts/ladder.py`). No move is always a move of its own: it is never good or bad by
+itself unless said. "Coin" is the stand-in's coin flips through the plug (ties are no
+move), "scripted" the perfect player. Results: `docs/results-2026-11-25-more-worlds.md`.
+
+- **Bandit** (`bandit`, `--k` buttons, default 2). No cue: one line that is always on and
+  carries nothing. One button, drawn per life, pays good on 80% of presses and bad
+  otherwise (`--bandit-good`); every other button pays good on 20% (`--bandit-poor`).
+  Score: share of steps on the best button. Episodes: presses. A table of two counts per
+  button solves it in tens of presses.
+- **Switching bandit** (`switch-bandit`). The same, but every `--switch-every` steps
+  (1,000) the paying button moves to another one. Score: share of steps on the best
+  button over the second half of each block only. Episodes: blocks. A table of counts
+  that forgets (a running mean) solves it; one that never forgets does not.
+- **Chain** (`chain`, `--k` buttons). A and B are two buttons drawn per life. Stage 0:
+  pressing A moves to stage 1, anything else stays; never a reward. Stage 1: B is good,
+  another button bad, no move nothing; then back to stage 0. So the press that starts a
+  chain is only ever paid one step later. `--chain-cue 1` (default): two lines show the
+  stage; `0`: one line always on, so the stage must be remembered (the best memoryless
+  player scores 0.5). Score: 2 x chains paid / steps (A, B, A, B, ... is 1.0).
+  Episodes: chains paid. A table of rewards per stage and button learns stage 1 and never
+  stage 0 (no reward there ever); it takes credit one step back (Q-learning with any
+  discount, or a trace) to learn stage 0. Four table entries.
+- **Track** (`track`). A `--track-size` x 2 bitmap (5): the target's cell on the top row,
+  the marker's on the bottom. Buttons left, right; no move or a move into an end stays.
+  `--track-reward shaped` (default): good when a step ends nearer the target, bad when
+  further. `arrive`: good on arrival only, bad if `track-size` steps pass without one. On
+  arrival the target jumps to another cell. Score: share of steps that ended nearer (an
+  arrival counts). Episodes: targets. Shaped, the right button is target-left-or-right of
+  the marker: linear in the lines (weight +i on target cell i, -i on marker cell i).
+- **Forage** (`forage`, needs `--sensor-side 2`). A `--forage-size` square grid (5) that
+  wraps at the edges, seen from the animal, which is always the middle cell; the bitmap
+  shows only the food. Buttons up, down, left, right. `--forage-warmer 1` (default): good
+  when a step ends nearer the food (grid steps, the short way round), bad when further;
+  `0`: good on reaching it, bad if 2 x (size - 1) steps pass (the food moves). The food
+  reappears at another random cell. Score: share of steps that ended nearer. Episodes:
+  targets. Warmer, it is echo with 24 cues and one or two right buttons each.
+- **Mountain car** (`mountain-car`, `--sensor-side 2 --number-code place`). The gym
+  constants (position -1.2 to 0.6, speed at most 0.07, push 0.001, gravity 0.0025
+  cos 3x, goal 0.5) in 16.16. Position and speed are 8 place-coded lines each. Buttons
+  push left, right. Episodes of at most 200 steps, new ones at rest between -0.6 and -0.4.
+  `--classic-reward energy` (default): a step is good when the car's energy (height plus
+  speed) rose, bad when it fell, the goal good. `goal`: good at the goal, bad when the 200
+  steps run out. Score: share of episodes that reach the goal. The push alone cannot
+  climb: the car must be rocked. Under the energy reward the right button is the sign of
+  the speed, readable from the speed lines.
+- **Pendulum swing-up** (`pendulum`, as mountain car). The gym pendulum (angle 0 upright,
+  gravity 10, torque 2, spin at most 8, 0.05 s steps) in 16.16; angle and spin 8 lines
+  each. Episodes of 200 steps from a random angle and spin within 1. Upright is within
+  0.4 rad. Energy reward: a step ending upright is good, falling out is bad; elsewhere
+  good when the energy gap to upright shrank, bad when it grew. `goal`: only the upright
+  part. Score: share of steps upright. The scripted player (pump, then a linear push near
+  the top) gets 0.86, not 1.0, because each episode starts somewhere random.
+- **Cartpole variants** (fairness). `--cart-start wide`: the cart within 1 m of the middle,
+  speed and spin within 0.5, lean within 0.1 rad (half way to a fall); the scripted player
+  still never falls. `--cart-reward relative`: good when the step ended nearer upright and
+  centred than the running mean (1/16 per step) of recent steps, bad when further, so good
+  and bad come about equally often (0.53 / 0.47 for a coin). `--cart-integrator`: semi,
+  the default since 2026-11-25, makes a step's reward judge that step's push; euler is the
+  old step (see the notes on cartpole below).
+
+Checked scores, 200,000 steps straight on the task (uniform random press, no ties) and
+through the plug (coin, 20,000 steps, ties are no move):
+
+| world | random | coin | scripted |
+|---|---|---|---|
+| bandit k=2 | 0.50 | 0.47 | 1.00 |
+| bandit k=4 | 0.25 | 0.24 | 1.00 |
+| switching bandit k=2 | 0.50 | 0.46 | 1.00 |
+| chain, stage shown / not | 0.33 | 0.29 | 1.00 |
+| track 5, shaped / arrive | 0.50 | 0.46 / 0.47 | 1.00 |
+| forage 5x5, warmer / arrival | 0.43 | 0.38 | 1.00 |
+| mountain car (goal share) | 0.00 | 0.00 | 1.00 (129 steps an episode) |
+| pendulum (upright share) | 0.05 | 0.05 | 0.86 |
+| cartpole wide starts (steps per fall) | 20.9 | 20.0 | no fall |
+| cartpole relative | 22.1 | 23.9 | no fall |
 
 ## Stage 4: one life, many tasks
 
@@ -149,3 +364,221 @@ upright-and-centred than they began, bad if further). Numbers also had a flaw: l
 from the left as the value rose, so "leaning left" was only an absence of activity.
 `--number-code place` lights the one line whose band holds the value. The scripts use
 `lean` and `place` for cartpole. `sparse` stays as the harder version for slow-credit ideas.
+2026-11-25: the cartpole step is gym's Euler step, which moves the cart and pole by the
+speeds from before the push; the push changes only the speeds. So where the pole ends a
+step does not depend on that step's press at all, and `lean` (and `relative`) judge the
+press one step earlier. Measured with a random player: after the scripted player's press
+lean is good 0.322 of the time, after the other press 0.321; by the previous press it is
+0.42 against 0.22. A rule that credits what was active just before the reward is graded
+on noise. `--cart-integrator semi` (gym's other option: speeds first, then positions by
+the new speeds) fixes that: lean then judges this press (0.40 against 0.20). Mountain car
+and the pendulum use the semi-implicit step already. Since the critic merge (2026-11-25)
+semi is cartpole's default too, for every engine and script; `--cart-integrator euler`
+keeps the old lagged step, for reproducing cartpole numbers from before then.
+
+## The rest of the map (tiers 9 and 10, being shown, damage; 2026-11-25)
+
+The kinds of task `docs/task-map.md` had no world for. Code: `src/world/task_script.cpp`
+runs every one of them as a trial script (a list of steps, each with the lines on, the
+button wanted or none, and whether it is scored, rewarded, or kept by the offline reader);
+one file per family draws the trials. All integer, all seeded by the task seed, so the same
+flags give the same csv. The table of worlds and their two settings is
+`scripts/map_worlds.py`; `scripts/map.sh` scores them all (`docs/notes-world.md`).
+
+Shared rules. A trial of the relation, number, parts and memory worlds starts with one
+blank step that parts it from the last (as in the feature tasks); the echo-shaped worlds
+are one step per try with no blank, like echo. Only a step that wants a button counts;
+presses on other steps are ignored. A right press is good, a wrong one bad, no move is a
+miss with nothing said. Score: right over scored answers, unless said. Items in the
+relation worlds are w-of-n patterns, so every item lights the same number of lines and
+brightness says nothing. Held-out items (`--hold N`): N items drawn per life are never
+rewarded; one trial in four is made only of them, and only those trials are scored, so the
+score is carrying the relation to items never taught on. Whether an answer can be had
+without the sheet is checked with the offline reader on the raw input lines of the last 16
+steps and on their brightness (`docs/notes-world.md`, "The rest of the map").
+
+### Relation
+
+- **same** (`--item-lines n --item-on w`): two slots of n lines and the ask, shown together
+  for one step. Button 0 same, 1 different (half each). Easy: n 4, w 1. Hard: n 6, w 3, 6 of
+  the 20 items held out.
+- **same-then**: one slot and the ask. Item A for a step, item B on the same lines, then
+  the ask alone. Easy and hard as same.
+- **odd-one** (`--k` slots): k slots and the ask, one step. All slots show one item but one,
+  which shows another; press the odd slot. No slot alone tells (each item is as likely to be
+  the odd one as the common one). Easy: 3 slots of 4 one-line items. Hard: 4 slots of 2-of-5
+  items, 4 held out.
+- **bigger** (`--item-lines` levels, `--diff-max`): two rows of levels, one line lit in each,
+  and the ask, one step. Button 0 if the first is bigger, 1 if the second; never equal.
+  Easy: 6 levels, any difference. Hard: 10 levels, always neighbours. It is linear in the
+  input (the reader on the lines gets it), and one row alone tells a little at the ends (a
+  value of 0 is never the bigger one): this is the easy relation.
+- **analogy** (`--k` changes): two slots of 6 lines and the ask. A step with A in slot 1 and
+  B in slot 2; then for each of k candidates a step with C in slot 1 and the candidate in
+  slot 2; then the ask. B is one of k changes of A (shift right by one around the end,
+  mirror, light the lowest unlit line); the candidates are the k changes of C in random
+  order; press the candidate made by the change that made B. Items: 2-of-6 patterns that
+  every change moves to something new. Easy: shift or mirror, 2 candidates. Hard: all three
+  changes, 3 candidates, C from 3 held-out items. "Add" makes a brighter candidate and a
+  brighter B, so on add trials brightness helps once A to B is seen; noted, not removed.
+
+### Number (a 7x7 sheet at 2x2 cells per line; it does not fit at 3x3)
+
+- **how-many** (`--k` most, `--varied`): 1 to k items, none touching another even at a
+  corner, shown with the ask for one step; press button n - 1. Easy: 1 to 3 single cells
+  (brightness gives it, by design). Hard: 1 to 5 rectangles of 1-3 by 1-3 cells whose total
+  area is always 6 to 9 cells.
+- **more-fewer**: a display, then a second one with the ask; button 1 if the second has more
+  items, 0 if fewer (1 to 5 each, never equal). Easy: single cells. Hard: as how-many hard.
+
+### Parts and wholes
+
+- **grammar** (`--length` most): Reber's grammar on lines B T P S X V E and the ask, one
+  symbol a step, then the ask. Allowed (half): a walk through the grammar, each fork a coin
+  flip, at most `length` symbols. Broken: an allowed string with one inner symbol changed to
+  another inner symbol so it is no longer allowed (same length, start and end). Button 0
+  allowed, 1 broken. Easy: up to 8 symbols. Hard: up to 14.
+- **brackets** (`--length`): lines ( and ) and the ask. Every string has `length` symbols,
+  half of each, starts with ( and ends with ). Allowed: balanced. Counts, length, first and
+  last symbol are the same for both answers. Easy: 8. Hard: 12.
+- **parts** (`--k` kinds, `--varied`): parts are three-cell shapes (a bar down, a bar across,
+  a corner). Easy: a 6x3 sheet, one of 2 kinds in each half at a fixed spot; press the
+  button of the ordered pair (4 buttons). Hard: a 6x6 sheet, two of 3 kinds anywhere,
+  touching along an edge, not overlapping; press the button of the unordered pair (6
+  buttons); a figure that another pair could also make is drawn again. Always 6 cells lit.
+
+### Chance
+
+- **noisy-echo** (`--right-pct`): echo k=2, but a right press is rewarded only `right-pct`
+  times in 100 and punished otherwise, a wrong one the other way. Scored on the true answer.
+  Easy 80, hard 60.
+- **rare-cue** (`--rare N`): echo k=2, cue 1 comes one try in N. Score balanced: the mean of
+  the two cues' hit rates, so always pressing button 0 scores 0.5. Easy 10, hard 40.
+- **noisy-lines** (`--k`, `--item-lines`, `--flip-pct`): k fixed patterns on 8 lines, half
+  lit (for two, one is the other inverted), drawn per life; every step each line is flipped
+  with chance `flip-pct` in 100. Easy: 2 patterns, 10. Hard: 4 patterns, 25.
+
+### Context
+
+- **context** (`--k`, `--context-early`): k cues and two context lines. Context 0: cue i is
+  button i; context 1: button (i + 1) mod k. Neither line alone tells. Easy: k 2, context and
+  cue on the same step (exclusive-or in a new dress). Hard: k 4, the context alone a step
+  before the cue.
+- **switch-rule** (`--switch-every N`): echo k=2 whose rule moves on (cue i means button
+  i + shift) every N tries, no signal. Scored over all tries, so it measures how fast the
+  change is followed. Easy 500, hard 50.
+
+### Longer memory
+
+Output across several steps is a run of answer steps, one press each, each judged and
+rewarded at once; the plug is unchanged.
+
+- **copy** (`--k`, `--length` most): k symbol lines and a go line. A blank, 2 to `length`
+  symbols one a step, then the go line for as many steps: on the i-th go step press the i-th
+  symbol. The go steps look the same, so the sheet must keep its place. Scored per press.
+  Easy: k 2, always 2 symbols. Hard: k 4, 2 to 6.
+- **recall** (`--k`, `--fill`): k symbol lines, a mark line, the ask. A blank, the target
+  with the mark, `fill` steps each showing a random symbol, then the ask: press the marked
+  one. Easy: k 2, 1 between. Hard: k 4, 4 between.
+- **n-back** (`--k`, `--back`): a stream of k symbols with no blanks; each step press 1 if
+  this symbol is the one `back` steps ago, else 0; half match, a non-match is any other
+  symbol. Easy: k 4, 1 back. Hard: k 4, 2 back.
+
+### No teacher (no good or bad at all)
+
+Symbols are 2-of-4 patterns on 4 lines with every line lit by half of them, so "all off" or
+"as before" predicts half the cells right. The world's own score uses the sheet's
+predictions of its sensor cells (what each sensor cell would have done from the sheet's
+input, `blob.predicted`); the minimal engine keeps none, so it has no score here. The offline
+reader reads the answer from the sheet's activity on steps the world marks.
+
+- **predict-next** (`--k`, `--markov-order`): the next symbol is a fixed function of the last
+  one (order 1) or of the last two (order 2; the last alone never fixes it) 7 times in 8,
+  any other symbol otherwise. Score: share of sensor cells predicted right on each step's
+  first tick (as sequence). Reader label: the next symbol; the best possible is 0.875. Easy:
+  order 1. Hard: order 2.
+- **fill-in** (`--k`, `--item-lines`): k half-lit patterns on 8 lines, drawn per life; one step
+  in 4 the second half is blanked. Score: over the blanked steps' ticks, the share of hidden
+  cells whose own prediction is on when they should be on, less the share on when they should
+  be off (0 for any blind guess, 1 for a perfect fill; checked: 1.00 when the scripted player
+  can see the cells). Reader label: which pattern, on blanked steps (the visible half gives it,
+  so the reader is a weak test here; the score is the real one). Easy: k 2. Hard: k 6.
+- **odd-event** (`--k`, `--rare`): k symbols in a cycle drawn per life; one step in `rare`
+  shows another symbol instead. Score: wrong predictions per sensor cell on break steps less
+  on regular ones (0 when the break goes unnoticed). Reader label: break or not, on every
+  break and on the regular step one cycle after it (half each). No single step's symbol
+  tells. Easy: k 4. Hard: k 6. Both one step in 8.
+
+### Being shown the answer
+
+`--shown N` on any button task: for `--steps` the task runs with no good or bad; on every
+answer step the right button's motor cells are made to fire for the last N ticks
+(`blob.forced`, written by the world before each tick and ORed into the fired word in every
+engine's fire step; no urge array was on main). Then `--retest` steps with no help and no
+good or bad. Reported: the test's first window, its mean (the headline) and its end. The
+learning-off twin sees the same. Rows: echo k=2, echo k=4, both-not-either, N 6.
+
+### Damage
+
+`--damage P`: the task for `--steps`, then P in 100 of the sheet's non-sensor neurons (motor
+cells included) are silenced for the rest of the life (`blob.silenced`, ANDed out of the
+fired word in every engine's fire step; drawn from the seed), then the task again for
+`--retest` steps, learning on. `--damage-tile 1` silences every non-sensor cell of the tile
+holding the first cue line instead. Reported: before (end of the first phase), at once (the
+first window after) and after the retest (its end). Rows: echo k=2 at 5, 20 and 50 in 100
+and the cue tile; both-not-either at 20.
+
+## Long memory (idea 129, 2026-11-25)
+
+Two different things: holding something in mind across a gap (activity), and keeping what
+was learned for a lifetime while learning more (wiring). `hold` is the first; the other
+four are the second. Code: `src/world/task_long.cpp`. Run with `blobrun --long` (the
+long-life protocol, `src/run/life_long.cpp`) or `scripts/longlife.sh WORLD ENGINE`.
+
+Every step is scored into a bucket (an age, teaching, common or rare, kept or changed).
+`--long` writes one csv row per window per driver with each bucket's right answers over
+asks, and a summary with each bucket over the whole life and before and after a split
+(`drift_at` for drift, half the life otherwise). Coin flips and the perfect player always
+run beside it; the learning-off twin only without `--no-baselines`.
+
+Patterns. The pattern worlds draw cues from a universe of `on` lit lines out of `lines`
+(defaults 6 of 28: 376,740 patterns), in a fixed shuffle per task seed, so no pattern comes
+twice until the universe is used up. The button of a pattern is a fixed hash of it, so a
+pattern means the same thing whenever it comes back, and nothing about a new pattern can be
+guessed from old ones. 28 lines plus good and bad need 2x2-cell lines (`--sensor-side 2`);
+`hold` fits at 3x3.
+
+- **Hold.** Lines: `hold_cues` cues (2), ask. A trial is one blank step, one step with one
+  cue on, `--hold-steps N` blank steps, then the ask step. The press on the ask counts:
+  the cue's button good, another bad. At 20 ticks a step, N from 1 to 5,000 is a gap of 20
+  to 100,000 ticks. `--hold-noise 1`: two more lines per cue that flash in the gap (each
+  gap step one of them with chance 2^-`noise_shift`, 1/4). `--hold-noise 2`: the cue lines
+  themselves flash in the gap, and the real cue comes with a mark line; holding the right
+  one needs a gate. Score: right asks over asks.
+- **Pairs.** A never-ending stream of pairs. Pair i starts at step 400 i (`--pair-every`);
+  on every other step one of the newest 4 pairs (`--pair-live`) is taught (shown, pressed,
+  good or bad), so each pair gets about 400 teaching steps over 1,600 steps. Each pair is
+  asked once more at each of five ages, 100, 1,000, 10,000, 100,000 and 1,000,000 steps
+  after it started (`--age-base` times 1, 10, ... 10,000; the probe for age j lands j + 1
+  steps later so none collide). Probes are not rewarded (`--probe-reward 1` makes them
+  re-teach). Buckets: `age0` to `age4`, `teach`. The score is the forgetting curve, right
+  answers by age, and "pairs held at once": the curve above chance, rescaled so chance is 0
+  and perfect 1, integrated over age (flat before the first age, straight between) and
+  divided by the steps per pair. A machine that keeps every pair forever would hold
+  2,500 per million steps of life.
+- **Once.** Patterns as in pairs, plus one hint line per button. Every 400 steps a new
+  pattern is shown a single time with its button's hint line on (the "answer"); it is
+  asked once, without the hint, at one of the five ages (pair i at age i mod 5), and that
+  ask is rewarded. Every other step is a hint-only step (hint line b, press b), which keeps
+  "hint b means button b" learned. Buckets: `age0` to `age4`, `show`, `hint`. A learner
+  that only learns on bad gets nothing from a showing it answered right.
+- **Rare.** 8 common patterns (`--rare-common`) and 4 rare ones (`--rare-count`); a step
+  is a rare one with chance 1 in 1,000 (`--rare-every`). Every step rewarded. Buckets:
+  `common`, `rare`.
+- **Drift.** 8 pairs (`--drift-pairs`), one asked per step, rewarded. At `--drift-at`
+  (100,000) the odd pairs move to the next button. Buckets: `kept` (even pairs, never
+  changed) and `changed` (odd pairs). Read before and after the split.
+
+Check scores (stand-in, 4 buttons unless said; coin ties are no move, so coin sits below
+1/k): coin `hold` 0.46 (2 buttons), pairs every age 0.22 to 0.27, once 0.20 to 0.33 on few
+asks, rare 0.20 to 0.23, drift 0.23. Perfect 1.00 on every bucket of every world.

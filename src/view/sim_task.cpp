@@ -96,7 +96,8 @@ bool sim_task_after_tick(Sim& sim) {
     }
     TaskView& v = st.view;
     readout_watch_answer(st.readout, tt.move);
-    if (tt.valence != 0) {
+    // with a critic the blob hears every step, valence 0 included (blob/critic.hpp)
+    if (tt.valence != 0 || sim.blob->genome.critic_on) {
         // the world tells the buttons' cells which button was pressed, then rewards
         plug_mark_acted(tt.plug, *sim.blob, tt.move);
         engine_reward(sim.engine, *sim.blob, tt.valence);

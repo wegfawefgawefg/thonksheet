@@ -1,4 +1,7 @@
 #include "blob/blob.hpp"
+#include "blob/learn_rule.hpp"
+#include "blob/long_memory.hpp"
+#include "blob/critic.hpp"
 #include "blob/tick_steps.hpp"
 
 #include <cstdlib>
@@ -15,14 +18,18 @@
 constexpr int EVIDENCE_ROW = SLOTS * TILE_NEURONS;
 
 // the counter row of a motor cell, made on first use: counters start at the strength the
-// cell was born with, and its budget is its connection count then
-static int8_t* evidence_row(Blob& blob, int n) {
+// cell was born with, and its budget is its connection count then. with the rule table
+// (genome rule_on, idea 120) every neuron but the sensor cells has a row
+int8_t* evidence_row(Blob& blob, int n) {
     if (!blob.readout_row) {
         int rows = 0;
+        bool every = blob.genome.rule_on != 0;
         blob.readout_row = (int32_t*)std::malloc(sizeof(int32_t) * (size_t)blob.neuron_count);
         for (int m = 0; m < blob.neuron_count; m++) {
             bool motor = (blob.motor[m / TILE_NEURONS] >> (m % TILE_NEURONS)) & 1;
-            blob.readout_row[m] = motor ? rows++ : -1;
+            bool sensor = (blob.sensor[m / TILE_NEURONS] >> (m % TILE_NEURONS)) & 1;
+            motor = motor || critic_cell(blob, m); // the critic's cells read the same way
+            blob.readout_row[m] = motor || (every && !sensor) ? rows++ : -1;
         }
         blob.readout_evidence = (int8_t*)std::calloc((size_t)rows * EVIDENCE_ROW, 1);
         blob.readout_keep = (uint16_t*)std::calloc((size_t)rows, sizeof(uint16_t));
@@ -53,6 +60,19 @@ void evidence_add(Blob& blob, int n, int slot, uint64_t up, uint64_t down) {
     int bits = blob.genome.readout_evidence_bits;
     int top = (1 << ((bits < 2 ? 2 : (bits > 8 ? 8 : bits)) - 1)) - 1;
     c += slot * TILE_NEURONS;
+    if (blob.genome.readout_lock_levels > 0) {
+        // the freezer (long_memory.cpp): the same steps, held back by locks
+        int64_t base = c - blob.readout_evidence;
+        for (int dir = 1; dir >= -1; dir -= 2) {
+            uint64_t bits = dir > 0 ? up : down;
+            while (bits) {
+                int b = __builtin_ctzll(bits);
+                bits &= bits - 1;
+                c[b] = long_memory_evidence_step(blob, base + b, c[b], dir, top);
+            }
+        }
+        return;
+    }
     while (up) {
         int b = __builtin_ctzll(up);
         up &= up - 1;
@@ -67,11 +87,20 @@ void evidence_add(Blob& blob, int n, int slot, uint64_t up, uint64_t down) {
 
 // wire the top of the budget: the highest counters, at least 1, at most `keep` of them
 void evidence_rewire(Blob& blob, int n) {
+    evidence_rewire_as(blob, n, blob.genome.readout_evidence_strong != 0 ? 1 : 0);
+}
+
+// the same at a given strength: 0 all at 1, 1 all at 4, 2 by counter (1..3 at 1, 4 at 4, 5 and
+// up at 5, so a row read off before anything moved gives back the wiring it was born with)
+void evidence_rewire_as(Blob& blob, int n, int strength) {
     int8_t* c = evidence_row(blob, n);
     if (!c) {
         return;
     }
     int keep = blob.readout_keep[blob.readout_row[n]];
+    if (blob.genome.readout_decay > 0) {
+        long_memory_evidence_decay(blob, n, c - blob.readout_evidence, c);
+    }
     uint64_t self = 1ull << (n % TILE_NEURONS);
     // usable sources: a slot with a tile, not itself, no inhibitory source on a far slot
     uint64_t usable[SLOTS];
@@ -118,16 +147,23 @@ void evidence_rewire(Blob& blob, int n) {
             fill--;
         }
     }
-    bool strong = blob.genome.readout_evidence_strong != 0;
     for (int k = 0; k < SLOTS; k++) {
-        uint64_t wired = extra[k];
+        uint64_t wired = extra[k], four = 0, five = 0;
         for (int b = 0; b < TILE_NEURONS; b++) {
-            wired |= (uint64_t)(c[k * TILE_NEURONS + b] >= cut) << b;
+            int v = c[k * TILE_NEURONS + b];
+            wired |= (uint64_t)(v >= cut) << b;
+            four |= (uint64_t)(v >= 4) << b;
+            five |= (uint64_t)(v >= 5) << b;
         }
         wired &= usable[k];
         int64_t w = blob_weight_index(n, k);
-        blob.w0[w] = strong ? 0 : wired;
-        blob.w1[w] = strong ? wired : 0;
+        if (strength == 2) {
+            blob.w1[w] = wired & four;
+            blob.w0[w] = wired & (five | ~four);
+        } else {
+            blob.w0[w] = strength == 1 ? 0 : wired;
+            blob.w1[w] = strength == 1 ? wired : 0;
+        }
     }
     blob.fan_in[n] = (uint16_t)count_fan_in(blob, n);
 }

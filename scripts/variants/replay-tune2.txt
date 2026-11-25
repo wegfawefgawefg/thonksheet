@@ -1,0 +1,8 @@
+# idea 62 tuning round 2, seeds 1-4: the shuffled-sign control, and depth against runaway
+frozen sheet + readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128
+walk depth 2: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 2
+depth 2, signs shuffled: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 2 --g.replay_shuffle 1
+walk depth 3: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 3
+depth 4, no growing: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 4 --g.replay_new 0
+depth 4, shift 6: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 4 --g.replay_shift 6
+depth 2, shift 6, no growing: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 2 --g.replay_shift 6 --g.replay_new 0

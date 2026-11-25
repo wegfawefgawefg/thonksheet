@@ -36,6 +36,8 @@ struct FlipTrial {
     uint32_t kept = 0, undone = 0;
 };
 
+struct ReplayState; // idea 62, blob/replay.hpp
+
 struct Blob {
     Genome genome;
     int tiles_w = 0, tiles_h = 0;
@@ -149,6 +151,46 @@ struct Blob {
     uint8_t* tag_made = nullptr;
     int32_t tag_average = 0; // running mean of rewards, x256
     uint32_t tag_events = 0, tag_count = 0; // verdicts that moved counters, neurons moved
+    // reverse replay (idea 62): one block, made on first use, freed with the blob
+    // (blob/replay.hpp)
+    ReplayState* replay = nullptr;
+
+    // damage and being shown the answer (docs/task-map.md, tiers 8 and 9), written by the
+    // world like sense_in; null (the default) is off. a set bit in silenced keeps that
+    // neuron from firing, a set bit in forced makes it fire; sensor cells ignore both.
+    // tile_count + 1 words each. every engine's fire step reads them.
+    uint64_t* silenced = nullptr;
+    uint64_t* forced = nullptr;
+
+    // idea 120, the rule table (learn_rule.cpp): the sign of the last reward, and a scratch
+    // map (tile_count + 1 words) made on first use
+    int rule_last_valence = 0;
+    uint64_t* rule_words = nullptr;
+    // written by the world before each tick (idea 60): cells it urges to fire this tick, on
+    // top of what their inputs say. one word per tile (tile_count + 1), zero when unused;
+    // every engine allocates it. a stand-in may leave it null.
+    uint64_t* urge = nullptr;
+
+    // ideas 66-75 (fire_dynamics.cpp). each is made at birth only if its genome number is on,
+    // otherwise null and never touched.
+    // sent: what the hot loop reads in place of the spike ring when synapses tire or warm,
+    // same layout and index. warm: spikes that count a second time, same layout.
+    uint64_t* sent = nullptr;
+    uint64_t* warm = nullptr;
+    int16_t* tire = nullptr;        // per neuron, threshold added by recent firing, x16
+    int16_t* slow = nullptr;        // per neuron, the slow second potential
+    uint8_t* rebound = nullptr;     // per neuron, ticks left of the lowered threshold
+    uint64_t* up = nullptr;         // per tile word: neurons in the up state
+    uint64_t* any_branch = nullptr; // per tile words, fixed at birth: which neurons are
+    uint64_t* veto = nullptr;       // of that kind
+    uint64_t* coincide = nullptr;
+
+    // long memory (long_memory.hpp): integrator cells and the evidence freezer. null until
+    // one of their genome switches is on
+    struct BlobLongMemory* long_memory = nullptr;
+
+    // actor and critic (genome critic_on, blob/critic.hpp): made on the first step, one block
+    struct CriticState* critic = nullptr;
 };
 
 // birth and death
@@ -158,7 +200,8 @@ void blob_free(Blob* blob);
 // one tick: integrate, fire, regulate, learn. the world writes sense_in before calling.
 void blob_tick(Blob& blob);
 
-// broadcast good (+1) or bad (-1). a task also raises its good/bad sensor line.
+// broadcast good (+1) or bad (-1). a task also raises its good/bad sensor line. with genome
+// critic_on the world calls it at the end of every step, 0 included, after marking the press.
 void blob_reward(Blob& blob, int valence);
 
 // cell (x, y) on the sheet to a neuron index, and back
