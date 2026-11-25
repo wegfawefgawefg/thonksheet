@@ -45,8 +45,7 @@ LEARNING_ONLY = {
     "readout_balance",
     "lose_shift_steps", "win_stay_steps", "lose_shift_fires", "bad_cut_on",
     "replay_depth", "replay_shift", "replay_thin", "replay_new", "replay_quiet",
-    "replay_until", "replay_reset", "replay_shuffle", "replay_strong_budget",
-    "lose_shift_steps", "win_stay_steps", "lose_shift_fires", "bad_cut_on", "rule_on",
+    "replay_until", "replay_reset", "replay_shuffle", "replay_strong_budget", "rule_on",
 }
 # flags with a value that only matter while learning is on (the rule table, idea 120)
 LEARNING_FLAGS = {"--rule-file", "--rule-hex"}
@@ -174,14 +173,14 @@ def main():
     ap.add_argument("--blobrun", default=os.path.join(ROOT, "build", "blobrun"))
     ap.add_argument("--no-twin", action="store_true")
     ap.add_argument("--table-only", action="store_true")
-    ap.add_argument("--out-dir", default=OUT, help="where runs and the cache go")
+    # two branches each added this; --out and --out-dir are the same setting
+    ap.add_argument("--out-dir", "--out", dest="out_dir", default=OUT,
+                    help="where runs and the cache go")
     ap.add_argument("--windows", default="",
                     help="A:B scores only windows A to B-1 (a phase of a longer life)")
-    ap.add_argument("--out", default=OUT)
     opt = ap.parse_args(argv[:split])
     set_out(opt.out_dir)
     task_args = argv[split + 1:]
-    OUT, CACHE = opt.out, os.path.join(opt.out, "cache.jsonl")
     # the table sheet keeps its own learning switch
     twin_extra = ["--t.learning_on", "0"] if "--table" in task_args else []
     seeds = parse_seeds(opt.seeds)

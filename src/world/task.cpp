@@ -102,11 +102,13 @@ void task_reset(Task& task, TaskKind kind, const TaskSettings& settings, uint64_
         break;
     case TaskKind::mnist:
         mnist_reset(task);
+        break;
     case TaskKind::points:
     case TaskKind::number:
     case TaskKind::two_numbers:
     case TaskKind::past:
         function_reset(task);
+        break;
     case TaskKind::bandit:
     case TaskKind::switch_bandit:
     case TaskKind::chain:
@@ -203,11 +205,13 @@ void task_sense(const Task& task, TaskSense& sense) {
         break;
     case TaskKind::mnist:
         mnist_sense(task, sense);
+        break;
     case TaskKind::points:
     case TaskKind::number:
     case TaskKind::two_numbers:
     case TaskKind::past:
         function_sense(task, sense);
+        break;
     case TaskKind::bandit:
     case TaskKind::switch_bandit:
     case TaskKind::chain:
@@ -305,11 +309,13 @@ int task_step(Task& task, const TaskStepIn& in) {
         break;
     case TaskKind::mnist:
         valence = mnist_step(task, in);
+        break;
     case TaskKind::points:
     case TaskKind::number:
     case TaskKind::two_numbers:
     case TaskKind::past:
         valence = function_step(task, in);
+        break;
     case TaskKind::bandit:
     case TaskKind::switch_bandit:
     case TaskKind::chain:
@@ -357,7 +363,6 @@ double task_window_score(Task& task) {
     case TaskKind::number:
     case TaskKind::two_numbers:
     case TaskKind::past:
-        // right answers over chances to answer
     case TaskKind::bandit:
     case TaskKind::switch_bandit:
     case TaskKind::chain:

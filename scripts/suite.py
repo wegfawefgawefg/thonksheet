@@ -40,7 +40,7 @@ QUICK = {"steps": 4000, "window": 200, "phase_window": 200, "retest": 1000,
 
 # more worlds (idea 63, docs/curriculum.md): job, blobrun flags, row label, what the score is
 PLACE2 = ["--sensor-side", "2", "--number-code", "place"]
-WORLDS = [
+MORE_WORLDS = [
     ("bandit2", ["--task", "bandit"], "bandit, 2 buttons (share on the best)"),
     ("bandit4", ["--task", "bandit", "--k", "4"], "bandit, 4 buttons (share on the best)"),
     ("switch2", ["--task", "switch-bandit"],
@@ -136,7 +136,7 @@ def jobs_for(life, readout):
                                        "--retest", str(life["retest"])], 1.3)
     for job, _, args in FUNCTIONS:
         jobs[job] = (args + plain, 1)
-    for job, flags, _ in WORLDS:
+    for job, flags, _ in MORE_WORLDS:
         jobs[job] = (flags + plain, 1)
     return jobs
 
@@ -219,7 +219,7 @@ def rows_for():
     for job, label, _ in FUNCTIONS:
         rows.append(("fixed functions (the battery)", label, job, "late"))
     # after every older row, so old scorecards still line up
-    for job, _, label in WORLDS:
+    for job, _, label in MORE_WORLDS:
         rows.append(("more worlds (idea 63)", label, job, "late"))
     return rows
 
@@ -346,7 +346,8 @@ def main():
     while rest:
         a = rest.pop(0)
         if a == "--only" and rest:
-            only = rest.pop(0).replace("worlds", ",".join(w[0] for w in WORLDS)).split(",")
+            more = ",".join(w[0] for w in MORE_WORLDS)
+            only = rest.pop(0).replace("worlds", more).split(",")
         elif a not in ("--quick", "--resume"):
             extra.append(a)
     life = QUICK if quick else FULL

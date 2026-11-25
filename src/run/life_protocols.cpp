@@ -126,6 +126,21 @@ static void life_episodes(TaskKind kind, const bool* ran, FILE* sum) {
         return;
     }
     const char* win = task_win_name(kind);
+    for (int d = 0; d < (int)Driver::count; d++) {
+        if (!ran[d]) {
+            continue;
+        }
+        const LifeResult& r = results[d];
+        std::printf("%-10s %lld %s", driver_names[d], (long long)r.episodes, name);
+        if (win) {
+            std::printf(", %lld %s", (long long)r.wins, win);
+        }
+        std::printf("\n");
+        put(sum, d, "episodes", (double)r.episodes);
+        put(sum, d, "wins", (double)r.wins);
+    }
+}
+
 // ideas 60 and 61: scores without babbled steps (also as <stem>-clean.csv) and how often
 // each signal came, per step, before and after balance
 static bool life_signal_report(const RunFlags& flags, const std::string& csv, FILE* sum,
@@ -162,14 +177,6 @@ static bool life_signal_report(const RunFlags& flags, const std::string& csv, FI
             continue;
         }
         const LifeResult& r = results[d];
-        std::printf("%-10s %lld %s", driver_names[d], (long long)r.episodes, name);
-        if (win) {
-            std::printf(", %lld %s", (long long)r.wins, win);
-        }
-        std::printf("\n");
-        put(sum, d, "episodes", (double)r.episodes);
-        put(sum, d, "wins", (double)r.wins);
-    }
         double steps = r.steps > 0 ? (double)r.steps : 1.0;
         double early = mean(r.clean, 0, edge);
         double late = mean(r.clean, windows - edge, windows);

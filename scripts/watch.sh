@@ -5,6 +5,7 @@
 #   scripts/watch.sh                           echo with 2 cues, the full engine
 #   scripts/watch.sh echo --k 4
 #   scripts/watch.sh cartpole
+#   scripts/watch.sh bandit          any world of scripts/task.sh (track, forage, pendulum, ...)
 # The working rule (learn mode 5: evidence counters at the buttons' cells, 128 cells a
 # button, the inside of the sheet fixed as born):
 #   scripts/watch.sh echo --readout
@@ -17,7 +18,6 @@
 #   scripts/watch.sh --probe order
 #   scripts/watch.sh --probe gap --g.local_delay_min 4 --g.local_delay_max 8
 # Anything after the task goes to blobview as is (blobview --help).
-#   scripts/watch.sh bandit          any world of scripts/task.sh (track, forage, pendulum, ...)
 # Agents must not run this: it opens a window. Use --capture or scripts/offscreen.sh.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -39,13 +39,11 @@ task="${1:-echo}"
 # and pendulum have 16 number lines, forage a 5x5 bitmap: smaller groups too
 side=3
 extra=""
-if [ "$task" = cartpole ]; then
-    side=2
-    extra="--cart-reward lean --number-code place"
-fi
-if [ "$task" = catch ]; then
-    side=2
-fi
+case "$task" in
+cartpole) side=2; extra="--cart-reward lean --number-code place" ;;
+mountain-car | pendulum) side=2; extra="--number-code place" ;;
+catch | forage) side=2 ;;
+esac
 # --readout: the working rule, as scripts/readout.sh's BEST
 readout="--g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128"
 args=()
@@ -60,10 +58,3 @@ for a in "$@"; do
 done
 exec ./build/blobview --task "$task" --ticks 20 --sensor-side "$side" --motor-side 3 \
     --window "$window" --slow 400 $extra "${args[@]}"
-case "$task" in
-cartpole) side=2; extra="--cart-reward lean --number-code place" ;;
-mountain-car | pendulum) side=2; extra="--number-code place" ;;
-forage) side=2 ;;
-esac
-exec ./build/blobview --task "$task" --ticks 20 --sensor-side "$side" --motor-side 3 --window 50 \
-    --slow 400 $extra "$@"

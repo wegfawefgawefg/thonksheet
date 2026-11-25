@@ -316,11 +316,10 @@ void blob_free(Blob* blob) {
         blob->w1,          blob->potential,       blob->threshold,       blob->leak_shift,
         blob->cooldown,    blob->cooldown_len,    blob->fan_in,          blob->tile_sector,
         blob->sector_bias, blob->sector_activity, blob->sector_surprise, blob->sector_target,
-        blob->noise_ring,  blob->noise_trace,     blob->active_trace,
+        blob->noise_ring,  blob->noise_trace,     blob->active_trace,    blob->urge,
         blob->motor_attached, blob->motor_acted, blob->readout_last,
         blob->readout_row,    blob->readout_evidence, blob->readout_keep,
         blob->rule_words,
-        blob->noise_ring,  blob->noise_trace,     blob->active_trace,    blob->urge,
     };
     for (void* p : arrays) {
         std::free(p);
