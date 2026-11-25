@@ -98,12 +98,8 @@ void long_memory_after_fire(Blob& blob) {
     }
 }
 
-int8_t long_memory_evidence_step(Blob& blob, int64_t at, int8_t value, int direction, int top) {
-    const Genome& g = blob.genome;
-    if (g.readout_lock_levels <= 0) {
-        int next = value + direction;
-        return (int8_t)(next > top ? top : (next < -top ? -top : next));
-    }
+// lock depths, laid out as readout_evidence (a row per motor cell)
+static uint8_t* lock_array(Blob& blob) {
     BlobLongMemory& lm = memory_of(blob);
     if (!lm.lock) {
         int motors = 0;
@@ -112,12 +108,35 @@ int8_t long_memory_evidence_step(Blob& blob, int64_t at, int8_t value, int direc
         }
         lm.lock = (uint8_t*)std::calloc((size_t)motors * SLOTS * TILE_NEURONS, 1);
     }
-    int depth = lm.lock[at];
+    return lm.lock;
+}
+
+void long_memory_evidence_decay(Blob& blob, int64_t row_at, int8_t* row) {
+    const Genome& g = blob.genome;
+    uint8_t* lock = g.readout_lock_levels > 0 ? lock_array(blob) : nullptr;
+    for (int i = 0; i < g.readout_decay; i++) {
+        int k = (int)rng_below(blob.rng, SLOTS * TILE_NEURONS);
+        if (lock && lock[row_at + k]) {
+            continue;
+        }
+        int v = row[k];
+        row[k] = (int8_t)(v > 0 ? v - 1 : (v < 0 ? v + 1 : 0));
+    }
+}
+
+int8_t long_memory_evidence_step(Blob& blob, int64_t at, int8_t value, int direction, int top) {
+    const Genome& g = blob.genome;
+    if (g.readout_lock_levels <= 0) {
+        int next = value + direction;
+        return (int8_t)(next > top ? top : (next < -top ? -top : next));
+    }
+    uint8_t* lock = lock_array(blob);
+    int depth = lock[at];
     bool further = (direction > 0 && value >= top) || (direction < 0 && value <= -top);
     if (further) {
         int most = g.readout_lock_levels > 3 ? 3 : g.readout_lock_levels;
         if (depth < most && (rng_next(blob.rng) & ((1ull << g.readout_lock_shift) - 1)) == 0) {
-            lm.lock[at] = (uint8_t)(depth + 1);
+            lock[at] = (uint8_t)(depth + 1);
         }
         return value;
     }
@@ -127,7 +146,7 @@ int8_t long_memory_evidence_step(Blob& blob, int64_t at, int8_t value, int direc
         if ((rng_next(blob.rng) & ((1ull << shift) - 1)) != 0) {
             return value;
         }
-        lm.lock[at] = 0;
+        lock[at] = 0;
     }
     return (int8_t)(value + direction);
 }

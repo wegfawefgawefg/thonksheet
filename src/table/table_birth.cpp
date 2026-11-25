@@ -51,6 +51,7 @@ static const TableField fields[] = {
     {"lock_levels", &TableGenome::lock_levels},
     {"lock_shift", &TableGenome::lock_shift},
     {"lock_hold", &TableGenome::lock_hold},
+    {"decay", &TableGenome::decay},
 };
 
 void table_genome_args(int argc, char** argv, TableGenome& tg) {
@@ -136,8 +137,8 @@ static uint32_t draw_input(TableBlob& tb, int x, int y) {
             delay = tg.local_delay_min + (int)rng_below(tb.rng, (uint32_t)dspan);
         }
         if (on_sheet(b, sx, sy)) {
-            return table_memory_input(tb, (uint32_t)blob_neuron_at(b, sx, sy), (uint32_t)delay,
-                                      x, y);
+            return table_memory_input(tb, (uint32_t)blob_neuron_at(b, sx, sy), (uint32_t)delay, x,
+                                      y);
         }
     }
     return ((uint32_t)b.tile_count * TILE_NEURONS << 5) | 1u; // the zero word

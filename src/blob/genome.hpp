@@ -131,6 +131,8 @@ struct Genome {
     int readout_lock_levels = 0;  // the freezer on readout evidence: lock depth, up to 3
     int readout_lock_shift = 4;   // a push at the end of the range deepens with 2^-this
     int readout_lock_hold = 3;    // a move against depth d goes with 2^-(this * d)
+    int readout_decay = 0;        // per motor-cell update, this many random counters step
+                                  // toward 0 (locked ones do not): forgetting makes room
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

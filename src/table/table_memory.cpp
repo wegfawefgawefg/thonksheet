@@ -234,3 +234,24 @@ bool table_step_locked(TableBlob& tb, int n, int entry, int direction) {
     }
     return table_step(tb, n, entry, direction);
 }
+
+// forgetting as room: random entries of random free neurons step once toward the middle
+// (the two values either side of it stay), unless locked
+void table_memory_decay(TableBlob& tb) {
+    const Blob& b = tb.shell;
+    int mid = 1 << (tb.bits - 1);
+    uint32_t entries = 1u << tb.inputs;
+    for (int i = 0; i < tb.tg.decay; i++) {
+        int n = (int)rng_below(tb.rng, (uint32_t)b.neuron_count);
+        int e = (int)rng_below(tb.rng, entries);
+        if (tb.lock && lock_get(tb, n, e) > 0) {
+            continue;
+        }
+        int v = table_counter(tb, n, e);
+        if (v > mid) {
+            table_step(tb, n, e, -1);
+        } else if (v < mid - 1) {
+            table_step(tb, n, e, +1);
+        }
+    }
+}

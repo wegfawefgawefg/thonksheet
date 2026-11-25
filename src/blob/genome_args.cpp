@@ -107,6 +107,7 @@ static const GenomeField fields[] = {
     {"readout_lock_levels", &Genome::readout_lock_levels},
     {"readout_lock_shift", &Genome::readout_lock_shift},
     {"readout_lock_hold", &Genome::readout_lock_hold},
+    {"readout_decay", &Genome::readout_decay},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

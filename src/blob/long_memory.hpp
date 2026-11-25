@@ -30,4 +30,7 @@ struct BlobLongMemory {
 void long_memory_after_fire(Blob& blob);
 // one evidence counter step with the freezer: returns the new value
 int8_t long_memory_evidence_step(Blob& blob, int64_t at, int8_t value, int direction, int top);
+// forgetting as room (genome readout_decay): on each update of a motor cell, that many of
+// its counters, picked at random, step once toward 0, unless the freezer holds them
+void long_memory_evidence_decay(Blob& blob, int64_t row_at, int8_t* row);
 void long_memory_free(Blob& blob);

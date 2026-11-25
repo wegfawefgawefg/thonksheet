@@ -33,6 +33,9 @@ void table_reward(Blob& blob, int valence) {
     if (!tg.learning_on || valence == 0) {
         return;
     }
+    if (tg.decay > 0) {
+        table_memory_decay(tb);
+    }
     Blob& b = tb.shell;
     bool noise_mode = tg.learn_mode >= 1 && tg.learn_mode <= 3;
     bool toward = valence > 0;

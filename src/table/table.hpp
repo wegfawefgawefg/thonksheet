@@ -95,6 +95,9 @@ struct TableGenome {
     int lock_levels = 0;
     int lock_shift = 4;
     int lock_hold = 3;
+    // forgetting as room: on each good or bad, this many random table entries step once
+    // toward the middle (locked ones do not)
+    int decay = 0;
 };
 
 constexpr int TABLE_MAX_LEVELS = 15; // timeline levels: input codes 16..30
@@ -197,6 +200,7 @@ void table_memory_free(TableBlob& tb);
 void table_memory_tick(TableBlob& tb);
 void table_memory_reward(TableBlob& tb);
 bool table_step_locked(TableBlob& tb, int neuron, int entry, int direction);
+void table_memory_decay(TableBlob& tb);
 // a new input of the neuron at (x, y), as (source << 5) | code: the source at its delay, or
 // by chance (timeline on) a level, read from a sensor cell near (x, y) if timeline_source
 uint32_t table_memory_input(TableBlob& tb, uint32_t source, uint32_t delay, int x, int y);

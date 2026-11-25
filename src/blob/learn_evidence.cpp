@@ -86,6 +86,9 @@ void evidence_rewire(Blob& blob, int n) {
         return;
     }
     int keep = blob.readout_keep[blob.readout_row[n]];
+    if (blob.genome.readout_decay > 0) {
+        long_memory_evidence_decay(blob, c - blob.readout_evidence, c);
+    }
     uint64_t self = 1ull << (n % TILE_NEURONS);
     // usable sources: a slot with a tile, not itself, no inhibitory source on a far slot
     uint64_t usable[SLOTS];

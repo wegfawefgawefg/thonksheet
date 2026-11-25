@@ -94,6 +94,36 @@ static bool long_life(Driver d, const RunFlags& flags, FILE* csv, LongTotals& be
         after.right[j] = st.right[j] - before.right[j];
         after.asked[j] = st.asked[j] - before.asked[j];
     }
+    // the buttons' motor cells left with no connection at all (engines with a fan-in count)
+    if (real_blob(d) && blob->fan_in && blob->motor_attached) {
+        int dark = 0, cells = 0;
+        for (int n = 0; n < blob->neuron_count; n++) {
+            if ((blob->motor_attached[n / TILE_NEURONS] >> (n % TILE_NEURONS)) & 1) {
+                cells++;
+                dark += blob->fan_in[n] == 0;
+            }
+        }
+        std::printf("%-10s button cells with no connection at the end: %d of %d\n",
+                    driver_names[(int)d], dark, cells);
+    }
+    // evidence counters (readout_evidence) at either end of their range: a full readout
+    if (real_blob(d) && blob->readout_evidence && blob->readout_row) {
+        int bits = blob->genome.readout_evidence_bits;
+        int top = (1 << ((bits < 2 ? 2 : (bits > 8 ? 8 : bits)) - 1)) - 1;
+        int64_t rows = 0, at_end = 0, nonzero = 0;
+        for (int n = 0; n < blob->neuron_count; n++) {
+            rows += blob->readout_row[n] >= 0;
+        }
+        int64_t all = rows * SLOTS * TILE_NEURONS;
+        for (int64_t i = 0; i < all; i++) {
+            int v = blob->readout_evidence[i];
+            at_end += v >= top || v <= -top;
+            nonzero += v != 0;
+        }
+        std::printf("%-10s evidence counters at an end of their range: %.3f, not zero: %.3f\n",
+                    driver_names[(int)d], (double)at_end / (double)(all > 0 ? all : 1),
+                    (double)nonzero / (double)(all > 0 ? all : 1));
+    }
     death(d, blob);
     return true;
 }
