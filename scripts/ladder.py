@@ -78,9 +78,9 @@ RULES = {
     "table": ["--table"],
     "blob": [],
     "readout": READOUT,
-    # actor and critic (docs/results-2026-11-25-critic.md): the readout taught by a critic's
-    # surprise, its good half on
-    "critic": READOUT + ["--g.critic_on", "1", "--g.readout_good", "1"],
+    # actor and critic (docs/results-2026-11-25-critic.md), the one setting: the readout
+    # taught by a critic's surprise, its good half on, the actor at 2^-5 (readout_shift 5)
+    "critic": READOUT + ["--g.critic_on", "1", "--g.readout_good", "1", "--g.readout_shift", "5"],
     # the fixed references, their own plug (no spread motor cells)
     "gru": ["--engine", "gru"],
     "memory": ["--engine", "memory"],

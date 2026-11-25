@@ -65,7 +65,11 @@ tables)
     scripts/build.sh
     R=critic,readout,gru,memory
     python3 scripts/ladder.py run --rules $R --jobs "${JOBS:-2}" "$@"
-    python3 scripts/ladder.py run --life 400k --rules critic,gru,memory --jobs "${JOBS:-2}" \
+    python3 scripts/ladder.py run --life 400k --rules critic --jobs "${JOBS:-2}" \
+        --worlds cartpole,catch,forage "$@"
+    python3 scripts/ladder.py run --life 400k --rules readout --jobs "${JOBS:-2}" \
+        --worlds cartpole "$@"
+    python3 scripts/ladder.py run --life 400k --rules gru,memory --jobs "${JOBS:-2}" \
         --worlds cartpole,cartpole-alive,cartpole-sparse,catch "$@"
     exec python3 scripts/ladder.py table --rules $R "$@"
     ;;
