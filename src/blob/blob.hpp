@@ -132,6 +132,13 @@ struct Blob {
     // reverse replay (idea 62): one block, made on first use, freed with the blob
     // (blob/replay.hpp)
     ReplayState* replay = nullptr;
+
+    // damage and being shown the answer (docs/task-map.md, tiers 8 and 9), written by the
+    // world like sense_in; null (the default) is off. a set bit in silenced keeps that
+    // neuron from firing, a set bit in forced makes it fire; sensor cells ignore both.
+    // tile_count + 1 words each. every engine's fire step reads them.
+    uint64_t* silenced = nullptr;
+    uint64_t* forced = nullptr;
 };
 
 // birth and death

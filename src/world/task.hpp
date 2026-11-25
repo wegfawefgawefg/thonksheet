@@ -22,6 +22,29 @@ enum class TaskKind {
     gap,             // one cue blinks twice; answer whether the gap was short or long
     place,           // a small shape at one of several places; answer which shape
     mnist,           // a handwritten digit on the sheet; press its button (task_mnist.cpp)
+    // tiers 9 and 10 of docs/task-map.md (docs/curriculum.md, "The rest of the map"); all run
+    // on the trial script in task_script.cpp
+    same,         // two items side by side: the same or different
+    same_then,    // two items one after the other on the same lines: the same or different
+    odd_one,      // three or four items, all alike but one: press the odd one's slot
+    bigger,       // two magnitudes: is the first the bigger
+    analogy,      // A is to B as C is to which candidate
+    how_many,     // how many items are lit on a sheet, wherever and whatever their size
+    more_fewer,   // two sheets one after the other: more or fewer items than last time
+    grammar,      // a string from a Reber grammar, one symbol a step: allowed or not
+    brackets,     // a string of ( and ): balanced or not
+    parts,        // a figure made of two smaller ones: answer the pair
+    noisy_echo,   // echo where the right answer is rewarded only most of the time
+    rare_cue,     // echo where one cue comes only one try in N
+    noisy_lines,  // echo on patterns with a share of their lines flipped at random
+    context,      // a context line says which of two rules is in force
+    switch_rule,  // echo whose rule changes every N tries, with no signal
+    copy,         // a sequence of cues, then pressed back in order
+    recall,       // a marked cue, other cues in between, then asked for the marked one
+    n_back,       // press "match" when this cue equals the one n steps ago
+    predict_next, // no teacher: a stream with structure; how well is the next input predicted
+    fill_in,      // no teacher: patterns with a part sometimes blanked; is it filled in
+    odd_event,    // no teacher: a regular stream with rare breaks; is the break noticed
     count,
 };
 
@@ -31,6 +54,8 @@ constexpr int TASK_MAX_NUMBERS = 4;
 constexpr int TASK_MAX_MOTORS = 16;
 constexpr int TASK_MAX_PATTERN = 64;
 constexpr int TASK_MAX_TRIAL = 16; // steps in one trial of a feature task
+constexpr int SCRIPT_MAX = 24;     // steps in one trial of a tier 9 or 10 task
+constexpr int SCRIPT_SHEET_WORDS = 4;
 
 // what a task needs plugged in
 struct TaskShape {
@@ -49,6 +74,8 @@ struct TaskSense {
     uint8_t singles[TASK_MAX_SINGLES] = {};
     uint8_t sheet[TASK_MAX_SHEET] = {}; // row-major, sheet_w * sheet_h
     int32_t numbers[TASK_MAX_NUMBERS] = {};
+    // fill-in: single lines shown off whose true value the task knows, one bit per line
+    uint32_t hidden = 0, hidden_on = 0;
 };
 
 // what comes back from the blob's side after one step
@@ -56,6 +83,9 @@ struct TaskStepIn {
     int move = -1;          // motor line that won, -1 for no move
     int surprise = 0;       // wrong sensor predictions on the step's first tick
     int sensed_neurons = 0; // attached sensor neurons that surprise is counted over
+    // fill-in: over the step's ticks, the hidden lines' sensor neurons whose own prediction
+    // was on, split by the hidden truth (task_ticker.cpp)
+    int fill_hit = 0, fill_on = 0, fill_false = 0, fill_off = 0;
 };
 
 struct TaskSettings {
@@ -81,6 +111,22 @@ struct TaskSettings {
     int mnist_test = 0;
     int mnist_first = 0, mnist_count = 0;
     int mnist_dx = 0, mnist_dy = 0;
+
+    // tiers 9 and 10 (task_script.cpp and the files it lists)
+    int item_lines = 4;     // lines per item (relation, noisy lines, fill-in), levels (bigger)
+    int item_on = 1;        // lines on per item (relation)
+    int hold = 0;           // relation, analogy: items never rewarded; only trials on them score
+    int varied = 0;         // how-many, more-fewer: items of mixed size with matched total area
+    int length = 8;         // grammar, brackets: string length (most); copy: most cues
+    int right_pct = 80;     // noisy echo: chance in 100 that the reward tells the truth
+    int rare = 10;          // rare cue: one try in N; odd event: one step in N
+    int flip_pct = 10;      // noisy lines: chance in 100 that a line is flipped
+    int context_early = 0;  // context: 1 shows the context a step before the cue
+    int switch_every = 500; // switch rule: tries between changes
+    int fill = 1;           // recall: other cues between the marked one and the ask
+    int back = 1;           // n-back: how far back
+    int markov_order = 1;   // predict-next: the next symbol depends on the last 1 or 2
+    int diff_max = 0;       // bigger: largest difference shown, 0 any
 };
 
 // fixed point for cartpole: 16 fractional bits
@@ -122,7 +168,28 @@ struct Task {
     int64_t shown = 0;
     uint64_t order_seed = 0;
     int image = 0;
+    // tiers 9 and 10: one trial as a script of steps (task_script.cpp)
+    struct Script {
+        int len = 0;
+        uint32_t lines[SCRIPT_MAX] = {};
+        uint64_t sheet[SCRIPT_MAX][SCRIPT_SHEET_WORDS] = {};
+        int8_t want[SCRIPT_MAX] = {}; // the right button, -1: presses ignored
+        uint8_t flags[SCRIPT_MAX] = {};
+        uint32_t hidden[SCRIPT_MAX] = {}, hidden_on[SCRIPT_MAX] = {};
+    } script;
+    int64_t probe_marks = 0; // steps an offline reader should keep (blobprobe linear)
+    int64_t extra[4] = {};   // per-window counts some kinds keep apart from tally
+    uint64_t held_items = 0; // relation: one bit per item never rewarded
+    int item_pool[64] = {};  // relation: the items (line bits), fill-in: the patterns
+    int item_count = 0;
+    int memory[16] = {};     // n-back, predict-next, odd event, switch: what came before
+    int table_next[64] = {}; // predict-next: the likely next symbol; odd event: the cycle
 };
+
+// script step flags
+constexpr uint8_t SCRIPT_SCORED = 1;   // counts toward the score
+constexpr uint8_t SCRIPT_REWARDED = 2; // good or bad follow the answer
+constexpr uint8_t SCRIPT_PROBE = 4;    // an offline reader keeps this step (label: want)
 
 const char* task_name(TaskKind kind);
 bool task_from_name(const char* name, TaskKind& kind);
@@ -177,3 +244,11 @@ int mnist_step(Task& task, const TaskStepIn& in);
 // a new phase on the same task: train or test digits, which of them, moved how; the order
 // and the tallies start over
 void mnist_restart(Task& task, int test, int first, int count, int dx, int dy);
+// tiers 9 and 10: the shared script runner (task_script.cpp)
+bool script_kind(TaskKind kind);
+void script_reset(Task& task);
+TaskShape script_shape(const Task& task);
+void script_sense(const Task& task, TaskSense& sense);
+int script_perfect_move(const Task& task);
+int script_step(Task& task, const TaskStepIn& in);
+double script_window_score(Task& task);

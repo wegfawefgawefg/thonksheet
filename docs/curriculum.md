@@ -149,3 +149,155 @@ upright-and-centred than they began, bad if further). Numbers also had a flaw: l
 from the left as the value rose, so "leaning left" was only an absence of activity.
 `--number-code place` lights the one line whose band holds the value. The scripts use
 `lean` and `place` for cartpole. `sparse` stays as the harder version for slow-credit ideas.
+
+## The rest of the map (tiers 9 and 10, being shown, damage; 2026-11-25)
+
+The kinds of task `docs/task-map.md` had no world for. Code: `src/world/task_script.cpp`
+runs every one of them as a trial script (a list of steps, each with the lines on, the
+button wanted or none, and whether it is scored, rewarded, or kept by the offline reader);
+one file per family draws the trials. All integer, all seeded by the task seed, so the same
+flags give the same csv. The table of worlds and their two settings is
+`scripts/map_worlds.py`; `scripts/map.sh` scores them all (`docs/notes-world.md`).
+
+Shared rules. A trial of the relation, number, parts and memory worlds starts with one
+blank step that parts it from the last (as in the feature tasks); the echo-shaped worlds
+are one step per try with no blank, like echo. Only a step that wants a button counts;
+presses on other steps are ignored. A right press is good, a wrong one bad, no move is a
+miss with nothing said. Score: right over scored answers, unless said. Items in the
+relation worlds are w-of-n patterns, so every item lights the same number of lines and
+brightness says nothing. Held-out items (`--hold N`): N items drawn per life are never
+rewarded; one trial in four is made only of them, and only those trials are scored, so the
+score is carrying the relation to items never taught on. Whether an answer can be had
+without the sheet is checked with the offline reader on the raw input lines of the last 16
+steps and on their brightness (`docs/notes-world.md`, "The rest of the map").
+
+### Relation
+
+- **same** (`--item-lines n --item-on w`): two slots of n lines and the ask, shown together
+  for one step. Button 0 same, 1 different (half each). Easy: n 4, w 1. Hard: n 6, w 3, 6 of
+  the 20 items held out.
+- **same-then**: one slot and the ask. Item A for a step, item B on the same lines, then
+  the ask alone. Easy and hard as same.
+- **odd-one** (`--k` slots): k slots and the ask, one step. All slots show one item but one,
+  which shows another; press the odd slot. No slot alone tells (each item is as likely to be
+  the odd one as the common one). Easy: 3 slots of 4 one-line items. Hard: 4 slots of 2-of-5
+  items, 4 held out.
+- **bigger** (`--item-lines` levels, `--diff-max`): two rows of levels, one line lit in each,
+  and the ask, one step. Button 0 if the first is bigger, 1 if the second; never equal.
+  Easy: 6 levels, any difference. Hard: 10 levels, always neighbours. It is linear in the
+  input (the reader on the lines gets it), and one row alone tells a little at the ends (a
+  value of 0 is never the bigger one): this is the easy relation.
+- **analogy** (`--k` changes): two slots of 6 lines and the ask. A step with A in slot 1 and
+  B in slot 2; then for each of k candidates a step with C in slot 1 and the candidate in
+  slot 2; then the ask. B is one of k changes of A (shift right by one around the end,
+  mirror, light the lowest unlit line); the candidates are the k changes of C in random
+  order; press the candidate made by the change that made B. Items: 2-of-6 patterns that
+  every change moves to something new. Easy: shift or mirror, 2 candidates. Hard: all three
+  changes, 3 candidates, C from 3 held-out items. "Add" makes a brighter candidate and a
+  brighter B, so on add trials brightness helps once A to B is seen; noted, not removed.
+
+### Number (a 7x7 sheet at 2x2 cells per line; it does not fit at 3x3)
+
+- **how-many** (`--k` most, `--varied`): 1 to k items, none touching another even at a
+  corner, shown with the ask for one step; press button n - 1. Easy: 1 to 3 single cells
+  (brightness gives it, by design). Hard: 1 to 5 rectangles of 1-3 by 1-3 cells whose total
+  area is always 6 to 9 cells.
+- **more-fewer**: a display, then a second one with the ask; button 1 if the second has more
+  items, 0 if fewer (1 to 5 each, never equal). Easy: single cells. Hard: as how-many hard.
+
+### Parts and wholes
+
+- **grammar** (`--length` most): Reber's grammar on lines B T P S X V E and the ask, one
+  symbol a step, then the ask. Allowed (half): a walk through the grammar, each fork a coin
+  flip, at most `length` symbols. Broken: an allowed string with one inner symbol changed to
+  another inner symbol so it is no longer allowed (same length, start and end). Button 0
+  allowed, 1 broken. Easy: up to 8 symbols. Hard: up to 14.
+- **brackets** (`--length`): lines ( and ) and the ask. Every string has `length` symbols,
+  half of each, starts with ( and ends with ). Allowed: balanced. Counts, length, first and
+  last symbol are the same for both answers. Easy: 8. Hard: 12.
+- **parts** (`--k` kinds, `--varied`): parts are three-cell shapes (a bar down, a bar across,
+  a corner). Easy: a 6x3 sheet, one of 2 kinds in each half at a fixed spot; press the
+  button of the ordered pair (4 buttons). Hard: a 6x6 sheet, two of 3 kinds anywhere,
+  touching along an edge, not overlapping; press the button of the unordered pair (6
+  buttons); a figure that another pair could also make is drawn again. Always 6 cells lit.
+
+### Chance
+
+- **noisy-echo** (`--right-pct`): echo k=2, but a right press is rewarded only `right-pct`
+  times in 100 and punished otherwise, a wrong one the other way. Scored on the true answer.
+  Easy 80, hard 60.
+- **rare-cue** (`--rare N`): echo k=2, cue 1 comes one try in N. Score balanced: the mean of
+  the two cues' hit rates, so always pressing button 0 scores 0.5. Easy 10, hard 40.
+- **noisy-lines** (`--k`, `--item-lines`, `--flip-pct`): k fixed patterns on 8 lines, half
+  lit (for two, one is the other inverted), drawn per life; every step each line is flipped
+  with chance `flip-pct` in 100. Easy: 2 patterns, 10. Hard: 4 patterns, 25.
+
+### Context
+
+- **context** (`--k`, `--context-early`): k cues and two context lines. Context 0: cue i is
+  button i; context 1: button (i + 1) mod k. Neither line alone tells. Easy: k 2, context and
+  cue on the same step (exclusive-or in a new dress). Hard: k 4, the context alone a step
+  before the cue.
+- **switch-rule** (`--switch-every N`): echo k=2 whose rule moves on (cue i means button
+  i + shift) every N tries, no signal. Scored over all tries, so it measures how fast the
+  change is followed. Easy 500, hard 50.
+
+### Longer memory
+
+Output across several steps is a run of answer steps, one press each, each judged and
+rewarded at once; the plug is unchanged.
+
+- **copy** (`--k`, `--length` most): k symbol lines and a go line. A blank, 2 to `length`
+  symbols one a step, then the go line for as many steps: on the i-th go step press the i-th
+  symbol. The go steps look the same, so the sheet must keep its place. Scored per press.
+  Easy: k 2, always 2 symbols. Hard: k 4, 2 to 6.
+- **recall** (`--k`, `--fill`): k symbol lines, a mark line, the ask. A blank, the target
+  with the mark, `fill` steps each showing a random symbol, then the ask: press the marked
+  one. Easy: k 2, 1 between. Hard: k 4, 4 between.
+- **n-back** (`--k`, `--back`): a stream of k symbols with no blanks; each step press 1 if
+  this symbol is the one `back` steps ago, else 0; half match, a non-match is any other
+  symbol. Easy: k 4, 1 back. Hard: k 4, 2 back.
+
+### No teacher (no good or bad at all)
+
+Symbols are 2-of-4 patterns on 4 lines with every line lit by half of them, so "all off" or
+"as before" predicts half the cells right. The world's own score uses the sheet's
+predictions of its sensor cells (what each sensor cell would have done from the sheet's
+input, `blob.predicted`); the minimal engine keeps none, so it has no score here. The offline
+reader reads the answer from the sheet's activity on steps the world marks.
+
+- **predict-next** (`--k`, `--markov-order`): the next symbol is a fixed function of the last
+  one (order 1) or of the last two (order 2; the last alone never fixes it) 7 times in 8,
+  any other symbol otherwise. Score: share of sensor cells predicted right on each step's
+  first tick (as sequence). Reader label: the next symbol; the best possible is 0.875. Easy:
+  order 1. Hard: order 2.
+- **fill-in** (`--k`, `--item-lines`): k half-lit patterns on 8 lines, drawn per life; one step
+  in 4 the second half is blanked. Score: over the blanked steps' ticks, the share of hidden
+  cells whose own prediction is on when they should be on, less the share on when they should
+  be off (0 for any blind guess, 1 for a perfect fill; checked: 1.00 when the scripted player
+  can see the cells). Reader label: which pattern, on blanked steps (the visible half gives it,
+  so the reader is a weak test here; the score is the real one). Easy: k 2. Hard: k 6.
+- **odd-event** (`--k`, `--rare`): k symbols in a cycle drawn per life; one step in `rare`
+  shows another symbol instead. Score: wrong predictions per sensor cell on break steps less
+  on regular ones (0 when the break goes unnoticed). Reader label: break or not, on every
+  break and on the regular step one cycle after it (half each). No single step's symbol
+  tells. Easy: k 4. Hard: k 6. Both one step in 8.
+
+### Being shown the answer
+
+`--shown N` on any button task: for `--steps` the task runs with no good or bad; on every
+answer step the right button's motor cells are made to fire for the last N ticks
+(`blob.forced`, written by the world before each tick and ORed into the fired word in every
+engine's fire step; no urge array was on main). Then `--retest` steps with no help and no
+good or bad. Reported: the test's first window, its mean (the headline) and its end. The
+learning-off twin sees the same. Rows: echo k=2, echo k=4, both-not-either, N 6.
+
+### Damage
+
+`--damage P`: the task for `--steps`, then P in 100 of the sheet's non-sensor neurons (motor
+cells included) are silenced for the rest of the life (`blob.silenced`, ANDed out of the
+fired word in every engine's fire step; drawn from the seed), then the task again for
+`--retest` steps, learning on. `--damage-tile 1` silences every non-sensor cell of the tile
+holding the first cue line instead. Reported: before (end of the first phase), at once (the
+first window after) and after the retest (its end). Rows: echo k=2 at 5, 20 and 50 in 100
+and the cue tile; both-not-either at 20.

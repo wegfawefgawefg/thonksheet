@@ -10,6 +10,10 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
 - `world/task_reflex.cpp`: echo, shuffled echo, delayed echo, go/no-go, beat.
 - `world/task_sequence.cpp`, `world/task_control.cpp` (catch, cartpole).
 - `world/task_feature.cpp`: order, both-not-either, gap, place (features nobody designed in).
+- `world/task_script.hpp/.cpp`: tiers 9 and 10 (the rest of the map), every one a trial
+  script; `task_relation.cpp`, `task_sheet_number.cpp`, `task_grammar.cpp`,
+  `task_chance.cpp`, `task_memory.cpp`, `task_unsupervised.cpp` draw the trials.
+  `world/plug_hidden.cpp`: fill-in's count of hidden cells' own predictions.
 - `world/standin.hpp/.cpp`: a Blob shell with only the arrays the plug touches, and a fake
   tick (coin-flip motors, or the right motor group firing). Needs no core.
 - `run/main.cpp`: the driver calls (birth, tick, reward, death; declared in `run/drive.hpp`)
@@ -18,6 +22,8 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
 - `run/life_protocols.cpp`: plain life, retention, idle, capacity; the csv and the summary.
 - `run/life_measures.cpp`: `--reach` and `--speed`.
 - `run/life_end.cpp`: room and aliveness at the end of a life.
+- `run/life_shown_damage.cpp`: the world's two hooks into every engine (`blob.silenced`,
+  `blob.forced`) for `--damage` and `--shown`.
 - `probe/rhythm_find.hpp`, `probe/carry_measure.hpp`: shared with `blobprobe`.
 
 ## The plug
@@ -264,6 +270,65 @@ linking against a throwaway stub core; it builds and runs.
   its own; 8x8 needs `--sensor-side 1`. The plug refuses cleanly when lines do not fit.
 - Score per window is 0 when a window holds no try (a window shorter than one delayed-echo
   trial). Keep windows well above the trial length.
+
+## The rest of the map (2026-11-25)
+
+Tiers 9 and 10, being shown the answer and damage: 21 worlds with an easy and a hard
+setting each, and two life protocols. Definitions: `docs/curriculum.md`, "The rest of the
+map". The list of worlds with their flags is `scripts/map_worlds.py`, shared by
+`scripts/map.py` and `scripts/suite.py`. Results: `docs/results-2026-11-25-rest-of-the-map.md`.
+
+How the new tasks are built:
+
+- Every one is a trial script (`Task::Script` in `task.hpp`): per step the single lines on,
+  the sheet bits on, the button wanted (-1 none) and flags: `SCRIPT_SCORED` (counts toward
+  the score), `SCRIPT_REWARDED` (good or bad follow), `SCRIPT_PROBE` (the offline reader
+  keeps this step, label = the wanted button). `task_script.cpp` runs it; one file per family
+  draws trials. New kinds sit at the end of `TaskKind`; `task.cpp` hands them all to the
+  script runner before its old switches.
+- Held-out trials are scored and not rewarded; taught trials of a held-out world are
+  rewarded and kept in `tally[2..3]`, not printed.
+- No-teacher worlds attach no good or bad. Their buttons exist only to give the reader its
+  classes; presses do nothing. Their window score comes from `task.extra`: the share of sensor
+  cells predicted right (predict-next), hit rate less false alarms of the hidden cells' own
+  predictions (fill-in, counted every tick by `plug_count_hidden` from `TaskSense.hidden`),
+  wrong predictions on breaks less on regular steps (odd-event). The minimal engine fills no
+  `predicted` and no `surprise`: its prediction share reads 1.00 and the others 0, which
+  mean nothing; `map.py` shows them as "-". (The suite's old sequence row has the same
+  problem for the minimal engine.)
+- `--shown N` and `--damage P` / `--damage-tile 1` are life protocols (`life_protocols.cpp`)
+  with two phases. Phase settings in `LifePhase`: `shown_ticks`, `withhold` (the ticker scores
+  the answer but passes no valence and raises no good/bad line), `damage_pct`, `damage_tile`.
+  The hooks are two arrays on the Blob shell, `silenced` and `forced`, tile_count + 1 words
+  each, null unless a protocol makes them (`life_shown_damage.cpp`); every engine's fire
+  step ANDs out `silenced` and ORs in `forced` (sensor cells untouched). With both null every
+  engine's csv is byte-identical to before.
+- `blobprobe linear` keeps a step of a new world when `task.probe_marks` moves (the old
+  tasks still use `tally[1]`). It also prints the same reader fitted to the task's own input
+  lines over the last `--history` steps (16) and to their brightness, one feature per count:
+  `--lines-from N --lines-to N` keep only some lines, to ask what one item alone tells.
+
+```
+scripts/map.sh map                          every world, three levels, seeds 5-12
+scripts/map.sh map --quick                  seeds 5 and 6, 4,000-step lives (a few minutes)
+scripts/map.sh map --only copy-easy,copy-hard --levels b
+scripts/map.sh map --print                  the table from runs already in out/map/map/
+scripts/task.sh same --item-lines 6 --item-on 3 --hold 6         one life, one world
+scripts/task.sh echo --damage 20 --window 200 --retest 10000      damage protocol
+scripts/task.sh echo --shown 6 --window 200 --retest 10000        being shown the answer
+scripts/readout.sh reference brackets --length 8 --seed 5         the reader on one world
+```
+
+`map.sh` levels: (a) `blobprobe linear`, full engine as born, `--motor-spread 128`, 3,000
+probe steps after 30,000 settling ticks; no-teacher worlds also (a') after a whole
+40,000-step life of the design rule with no reward (`--learning 1 --settle 800000`); (b)
+`blobrun` with the readout rule (`--g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4
+--g.readout_balance 1 --motor-spread 128`, the same for every world), no-teacher worlds with
+the plain full engine instead; (c) `--engine minimal` and `--table`, no extra flags. Every
+life is the standard one (20 ticks a step, 3x3 groups, 40,000 steps, windows of 1,000;
+protocols windows of 200 and a 10,000-step retest); the sheet worlds use 2x2 sensor groups.
+Runs go to `out/map/<name>/`; split across machines with `--levels`, copy the runs into one
+folder and `--print`.
 
 ## Reading a scorecard run with a readout rule in its flags (2026-11-25)
 

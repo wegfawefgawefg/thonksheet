@@ -21,3 +21,7 @@ struct LinearData {
 // middle tile can see through its local slots). cue_tile and motor_tiles are marked.
 void linear_report(const LinearData& data, const char* label, int cue_tile,
                    const std::vector<int>& motor_tiles);
+
+// the same reader on every feature at once, primal; only the test share right. for small
+// feature sets such as the task's own input lines (blobprobe linear's shortcut check)
+double linear_score(const LinearData& data);

@@ -302,3 +302,13 @@ void linear_report(const LinearData& data, const char* label, int cue_tile,
                motor_tiles);
     std::fflush(stdout);
 }
+
+double linear_score(const LinearData& data) {
+    Standard s;
+    standardize(data, s);
+    std::vector<int> all((size_t)data.neurons);
+    for (int j = 0; j < data.neurons; j++) {
+        all[(size_t)j] = j;
+    }
+    return fit_primal(data, s, all);
+}

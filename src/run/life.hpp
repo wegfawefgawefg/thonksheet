@@ -20,6 +20,11 @@ struct LifePhase {
     uint64_t task_seed = 1;
     int64_t steps = 0;      // task steps; 0 makes this an unplugged phase
     int64_t idle_ticks = 0; // ticks with every line off and unattached
+    // being shown the answer and damage (life_shown_damage.cpp)
+    int shown_ticks = 0;   // the right button's cells made to fire for the last N ticks of a step
+    bool withhold = false; // no good or bad reaches the blob
+    int damage_pct = 0;    // at the phase's start, silence this share (in 100) of non-sensor cells
+    int damage_tile = 0;   // at the phase's start, silence the non-sensor cells of the cue tile
 };
 
 struct LifeResult {
@@ -33,6 +38,11 @@ struct LifeResult {
 
 // --task for --steps, as blobrun has always run
 LifePhase life_phase_main(const RunFlags& flags);
+
+// the silencing of a damage phase, and the forced firing of a shown one (life_shown_damage.cpp)
+void life_damage(Blob& blob, const Plug& plug, const LifePhase& phase, uint64_t seed);
+void life_force(Blob& blob, const Plug& plug, int button);
+void life_hooks_free(Blob& blob);
 
 // false (with a message) if a task's lines do not fit the blob
 bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int count,

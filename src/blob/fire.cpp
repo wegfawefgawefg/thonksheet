@@ -182,9 +182,12 @@ void tick_fire(Blob& blob, uint64_t* out) {
         blob.predicted[t] = would & sensor;
         uint64_t noise = g.noise_on ? sparse_word(blob.rng, noise_shift) : 0;
         uint64_t inner = (would | noise | blob.pacemaker[t]) & rested & ~sensor;
+        // the world's damage and being shown the answer (both null unless asked for)
+        inner &= blob.silenced ? ~blob.silenced[t] : ~0ull;
+        inner |= blob.forced ? blob.forced[t] & ~sensor : 0;
         uint64_t fired = inner | (blob.sense_in[t] & sensor);
         out[t] = fired;
-        noise_out[t] = noise & ~would & ~blob.pacemaker[t] & rested & ~sensor;
+        noise_out[t] = noise & ~would & ~blob.pacemaker[t] & rested & ~sensor & inner;
 
         // reset the fired, count down the rest
         const uint8_t* __restrict cool_len = blob.cooldown_len + t * TILE_NEURONS;

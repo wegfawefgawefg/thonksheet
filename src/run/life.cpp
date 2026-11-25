@@ -58,10 +58,15 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
         pf.task_settings = phase.settings;
         pf.task_seed = phase.task_seed;
         if (!ticker_start(tt, *blob, pf)) {
+            life_hooks_free(*blob);
             death(driver, blob);
             return false;
         }
         plugged = true;
+        tt.withhold = phase.withhold;
+        if (phase.damage_pct > 0 || phase.damage_tile) {
+            life_damage(*blob, tt.plug, phase, flags.seed);
+        }
         // aliveness is counted over the last steps of the last phase
         int64_t per_step = flags.plug.ticks_per_step;
         int64_t count_from = phase.steps - (flags.alive_ticks + per_step - 1) / per_step;
@@ -71,6 +76,11 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
         int64_t step = 0;
         while (step < phase.steps) {
             int perfect_move = ticker_before_tick(tt, *blob);
+            if (phase.shown_ticks > 0) {
+                // the answer shown: the right button's cells fire at the end of the step
+                bool late = tt.tick_in_step >= tt.ticks_per_step - phase.shown_ticks;
+                life_force(*blob, tt.plug, !tt.resting && late ? perfect_move : -1);
+            }
             tick(driver, *blob, tt.plug, perfect_move);
             out.ticks++;
             if (measure && last && step >= count_from) {
@@ -107,6 +117,7 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
         }
         life_end_rhythm(out.end, fired);
     }
+    life_hooks_free(*blob);
     death(driver, blob);
     return true;
 }
