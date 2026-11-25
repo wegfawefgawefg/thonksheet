@@ -38,7 +38,8 @@ wiring, right (0.952 against 0.937); calc held-out moves under 0.03, wrong (xor4
   use.** Competitive learning with winners in the tile (setting B below), 60,000 digits
   with no reward, then frozen and read: **0.952** on the MNIST test set, seeds 5-12 (0.949
   to 0.954). The same sheet as born: 0.926. The same life on digits whose pixels are
-  shuffled afresh for each digit: 0.940. Baselines: linear on pixels 0.922, random
+  shuffled afresh for each digit: 0.940. A quarter of the updates (B5) gives the same,
+  0.952, on the same 8 seeds at half the cost. Baselines: linear on pixels 0.922, random
   projection of the same bits 0.943, two-layer net 0.955. It beats the born sheet by 0.019
   to 0.031 and its shuffled control by 0.006 to 0.018 on every one of the 8 seeds, and it
   passes the random projection, which no sheet had.
@@ -67,9 +68,10 @@ wiring, right (0.952 against 0.937); calc held-out moves under 0.03, wrong (xor4
   0.697, 0.655 at 20,000, 60,000, 120,000; off on the same sheet: 0.720, 0.700, 0.676). It
   does not fight the readout the way the old inner rule did, and it does not help it: the
   readout's motor cells cannot use features that a softmax reader can.
-- **It costs.** 3.6 times slower per tick on MNIST as set (14,300 against 51,400 ticks a
+- **It costs.** B is 3.6 times slower per tick on MNIST (14,300 against 51,400 ticks a
   second), because every update re-picks a cell's whole wiring from 704 counters. A
-  quarter of the updates costs 1.9 times; held at the target firing rate, 2 times.
+  quarter of the updates (B5, `--g.compete_shift 5`) scores the same and costs 1.9 times:
+  that is the setting to use.
 - **Unfinished:** the cost (a cheaper read-off), why the readout cannot use it, and the
   firing rate it leaves (see below).
 
@@ -214,7 +216,8 @@ sheets fire 31 to 33.)
   a random-pixel version of them by much when they are allowed to fire more. Two seeds
   each; this is the least settled part of the result.
 - A quarter of the updates (B5) is as good as B or better (0.954 against 0.952, 2 seeds)
-  at half the cost. It is the setting to use; its 8-seed report is below B's.
+  at half the cost. It is the setting to use; its 8-seed report is below B's and matches
+  it (0.9523 against 0.9521).
 
 **Seeds 5-12, setting B** (`scripts/inside.sh b-report --g.learn_mode 5 --g.compete_on 1
 --g.tile_winners 4 --only mnist --seeds 5-12`; 5-8 here, 9-12 on stevejobs, the same
@@ -227,7 +230,19 @@ binary results):
 | shuffled | 0.9386 | 0.9355 | 0.9403 | 0.9391 | 0.9412 | 0.9402 | 0.9427 | 0.9385 | 0.9395 |
 
 Lived minus born +0.019 to +0.031 (mean +0.026); lived minus shuffled +0.006 to +0.018
-(mean +0.013), every seed. Against the baselines: linear on pixels 0.922, the same reader
+(mean +0.013), every seed.
+
+**Seeds 5-12, setting B5** (a quarter of the updates, half the cost; `scripts/inside.sh
+b5-report --g.learn_mode 5 --g.compete_on 1 --g.tile_winners 4 --g.compete_shift 5 --only
+mnist --seeds 5-12`; born is the same sheet as B's):
+
+| seed | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | mean |
+|---|---|---|---|---|---|---|---|---|---|
+| lived | 0.9503 | 0.9518 | 0.9538 | 0.9525 | 0.9523 | 0.9543 | 0.9518 | 0.9516 | **0.9523** |
+| shuffled | 0.9396 | 0.9383 | 0.9381 | 0.9352 | 0.9377 | 0.9409 | 0.9415 | 0.9402 | 0.9389 |
+
+Lived minus born +0.022 to +0.031 (mean +0.026), minus shuffled +0.010 to +0.017 (mean
++0.013), every seed: the same as B at half the cost. Against the baselines: linear on pixels 0.922, the same reader
 on the bits 0.912 to 0.916, random projection 0.943, two-layer net 0.955. It closes 0.026
 of the 0.028 between the born sheet and the two-layer net.
 
@@ -366,6 +381,7 @@ scripts/inside.sh compete-d --g.learn_mode 5 --g.compete_on 1 --g.threshold_cap 
 scripts/inside.sh compete-e --g.learn_mode 5 --g.compete_on 1 --g.tile_winners 4 --g.threshold_cap 1000
 scripts/inside.sh compete-b5 --g.learn_mode 5 --g.compete_on 1 --g.tile_winners 4 --g.compete_shift 5 --only mnist
 scripts/inside.sh b-report --g.learn_mode 5 --g.compete_on 1 --g.tile_winners 4 --only mnist --seeds 5-12
+scripts/inside.sh b5-report --g.learn_mode 5 --g.compete_on 1 --g.tile_winners 4 --g.compete_shift 5 --only mnist --seeds 5-12
 scripts/inside.sh born-hot --g.sector_target_per_1024 64 --g.threshold_down_shift 8 --kinds born --only mnist
 scripts/mnist.sh online --seed 5 --checks 1000,5000,20000,60000,120000 --g.tile_winners 4 --g.compete_on 1
 scripts/mnist.sh online --seed 5 --checks 1000,5000,20000,60000,120000 --g.tile_winners 4
@@ -382,4 +398,7 @@ Each `inside.sh` line is about 15 minutes with 3 jobs here (MNIST 6 runs, calc 1
 - The calc rows have no shuffled control and two seeds.
 - The losers' test (C) reads "over threshold" after the tick, ignoring the extras of ideas
   66-75; close enough for a rule that did not help.
-- The four merge-reference lives: REFCHECK.
+- The four merge-reference lives (echo; both-not-either with the readout; minimal; table)
+  are byte-identical to `out/merge-ref/` after the last code change and after merging main
+  (`out/compete/refcheck.sh`: `cmp` on the csvs, the -sum files without their speed line).
+- The 9-12 seeds of B5 ran on stevejobs for 9 and 10 and here for 11 and 12.
