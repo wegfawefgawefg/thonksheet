@@ -45,8 +45,8 @@ is a run: a learning curve from `blobrun`, a speed number from `blobbench`, or a
 
 The owner uses this PC while agents work.
 
-- Builds: `nice -n 19 cmake --build build -j4`. Runs: `nice -n 19`, one run at a time per
-  agent, on at most 2 cores unless the job is a measured speed test.
+- Builds: `nice -n 19 cmake --build build -j4`. Runs: `nice -n 19`, at most 3 jobs per
+  agent on this PC.
 - The CPU stays at or under 90C (the owner, 2026-11-25). `scripts/coolcpu.sh` runs for the
   whole session and pins every nice-19 job to fewer cores when the chip is hot, so jobs
   on this PC share about half the cores and run slower than their flags suggest. Always
@@ -65,8 +65,9 @@ The owner uses this PC while agents work.
 stevejobs is a borrowed Mac mini (14 cores, Apple silicon) for heavy runs, so this PC stays
 usable. `scripts/mini.sh` copies the source there, builds it without the viewer, runs a
 command, and brings results back. An agent uses its own folder there
-(`MINI_DIR=thonk-<job> scripts/mini.sh push`) and at most 4 jobs at a time; someone else
-also uses that machine. Results are byte-identical between the two machines for all three
+(`MINI_DIR=thonk-<job> scripts/mini.sh push`) and at most 2 jobs at a time: there are
+four agents and the whole machine is kept to ten jobs, because someone else also uses it.
+On this PC an agent may run 3 jobs (the temperature script pins them when it is hot). Results are byte-identical between the two machines for all three
 engines. Speed is not: there the full engine is about 3.6 times slower (no AVX-512), the
 minimal engine about 0.7 times, table neurons about 1.3 times faster. Never quote a speed
 from there beside one from here.
