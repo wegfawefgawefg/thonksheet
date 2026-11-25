@@ -461,7 +461,15 @@ not known to do it.
 119. **The unattended search.** A loop that draws designs (genome numbers and mechanism
      switches), scores each on a quick map of worlds, keeps the best and varies them, on
      this PC and stevejobs, with a held-out set of worlds it never sees. A combination
-     search: it cannot invent a mechanism, only find which of ours go together. *running*
+     search: it cannot invent a mechanism, only find which of ours go together. *built and
+     running (`scripts/search.sh`, docs/search.md, docs/search-leaderboard.md): candidates
+     raced through four rungs, confirmation on seeds 5-8 that selection never sees,
+     survives being killed, a seam for the GPU, rule tables as a kind of number. On a small
+     case (3 worlds, 163 candidates) it found settings passing 2 of 3 where the defaults
+     pass 1, by trading echo with 2 cues for 4. The long run: full engine on this PC
+     (from the search agent's worktree, which must stay), minimal and table on stevejobs,
+     48 hours from 2026-11-25 04:46 UTC. Nothing beats the defaults yet. Speed: minimal 51
+     candidates per core hour, table 6, full engine 1.*
 120. **The rule as a table.** The learning rule itself as a small lookup table (what a
      connection does given a few local bits: fired, source fired, good, bad, acted), so the
      search can vary rules and not only numbers. *running*
