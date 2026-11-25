@@ -164,7 +164,7 @@ void tag_rewire(Blob& blob, int n) {
     }
     // excitatory and inhibitory sources each keep their own counts
     for (int i = 0; i < 2; i++) {
-        select_top(blob, c, usable[i], wired, blob.tag_keep[2 * n + i], 1, wire[i]);
+        select_top(blob, c, usable[i], wired, blob.tag_keep[2 * n + i], -128, wire[i]);
         select_top(blob, c, wire[i], strong_now, blob.tag_strong[2 * n + i], -128, strong[i]);
     }
     for (int k = 0; k < SLOTS; k++) {
