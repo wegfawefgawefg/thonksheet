@@ -47,6 +47,19 @@ it balances for 1,000 steps). Those three are not our private walls. They are wh
 fixed ordinary network also stops, and where it would normally be redesigned per task.
 docs/results-2026-11-25-fixed-net-reference.md
 
+**A memory passes most of the suite (2026-11-25).** An engine that only stores and recalls
+(the input cut into events; now plus the last four events as the address; hashed tables of
+small counters; all integers, 187,000 ticks a second) passes, with one setting, every row
+the GRU passes and two it does not: echo to 16 cues, delayed echo across 4,000 silent
+ticks, beat, gap, order, exclusive-or, catch (0.99), cartpole (109 and 279 steps per fall
+where the GRU and every sheet sit below a coin's 23). It learns a pair in about one error
+and holds about 1,000. It is the first thing here to beat the backprop reference anywhere.
+Two cautions. It is a lookup table of what it has seen, so those rows turn out to test
+storing, not understanding; where the asked case was never shown (a shape in a new place:
+0.57, a coin per layout) it has nothing. And reading a sheet's spikes instead of the raw
+input made it worse on every row: mixing is not what a memory wants from a partner.
+docs/results-2026-11-25-memory-engine.md
+
 **MNIST, first pass (2026-11-25).** The never-taught sheet, read offline by a linear
 reader, gets 0.924 on the test digits: level with a linear classifier on the pixels (0.922),
 under a random projection of the same bits (0.943) and a small two-layer network (0.955).
@@ -199,6 +212,14 @@ docs/results-2026-11-25-mnist.md
     4 to 6 buttons went quiet for good. Fixed (`readout_evidence 2`). Sixteen-cue echo
     (0.31) may be the same fault and is being re-run.
 
+27. **Storing by content removes four walls at once.** [likely: one engine] Holding (by
+    events, not ticks: silence costs nothing), many pairs, learning in one go, and a second
+    task without loss all come free when what is learned is filed under what was seen.
+    What it costs: no answer for anything unseen, a fixed depth of past events (one
+    distracting event is survived, two are not), and slots (about 1,000 pairs in 5 MB).
+28. **Most of our worlds test remembering.** [solid: the memory engine passes them] A suite
+    for "any task" needs, in every family, cases that were never shown.
+
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 
 - Finding 14's hidden counter is a known device (permanence in HTM; hidden states in binary
@@ -248,5 +269,7 @@ docs/results-2026-11-25-mnist.md
   makes the full engine worse than a coin, and the reference networks too: the "lean"
   reward grades the press before the one it follows (a fault in the world, being fixed),
   and the sparse reward needs credit carried 25 steps back. The GRU learns catch (0.72).
+  The memory engine learns catch (0.99) and cartpole (109 lean, 279 sparse) once credit
+  reaches two steps back, which confirms the lean reward's one-step lag from a second side.
 - **More than four things.** Eight cues are now learned (0.84) by the new readout on the
   full engine. Sixteen is untested with it.

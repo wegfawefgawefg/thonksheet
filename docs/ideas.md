@@ -470,7 +470,16 @@ exactly, hash and look things up in one step.
      computing; new here] An engine whose learning is storing and recalling bit patterns by
      content: long random bit vectors, bound with XOR, compared with popcount, kept in a
      table found by hashing. One-shot, no wiring to change, nothing to saturate. A brain has
-     an organ like this beside its sheets. *building*
+     an organ like this beside its sheets. *done (`blobrun --engine memory`,
+     `scripts/memory.sh`). The input is cut into events; the address is now plus the last
+     four events and how long each lasted; 256 hashed tables of small per-button counters.
+     One setting, seeds 5-12: echo to 16 cues 0.98, delayed echo 0.99 (also across 4,000
+     silent ticks), beat, gap, order, exclusive-or all 0.99, catch 0.99, cartpole 109 and
+     279 steps per fall (coin 23, GRU 12 to 14), about 1,000 random pairs held, a pair
+     learned in under one error on average. It is a lookup table of what it has seen, and
+     it fails where that is not enough: place 0.57 (a coin per layout), two distracting
+     events in a gap, 2,000 pairs. Reading a sheet's spikes instead of the raw input made
+     every row worse. docs/results-2026-11-25-memory-engine.md*
 124. **Organs.** [known] Not one sheet with one rule: a sheet that mixes, a memory that
      stores at once, a selector that picks actions and explores, a bank of clocks for time.
      Each cheap, each with its own rule, behind one plug. *idea, after 123*
@@ -585,3 +594,14 @@ co-activity runs ties the held units together and loses their order.
      same sheet (0.92). *queued*
 148. **Search richness on digits.** The rich sheets found for order and gap read digits
      worse than the default. Score the search on the digit ceiling. *queued*
+149. **A suite a lookup table cannot pass.** The memory engine passes tiers 1, 2, 4, 7 and 8
+     by storing what it saw. So those rows test storing. Every family needs rows where the
+     asked case was never shown: held-out inputs (the calculation and function batteries
+     have them), noise on the input lines, real data, more distracting events than any
+     fixed depth. Score "generalises" apart from "remembers" on the scoreboard. *next: fold
+     into the batteries as they land; with idea 126*
+150. **What the memory needs from a partner.** Not mixing: a code that is the same for
+     things that should be treated the same (a shape wherever it is, a digit moved 2
+     pixels). A sheet, or anything, that learns such a code with no reward, feeding the
+     memory. This is the invariance problem restated as one organ's job. *queued behind the
+     invariance battery*

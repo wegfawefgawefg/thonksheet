@@ -76,6 +76,14 @@ beat, order and gap all 1.00, catch 0.72, tier 8 1.00. It fails the place never 
 truly hard or badly made; cartpole's "lean" reward and the place world are marked suspect
 until checked.
 
+### The memory engine
+
+`blobrun --engine memory` (idea 123) passes tiers 1, 2 (exclusive-or), 4 (order, gap,
+delayed echo, beat), 7 (catch 0.99; cartpole 109 and 279 steps per fall) and 8 with one
+setting, by storing what it has seen. So "every row of tiers 1 to 4 on one set of rules"
+is met, by a lookup table, and the milestone needs sharpening: rows where the asked case
+was never shown (idea 149). The place world is the only such row today and it fails there.
+
 ## Milestones worth naming
 
 - **Every row of tiers 1 to 4 on one set of rules.** Not yet: nothing holds a cue past 20
