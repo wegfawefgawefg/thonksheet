@@ -520,3 +520,44 @@ would be cool if we can arbitrarily learn calculations."
      and comes out the other side. Answers by button, by pointing (a motor line per region),
      and by moving a marker onto it. *queued: starts when the invariance battery lands,
      since it reuses that battery's shape drawing*
+
+### From the outside catalogue (added 2026-11-25)
+
+`docs/outside-catalogue.md` has 149 mechanisms from fields that were never about learning
+machines, each translated to bits. These are the ones to try first, queued in this order
+and started as machine time frees up (both machines are full).
+
+137. **A bank of predictors at history lengths 2, 4, 8, 16 ...** [from branch predictors in
+     processors (TAGE); new here] Hashed tables of small counters, each indexed by the last
+     2, 4, 8, ... steps of what happened; the longest history that has an opinion wins.
+     Built for exactly our shape of hardware, and aimed at the gap and at sequences. With a
+     pacemaker count (a gap kept as a stored number of ticks, not as activity). *queued*
+138. **Credit by code.** [from simultaneous perturbation in control engineering] Every unit
+     nudges its behaviour up or down following its own fixed pseudo-random code, all at
+     once; each unit then correlates the outcome with its own code. One experiment the size
+     of the whole decision, credit that is still per unit, a few counters each. Aimed at
+     teaching the inside. *queued*
+139. **Units pay the units that set them up.** [bucket brigade; Baum's economy] A unit that
+     earns passes part of its earnings to the units whose firing let it fire; wealth is
+     conserved, and the poor are replaced. Credit that flows backward as payment. Aimed at
+     teaching the inside and at chains of actions. *queued*
+140. **Copy, vary, and keep a frozen copy.** [the immune system; gene duplication] A unit
+     pulled two ways is duplicated so one copy can change and the other stay; units that
+     fit badly are copied with more changes; proven units are set aside unchanged. Aimed at
+     keeping while adding. *queued*
+141. **Never erase: unlearning is new learning tagged with its context.** [extinction in
+     animals] *queued, with 140*
+142. **Run it again.** [Braitenberg's vehicle 13] After a rare strong outcome, loop the last
+     few recorded spike maps through learning several times. *queued, small*
+143. **Tax the common answer.** [ecology: kill the winner] The more often an answer is
+     given, the harder it is to give. Aimed at the lock. *queued, small*
+144. **Look one step ahead.** [Braitenberg's vehicle 14] Counters for "after this, that" and
+     for how good "that" was; choose by the predicted next state. The project has no
+     lookahead at all. *queued, with the critic*
+145. **The behaviour battery.** Twenty-two small worlds from a century of animal learning
+     that any learner should pass and the task map lacks: habituation, blocking,
+     overshadowing, latent inhibition, extinction with recovery and renewal, partial
+     reward, second-order conditioning, reversal, learning sets, matching, interval timing,
+     latent learning, spacing, superstition. *queued*
+Also from Braitenberg, for whoever builds a holding region: holding activity while wiring by
+co-activity runs ties the held units together and loses their order.
