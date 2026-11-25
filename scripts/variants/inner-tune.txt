@@ -1,0 +1,13 @@
+# idea 155, choosing the setting on seeds 1-4 (128 motor cells per button; the k=8 row uses
+# inner-tune-many.txt). first line is the frozen-sheet readout. tags: contrast, no inhibitory
+# learning, min 4 (docs/results-2026-11-25-tags-and-margin.md); walk d1: reverse replay one
+# step (docs/results-2026-11-25-reverse-replay.md). exact: the tags with the walk's
+# spike-exact credit (tag_exact 1); then four candidates around it.
+readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128
+tags: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4
+walk d1: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 1
+exact: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1
+exact, error verdict: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1 --g.tag_verdict 1
+exact, min 2: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 2 --g.tag_exact 1
+exact, min 8: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 8 --g.tag_exact 1
+exact, shift 3: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1 --g.tag_shift 3

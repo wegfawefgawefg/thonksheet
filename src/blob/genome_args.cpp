@@ -183,6 +183,11 @@ static const GenomeField fields[] = {
     {"explore_scale", &Genome::explore_scale},
     {"critic_opponent", &Genome::critic_opponent},
     {"critic_wide", &Genome::critic_wide},
+    {"tag_exact", &Genome::tag_exact},
+    {"tag_grow", &Genome::tag_grow},
+    {"tag_counts", &Genome::tag_counts},
+    {"tag_shuffle", &Genome::tag_shuffle},
+    {"tag_random", &Genome::tag_random},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {
