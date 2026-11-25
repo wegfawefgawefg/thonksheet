@@ -73,6 +73,7 @@ RANGES = {
     "veto_percent": (10, 100),
     "coincide_percent": (10, 100),
     "tile_winners": (2, 16),
+    "syn_sensors": (0, 1),
 }
 OPTIONAL = ["syn_tire_ticks", "syn_warm_ticks", "tire_jump", "slow_leak_shift", "rebound_level",
             "updown_drop", "any_branch_percent", "veto_percent", "coincide_percent",
@@ -88,7 +89,7 @@ DEFAULTS = {
     "tire_jump": 0, "tire_shift": 4, "slow_leak_shift": 0, "slow_share_shift": 6,
     "rebound_level": 0, "rebound_drop": 4, "rebound_ticks": 4, "updown_drop": 0,
     "updown_floor": 0, "any_branch_percent": 0, "veto_percent": 0, "coincide_percent": 0,
-    "tile_winners": 0,
+    "tile_winners": 0, "syn_sensors": 1,
 }
 
 
