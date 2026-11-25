@@ -54,7 +54,29 @@ RANGES = {
     "pacemakers_per_1024": (0, 16),
     "strong_log": (1, 2),
     "fan_in_max": (48, 128),
+    # ideas 66-75 (docs/results-2026-11-25-family-dynamics.md); those in OPTIONAL are off
+    # (0) in half the sheets
+    "syn_tire_ticks": (1, 8),
+    "syn_tire_keep_shift": (1, 3),
+    "syn_warm_ticks": (1, 8),
+    "syn_warm_shift": (0, 1),
+    "tire_jump": (1, 8),
+    "tire_shift": (3, 6),
+    "slow_leak_shift": (5, 8),
+    "slow_share_shift": (4, 8),
+    "rebound_level": (4, 48),
+    "rebound_drop": (2, 8),
+    "rebound_ticks": (2, 8),
+    "updown_drop": (1, 8),
+    "updown_floor": (-8, 0),
+    "any_branch_percent": (10, 100),
+    "veto_percent": (10, 100),
+    "coincide_percent": (10, 100),
+    "tile_winners": (2, 16),
 }
+OPTIONAL = ["syn_tire_ticks", "syn_warm_ticks", "tire_jump", "slow_leak_shift", "rebound_level",
+            "updown_drop", "any_branch_percent", "veto_percent", "coincide_percent",
+            "tile_winners"]
 DEFAULTS = {
     "inhibitory_percent": 25, "inhibit_gain": 5, "threshold_min": 4, "threshold_max": 12,
     "leak_shift_min": 1, "leak_shift_max": 4, "cooldown_min": 1, "cooldown_max": 4,
@@ -62,6 +84,11 @@ DEFAULTS = {
     "local_delay_min": 1, "local_delay_max": 4, "branch_threshold": 3, "branch_bonus": 2,
     "noise_shift": 10, "sector_target_per_1024": 32, "sector_smooth_shift": 4,
     "pacemakers_per_1024": 4, "strong_log": 2, "fan_in_max": 96,
+    "syn_tire_ticks": 0, "syn_tire_keep_shift": 1, "syn_warm_ticks": 0, "syn_warm_shift": 0,
+    "tire_jump": 0, "tire_shift": 4, "slow_leak_shift": 0, "slow_share_shift": 6,
+    "rebound_level": 0, "rebound_drop": 4, "rebound_ticks": 4, "updown_drop": 0,
+    "updown_floor": 0, "any_branch_percent": 0, "veto_percent": 0, "coincide_percent": 0,
+    "tile_winners": 0,
 }
 
 
@@ -71,6 +98,9 @@ def draw(rng):
                    ("cooldown_min", "cooldown_max"), ("local_delay_min", "local_delay_max")):
         if g[hi] < g[lo]:
             g[hi] = g[lo]
+    for k in OPTIONAL:
+        if rng.random() < 0.5:
+            g[k] = 0
     return g
 
 
@@ -130,7 +160,11 @@ def append_rows(rows, path=None):
 def load(path=None):
     path = path or CSV
     with open(path) as f:
-        return [{k: float(v) for k, v in r.items()} for r in csv.DictReader(f)]
+        rows = [{k: float(v) for k, v in r.items()} for r in csv.DictReader(f)]
+    for r in rows:
+        for k, v in DEFAULTS.items():
+            r.setdefault(k, float(v))
+    return rows
 
 
 def cmd_run(args):
@@ -148,10 +182,17 @@ def cmd_run(args):
 
 
 def ranks(values):
+    # ties share their mean rank (the new numbers are 0 in half the sheets)
     order = sorted(range(len(values)), key=lambda i: values[i])
     out = [0.0] * len(values)
-    for rank, i in enumerate(order):
-        out[i] = rank
+    start = 0
+    while start < len(order):
+        end = start
+        while end + 1 < len(order) and values[order[end + 1]] == values[order[start]]:
+            end += 1
+        for k in range(start, end + 1):
+            out[order[k]] = (start + end) / 2
+        start = end + 1
     return out
 
 
@@ -175,6 +216,19 @@ def cmd_report(args):
             c = rank_correlation(xs, [r[f + "_1"] for r in rows])
             cells.append(f"{c:+8.2f}" if abs(c) >= 0.15 else f"{'.':>8s}")
         print(f"{name:24s}" + "".join(cells))
+    # the numbers that are off in half the sheets: median with it on, and off
+    on_off = [k for k in OPTIONAL if any(r[k] != 0 for r in rows)]
+    if on_off:
+        print("\nOn against off (median over the sheets with it on / off):")
+        print(f"{'number':24s}" + "".join(f"{f:>14s}" for f in FEATURES))
+        for name in on_off:
+            on = [r for r in rows if r[name] != 0]
+            off = [r for r in rows if r[name] == 0]
+            if not on or not off:
+                continue
+            cells = [f"{statistics.median(r[f + '_1'] for r in on):6.2f}/"
+                     f"{statistics.median(r[f + '_1'] for r in off):<7.2f}" for f in FEATURES]
+            print(f"{name:24s}" + "".join(f"{c:>14s}" for c in cells))
     print("\nSpread over all sheets (lowest, median, highest), and the default sheet:")
     default = rows[0]
     for f in FEATURES:

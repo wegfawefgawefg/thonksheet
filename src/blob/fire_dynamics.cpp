@@ -108,7 +108,10 @@ void split_start(const Blob& blob, int t, SlotSplit& x) {
         x.inhibit[b] = 0;
         x.active[b] = 0;
     }
-    x.veto = blob.veto ? blob.veto[t] : 0;
+    uint64_t veto = blob.veto ? blob.veto[t] : 0;
+    for (int b = 0; b < TILE_NEURONS; b++) {
+        x.veto[b] = (int32_t)((veto >> b) & 1);
+    }
 }
 
 uint64_t split_finish(const Blob& blob, int t, const SlotSplit& x, int32_t* drive) {
@@ -130,55 +133,77 @@ uint64_t split_finish(const Blob& blob, int t, const SlotSplit& x, int32_t* driv
     return met | ~blob.coincide[t];
 }
 
-uint64_t dynamics_compare(Blob& blob, int t, const int32_t* drive, int bias, int32_t* margin) {
+// 64 flags (0 or 1, one per int) into one word
+static uint64_t pack_ints(const int32_t* flags) {
+    uint64_t word = 0;
+    for (int b = 0; b < TILE_NEURONS; b++) {
+        word |= (uint64_t)flags[b] << b;
+    }
+    return word;
+}
+
+uint64_t dynamics_compare(Blob& blob, int t, const int32_t* __restrict drive, int bias,
+                          int32_t* __restrict margin) {
     const Genome& g = blob.genome;
     int base = t * TILE_NEURONS;
-    int16_t* pot = blob.potential + base;
-    const int16_t* thr = blob.threshold + base;
-    const uint8_t* leak = blob.leak_shift + base;
-    uint64_t up = blob.up ? blob.up[t] : 0;
-    uint64_t would = 0, fell = 0;
+    int16_t* __restrict pot = blob.potential + base;
+    const int16_t* __restrict thr = blob.threshold + base;
+    const uint8_t* __restrict leak = blob.leak_shift + base;
+    alignas(64) int32_t seen[TILE_NEURONS], bar[TILE_NEURONS], flag[TILE_NEURONS];
     for (int b = 0; b < TILE_NEURONS; b++) {
         int p = pot[b];
         p = p - (p >> leak[b]) + drive[b];
         p = p < POTENTIAL_MIN ? POTENTIAL_MIN : (p > POTENTIAL_MAX ? POTENTIAL_MAX : p);
         pot[b] = (int16_t)p;
-        int seen = p;
-        int bar = thr[b] + bias;
-        // 69: the slow sum leaks far less and adds a share of itself
-        if (blob.slow) {
-            int s = blob.slow[base + b];
-            s = s - (s >> g.slow_leak_shift) + drive[b];
+        seen[b] = p;
+        bar[b] = thr[b] + bias;
+    }
+    // 69: the slow sum leaks far less and adds a share of itself
+    if (blob.slow) {
+        int16_t* __restrict slow = blob.slow + base;
+        int ls = g.slow_leak_shift, share = g.slow_share_shift;
+        for (int b = 0; b < TILE_NEURONS; b++) {
+            int s = slow[b];
+            s = s - (s >> ls) + drive[b];
             s = s < -SLOW_LIMIT ? -SLOW_LIMIT : (s > SLOW_LIMIT ? SLOW_LIMIT : s);
-            blob.slow[base + b] = (int16_t)s;
-            seen += s >> g.slow_share_shift;
+            slow[b] = (int16_t)s;
+            seen[b] += s >> share;
         }
-        // 68: recent firing raises the bar
-        if (blob.tire) {
-            bar += blob.tire[base + b] >> 4;
-        }
-        // 70: held down, then let go: easier for a few ticks
-        if (blob.rebound) {
-            uint8_t& r = blob.rebound[base + b];
-            if (p < -g.rebound_level) {
-                r = (uint8_t)g.rebound_ticks;
-            } else if (r > 0) {
-                bar -= g.rebound_drop;
-                r--;
-            }
-        }
-        // 71: up neurons have the lower bar until the potential falls below the floor
-        if ((up >> b) & 1) {
-            bar -= g.updown_drop;
-        }
-        fell |= (uint64_t)(p < g.updown_floor) << b;
-        margin[b] = seen - bar;
-        would |= (uint64_t)(seen >= bar) << b;
     }
+    // 68: recent firing raises the bar
+    if (blob.tire) {
+        const int16_t* __restrict tire = blob.tire + base;
+        for (int b = 0; b < TILE_NEURONS; b++) {
+            bar[b] += tire[b] >> 4;
+        }
+    }
+    // 70: held down, then let go: easier for a few ticks
+    if (blob.rebound) {
+        uint8_t* __restrict r = blob.rebound + base;
+        int level = -g.rebound_level, drop = g.rebound_drop, ticks = g.rebound_ticks;
+        for (int b = 0; b < TILE_NEURONS; b++) {
+            int held = pot[b] < level;
+            int left = r[b];
+            bar[b] -= (!held && left > 0) ? drop : 0;
+            r[b] = (uint8_t)(held ? ticks : (left > 0 ? left - 1 : 0));
+        }
+    }
+    // 71: up neurons have the lower bar until the potential falls below the floor
     if (blob.up) {
-        blob.up[t] = up & ~fell;
+        uint64_t up = blob.up[t];
+        int drop = g.updown_drop, floor = g.updown_floor;
+        for (int b = 0; b < TILE_NEURONS; b++) {
+            int is_up = (int)((up >> b) & 1);
+            bar[b] -= is_up * drop;
+            flag[b] = pot[b] < floor;
+        }
+        blob.up[t] = up & ~pack_ints(flag);
     }
-    return would;
+    for (int b = 0; b < TILE_NEURONS; b++) {
+        margin[b] = seen[b] - bar[b];
+        flag[b] = margin[b] >= 0;
+    }
+    return pack_ints(flag);
 }
 
 void dynamics_after(Blob& blob, int t, uint64_t fired) {

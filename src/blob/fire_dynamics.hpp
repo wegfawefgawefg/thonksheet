@@ -24,25 +24,31 @@ struct SlotSplit {
     alignas(64) int32_t best[TILE_NEURONS];    // largest excitation (with bonus) of one slot
     alignas(64) int32_t inhibit[TILE_NEURONS]; // gain x inhibition over all slots
     alignas(64) uint32_t active[TILE_NEURONS]; // bit d: a slot read at delay d was active
-    uint64_t veto = 0;                         // this tile's veto neurons
+    alignas(64) int32_t veto[TILE_NEURONS];    // 1 for this tile's veto neurons
 };
 
-// one slot, each neuron reading its own word s[b]; inh marks the inhibitory senders
+// one slot, each neuron reading its own word s[b]; inh marks the inhibitory senders.
+// branch-free so it vectorizes like the plain slot add
 static inline void split_add_slot(int32_t* __restrict drive, SlotSplit& x,
                                   const uint64_t* __restrict s, uint64_t inh,
                                   const uint64_t* __restrict a0, const uint64_t* __restrict a1,
                                   const uint8_t* __restrict delay, int gain, int bt, int bonus,
                                   int sl) {
+    int32_t* __restrict best = x.best;
+    int32_t* __restrict inhibit_sum = x.inhibit;
+    uint32_t* __restrict active = x.active;
+    const int32_t* __restrict veto = x.veto;
     for (int b = 0; b < TILE_NEURONS; b++) {
         uint64_t e = s[b] & ~inh, i = s[b] & inh;
         int excite = __builtin_popcountll(e & a0[b]) + (__builtin_popcountll(e & a1[b]) << sl);
         int inhibit = __builtin_popcountll(i & a0[b]) + (__builtin_popcountll(i & a1[b]) << sl);
-        bool vetoed = ((x.veto >> b) & 1) && inhibit > 0;
-        int up = vetoed ? 0 : excite + (excite >= bt ? bonus : 0);
+        int open = 1 - (veto[b] & (inhibit > 0)); // 0: vetoed
+        int strong = excite >= bt;
+        int up = open * (excite + strong * bonus);
         drive[b] += up - gain * inhibit;
-        x.best[b] = up > x.best[b] ? up : x.best[b];
-        x.inhibit[b] += gain * inhibit;
-        x.active[b] |= (!vetoed && excite >= bt) ? 1u << delay[b] : 0u;
+        best[b] = up > best[b] ? up : best[b];
+        inhibit_sum[b] += gain * inhibit;
+        active[b] |= (uint32_t)(open & strong) << delay[b];
     }
 }
 
