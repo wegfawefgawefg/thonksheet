@@ -68,6 +68,10 @@ struct MemoryGenome {
     int others_up = 0; // 1: on bad, every other known button's counter goes up 1
     int credit_ticks = 20; // frames this recent get the button the world says was pressed
     int trace_ticks = 100; // frames since the last reward, this far back, are credited
+    // frames before the last reward, this far back, are moved too: 1 by the reward, 2 by
+    // how much better or worse it is than usual (each reward then sums a few steps)
+    int trace_across = 2;
+    int across_ticks = 40;
     int explore_max = 32;  // chance to press a random button when nothing has been good
     int explore_min = 2;   // and when everything has
     int avg_shift = 5;     // the good rate follows about 2^this rewards

@@ -72,22 +72,39 @@ static void credit_slot(MemoryBlob& m, int8_t* slot, int unit, int valence) {
 
 static void credit(MemoryBlob& m, int pressed, int valence) {
     const MemoryGenome& mg = m.mg;
-    // the frames to credit, newest first, with the button each is credited for
+    // frames before the last reward (trace_across 2) are moved by how much better or worse
+    // this reward is than usual: towards its sign with chance |reward - mean| / 2
+    int mean = 2 * m.good_avg - 256; // x256, -256..256
+    int surprise = valence * 256 - mean;
+    int older_dir = surprise > 0 ? 1 : -1;
+    int older_chance = (surprise < 0 ? -surprise : surprise) / 2; // out of 256
+    // the frames to credit, newest first, with the button and direction of each
     int ring[MEM_FRAMES];
     int unit[MEM_FRAMES];
+    int dir[MEM_FRAMES];
     int count = 0;
     int64_t oldest = m.frame_count > MEM_FRAMES ? m.frame_count - MEM_FRAMES : 0;
     for (int64_t i = m.frame_count - 1; i >= oldest; i--) {
         const MemoryFrame& f = m.frames[i & (MEM_FRAMES - 1)];
-        if (f.last_tick <= m.last_reward_tick || f.last_tick < m.tick - mg.trace_ticks) {
+        bool before = f.last_tick <= m.last_reward_tick;
+        bool too_old = f.last_tick < m.tick - (before ? mg.across_ticks : mg.trace_ticks);
+        if ((before && !mg.trace_across) || too_old) {
             break;
         }
         int u = f.last_tick > m.tick - mg.credit_ticks ? pressed : f.unit;
+        int d = valence;
+        if (before && mg.trace_across == 2) {
+            if ((int)(rng_next(m.rng) & 255) >= older_chance) {
+                continue;
+            }
+            d = older_dir;
+        }
         if (u < 0) {
             continue;
         }
         ring[count] = (int)(i & (MEM_FRAMES - 1));
         unit[count] = u;
+        dir[count] = d;
         count++;
     }
     // each (slot, button) of a table moves once per reward, however many frames used it
@@ -103,7 +120,7 @@ static void credit(MemoryBlob& m, int pressed, int valence) {
                 continue;
             }
             int8_t* c = m.counters + ((size_t)t << mg.table_bits | slot) * MEM_UNITS;
-            credit_slot(m, c, unit[k], valence);
+            credit_slot(m, c, unit[k], dir[k]);
         }
     }
 }

@@ -37,6 +37,7 @@ static void sanitize(MemoryGenome& mg) {
     mg.bad_step = clamp_int(mg.bad_step, 0, 127);
     mg.credit_ticks = clamp_int(mg.credit_ticks, 1, 1 << 20);
     mg.trace_ticks = clamp_int(mg.trace_ticks, mg.credit_ticks, 1 << 20);
+    mg.across_ticks = clamp_int(mg.across_ticks, 0, mg.trace_ticks);
     mg.explore_max = clamp_int(mg.explore_max, 0, 256);
     mg.explore_min = clamp_int(mg.explore_min, 0, mg.explore_max);
     mg.avg_shift = clamp_int(mg.avg_shift, 0, 16);
@@ -249,6 +250,8 @@ static const MemoryField fields[] = {
     {"others_up", &MemoryGenome::others_up},
     {"credit_ticks", &MemoryGenome::credit_ticks},
     {"trace_ticks", &MemoryGenome::trace_ticks},
+    {"trace_across", &MemoryGenome::trace_across},
+    {"across_ticks", &MemoryGenome::across_ticks},
     {"explore_max", &MemoryGenome::explore_max},
     {"explore_min", &MemoryGenome::explore_min},
     {"avg_shift", &MemoryGenome::avg_shift},
