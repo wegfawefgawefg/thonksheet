@@ -169,6 +169,8 @@ static const GenomeField fields[] = {
     {"explore_scale", &Genome::explore_scale},
     {"critic_opponent", &Genome::critic_opponent},
     {"critic_wide", &Genome::critic_wide},
+    {"critic_keep_world", &Genome::critic_keep_world},
+    {"actor_good", &Genome::actor_good},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

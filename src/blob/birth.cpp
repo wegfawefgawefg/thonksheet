@@ -339,7 +339,8 @@ void blob_free(Blob* blob) {
 
 void blob_reward(Blob& blob, int valence) {
     // critic_on: every step lands here, and the critic's surprise replaces the valence
-    if (critic_step(blob, valence)) {
+    // with critic_keep_world the world's verdict still goes on below as without the critic
+    if (critic_step(blob, valence) && !blob.genome.critic_keep_world) {
         return;
     }
     if (valence > 0) {

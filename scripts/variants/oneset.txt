@@ -1,0 +1,55 @@
+# The quick map for one setting (scripts/oneset.sh). `row NAME: flags` is a world; every
+# other line `NAME: flags` is a column (a setting run unchanged on every row). Every row runs
+# on the standard life (--ticks 20 --sensor-side 3 --motor-side 3 --steps 40000 --window 1000)
+# with its own flags after that; a row's flags are the world's own (layout, lines, buttons).
+# Results: docs/results-2026-11-26-one-setting.md.
+
+# association
+row echo2: --task echo
+row echo8: --task echo --k 8
+row echo16: --task echo --k 16
+row shuffled: --task shuffled-echo
+# reach
+row far3: --task echo --distance 3
+row far5: --task echo --distance 5
+# combination
+row xor: --task both-not-either
+row parity3: --task points --fn parity --fn-lines 3
+# time
+row order: --task order
+row gap: --task gap
+row delayed2: --task delayed-echo --delay 2
+row hold1000: --task delayed-echo --delay 50
+# acting
+row bandit: --task bandit
+row chain: --task chain
+row cartpole: --task cartpole --sensor-side 2 --cart-reward lean --number-code place
+row catch: --task catch --catch-size 4 4
+# the rest of the map: noise, holding one step
+row noisy: --task noisy-lines --k 4 --item-lines 8 --flip-pct 25
+row copy2: --task copy --k 2 --length 2
+# held out (the invariance battery: scored on versions never rewarded)
+row inv-scale: --task inv-scale --sensor-side 1
+row inv-position: --task inv-position --sensor-side 1
+# keeping: a new pair every 100 steps (so probes are many enough to score), probed unrewarded 100, 1,000, 10,000 steps later
+row pairs: --task pairs --sensor-side 2 --pair-every 100
+# real data: 20,000 digits seen once each, the online score on digits not seen before. the
+# 28x28 digit needs the whole sheet as the sensor region (the world cannot be plugged
+# otherwise), motor cells on the cells between
+row mnist: --task mnist --sensor-side 1 --mnist-code t28 --steps 20000 --g.sensor_w 64 --g.sensor_h 64 --g.motor_x 1 --g.motor_y 1 --g.motor_w 64 --g.motor_h 64
+
+# the three references
+base: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128
+gru: --engine gru
+memory: --engine memory
+
+# each mechanism alone on the output rule, with the flags its results doc recommends
+replay1: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 1
+tire: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tire_jump 4 --g.tire_shift 7
+slow: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.slow_leak_shift 6 --g.slow_share_shift 4
+timehold: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.time_percent 10 --g.hold_percent 10
+winners2: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tile_winners 2
+critic: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.critic_on 1 --g.readout_good 1
+good: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.readout_good 1
+inhlocal: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.wire_inhib_reach -3
+rich2: --g.learn_mode 5 --g.readout_evidence 2 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.inhibitory_percent 34 --g.inhibit_gain 3 --g.threshold_min 6 --g.threshold_max 14 --g.cooldown_max 8 --g.local_connect_shift 2 --g.strong_shift 1 --g.far_percent 36 --g.far_reach_tiles 2 --g.local_delay_min 3 --g.local_delay_max 11 --g.branch_threshold 6 --g.branch_bonus 5 --g.noise_shift 9 --g.sector_target_per_1024 25 --g.sector_smooth_shift 6 --g.pacemakers_per_1024 11 --g.fan_in_max 103

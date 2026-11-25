@@ -60,7 +60,7 @@ void actor_learn(Blob& blob, CriticState& c, int sign) {
             int pressed_sign = 0, other_sign = 0;
             if (g.actor_form == 1) {
                 pressed_sign = sign;
-            } else if (sign < 0 || g.readout_good) {
+            } else if (sign < 0 || g.readout_good || g.actor_good) {
                 pressed_sign = sign;
                 other_sign = -sign;
             }

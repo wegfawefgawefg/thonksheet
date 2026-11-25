@@ -242,6 +242,14 @@ struct Genome {
                                    // way and count against, so what all cells share cancels
     int critic_wide = 0;           // 1: every non-motor cell of the motor region is a critic
                                    // cell (768 by default), not only those between (256)
+
+    // glue for running the mechanisms together (docs/results-2026-11-26-one-setting.md).
+    // 0 is off and changes nothing.
+    int critic_keep_world = 0; // 1: with the critic on, the world's good and bad still reach
+                               // the readout, the replay walk and the integrator cells as
+                               // without it; the surprise teaches the actor on top
+    int actor_good = 0;        // 1: a good surprise teaches the actor's good half (pressed
+                               // gain, others lose) whatever readout_good says
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs
