@@ -3,6 +3,9 @@
 // the stand-in only: coin flips and a scripted perfect player. The life protocols of the
 // suite (retention, idle, capacity, reach, speed) are in life_protocols.cpp.
 
+#ifdef BLOB_HAS_CORE
+#include "blob/learn_rule.hpp"
+#endif
 #include "run/drive.hpp"
 #include "run/life_protocols.hpp"
 #include "run/run_flags.hpp"
@@ -261,13 +264,17 @@ void drivers_wanted(const RunFlags& flags, bool* want) {
 int main(int argc, char** argv) {
     RunFlags flags;
     apply_genome_args(argc, argv, flags.genome);
+#ifdef BLOB_HAS_CORE
+    rule_table_args(argc, argv);
+#endif
     table_genome_args(argc, argv, table_genome);
     if (!run_flags_parse(argc, argv, flags)) {
         return 1;
     }
     if (flags.out.empty()) {
         // protocols other than one plain life are named before the task
-        const char* const protocol_names[] = {"", "retention-", "idle-", "capacity-", "", ""};
+        const char* const protocol_names[] = {"", "retention-", "idle-",  "capacity-", "",
+                                              "", "shown-",     "damage-", "long-"};
         std::string what = protocol_names[(int)flags.protocol];
         what += task_name(flags.task);
         what = flags.protocol == Protocol::reach ? "reach" : what;
@@ -281,6 +288,10 @@ int main(int argc, char** argv) {
 #ifdef BLOB_HAS_MINIMAL
     use_minimal = flags.engine == "minimal";
     apply_minimal_args(argc, argv, minimal_genome);
+    // the minimal engine's frozen readout: its error-rule readout, nothing inside learns
+    if (flags.frozen_readout && use_minimal) {
+        minimal_readout_only(minimal_genome);
+    }
 #endif
 #ifdef BLOB_HAS_MEMORY
     use_memory = flags.engine == "memory";
@@ -300,7 +311,7 @@ int main(int argc, char** argv) {
         return 1;
     }
     // the readout mode is the blob genome's learn_mode 1; other engines do not read it
-    if (flags.frozen_readout && (flags.table || use_minimal || use_memory || use_nn || use_vm)) {
+    if (flags.frozen_readout && (flags.table || use_memory || use_nn || use_vm)) {
         std::fprintf(stderr, "blobrun: --frozen-readout is the blob's learn_mode 1; this "
                              "engine has no readout mode\n");
         return 1;

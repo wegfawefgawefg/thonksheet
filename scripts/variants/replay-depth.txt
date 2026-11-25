@@ -1,0 +1,7 @@
+# idea 62, report on seeds 5-12: how deep the walk goes. the first line is the best frozen-sheet
+# readout; then 1 to 4 steps back (each step past the first thinned by half).
+frozen sheet + readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128
+walk depth 1: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 1
+walk depth 2: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 2
+walk depth 3: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 3
+walk depth 4: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 4

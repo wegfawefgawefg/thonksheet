@@ -5,6 +5,8 @@
 #   scripts/watch.sh                           echo with 2 cues, the full engine
 #   scripts/watch.sh echo --k 4
 #   scripts/watch.sh cartpole
+#   scripts/watch.sh bandit          any world of scripts/task.sh (track, forage, pendulum, ...)
+#   scripts/watch.sh inv-rotation --inv-motion 50     the invariance battery (docs/curriculum.md)
 # The working rule (learn mode 5: evidence counters at the buttons' cells, 128 cells a
 # button, the inside of the sheet fixed as born):
 #   scripts/watch.sh echo --readout
@@ -34,16 +36,18 @@ fi
 task="${1:-echo}"
 [ $# -gt 0 ] && shift
 # cartpole has 24 number lines, which need smaller line groups; it is run with the reward
-# that says "nearer upright and centred" and with each number as one lit line
+# that says "nearer upright and centred" and with each number as one lit line. mountain car
+# and pendulum have 16 number lines, forage a 5x5 bitmap: smaller groups too
 side=3
 extra=""
-if [ "$task" = cartpole ]; then
-    side=2
-    extra="--cart-reward lean --number-code place"
-fi
-if [ "$task" = catch ]; then
-    side=2
-fi
+# the invariance battery's pictures and pitch need one sensor cell a line (16x12 bitmap)
+case "$task" in
+cartpole) side=2; extra="--cart-reward lean --number-code place" ;;
+mountain-car | pendulum) side=2; extra="--number-code place" ;;
+catch | forage) side=2 ;;
+inv-shift | inv-tempo) ;;
+inv-*) side=1 ;;
+esac
 # --readout: the working rule, as scripts/readout.sh's BEST
 readout="--g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128"
 args=()

@@ -1,0 +1,5 @@
+# idea 62, report on seeds 5-12: the shuffled-sign control at depth 1, the depth that did best
+# on the report seeds. first line is the best frozen-sheet readout.
+frozen sheet + readout: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128
+walk depth 1: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 1
+depth 1, signs shuffled: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.replay_depth 1 --g.replay_shuffle 1

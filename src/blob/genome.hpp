@@ -158,6 +158,90 @@ struct Genome {
     // fed from the same place on the near half; the far half sends back to 1 in 8 of the near
     // half's far links
     int wire_two_sheets = 0;
+    // reverse replay (idea 62, learn_replay.cpp), on top of learn mode 5 or 6. on each error
+    // step the readout's sign walks back through the spike ring along edges that carried a
+    // spike, moving hidden evidence counters of inner neurons. 0 everywhere is off.
+    int replay_depth = 0; // steps back (layers of inner neurons taught), 0 off
+    int replay_shift = 4; // chance per active source per walked spike of a counter step
+    int replay_thin = 1;  // each step past the first keeps a walked spike with 2^-this
+    int replay_new = 1;   // 1: active sources not yet connected gain too (the walk can grow)
+    int replay_quiet = 0; // 1: cells that should have fired more walk from every tick of the
+                          // window, not only from their spikes
+    int replay_until = 0; // tick at which the walk stops for good (0: never)
+    int replay_reset = 0; // at replay_until: 1 the motor cells go back to born wiring and the
+                          // readout's counters are cleared; 2 the same, then all learning stops
+    int replay_shuffle = 0; // control: 1 gives each motor spike walked a random sign
+    int replay_strong_budget = 0; // 1: a walked neuron keeps its count of strong connections
+                                  // too, and none goes to 5 (replay_wire.cpp)
+    // idea 120: the learning rule as a table, loaded with --rule-file (learn_rule.hpp).
+    // 0 off. 1 the table is the only learning, on every neuron but sensor cells. 2 the learn
+    // mode runs as usual and the table too, on neurons that are not button cells (the inside).
+    // 3 the table is the only learning, on button cells only (the sheet frozen)
+    int rule_on = 0;
+
+    // ideas 66-75, what a connection does over a few ticks and what a neuron computes
+    // (fire_dynamics.cpp, docs/results-2026-11-25-family-dynamics.md). 0 is off for every one,
+    // and off changes nothing.
+    int syn_tire_ticks = 0;      // 66: a spike from a source that fired in the last N ticks...
+    int syn_tire_keep_shift = 1; //     ...reaches its targets only with chance 2^-this
+    int syn_warm_ticks = 0;      // 67: a spike from a source that fired in the last N ticks...
+    int syn_warm_shift = 0;      //     ...counts twice, with chance 2^-this
+    int tire_jump = 0;           // 68: threshold steps added on firing, fading...
+    int tire_shift = 4;          //     ...by 2^-this of what is left per tick
+    int slow_leak_shift = 0;     // 69: a second potential leaking by 2^-this per tick...
+    int slow_share_shift = 6;    //     ...of which 2^-this is added to the first at the compare
+    int rebound_level = 0;       // 70: a potential below minus this (inhibited)...
+    int rebound_ticks = 4;       //     ...leaves the threshold lower for this many ticks...
+    int rebound_drop = 4;        //     ...by this much
+    int updown_drop = 0;         // 71: a neuron that fired is "up": its threshold is this much
+    int updown_floor = 0;        //     lower until its potential falls below this
+    int any_branch_percent = 0;  // 72: share of neurons driven by their best slot, not the sum
+    int veto_percent = 0;        // 73: share of neurons where one inhibitory spike in a slot
+                                 //     cancels that slot's excitation
+    int coincide_percent = 0;    // 74: share of neurons that fire only when two slots with
+                                 //     different delays both reach branch_threshold
+    int tile_winners = 0;        // 75: at most this many neurons of a tile keep their spike,
+                                 //     the ones furthest over threshold
+    int syn_sensors = 1;         // 66, 67: 1 sensor cells' spikes tire and warm too; 0 not
+    // long memory (long_memory.cpp). 0 is off and changes nothing.
+    int hold_percent = 0;         // integrator cells: share of excitatory inner neurons
+    int hold_cap = 15;            // their onset count stops here
+    int readout_lock_levels = 0;  // the freezer on readout evidence: lock depth, up to 3
+    int readout_lock_shift = 4;   // a push at the end of the range deepens with 2^-this
+    int readout_lock_hold = 3;    // a move against depth d goes with 2^-(this * d)
+    int readout_decay = 0;        // per motor-cell update, this many random counters step
+                                  // toward 0 (locked ones do not): forgetting makes room
+    int readout_decay_idle = 0;   // 1: only sources idle in the graded window decay
+    int readout_lock_from = 0;    // a push agreeing with a counter this strong deepens a
+                                  // lock (0: only at the end of the range)
+    int readout_lock_fade = 0;    // a decay pick on a lock lowers it with 2^-this (0 never)
+    int time_percent = 0;         // time cells: share of excitatory inner neurons
+    int time_levels = 14;         // their log bins, 16 ticks up to 2^(4 + this)
+
+    // actor and critic (learn_critic.cpp, learn_actor.cpp; Barto, Sutton and Anderson 1983).
+    // the world calls blob_reward every step; a group of critic cells beside the motor
+    // lattice learns to fire more where things go well, and the change in their spike
+    // count plus the reward is the surprise that teaches the readout instead of raw good
+    // and bad. needs learn mode 5 and readout_evidence. 0 is off and changes nothing.
+    int critic_on = 0;
+    int critic_reward = 16;        // level, in spikes, that one good or bad is worth
+    int critic_margin = 4;         // a surprise this close to zero is neither good nor bad
+    int critic_center = 1;         // 1: reward counts against its running mean
+    int critic_average_shift = 8;  // that mean is over about 2^this steps
+    int critic_shift = 4;          // critic chance per source spike per update, 2^-this
+    int critic_trace_steps = 4;    // steps back a surprise reaches, for the critic (1..8)
+    int critic_fade = 1;           // each step back makes the chance 2^-this smaller
+    int actor_form = 0;            // 0 error rule (readout_good decides the good half),
+                                   // 1 reinforce: the pressed button alone, both ways
+    int actor_trace_steps = 4;     // steps back a surprise reaches, for the actor (1..8)
+    int actor_fade = 1;            // each step back makes the chance 2^-this smaller
+    int explore_shift = 0;         // chance per step, 2^-this, of a random press; 0 never
+    int explore_scale = 0;         // the chance halves per this many spikes the critic's
+                                   // level stands above its mean; 0 keeps it fixed
+    int critic_opponent = 1;       // 1: half the critic cells (a checkerboard) learn the other
+                                   // way and count against, so what all cells share cancels
+    int critic_wide = 0;           // 1: every non-motor cell of the motor region is a critic
+                                   // cell (768 by default), not only those between (256)
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

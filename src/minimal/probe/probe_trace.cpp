@@ -53,6 +53,7 @@ int probe_trace(ProbeArgs& args) {
         probe_tick(args, *blob);
         if (ticker_after_tick(tt, *blob)) {
             if (tt.valence != 0) {
+                plug_mark_acted(tt.plug, *blob, tt.move); // for the readout, as blobrun does
                 probe_reward(args, *blob, tt.valence);
             }
             step++;

@@ -1,0 +1,4 @@
+# idea 120: growth toward recently active sources alone (learn_wiring.cpp grow_one; everything
+# else off) against the same rule as a table (rules/grow.rule)
+growth (hand): --g.predict_on 0 --g.good_on 0 --g.bad_on 0 --g.prune_on 0 --g.far_redraw_on 0
+growth (table): --g.rule_on 1 --rule-file rules/grow.rule

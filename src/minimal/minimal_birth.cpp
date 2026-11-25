@@ -35,6 +35,7 @@ static void sanitize(MinimalGenome& mg) {
     mg.far_percent = clamp_int(mg.far_percent, 0, 100);
     mg.far_reach = clamp_int(mg.far_reach, 1, 64);
     mg.delay_max = clamp_int(mg.delay_max, 1, MIN_DELAY_MAX);
+    mg.delay_min = clamp_int(mg.delay_min, 1, mg.delay_max);
     mg.far_delay_per_tile = clamp_int(mg.far_delay_per_tile, 0, 16);
     mg.delay_percent = clamp_int(mg.delay_percent, 0, 100);
     // the oldest map learning reads is credit_ticks - 1 + delay_max ticks back
@@ -43,10 +44,13 @@ static void sanitize(MinimalGenome& mg) {
     mg.ev_on = clamp_int(mg.ev_on, 0, 2);
     mg.ev_bits = clamp_int(mg.ev_bits, 2, 8);
     mg.ev_init = clamp_int(mg.ev_init, 0, 255);
-    mg.ev_read = clamp_int(mg.ev_read, 0, 2);
+    mg.ev_read = clamp_int(mg.ev_read, 0, 3);
     mg.ev_fired_min = clamp_int(mg.ev_fired_min, 1, 8);
     mg.ev_shift = clamp_int(mg.ev_shift, 0, 30);
     mg.ev_quiet_shift = clamp_int(mg.ev_quiet_shift, 0, 30);
+    mg.readout = clamp_int(mg.readout, 0, 1);
+    mg.readout_shift = clamp_int(mg.readout_shift, 0, 30);
+    mg.readout_ticks = clamp_int(mg.readout_ticks, 1, MIN_HISTORY - 1 - mg.delay_max);
 }
 
 // sensor and motor lattices and inhibitory senders, as the full engine lays them out
@@ -121,7 +125,7 @@ static bool draw_far(MinimalBlob& m, int tile, uint32_t& far, int& distance) {
     return false;
 }
 
-// far tiles and slot delays. local delays: the smaller of two draws in 1..delay_max, so short
+// far tiles and slot delays. local delays: the smaller of two draws in delay_min..delay_max, so short
 // ones are common; a far slot's delay is its distance x far_delay_per_tile (at least 1).
 static void set_far_and_delays(MinimalBlob& m) {
     const Blob& b = m.shell;
@@ -132,8 +136,9 @@ static void set_far_and_delays(MinimalBlob& m) {
         bool sensor = (b.sensor[t] >> (n % TILE_NEURONS)) & 1;
         if (m.delay) {
             for (int k = 0; k < MIN_SLOTS; k++) {
-                int d1 = 1 + (int)rng_below(m.rng, (uint32_t)mg.delay_max);
-                int d2 = 1 + (int)rng_below(m.rng, (uint32_t)mg.delay_max);
+                uint32_t span = (uint32_t)(mg.delay_max - mg.delay_min + 1);
+                int d1 = mg.delay_min + (int)rng_below(m.rng, span);
+                int d2 = mg.delay_min + (int)rng_below(m.rng, span);
                 bool drawn = (int)rng_below(m.rng, 100) < mg.delay_percent;
                 m.delay[min_index(m, n, k)] = (uint8_t)(drawn ? (d1 < d2 ? d1 : d2) : 1);
             }
@@ -182,6 +187,7 @@ Blob* minimal_birth(const Genome& genome, const MinimalGenome& mg, uint64_t seed
     sanitize(m->mg);
     m->mg.learning_on = genome.learning_on && mg.learning_on;
     rng_seed(m->rng, seed ^ 0x4d696e696d616c00ull); // "Minimal"
+    m->rng_key = seed ^ 0x4d696e696d616c00ull;
 
     b.tiles_w = genome.tiles_w;
     b.tiles_h = genome.tiles_h;
@@ -201,6 +207,7 @@ Blob* minimal_birth(const Genome& genome, const MinimalGenome& mg, uint64_t seed
     b.sense_in = (uint64_t*)alloc_lines(map_bytes);
     b.sense_attached = (uint64_t*)alloc_lines(map_bytes);
     b.predicted = (uint64_t*)alloc_lines(map_bytes);
+    b.urge = (uint64_t*)alloc_lines(map_bytes);
 
     // the engine
     m->stride = (b.tile_count + 1 + 7) & ~7;
@@ -225,20 +232,14 @@ Blob* minimal_birth(const Genome& genome, const MinimalGenome& mg, uint64_t seed
     set_local_tiles(*m);
     set_far_and_delays(*m);
     wire(*m);
-    if (m->mg.ev_on) {
-        // evidence counters: rows for every neuron that might have them, filled from the wiring
-        m->ev_tiles = (uint64_t*)alloc_lines(map_bytes);
-        m->ev_row = (int32_t*)alloc_lines(sizeof(int32_t) * n);
-        int rows = 0;
-        for (int t = 0; t < b.tile_count; t++) {
-            uint64_t kind = m->mg.ev_on == 2 ? ~0ull : b.motor[t];
-            rows += __builtin_popcountll(kind & ~b.sensor[t]);
-        }
-        m->ev_rows = rows;
-        m->ev_planes =
-            (uint64_t*)alloc_lines(sizeof(uint64_t) * (size_t)rows * slots * m->mg.ev_bits);
-        m->ev_line = (uint8_t*)alloc_lines((size_t)rows);
+    if (m->mg.ev_on || m->mg.readout) {
+        // evidence counters, filled from the wiring
         min_evidence_birth(*m);
+    }
+    if (m->mg.readout) {
+        // the world marks the buttons' cells and the pressed button's here (the plug)
+        b.motor_attached = (uint64_t*)alloc_lines(map_bytes);
+        b.motor_acted = (uint64_t*)alloc_lines(map_bytes);
     }
     return &b;
 }
@@ -251,11 +252,13 @@ void minimal_free(Blob* blob) {
     for (int h = 0; h < HISTORY; h++) {
         std::free(blob->spikes[h]);
     }
-    void* arrays[] = {blob->recent,   blob->inhibitory,     blob->sensor,    blob->motor,
-                      blob->sense_in, blob->sense_attached, blob->predicted, m->spikes,
-                      m->noise,       m->local_tile,        m->mask,         m->used,
-                      m->threshold,   m->far_tile,          m->delay,        m->ev_tiles,
-                      m->ev_row,      m->ev_planes,         m->ev_line};
+    std::free(blob->urge);
+    void* arrays[] = {blob->recent,     blob->inhibitory,     blob->sensor,    blob->motor,
+                      blob->sense_in,   blob->sense_attached, blob->predicted, m->spikes,
+                      m->noise,         m->local_tile,        m->mask,         m->used,
+                      m->threshold,     m->far_tile,          m->delay,        m->ev_tiles,
+                      m->ev_row,        m->ev_planes,         m->ev_line,      blob->motor_attached,
+                      blob->motor_acted};
     for (void* p : arrays) {
         std::free(p);
     }
@@ -285,6 +288,9 @@ size_t minimal_bytes(const MinimalBlob& m) {
         bytes += sizeof(uint64_t) * (size_t)m.ev_rows * (size_t)m.slots * (size_t)m.mg.ev_bits;
         bytes += (size_t)m.ev_rows + sizeof(uint32_t) * n;
         bytes += sizeof(uint64_t) * (size_t)(m.shell.tile_count + 1);
+    }
+    if (m.shell.motor_attached) {
+        bytes += 2 * sizeof(uint64_t) * (size_t)(m.shell.tile_count + 1); // the world's marks
     }
     return bytes;
 }
@@ -317,6 +323,7 @@ static const MinimalField fields[] = {
     {"far_percent", &MinimalGenome::far_percent},
     {"far_reach", &MinimalGenome::far_reach},
     {"delay_max", &MinimalGenome::delay_max},
+    {"delay_min", &MinimalGenome::delay_min},
     {"far_delay_per_tile", &MinimalGenome::far_delay_per_tile},
     {"delay_percent", &MinimalGenome::delay_percent},
     {"noise_sign", &MinimalGenome::noise_sign},
@@ -332,6 +339,15 @@ static const MinimalField fields[] = {
     {"ev_shift", &MinimalGenome::ev_shift},
     {"ev_inh", &MinimalGenome::ev_inh},
     {"ev_cowire", &MinimalGenome::ev_cowire},
+    {"rng_mode", &MinimalGenome::rng_mode},
+    {"readout", &MinimalGenome::readout},
+    {"readout_shift", &MinimalGenome::readout_shift},
+    {"readout_ticks", &MinimalGenome::readout_ticks},
+    {"readout_balance", &MinimalGenome::readout_balance},
+    {"readout_good", &MinimalGenome::readout_good},
+    {"readout_cowire", &MinimalGenome::readout_cowire},
+    {"readout_inh", &MinimalGenome::readout_inh},
+    {"inner_reward", &MinimalGenome::inner_reward},
 };
 
 void apply_minimal_args(int argc, char** argv, MinimalGenome& mg) {

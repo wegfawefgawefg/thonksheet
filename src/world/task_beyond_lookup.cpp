@@ -60,7 +60,7 @@ void beyond_reset(Task& task) {
         break;
     case TaskKind::serial_add:
         task.phase = 0;
-        task.first_move = 0; // the carry into this bit
+        task.carry = 0; // the carry into this bit
         task.shape = pair_draw(task);
         break;
     case TaskKind::majority: {
@@ -127,7 +127,7 @@ void beyond_sense(const Task& task, TaskSense& sense) {
 
 static int sum_bit(const Task& task) {
     int a = task.shape & 1, b = (task.shape >> 1) & 1;
-    return a ^ b ^ task.first_move;
+    return a ^ b ^ task.carry;
 }
 
 int beyond_perfect_move(const Task& task) {
@@ -165,10 +165,10 @@ int beyond_step(Task& task, const TaskStepIn& in) {
     case TaskKind::serial_add: {
         int valence = judge(task, in.move, sum_bit(task), true);
         int a = task.shape & 1, b = (task.shape >> 1) & 1;
-        task.first_move = (a + b + task.first_move) >= 2;
+        task.carry = (a + b + task.carry) >= 2;
         task.phase = (task.phase + 1) % ADD_BITS;
         if (task.phase == 0) {
-            task.first_move = 0;
+            task.carry = 0;
         }
         task.shape = pair_draw(task);
         return valence;

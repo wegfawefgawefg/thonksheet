@@ -36,6 +36,9 @@ void learn_readout(Blob& blob, int valence);
 // readout_evidence: hidden counters per motor-cell source (learn_evidence.cpp)
 void evidence_add(Blob& blob, int n, int slot, uint64_t up, uint64_t down);
 void evidence_rewire(Blob& blob, int n);
+// reverse replay (idea 62, learn_replay.cpp): walks the readout's error back through the
+// spike ring before the readout moves; does nothing while replay_depth and replay_until are 0
+void learn_replay(Blob& blob, int valence);
 // lose-shift, win-stay and bad cut on motor cells (idea 53); does nothing while all are off
 void learn_lose_shift(Blob& blob, int boost);
 

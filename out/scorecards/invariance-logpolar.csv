@@ -1,0 +1,13 @@
+row,label,a_input_same,a_input_held,a_nearest_same,a_nearest_held,a_whole_same,a_whole_held,a_view_same,a_view_held,b_held,b_taught,b_twin_held,b_coin_held,c_held,c_taught,c_twin_held,c_coin_held,b_held_sd,c_held_sd,seeds
+about,name,,,,,,,,,,,,,,,,,,,logpolar
+about,engine,,,,,,,,,,,,,,,,,,,blob
+about,flags,,,,,,,,,,,,,,,,,,,--bitmap-map logpolar
+about,seeds,,,,,,,,,,,,,,,,,,,5 6 7 8 9 10 11 12
+about,life,,,,,,,,,,,,,,,,,,,"40000 steps, window 1000"
+about,date,,,,,,,,,,,,,,,,,,,2026-11-24
+about,wall,,,,,,,,,,,,,,,,,,,32 min
+position,"position: a shape at 15 places, 4 held",1.0000,0.4775,0.9726,0.3777,0.8542,0.4172,0.8469,0.4314,,,,,,,,,,,8
+scale,"scale: 1x held, taught at 2x and 3x",1.0000,1.0000,1.0000,1.0000,1.0000,0.9121,1.0000,0.6527,,,,,,,,,,,8
+rotation,rotation: half and 3/4 turns held,1.0000,0.7229,1.0000,0.7539,0.9995,0.7350,0.9998,0.6151,,,,,,,,,,,8
+mixed,mixed: 1x right and 2x left held,1.0000,0.5832,1.0000,0.7497,0.9910,0.5429,0.9885,0.5432,,,,,,,,,,,8
+view,"view: 3D object, 3 of 8 angles held",1.0000,0.6456,1.0000,0.3393,1.0000,0.5715,0.9998,0.5081,,,,,,,,,,,8

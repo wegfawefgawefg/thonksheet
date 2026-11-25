@@ -119,6 +119,11 @@ static bool ridge_solve(const std::vector<double>& a, int m, double ridge, const
     return true;
 }
 
+bool linear_ridge_solve(const std::vector<double>& a, int m, double ridge, const double* b,
+                        int cols, std::vector<double>& x) {
+    return ridge_solve(a, m, ridge, b, cols, x);
+}
+
 // share right over rows [from, to), with weights w (features x classes) on `features`
 static double accuracy(const LinearData& data, const Standard& s, const std::vector<int>& features,
                        const std::vector<double>& w, int from, int to) {
@@ -301,4 +306,14 @@ void linear_report(const LinearData& data, const char* label, int cue_tile,
     print_grid("3x3 tiles around it (a motor cell's local view)", block_acc, w, h, cue_tile,
                motor_tiles);
     std::fflush(stdout);
+}
+
+double linear_score(const LinearData& data) {
+    Standard s;
+    standardize(data, s);
+    std::vector<int> all((size_t)data.neurons);
+    for (int j = 0; j < data.neurons; j++) {
+        all[(size_t)j] = j;
+    }
+    return fit_primal(data, s, all);
 }
