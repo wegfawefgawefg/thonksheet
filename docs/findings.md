@@ -200,6 +200,44 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   - Cost after a cheaper read-off with identical wiring (lives byte-identical): 1.17
     times the rule-off tick at target rate (was 1.32), 1.64 at the rule's own rate (was
     1.93; the doubled spike rate alone is 1.2 of that).
+- **The cells are not the limit; the rule is** (idea 165, queue item 2e,
+  docs/results-2026-11-25-inside-ladder.md, `scripts/ladder2.sh`). Backprop used as a
+  measuring stick only: an offline model of the sheet's 3,072 non-sensor cells, trained
+  with the answers, takes on the cells' constraints one rung at a time; then the bottom
+  rung's wiring is written into the real born sheet and read by the inside-learning
+  test's reader. Seeds 5 to 12, test digits, MNIST / the pair test (same class or not):
+  - In the real sheet the teacher's wiring reads **0.966 / 0.785**, at the engine's own
+    rate (32 to 35 spikes per 1,000 cell-ticks), every seed above its born sheet (0.924 /
+    0.673). It keeps every constraint: about 33 inputs a cell from its own
+    neighbourhood, strengths 1 and 4 at the born counts, each sender's fixed sign, the
+    engine's regulation. Competitive learning, the best local rule, reads 0.952 / 0.726
+    at twice the rate. So a perfect teacher adds +0.042 / +0.113 where our best rule
+    adds +0.026 / +0.049. I re-ran seed 5 from the merged build: 0.9666 and 0.7857, the
+    same as reported.
+  - In the model the whole ladder costs MNIST nothing (0.981 free, 0.980 at the bottom).
+    The pair test falls 0.933 to 0.860: counts in place of floats 0.009, the fan-in
+    0.024, fixed signs 0.012, holding every cell at the engine's rate 0.029; one-bit or
+    1-and-4 strengths, cells hearing cells and reach cost nothing (3 seeds a rung).
+  - The largest step is from the model to the real sheet: 0.013 on MNIST, 0.075 on
+    pairs, and the born wiring loses 0.037 and 0.095 the same way. Shown the same
+    digits from two starting states, a real cell's spike counts correlate only 0.61 with
+    themselves (seed 5): about two fifths of what a cell does on a digit is the sheet's
+    state, not the digit. A quiet gap between digits and noise off each explain 0.004
+    of it; the source is not found (idea 168).
+  - Left free, the teacher keeps the code sparse (1 to 4 in 100 cell-digits with a
+    spike, 38 to 48 in 100 cells silent on pairs); regulation holds every cell at 0.66
+    spikes a digit and that is the model's dearest rung.
+  - The same bottom rung trained with no labels (give the pixels back through a linear
+    decoder) reads 0.960 / 0.745: the born level. One label-free objective, not all.
+  - What the target cells look like: 15 to 17 pixel inputs of 33 (born 7, competitive
+    learning 17.8), spread 3.4 pixels from their middle (competitive learning 2.5, born
+    4.0), 7.5 in 100 of the born inputs kept, a spike on 12 to 15 in 100 digits. The
+    answer explains 13 in 100 of a cell's variance on MNIST (born 11.5) and 0.2 in 100
+    on pairs: no cell is a class or a "same" detector; the reader builds the answer
+    from many.
+  - Suspect: the model's absolute pair numbers run 0.08 to 0.10 high (the transplant is
+    the number to quote); the 0.02 to 0.03 rung steps rest on 3 seeds; the 12 passes of
+    60,000 digits the teacher had are 36 times what our lives show a rule (idea 167).
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -568,6 +606,7 @@ docs/results-2026-11-25-mnist.md
     for this sheet today: little beyond its input, and nothing at a distance. So carry
     stops at the first sum bit (an exclusive-or of lines N apart), and a program stops at
     two instructions though the sheet still holds the previous one at 0.96.
+    This describes the sheet as born, not what its cells can hold: see finding 52.
 42. **One verdict cannot teach many outputs with an error rule that moves only on bad.**
     [likely; predicted from the rule's drift balance before the runs] One good or bad for
     the whole answer equals a verdict per bit at one output bit, loses a little at two,
@@ -626,6 +665,22 @@ docs/results-2026-11-25-mnist.md
     above every control. A digit class, "same class or not", parity of 4: no more than
     churn. Better errors (from the answer, every step) and cells one more step from the
     pixels each buy thousandths. What is missing is not the error reaching the cell.
+52. **The cells can hold what a trained net holds; the teaching rule is what falls
+    short.** [likely: one engine, two real-data tests, 8 seeds, re-run from main] A
+    wiring inside every constraint of the engine reads 0.966 on MNIST and 0.785 on the
+    pair test in the real sheet at the engine's own rate (born 0.924 and 0.673; the best
+    local rule 0.952 and 0.726 at twice the rate). No change to the cell is needed to
+    get there. The trained wiring is a concrete target for a rule; finding 47's
+    "rewiring at born counts" has +0.014 and +0.06 of room above it.
+53. **The sheet does not answer the same input the same way twice.** [hint: seed 5,
+    two tests] From another starting state a cell's spike count on the same digit
+    correlates 0.6 with itself. A noise-free model of the same wiring reads 0.04 (MNIST)
+    to 0.08 to 0.10 (pairs) higher. This is paid by every reader and every rule that
+    counts spikes, and may be part of why a decision needs many cells (finding 16).
+54. **The best code is sparse, and holding every cell at one rate forbids it.** [hint:
+    3 seeds, in the model] Left free the teacher silences two fifths of the cells and
+    has 1 to 4 in 100 cell-digits active; one target rate for every cell costs 0.029 on
+    pairs, more than any wiring constraint.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 

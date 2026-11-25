@@ -45,8 +45,8 @@ is.
 
 Running (four), as of 2026-11-25 afternoon:
 - Queued item 3b (idea 164): prediction errors down the one-hop wires.
-- Queued item 2e (idea 165): the inside's ladder, what these cells can hold under the
-  best possible teacher.
+- Queued item 2g (idea 167): the rule's ladder, which step from backprop down to our
+  one-hop rule loses the features.
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
 - Queued item 2f (idea 166): why competitive learning lifts the time rows, and how far.
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
@@ -116,7 +116,21 @@ Queued, in order:
    linear reader gets 0.95 from the lived sheet, the sheet's own readout 0.72 and falling.
    Takes in item 9 (the weighted vote, the drift). This gap is now the largest number on
    the board.
-2e. *(running, idea 165)* The inside's ladder: a backprop-trained net given our cells'
+2g. *(running, idea 167)* The rule's ladder: in idea 165's model at its bottom rung,
+   swap the teacher one step at a time toward the engine's one-hop rule (fewer digits,
+   one at a time, random fixed feedback wires, a few wires a cell, sign only, good or
+   bad only, counter steps on marked inputs, the sheet's own output). The rung where the
+   score falls is what our rule is missing.
+2h. *(next, idea 168)* Why the sheet does not answer the same digit the same way twice
+   (a cell's counts correlate 0.61 with themselves from another starting state), and the
+   two cheap levers idea 165 left: a lower per-cell target rate, wider cells, each tried
+   with the transplant (`blobmnist ceiling --wiring-load`).
+2e. *(done, merged: docs/results-2026-11-25-inside-ladder.md, `scripts/ladder2.sh`; the
+   cells are not the limit: the teacher's wiring inside every constraint reads 0.966 on
+   MNIST and 0.785 on the pair test in the real sheet, born 0.924 and 0.673, competitive
+   learning 0.952 and 0.726. Left: tile winners as a rung, a spiking model to split the
+   model-to-sheet step, a contrastive label-free objective, the cell-by-cell match on
+   more seeds)* The inside's ladder: a backprop-trained net given our cells'
    constraints one rung at a time (fan-in 34, top-counter wiring, one-bit strengths, fixed
    signs, nearby candidates, 3 in 100 firing), on MNIST and the pair test; then that
    wiring loaded into the real sheet. Backprop as a measuring stick only. It decides

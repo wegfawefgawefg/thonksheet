@@ -196,3 +196,11 @@ inner neurons measurably better for a task than unsupervised wiring already make
     there). In short: lived less shuffled at matched rate of 0.005 or more, wrong
     (+0.003); lived less churn of 0.005 or more, right (+0.015); no time row moves by
     0.03, wrong by a wide margin (delayed echo +0.33, gap +0.39).
+36. **The inside's ladder** (its bot's guesses for every rung are in
+    docs/results-2026-11-25-inside-ladder.md, written before any training run was read
+    and scored there). In short: it underrated the cells on the pair test by 0.07 to
+    0.10 at every rung; it expected fixed signs and reach to cost most (they cost 0.012
+    and nothing); the dearest step, model to real sheet, was not on its list; "the
+    transplant beats the born sheet" (0.6) right on every seed. Mine, written in idea
+    165 before the job: "if the bottom rung still reads 0.97 the cells are fine"; it
+    reads 0.980 in the model and 0.966 in the sheet.

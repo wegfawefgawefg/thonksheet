@@ -770,7 +770,13 @@ co-activity runs ties the held units together and loses their order.
      measuring stick, not the method. If the bottom rung still reads 0.97, the cells are
      fine and every shortfall is the teaching rule. If it reads 0.93, no local rule can
      do better and the cell has to change. Either answer decides where the work goes.
-     Then load the best teacher's wiring into the real sheet and read it. *building*
+     Then load the best teacher's wiring into the real sheet and read it. *done:
+     docs/results-2026-11-25-inside-ladder.md, `scripts/ladder2.sh`. The cells are
+     fine: the teacher's wiring, inside every constraint, reads 0.966 on MNIST and
+     0.785 on the pair test in the real sheet (born 0.924, 0.673; competitive learning
+     0.952, 0.726). The shortfall is the rule's. Two side results: the real sheet
+     answers the same digit only 0.6 like itself from another state (idea 168), and one
+     rate for every cell forbids the sparse code the teacher wants.*
 166. **Why competitive learning lifts the time rows, and how far it goes.** Delayed echo
      0.59 to 0.91 and gap 0.54 to 0.94 with no reward reaching the inside, on 3 rows of
      one sheet. Against it: on the prediction battery's sheet at a 4-step delay nothing
@@ -779,3 +785,28 @@ co-activity runs ties the held units together and loses their order.
      delays, beat, sequence, copy, recall and n-back; test the reading that a winner's
      counters learn "this now and that some ticks ago" by looking at what the cells
      wired. *building*
+167. **The rule's ladder: which step from backprop down to our one-hop rule loses the
+     features?** Idea 165 showed a wiring exists; backprop finds it and our rules do
+     not. In idea 165's model at its bottom rung (the engine's cell, every constraint),
+     swap the teacher one rung at a time toward what the engine does: the 720,000
+     digit-showings cut to one pass and to the 20,000 of our lives; one digit at a time
+     in place of batches of 256; the error reaching a cell through fixed random wires in
+     place of the output's own weights (feedback alignment); through a few such wires a
+     cell, as `hop_near`; the error as a sign only; good or bad only; a step of one
+     counter for each marked input in place of gradient times input; only cells that
+     fired or came near the bar; the sheet's own online output in place of a trained
+     one. Each rung read by a fresh reader, and the last few written into the real
+     sheet. The rung where the score falls to competitive learning's is what our rule
+     is missing. Backprop is again a measuring stick, not the method. *building*
+168. **Why the sheet does not answer the same digit the same way.** A cell's spike
+     counts on the same digits from two starting states correlate 0.61 (idea 165), and
+     that costs a reader 0.04 on MNIST and 0.08 to 0.10 on the pair test before any
+     learning. A quiet gap and noise off each explain 0.004. Suspects: recurrent
+     excitation with strong delayed inhibition making the activity chaotic; thresholds
+     and sector bias moving during the read; potentials carried over from the last
+     digit; the phase of the 20 ticks; pacemakers. Measure the self-correlation and the
+     reader with each removed in turn, on MNIST, the pair test and two toy rows. If one
+     cheap change gives a repeatable code without killing the time rows (which need
+     state), every rule that counts spikes gains. With it: the two cheap levers idea
+     165 left, a lower per-cell target rate and wider cells, tried with the transplant.
+     *queued*

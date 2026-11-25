@@ -614,3 +614,24 @@ nice -n 19 ./build/blobrun --task chain --ticks 20 --sensor-side 2 --motor-side 
     --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 \
     --predict 1,2,4,8 --predict-shift 2
 ```
+
+## The inside's ladder and the transplant (idea 165)
+
+`scripts/ladder2.sh NAME` trains an offline model of the sheet's 3,072 non-sensor cells
+with backprop, one constraint of the engine added per rung, and reads each rung with a
+fresh linear reader (docs/results-2026-11-25-inside-ladder.md). Backprop here is a
+measuring stick. It needs torch; the first run makes a venv in `out/ladder2/venv`.
+Three flags of `blobmnist ceiling` serve it (`src/mnist/mnist_transplant.cpp`), all off
+by default:
+
+- `--describe F` writes the born sheet (each cell's kind, candidates, inputs, strengths,
+  leak, cooldown) for the model.
+- `--wiring-load F` rewires the born sheet from a file (one line a cell: the cell, then
+  `source:strength` for each input; a source's sign is its own) before the read;
+  `--settle N` runs N digits with learning off first so thresholds settle.
+- `--rows-out F` writes every cell's spike count for every digit.
+
+```
+scripts/ladder2.sh full --seeds 5-12 --table-only     the tables of the results doc
+scripts/ladder2.sh smoke --quick                      one seed, one pass on 10,000 digits
+```
