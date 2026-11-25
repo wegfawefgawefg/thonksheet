@@ -59,9 +59,9 @@ float DFA needs a full error vector on every example and many epochs to reach 0.
   0.55), seeds 5 and 6: products of lines that sit apart, which the born sheet lacks.
 - **MNIST: no, beyond what churn gives.** Told the answer: lived 0.9355 against born 0.9251
   and shuffled digits 0.9244, but the coin control gets 0.9346 (+0.0009); told good or bad:
-  0.9341 against coin 0.9311 (+0.0030); seeds 5-12. With the rate held at target the margin
-  over the coin is +0.0033 (lived 0.9349, coin 0.9316, born 0.9214, all read at 31). With competitive learning on: 0.9530 against
-  0.9523 for competitive learning alone. The online readout: not helped. Competitive
+  0.9341 against coin 0.9311 (+0.0030); seeds 5-12. With the rate held at target the
+  margin over the coin is +0.0033 (lived 0.9349, coin 0.9316, born 0.9214, all read at
+  31). With competitive learning on: 0.9530 against 0.9523 for competitive learning alone. The online readout: not helped. Competitive
   learning (0.952) and the two-layer net (0.955) are not reached.
 - **Cost:** 7% on the tick (the near maps), 2 to 5% on a taught MNIST life.
 - **Why the toys and not MNIST** (a reading, not tested): a toy answer is a conjunction of a
@@ -71,7 +71,7 @@ float DFA needs a full error vector on every example and many epochs to reach 0.
 
 ## What was built
 
-**The rule** (`src/blob/learn_hop.cpp`, 300 lines; genome numbers, all off by default):
+**The rule** (`src/blob/learn_hop.cpp`, 350 lines; genome numbers, all off by default):
 
 - **Error lines, in bits.** At each verdict the world names the motor lines the blob pressed
   and the lines that were right, as two bit masks (`plug_hop_lines`, `src/world/plug_hop.cpp`;
