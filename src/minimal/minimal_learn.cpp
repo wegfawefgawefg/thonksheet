@@ -141,6 +141,8 @@ void min_mark_used(MinimalBlob& m, const uint64_t* fired) {
 static void grade(MinimalBlob& m, bool better, int shift) {
     const MinimalGenome& mg = m.mg;
     for (int t = 0; t < m.shell.tile_count; t++) {
+        // counter neurons learn through their counters, the readout's cells by its rule
+        uint64_t elsewhere = (m.ev_tiles && mg.ev_on ? m.ev_tiles[t] : 0) | min_readout_cells(m, t);
         uint64_t not_sensor = ~m.shell.sensor[t];
         uint64_t seen = 0;
         for (int a = 0; a < mg.credit_ticks; a++) {
@@ -151,10 +153,7 @@ static void grade(MinimalBlob& m, bool better, int shift) {
                 // the other half (idea 57): neurons quiet on this tick and on every later one
                 // in the window, at the noise chance, moved the other way
                 uint64_t quiet = ~spikes & ~seen & not_sensor & sparse_word(m.rng, mg.noise_shift) &
-                                 sparse_word(m.rng, shift);
-                if (m.ev_tiles) {
-                    quiet &= ~m.ev_tiles[t]; // counter neurons learn through their counters
-                }
+                                 sparse_word(m.rng, shift) & ~elsewhere;
                 while (quiet) {
                     int n = t * TILE_NEURONS + __builtin_ctzll(quiet);
                     quiet &= quiet - 1;
@@ -169,10 +168,7 @@ static void grade(MinimalBlob& m, bool better, int shift) {
             if (!pick) {
                 continue;
             }
-            pick &= sparse_word(m.rng, shift);
-            if (m.ev_tiles) {
-                pick &= ~m.ev_tiles[t]; // counter neurons learn through their counters
-            }
+            pick &= sparse_word(m.rng, shift) & ~elsewhere;
             while (pick) {
                 int n = t * TILE_NEURONS + __builtin_ctzll(pick);
                 pick &= pick - 1;
@@ -195,14 +191,29 @@ void minimal_reward(Blob& blob, int valence) {
     // reward against its running average; the size of the gap sets the chance of change
     int delta = (valence > 0 ? 256 : -256) - m.reward_avg;
     m.reward_avg += delta / (1 << m.mg.avg_shift);
-    if (!m.mg.learning_on || delta == 0) {
+    if (!m.mg.learning_on) {
         return;
     }
-    int size = delta > 0 ? delta : -delta;
-    int width = 32 - __builtin_clz((unsigned)size); // 9 or 10 for a gap of a whole reward
-    int extra = width >= 9 ? 0 : 9 - width;         // each halving of the gap halves the chance
-    grade(m, (delta > 0) == (m.mg.noise_sign >= 0), m.mg.learn_shift + extra);
-    if (m.ev_tiles) {
-        min_evidence_reward(m, delta > 0, m.mg.learn_shift + extra);
+    if (delta != 0) {
+        int size = delta > 0 ? delta : -delta;
+        int width = 32 - __builtin_clz((unsigned)size); // 9 or 10 for a gap of a whole reward
+        int extra = width >= 9 ? 0 : 9 - width;         // each halving of the gap halves the chance
+        if (m.mg.inner_reward) {
+            grade(m, (delta > 0) == (m.mg.noise_sign >= 0), m.mg.learn_shift + extra);
+        }
+        if (m.ev_tiles && m.mg.ev_on) {
+            min_evidence_reward(m, delta > 0, m.mg.learn_shift + extra);
+        }
     }
+    // the readout grades against nothing: bad is bad
+    if (m.mg.readout) {
+        min_readout_reward(m, valence);
+    }
+}
+
+void minimal_readout_only(MinimalGenome& mg) {
+    mg.readout = 1;
+    mg.inner_reward = 0;
+    mg.cowire_on = 0;
+    mg.ev_on = 0;
 }

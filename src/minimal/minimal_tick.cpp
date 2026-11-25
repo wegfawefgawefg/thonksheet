@@ -160,10 +160,15 @@ static void regulate(MinimalBlob& m, const uint64_t* fired) {
 static void cowire(MinimalBlob& m, const uint64_t* fired) {
     for (int t = 0; t < m.shell.tile_count; t++) {
         uint64_t pick = fired[t] & ~m.shell.sensor[t] & sparse_word(m.rng, m.mg.cowire_shift);
+        // the readout's cells: left out, or (readout_cowire) wired through their counters
+        uint64_t reader = min_readout_cells(m, t);
+        pick &= m.mg.readout_cowire ? ~0ull : ~reader;
         while (pick) {
-            int n = t * TILE_NEURONS + __builtin_ctzll(pick);
+            int b = __builtin_ctzll(pick);
+            int n = t * TILE_NEURONS + b;
             pick &= pick - 1;
-            if (m.ev_tiles && m.mg.ev_cowire && m.ev_row[n] >= 0) {
+            bool counters = m.mg.ev_on || ((reader >> b) & 1);
+            if (m.ev_tiles && m.mg.ev_cowire && m.ev_row[n] >= 0 && counters) {
                 min_evidence_cowire(m, n); // evidence: a counter goes up, the mask follows
                 continue;
             }

@@ -179,13 +179,17 @@ int main(int argc, char** argv) {
 #ifdef BLOB_HAS_MINIMAL
     use_minimal = flags.engine == "minimal";
     apply_minimal_args(argc, argv, minimal_genome);
+    // the minimal engine's frozen readout: its error-rule readout, nothing inside learns
+    if (flags.frozen_readout && use_minimal) {
+        minimal_readout_only(minimal_genome);
+    }
 #endif
     if (flags.engine != "blob" && !use_minimal) {
         std::fprintf(stderr, "blobrun: no engine '%s' in this build\n", flags.engine.c_str());
         return 1;
     }
     // the readout mode is the blob genome's learn_mode 1; other engines do not read it
-    if (flags.frozen_readout && (flags.table || use_minimal)) {
+    if (flags.frozen_readout && flags.table) {
         std::fprintf(stderr, "blobrun: --frozen-readout is the blob's learn_mode 1; this "
                              "engine has no readout mode\n");
         return 1;

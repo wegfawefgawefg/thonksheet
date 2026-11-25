@@ -23,6 +23,8 @@ struct ProbeArgs {
     int warmup = 30000;
     int tiles = 0; // speed: one size only
     int seconds_ms = 2000;
+    int64_t teach_steps = 0; // linear: steps learned before the sheet is frozen and read
+    int trials = 4000;       // linear: scored steps kept for the reader
 };
 
 // argv after the mode word; false after printing a message
@@ -57,3 +59,4 @@ int probe_life(ProbeArgs& args);
 int probe_idle(ProbeArgs& args);
 int probe_speed(ProbeArgs& args);
 int probe_trace(ProbeArgs& args);
+int probe_linear(ProbeArgs& args);

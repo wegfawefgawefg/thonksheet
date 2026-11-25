@@ -108,7 +108,8 @@ if(minimal_sources)
     if(minimal_probe_sources AND TARGET blobcore AND TARGET blobworld)
         add_executable(minimalprobe ${minimal_probe_sources}
                        ${CMAKE_SOURCE_DIR}/src/run/task_ticker.cpp
-                       ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp)
+                       ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp
+                       ${CMAKE_SOURCE_DIR}/src/probe/linear_fit.cpp)
         target_compile_options(minimalprobe PRIVATE ${warnings} ${speed})
         target_link_libraries(minimalprobe PRIVATE blobminimal blobworld blobcore)
     endif()
