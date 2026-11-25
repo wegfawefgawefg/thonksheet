@@ -52,6 +52,28 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
 - **Learning on good only when the vote was close** doubles the pairs held (16 cues 0.31
   to 0.60) and lifts MNIST's online readout 0.71 to 0.81, without the lock.
 
+**The references on every row (2026-11-25, `docs/scoreboard.md`).** The GRU, the plain
+two-layer net and the memory engine now have the whole suite, eight seeds, on the
+integrated code. What that table says about the tests, before it says anything about us:
+
+- **Rows no reference learns, so they do not yet measure anything:** analogy (0.50, 0.33),
+  how many of 1 to 5 with mixed sizes (0.35), being shown the answer with no reward (all
+  nine rows at chance), fill-in, the pendulum (0.22 with the scripted player at 0.86), the
+  band of a sine at an x never rewarded (0.36 against 0.24), and the held-out rows for
+  place, turn, size and mixed. Either they need a kind of learner none of the three is, or
+  they are badly made. Each needs a learner that passes it, or a note saying why none can.
+- **The lookup table is a lookup table.** Memory matches or beats the GRU wherever the
+  exact case comes back (prediction 0.85 against 0.50, catch 0.99 against 0.72, n-back,
+  switching, parity of 4 lines 0.99 against 0.50). It is at chance the moment the case is
+  only near one it saw: a dimmer shape 0.50 (GRU 0.96), more clutter 0.50 (0.89), items
+  never taught 0.65 and 0.27 (0.87 and 0.48), reward true 60 in 100 0.73 (1.00).
+- **Where recurrence is the whole difference:** every row with a gap (delayed echo, order,
+  gap, same-then, copy, recall, n-back, brackets) the GRU learns and the plain net sits at
+  0.50. Our sheet without time cells sits with the plain net.
+- **The chain is ours.** GRU 0.01, memory 0.00, plain net 0.45, the readout alone 0.72;
+  with the critic 0.97 on the tuning seeds. It is the one row where a rule of ours beats
+  all three references, and it is the row that needs credit one step back.
+
 ## The headline (2026-11-25)
 
 **The output can now learn online, from good and bad alone, things no input line carries.**
