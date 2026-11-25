@@ -63,6 +63,16 @@ them; the memory beats it on most rows where storing what was seen is enough.
 the same each time it comes (settling makes it tolerate cell noise, not a sheet's mixing).
 Beside one, offering the sheet a held value, maybe; untested (section 7).
 
+Script lines:
+
+```
+scripts/vm.sh task delayed-echo --delay 20          one life beside learning off and coin
+scripts/vm.sh probe delayed-echo --show 2 --walk    the walk through the bank, the loops
+scripts/vm.sh rows mine beyond,hold,map 5-12        the rows of this doc (add --engine memory)
+scripts/vm.sh suite                                 the whole suite
+scripts/vm_ablate.sh                                each piece switched off
+```
+
 ## 1. Why the original did not learn
 
 The owner's machine (`thonksheet-library/repos/vvm`, June 2026):
@@ -163,14 +173,19 @@ One tick:
 1. The world's code goes into X.
 2. Every entry's match is `popcount(address AND state)`. A histogram of the matches gives
    the bar that exactly 16 entries clear (ties at the bar broken from a random start).
-3. Events (below): if the input just changed, its detector is found (or written).
-4. The operations of the winners that did not fire on the tick before (refraction, as in
-   production systems: an entry acts once, when it starts to match) are ORed: a bit is set where some winner sets it and none
-   clears it, cleared where some clears and none sets, left alone on a conflict or when no
-   one touches it. The event detector's operation is ORed in too, winner or not. A homeostat thins the sets (AND with a random word) while M is above
+3. Events (below): if the input has just settled on something new, its detector is found
+   or written.
+4. Operations: those of the winners that did not fire on the tick before (refraction, as in
+   production systems: an entry acts once, when it starts to match), and the event
+   detector's, winner or not, are ORed. A bit is set where some operation sets it and none
+   clears it, cleared where some clears and none sets, and left alone on a conflict or when
+   none touches it. A homeostat thins the sets (AND with a random word) while M is above
    1/8 of its bits on, and the clears while below.
 5. Each motor cell sums the winners' evidence and fires if the sum beats a fresh 9-bit
    random number (a rate code), or by chance 1/16.
+
+At birth every entry has a random address and a sparse random operation (set 1/512 of M,
+clear 1/128) and no evidence.
 
 Learning, all local to entries, all integer:
 
@@ -179,27 +194,26 @@ Learning, all local to entries, all integer:
   buttons' cells. On good, nothing.
 - **Answer writing (one-shot).** On every outcome the quietest of 16 sampled entries is
   rewritten: its address becomes a sample of the state's on bits (as many per part as a
-  random address has), its evidence becomes the answer the outcome implies at strength 8
-  (good: the pressed button; bad: the other buttons, sharing it), its operation is none.
-  Next time the state is near this one, this entry matches far better than any random one
-  and answers.
+  random address has), its evidence the answer the outcome implies at strength 8 (good: the
+  pressed button; bad: the other buttons, sharing it), its operation none. Next time the
+  state is near this one, this entry matches far better than any random one and answers.
 - **Events (no reward).** When X has settled on a pattern (at least 8 bits on, three
   quarters the same as on the tick before, and less than three quarters the same as the
-  last event's pattern), and no
-  winner is already a detector of it (an entry that writes something, whose X address is
-  at least half the size of what is on and three quarters lit), the quietest of 16 sampled entries becomes one:
-  its address is the input's on bits (no M part), its operation a fresh random code: set
-  1/16 of M, clear 1/2 of M. Whenever the input changes to one it knows, its detector makes
-  that mark again, whether or not it is among the 16 winners. So each event leaves its own
-  mark in M, and every later event halves what is left of the earlier ones. Marks fade per
-  event, not per tick.
+  last event's pattern) and no entry in the bank is already its detector (an entry that
+  writes something, whose X address is at least half the size of what is on and three
+  quarters lit), the quietest of 16 sampled entries becomes one: its address the input's on
+  bits (no M part), its operation a fresh random code, set 1/16 of M and clear 1/2 of M.
+  Whenever the input settles on one it knows, its detector makes that mark again, winner or
+  not. So each event leaves its own mark in M, and every later event halves what is left of
+  the earlier ones. Marks fade per event, not per tick.
 - **Inner rule, as specified (off).** On bad, entries that fired since the last outcome
   lose each mask bit with chance 1/8. Off by default; see below.
 
-What has no counterpart in the owner's machine, and is what made it work: an operation can
-leave a bit alone, so a still state is a fixed point; the address and the effect are
-separate masks; the lookup takes 16 entries, not one; and the bank is written by
-outcomes and by events, not moved by small steps.
+What has no counterpart in the owner's machine, and is what made it work (section 4 switches
+each off): an operation can leave a bit alone, so a still state is a fixed point; the input
+holds half of the address; the input writes into the state through entries written in one
+go; and the bank learns by writing, not by small steps. Address and effect are separate
+masks. The 16 winners help but are not needed: one winner a tick also learns.
 
 ### What changed along the way (choice seeds, 10,000-step lives, standard plug)
 
