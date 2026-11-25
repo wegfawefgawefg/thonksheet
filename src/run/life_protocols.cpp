@@ -166,6 +166,8 @@ static bool life_signal_report(const RunFlags& flags, const std::string& csv, FI
         put(sum, d, (key + "babbled_per_step").c_str(), (double)r.babbled / steps);
         put(sum, d, (key + "babble_obeyed").c_str(),
             r.babbled > 0 ? (double)r.obeyed / (double)r.babbled : 0.0);
+        put(sum, d, (key + "no_move_unbabbled").c_str(),
+            r.steps > r.babbled ? (double)r.still / (double)(r.steps - r.babbled) : 0.0);
         put(sum, d, (key + "good_raw_per_step").c_str(), (double)r.good_raw / steps);
         put(sum, d, (key + "bad_raw_per_step").c_str(), (double)r.bad_raw / steps);
         put(sum, d, (key + "good_sent_per_step").c_str(), (double)r.good_sent / steps);

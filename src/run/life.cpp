@@ -95,6 +95,7 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
         babble_step_end(tt.babble, tt.plug, *blob);
         const Babble& bb = tt.babble;
         out.steps += bb.steps, out.babbled += bb.babbled, out.obeyed += bb.obeyed;
+        out.still += bb.still;
         out.good_raw += bb.good_raw, out.bad_raw += bb.bad_raw;
         out.good_sent += bb.good_sent, out.bad_sent += bb.bad_sent;
     }

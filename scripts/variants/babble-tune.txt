@@ -1,0 +1,11 @@
+# idea 60 tuning (seeds 1-4, crossed 6 7 25 26). --babble N: steps per 1024 babbled;
+# --babble-fire N: chance per 256 an urged cell is urged per tick; fade scales the chance
+# by the recent share of bad answers on unbabbled steps.
+baseline: --signal-report 1
+c32 f64: --babble 32 --babble-fire 64
+c128 f64: --babble 128 --babble-fire 64
+c256 f64: --babble 256 --babble-fire 64
+c128 f16: --babble 128 --babble-fire 16
+c128 f256: --babble 128 --babble-fire 256
+fade256: --babble 256 --babble-fade 1
+fade512: --babble 512 --babble-fade 1

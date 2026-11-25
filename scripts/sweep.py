@@ -12,6 +12,11 @@ Each run is `nice -n 19 build/blobrun ... --no-baselines`, single-threaded, at m
 differ only in learning numbers share one twin. Results go to out/sweep/cache.jsonl, keyed by
 the command, so a rerun only runs what is missing. Score is the task's window score: late is
 the mean of the last tenth of the windows, early the first tenth.
+
+Plug flags (--babble, --balance, ...) go in the variants or after the `--`; every flag there
+takes one value. With --table after the `--` the table sheet is read and its twin also gets
+--t.learning_on 0. --out DIR keeps the cache elsewhere. When a run writes <stem>-clean.csv
+(babbling or balance on, ideas 60 and 61) its clean windows and signal counts are cached too.
 """
 
 import argparse
@@ -68,7 +73,7 @@ def genome_pairs(args):
     return pairs
 
 
-def twin_args(args):
+def twin_args(args, extra=()):
     pairs = {k: v for k, v in genome_pairs(args).items() if k not in LEARNING_ONLY}
     # plug and task flags (not genome numbers) stay as they are
     out = []
@@ -77,7 +82,12 @@ def twin_args(args):
             out += [args[i], args[i + 1]]
     for k in sorted(pairs):
         out += ["--g." + k, pairs[k]]
-    return out + ["--g.learning_on", "0"]
+    return out + ["--g.learning_on", "0"] + list(extra)
+
+
+def edge_means(scores):
+    edge = max(1, len(scores) // 10)
+    return statistics.mean(scores[:edge]), statistics.mean(scores[-edge:])
 
 
 def load_cache():
@@ -98,15 +108,24 @@ def run_one(blobrun, cmd_args):
         raise RuntimeError(key + "\n" + done.stderr)
     lines = open(csv).read().split("\n")
     head = lines[0].split(",")
-    col = head.index("blob")
+    driver = "blob" if "blob" in head else "table"
+    col = head.index(driver)
     scores = [float(l.split(",")[col]) for l in lines[1:] if l]
-    edge = max(1, len(scores) // 10)
-    return {
-        "key": key,
-        "early": statistics.mean(scores[:edge]),
-        "late": statistics.mean(scores[-edge:]),
-        "windows": scores,
-    }
+    early, late = edge_means(scores)
+    row = {"key": key, "early": early, "late": late, "windows": scores}
+    # ideas 60 and 61: windows without babbled steps, and signal counts per step
+    clean = csv[:-4] + "-clean.csv"
+    if os.path.exists(clean):
+        lines = open(clean).read().split("\n")
+        col = lines[0].split(",").index(driver)
+        row["clean"] = [float(l.split(",")[col]) for l in lines[1:] if l]
+        row["late_clean"] = edge_means(row["clean"])[1]
+        for line in open(csv[:-4] + "-sum.csv"):
+            d, _, rest = line.strip().partition(",")
+            k, _, v = rest.partition(",")
+            if d == driver and ("per_step" in k or "obeyed" in k or "no_move" in k):
+                row[k] = float(v)
+    return row
 
 
 def mean_sd(values):
@@ -129,6 +148,7 @@ def paired(values, base):
 
 
 def main():
+    global OUT, CACHE
     argv = sys.argv[1:]
     split = argv.index("--") if "--" in argv else len(argv)
     ap = argparse.ArgumentParser()
@@ -139,8 +159,12 @@ def main():
     ap.add_argument("--blobrun", default=os.path.join(ROOT, "build", "blobrun"))
     ap.add_argument("--no-twin", action="store_true")
     ap.add_argument("--table-only", action="store_true")
+    ap.add_argument("--out", default=OUT)
     opt = ap.parse_args(argv[:split])
     task_args = argv[split + 1:]
+    OUT, CACHE = opt.out, os.path.join(opt.out, "cache.jsonl")
+    # the table sheet keeps its own learning switch
+    twin_extra = ["--t.learning_on", "0"] if "--table" in task_args else []
     seeds = parse_seeds(opt.seeds)
     variants = read_variants(opt.variants)
     os.makedirs(OUT, exist_ok=True)
@@ -154,7 +178,7 @@ def main():
         for seed in seeds:
             wanted.append(blob_cmd(args, seed))
             if not opt.no_twin:
-                wanted.append(blob_cmd(twin_args(args), seed))
+                wanted.append(blob_cmd(twin_args(args, twin_extra), seed))
     cache = load_cache()
     todo = []
     for cmd in wanted:
@@ -185,7 +209,7 @@ def main():
     for name, args in variants:
         late = [result(blob_cmd(args, s), "late") for s in seeds]
         early = [result(blob_cmd(args, s), "early") for s in seeds]
-        off = [result(blob_cmd(twin_args(args), s), "late") for s in seeds]
+        off = [result(blob_cmd(twin_args(args, twin_extra), s), "late") for s in seeds]
         if None in late:
             print(f"| {name} | missing runs |")
             continue

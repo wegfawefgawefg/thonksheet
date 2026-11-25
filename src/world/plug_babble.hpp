@@ -38,6 +38,7 @@ struct Babble {
 
     // whole-life counts
     int64_t steps = 0, babbled = 0, obeyed = 0; // obeyed: the urged button won
+    int64_t still = 0;                          // unbabbled steps with no move (a tie or silence)
     int64_t good_raw = 0, bad_raw = 0, good_sent = 0, bad_sent = 0;
     // this window's tally[0..1] of babbled steps, to score the window without them
     int64_t window_right = 0, window_tries = 0;

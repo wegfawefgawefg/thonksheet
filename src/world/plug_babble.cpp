@@ -67,6 +67,8 @@ int babble_signal(Babble& bb, int valence, int move, int64_t right, int64_t trie
         bb.obeyed += move == bb.button;
         bb.window_right += right;
         bb.window_tries += tries;
+    } else {
+        bb.still += move < 0;
     }
     rate_toward(bb.good_rate, valence > 0, s.memory_shift);
     rate_toward(bb.bad_rate, valence < 0, s.memory_shift);
