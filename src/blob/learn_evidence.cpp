@@ -128,11 +128,8 @@ void evidence_rewire_as(Blob& blob, int n, int strength) {
             fill--;
         }
     }
-    bool strong = blob.genome.readout_evidence_strong != 0;
     for (int k = 0; k < SLOTS; k++) {
-        uint64_t wired = extra[k];
-    for (int k = 0; k < SLOTS; k++) {
-        uint64_t wired = 0, four = 0, five = 0;
+        uint64_t wired = extra[k], four = 0, five = 0;
         for (int b = 0; b < TILE_NEURONS; b++) {
             int v = c[k * TILE_NEURONS + b];
             wired |= (uint64_t)(v >= cut) << b;
