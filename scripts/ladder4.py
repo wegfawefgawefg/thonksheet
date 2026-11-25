@@ -9,6 +9,7 @@ See ladder4.sh.
   ladder4.py run TASK ARM CTRL SEED SHEET OUT [--life N] [--checkpoints a,b] [--limit N]
              [--wiring F] [--no-moved]
   ladder4.py bound TASK OBJECTIVE SEED SHEET OUT [--epochs N] [--limit N]
+  ladder4.py noise TASK LEVELS SHEET [SEED]       (ladder4_noise.py, the calibration probe)
 
 An arm is a family and optional settings after dots: f0, f0.cap4, f2.rate0.25, f4.push0.5,
 f0.shift3 (shift: a cell moves with chance 2^-shift a spike; rate: family 2's chance a wrong
@@ -237,6 +238,11 @@ def main():
                  checkpoints=[int(v) for v in flag(rest, "--checkpoints", "60000").split(",")],
                  moved="--no-moved" not in rest, arm=arm)
         ladder4_life.run_one(task, fam, ctrl, int(seed), sheet, out, o, flag(rest, "--wiring", None))
+        return 0
+    if args[0] == "noise":
+        import ladder4_noise
+        ladder4_noise.probe(args[1], [float(v) for v in args[2].split(",")], args[3],
+                            int(args[4]) if len(args) > 4 else 5)
         return 0
     if args[0] == "bound":
         import ladder4_bound
