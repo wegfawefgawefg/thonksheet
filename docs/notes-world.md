@@ -18,10 +18,14 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
   function names, the `--fn` flags, drawing inputs, the shared trial; the class of every
   input in `task_function_points.cpp` (points, past) and `task_function_number.cpp`
   (number, two-numbers, the sheet they are drawn on).
+- `world/task_bandit.cpp` (bandit, switching bandit, chain), `world/task_move.cpp` (track,
+  forage), `world/task_classic.cpp` (mountain car, pendulum, with a 16.16 series sine):
+  the more worlds of idea 63.
 - `world/standin.hpp/.cpp`: a Blob shell with only the arrays the plug touches, and a fake
   tick (coin-flip motors, or the right motor group firing). Needs no core.
 - `run/main.cpp`: the driver calls (birth, tick, reward, death; declared in `run/drive.hpp`)
-  and `main`. `run/run_flags.cpp`: the command line.
+  and `main`. `run/run_flags.cpp`: the command line; `run/run_flags_worlds.hpp` the
+  more-worlds flags (a header, so the build lists that name `run_flags.cpp` stay as they are).
 - `run/life.cpp`: one life as phases (task steps or unplugged ticks), never reset.
 - `run/life_protocols.cpp`: plain life, retention, idle, capacity; the csv and the summary.
 - `run/life_measures.cpp`: `--reach` and `--speed`.
@@ -123,6 +127,13 @@ that fires the right group every tick and predicts its input exactly.
 | both-not-either | A, B, ask; 2 buttons | right / trials | 0.45 | 1.00 |
 | gap 1 or 3 | cue, ask; 2 buttons | right / trials | 0.44 | 1.00 |
 | place 4x4, 3 held out | ask, 4x4 sheet; 2 buttons | right / held-out trials | 0.44 | 1.00 |
+| bandit k=2 (k=4) | one line always on; k buttons | presses on the best / steps | 0.47 (0.24) | 1.00 |
+| switching bandit k=2 | as bandit | best / steps, second half of each block | 0.46 | 1.00 |
+| chain, stage shown or not | 2 stage lines (or 1 always on); 2 buttons | 2 x chains / steps | 0.29 | 1.00 |
+| track 5, shaped or arrive | 5x2 bitmap; left, right | steps ending nearer / steps | 0.46 | 1.00 |
+| forage 5x5, warmer or not | 5x5 bitmap (side 2); 4 buttons | steps ending nearer / steps | 0.38 | 1.00 |
+| mountain car | 2 numbers x 8 lines (side 2) | episodes at the goal / episodes | 0.00 | 1.00 |
+| pendulum | 2 numbers x 8 lines (side 2) | steps upright / steps | 0.05 | 0.86 |
 
 The function battery (79 members, `scripts/functions.py --list`; 20,000 steps, window 200,
 seed 1): perfect is 1.000 on every member; coin is 0.47-0.48 on two-button members and a
@@ -185,6 +196,30 @@ scripts/functions.sh main                                               the whol
 
 Number kinds lay x on the bitmap sheet, 8 lines a row in a snake, so they need 2x2 sensor
 groups or smaller (`--sensor-side 2`); at 3x3 the plug refuses a sheet 8 wide.
+More worlds (idea 63; definitions in `docs/curriculum.md`, "More worlds"). Easiest through
+`scripts/task.sh <world>`, which picks 2x2 sensor groups and the place code where a world
+needs them; `scripts/ladder.py` runs the whole set for every engine and rule:
+
+```
+scripts/task.sh bandit --k 4
+scripts/task.sh switch-bandit --switch-every 1000
+scripts/task.sh chain --chain-cue 0
+scripts/task.sh track --track-reward arrive
+scripts/task.sh forage --forage-warmer 0
+scripts/task.sh mountain-car --classic-reward goal
+scripts/task.sh pendulum
+scripts/task.sh cartpole --cart-start wide | --cart-reward relative | --cart-integrator semi
+scripts/task.sh cartpole --long                     1,000,000 steps in 100 windows
+python3 scripts/ladder.py run --rules minimal [--long]; python3 scripts/ladder.py table
+```
+
+- Every life now prints episodes (and wins where a kind has them) per driver, for catch,
+  cartpole and the new worlds: `blob 1162 falls`, `coin 6666 dots, 1633 caught`. The
+  summary gets `episodes` and `wins` keys; the window csv is unchanged.
+- `--windows N` makes the window steps / N, so a long life keeps a small csv.
+- Cartpole's step is gym's Euler step: a push moves the pole only on the next step, so a
+  step's reward does not judge its own press. `--cart-integrator semi` changes that; the
+  default is unchanged (curriculum, notes on cartpole).
 
 Life protocols (one per call; without them a call is one task for the whole life, as
 before, with byte-identical csvs). Definitions: `docs/curriculum.md`, stage 4. Easiest
@@ -247,6 +282,10 @@ drivers in place of `blob` and `learn_off`. Engines without weight planes (table
 show the room rows as n/a. Runs and logs go to `out/suite/<name>/`; the scorecard to
 `out/scorecards/<name>.csv` (committed; the rest of `out/` is not). Speed is measured last,
 alone among the suite's runs, but other agents may be running: the scorecard says so.
+
+More-worlds rows (idea 63) come after every older row, under "more worlds (idea 63)", so
+old scorecards still line up; `--only JOB,...` runs only some jobs (`--only worlds`: the
+new rows) and writes a scorecard with only those rows.
 
 `blobrun --help` lists every flag. Output: `out/<task>-s<seed>.csv` with columns
 `window,end_step` then one per life run (`blob`, `learn_off`, `coin`, `perfect`), and a table:

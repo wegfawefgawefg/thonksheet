@@ -63,10 +63,12 @@ int catch_step(Task& task, const TaskStepIn& in) {
         return 0;
     }
     task.tally[1]++;
+    task.episodes++;
     bool caught = task.paddle_x == task.dot_x;
     catch_new_dot(task);
     if (caught) {
         task.tally[0]++;
+        task.wins++;
         return 1;
     }
     return -1;
@@ -104,15 +106,18 @@ static int64_t fdiv(int64_t a, int64_t b) {
     return (a * FIX_ONE) / b;
 }
 
-static int64_t start_value(Task& task) {
-    return world_random_below(task.random, (int)(2 * CP_START + 1)) - CP_START;
+static int64_t start_value(Task& task, int64_t range = CP_START) {
+    return world_random_below(task.random, (int)(2 * range + 1)) - range;
 }
 
+// cart_start 1 (wide): the cart anywhere within 1 m of the middle, speed and spin within
+// 0.5, lean within 0.1 rad (half the way to a fall). the scripted player still holds these.
 static void cartpole_restart(Task& task) {
-    task.cart_x = start_value(task);
-    task.cart_v = start_value(task);
-    task.pole_a = start_value(task);
-    task.pole_w = start_value(task);
+    bool wide = task.settings.cart_start == 1;
+    task.cart_x = start_value(task, wide ? fix(1.0) : CP_START);
+    task.cart_v = start_value(task, wide ? fix(0.5) : CP_START);
+    task.pole_a = start_value(task, wide ? fix(0.1) : CP_START);
+    task.pole_w = start_value(task, wide ? fix(0.5) : CP_START);
     task.alive = 0;
 }
 
@@ -185,10 +190,20 @@ int cartpole_step(Task& task, const TaskStepIn& in) {
     int64_t pole_acc = fdiv(fmul(CP_GRAVITY, sin_a) - fmul(cos_a, temp), lever);
     int64_t cart_acc = temp - fdiv(fmul(CP_POLE_MASS_LENGTH, fmul(pole_acc, cos_a)), CP_MASS_TOTAL);
 
-    task.cart_x += fmul(CP_TAU, task.cart_v);
-    task.cart_v += fmul(CP_TAU, cart_acc);
-    task.pole_a += fmul(CP_TAU, task.pole_w);
-    task.pole_w += fmul(CP_TAU, pole_acc);
+    if (task.settings.cart_semi) {
+        // gym's semi-implicit option: speeds first, so this step's push already moves the
+        // cart and pole, and a reward on where they ended judges this press
+        task.cart_v += fmul(CP_TAU, cart_acc);
+        task.cart_x += fmul(CP_TAU, task.cart_v);
+        task.pole_w += fmul(CP_TAU, pole_acc);
+        task.pole_a += fmul(CP_TAU, task.pole_w);
+    } else {
+        // positions move by the speeds from before the push: a push shows only next step
+        task.cart_x += fmul(CP_TAU, task.cart_v);
+        task.cart_v += fmul(CP_TAU, cart_acc);
+        task.pole_a += fmul(CP_TAU, task.pole_w);
+        task.pole_w += fmul(CP_TAU, pole_acc);
+    }
     task.alive++;
     task.tally[0]++;
 
@@ -196,6 +211,7 @@ int cartpole_step(Task& task, const TaskStepIn& in) {
                 task.pole_a > CP_ANGLE_LIMIT || task.pole_a < -CP_ANGLE_LIMIT;
     if (fell) {
         task.tally[1]++;
+        task.episodes++;
         cartpole_restart(task);
         return -1;
     }
@@ -208,6 +224,14 @@ int cartpole_step(Task& task, const TaskStepIn& in) {
             return 1;
         }
         return after > before ? -1 : 0;
+    }
+    if (task.settings.cart_reward == 3) {
+        // relative: good when the step ended nearer home than the recent average (about the
+        // last 16 steps), bad when further, so good and bad come about equally often
+        int64_t after = cartpole_off(task);
+        int64_t mean = task.steps == 0 ? before : task.off_average;
+        task.off_average = mean + (after - mean) / 16;
+        return after < mean ? 1 : (after > mean ? -1 : 0);
     }
     return task.alive % CP_GOOD_EVERY == 0 ? 1 : 0;
 }

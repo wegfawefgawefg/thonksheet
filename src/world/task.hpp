@@ -50,6 +50,14 @@ enum class TaskKind {
     number,          // function battery: the band f(x) falls in, x as one lit line of L
     two_numbers,     // function battery: the band of f(x1, x2)
     past,            // function battery: a function of the last two or three items shown
+    // more worlds (idea 63): the rungs between echo and cartpole
+    bandit,        // no cue; one of k buttons pays good most of the time, drawn per life
+    switch_bandit, // the same, and the paying button changes every switch_every steps
+    chain,         // press A, then B, to be paid; anything else starts over
+    track,         // move a marker along a line onto a target
+    forage,        // a small wrapped grid around the animal; walk onto the food
+    mountain_car,  // rock a car out of a valley (the classic set)
+    pendulum,      // swing a pendulum up and hold it there (the classic set)
     count,
 };
 
@@ -133,6 +141,18 @@ struct TaskSettings {
     int markov_order = 1;   // predict-next: the next symbol depends on the last 1 or 2
     int diff_max = 0;       // bigger: largest difference shown, 0 any
     FnSettings fn; // the function battery (task_function.hpp)
+    int cart_reward = 0; // 3 relative: good when nearer upright than the recent average
+    int cart_start = 0;  // cartpole starts: 0 near upright (+-0.05), 1 wide (task_control.cpp)
+    int cart_semi = 0;   // cartpole: 1 semi-implicit Euler (a push moves the pole this step)
+    // more worlds (task_bandit.cpp, task_move.cpp, task_classic.cpp)
+    int bandit_good = 80, bandit_poor = 20; // percent chance a press pays: best arm, the rest
+    int switch_every = 1000;                // switching bandit: steps per block
+    int chain_cue = 1;                      // chain: a line shows the stage (0: nothing does)
+    int track_size = 5;                     // track: cells on the line
+    int track_reward = 0;                   // track: 0 each step nearer/further, 1 arrival only
+    int forage_size = 5;                    // forage: the wrapped grid is size x size (odd)
+    int forage_warmer = 1;                  // forage: each step nearer is good, further bad
+    int classic_reward = 0;                 // mountain car, pendulum: 0 shaped, 1 goal only
 };
 
 // fixed point for cartpole: 16 fractional bits
@@ -168,6 +188,14 @@ struct Task {
     bool scored = true;       // place: this trial is on a held-out place
     FnState fn;               // the function battery
 
+    // more worlds: the paying arm, steps into the block or episode, positions
+    int best = 0;
+    int64_t timer = 0;
+    int marker = 0, target = 0;   // track
+    int food_dx = 0, food_dy = 0; // forage: food relative to the animal
+    int64_t pos = 0, vel = 0;     // mountain car, pendulum: 16.16 fixed point
+    int64_t off_average = 0;      // cartpole relative reward: recent mean distance from home
+
     // window score, meaning depends on the kind (see task_window_score)
     int64_t tally[4] = {};
 
@@ -191,6 +219,8 @@ struct Task {
     int item_count = 0;
     int memory[16] = {};     // n-back, predict-next, odd event, switch: what came before
     int table_next[64] = {}; // predict-next: the likely next symbol; odd event: the cycle
+    // over the whole life, never reset: episodes (falls, dots, arrivals) and wins among them
+    int64_t episodes = 0, wins = 0;
 };
 
 // script step flags
@@ -211,6 +241,10 @@ int task_perfect_move(const Task& task);
 int task_step(Task& task, const TaskStepIn& in);
 // score over the steps since the last call, then start a new window
 double task_window_score(Task& task);
+// what an episode and a win are called for this kind ("falls", "dots" / "caught"); null for
+// kinds that do not count them
+const char* task_episode_name(TaskKind kind);
+const char* task_win_name(TaskKind kind);
 
 // per-kind halves, in task_reflex.cpp, task_sequence.cpp, task_control.cpp and
 // task_feature.cpp
@@ -269,3 +303,20 @@ int function_step(Task& task, const TaskStepIn& in);
 // the settings once the command line is read, false after a message
 bool function_flag(const char* flag, const char* value, TaskSettings& settings, bool& ok);
 bool function_settings_ok(TaskKind kind, const TaskSettings& settings);
+void bandit_reset(Task& task);
+TaskShape bandit_shape(const Task& task);
+void bandit_sense(const Task& task, TaskSense& sense);
+int bandit_perfect_move(const Task& task);
+int bandit_step(Task& task, const TaskStepIn& in);
+
+void move_reset(Task& task);
+TaskShape move_shape(const Task& task);
+void move_sense(const Task& task, TaskSense& sense);
+int move_perfect_move(const Task& task);
+int move_step(Task& task, const TaskStepIn& in);
+
+void classic_reset(Task& task);
+TaskShape classic_shape(const Task& task);
+void classic_sense(const Task& task, TaskSense& sense);
+int classic_perfect_move(const Task& task);
+int classic_step(Task& task, const TaskStepIn& in);

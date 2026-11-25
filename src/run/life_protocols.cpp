@@ -118,6 +118,29 @@ static void put(FILE* sum, int driver, const char* key, double value) {
     std::fprintf(sum, "%s,%s,%.6g\n", driver_names[driver], key, value);
 }
 
+// episodes (falls, dots, arrivals) and wins, the unit reinforcement learning counts, for
+// the kinds that have them
+static void life_episodes(TaskKind kind, const bool* ran, FILE* sum) {
+    const char* name = task_episode_name(kind);
+    if (!name) {
+        return;
+    }
+    const char* win = task_win_name(kind);
+    for (int d = 0; d < (int)Driver::count; d++) {
+        if (!ran[d]) {
+            continue;
+        }
+        const LifeResult& r = results[d];
+        std::printf("%-10s %lld %s", driver_names[d], (long long)r.episodes, name);
+        if (win) {
+            std::printf(", %lld %s", (long long)r.wins, win);
+        }
+        std::printf("\n");
+        put(sum, d, "episodes", (double)r.episodes);
+        put(sum, d, "wins", (double)r.wins);
+    }
+}
+
 // --task for the whole life. writes `csv`, and early/late under `prefix` in the summary.
 static bool life_plain(const RunFlags& flags, const std::string& csv, FILE* sum, const char* prefix,
                        bool end_numbers, double* late_out) {
@@ -147,6 +170,7 @@ static bool life_plain(const RunFlags& flags, const std::string& csv, FILE* sum,
             late_out[d] = late;
         }
     }
+    life_episodes(flags.task, ran, sum);
     for (int d = 0; d < (int)Driver::count; d++) {
         if (ran[d] && results[d].end.measured) {
             life_end_print(results[d].end, driver_names[d], stdout);
