@@ -364,10 +364,11 @@ one pass over the wired counters.
 The four merge-reference lives (`out/merge-ref/`: echo; both-not-either with the readout;
 the minimal engine; table neurons) are byte-identical to the ones made before this job: on
 the branch after the last code change (`out/output-gap/refcheck-branch.txt`) and again after
-merging main and rebuilding (`out/output-gap/refcheck-merged.txt`). The check is
+merging main and rebuilding, twice (`out/output-gap/refcheck-merged.txt`,
+`refcheck-merged2.txt`, the second after main took the one-hop rule). The check is
 `out/output-gap/refcheck.sh` (the compete job's checker, one life at a time): `cmp` on the
 four csvs and on the -sum files without their speed line. The runner-up rule also gives the
-same life before and after the merge (seed 5, 0.5930 and 0.7535 at 1,000 and 5,000).
+same life before and after both merges (seed 5, 0.5930 and 0.7535 at 1,000 and 5,000).
 
 ## Unfinished
 
