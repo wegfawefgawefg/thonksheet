@@ -306,6 +306,16 @@ A task talks to the blob only through:
 
 The blob ticks several times per task step. The task never resets the blob.
 
+**Every line is a target** (idea 162, off by default; `docs/notes-world.md` has the
+mechanics). Beside the buttons, motor cells answer "this line will be on h steps from now"
+for every input line and a few horizons, each answer a pair of groups voted like a pattern
+bit, each wrong answer taught by the readout's own error step. A brain would credit the
+activity of h steps ago through a fading trace on each synapse; the strange cheap version
+here is a delay line: the spike maps at each step's end are kept for 16 steps (16 x 16 maps
+of tile_count + 1 words, about 130 KB at 4,096 neurons) and the verdict runs on the maps of
+the step that made the guess (`blob_readout_verdict`). The last press and the prediction
+errors can come back as ordinary sensor lines.
+
 ## The viewer
 
 The owner wants to see it: dying, saturating, cycling, self-similar activity should be
