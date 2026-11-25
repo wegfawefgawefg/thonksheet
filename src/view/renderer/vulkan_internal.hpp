@@ -37,8 +37,10 @@ struct Slot {
     VkDescriptorSet set = VK_NULL_HANDLE;
     Buffer tape;           // the tape's spike words, as many rows as the ViewFrame keeps
     Buffer marks;          // the picked neuron's marks
+    Buffer overlay;        // a colour per cell (renderer/overlay.hpp)
     uint64_t uploaded = 0; // tape rows this slot's buffer has
     int mark_count = 0;
+    bool overlay_on = false;
 };
 inline constexpr int slot_count = 2;
 
@@ -83,6 +85,7 @@ struct Context {
     Buffer kinds;                     // per tile: inhibitory, sensor, motor
     int tile_count = 0, tape_len = 0; // the shape the buffers are for
     std::vector<Mark> mark_list;
+    std::vector<uint32_t> overlay_cells;
 
     // everything is drawn here first
     Image screen;

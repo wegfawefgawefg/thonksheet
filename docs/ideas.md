@@ -406,7 +406,10 @@ not known to do it.
 111. **A place that holds.** [known: persistent activity] The default sheet keeps a cue
      readable for 20 ticks and has lost it by 60. Search for sheets, or regions of a sheet,
      that hold it: slow leak, dense local excitation with wider inhibition, up and down
-     states. Aimed at the time wall. *running: a 500-sheet search on how long a cue is held*
+     states. Aimed at the time wall. *tried by search over the existing numbers: 60 ticks can
+     be held (readable at 3.4 to 3.9 on fresh seeds, default 0.23) by a sheet that keeps
+     ringing, at a third of the sharpness; nothing holds 150. Longer needs a mechanism and a
+     region of its own. docs/results-2026-11-25-richness-search.md*
 112. **Different regions, different rules.** [known] The owner: "grid cells have a different
      winner take all kind of activity bias too. that we wouldnt want everywhere in the brain
      but in somewhere probably?" Give each sector its own genome numbers, so one region can
@@ -414,7 +417,14 @@ not known to do it.
      freely. The sectors already exist; the numbers are global today. *idea*
 113. **Screen the neuron and synapse family.** Ideas 66 to 76, each at several strengths,
      through the feature and hold probes, then a combined search. *building*
-114. **Screen the wiring family.** Ideas 19 to 21 and 77 to 83, likewise. *building*
+114. **Screen the wiring family.** Ideas 19 to 21 and 77 to 83, likewise. *screen done on the
+     sheet as born (4 seeds, ideal reader); the combined search and the readout runs are
+     still going. Movers: inhibition kept local (exclusive-or 1.76 to 2.84, gap 1.60 to
+     4.62, at a cost to which-cue and order) and mirror links (small steady gains, carry
+     +0.34). Reach only: two sheets (reach 3.25 to 5.0 tiles) and gentle streams. Harmful:
+     layers (19), fine locality (21), fewer slots (20). Nothing: hubs (78), far-link
+     topography (83). One early sign that growth and pruning erase birth wiring within
+     100,000 ticks. docs/results-2026-11-25-family-wiring.md on its branch*
 115. **MNIST.** The owner: "wed be cool as fuck if we beat mnist." Digits onto the sensor
      sheet, ten buttons, good and bad only. Three numbers: what a linear reader gets from a
      never-taught sheet, what the evidence readout learns, and how long it takes. Targets: a
@@ -460,3 +470,94 @@ exactly, hash and look things up in one step.
 127. **Someone to argue the other side.** [method] Now and then an agent whose only job is
      to find the cheapest thing that beats our best design on the map, by any means, and to
      say what that implies. *idea*
+
+### Long memory and calculation (added 2026-11-25)
+
+The owner: "idk how the brain locks in patterns from 20 years ago and keeps them ... i
+imagined a sort of pattern freezer ... we probably need envs for patterns across long time
+horizons ... holographic log time memory ... content addressable bank." And: "should we add
+various alu, multiplication compute style tasks? executing programs, 3d transforms etc.
+would be cool if we can arbitrarily learn calculations."
+
+129. **Long-horizon worlds.** A stream of new cue-answer pairs for a whole life with old
+     ones re-asked at ages of a hundred to a million steps (a forgetting curve); a thing
+     shown once and asked for much later; rare events. *building*
+130. **A pattern freezer.** [known: consolidation, cascade synapses] A connection whose
+     evidence has stayed strong for a long time gets locked: it stops decaying and takes
+     much stronger contrary evidence to move. *building*
+131. **A timeline with log spacing.** [known in theory; cheap here] Beside the ring of the
+     last 16 ticks, keep a few slower maps: what fired in the last 32, 64, ... 4,096 ticks,
+     each refreshed half as often as the one before. Twelve small maps reach back thousands
+     of ticks, and a slot can listen to any of them. *building*
+132. **The owner's earlier machines.** `binary-brain-v1` (June 2025: an always-on one-bit
+     substrate with three-factor local rules and four broadcast bits; the direct ancestor of
+     this project) and `vvm` (a state vector that looks up its next operation by content).
+     Read them for ideas not yet tried here, above all vvm's "the state is the address of
+     the next operation". *idea*
+133. **The calculation battery.** Adding and multiplying in binary with the answer given as
+     bits, comparing, sorting three numbers, an ALU (an operation code and two operands),
+     running a short program on a register, turning and moving points in 2D and 3D. Needs
+     an answer that is several bits at once, not one of a few buttons. *building*
+134. **An answer that is a pattern.** Several independent yes/no outputs read at once, each
+     graded. Fills the "whole pattern out" hole in the task map; needed for calculation,
+     for copying, and later for generating sound or text. *building, with 133*
+135. **The state is the address of what to do next.** [the owner's vvm, 2026; kin to
+     Kanerva's memory and to production systems] A different route to a general learner,
+     not a sheet: one state (a long bit vector) and a bank of operations found by content.
+     Each step the state looks up the few operations nearest to it, one is chosen and
+     applied to the state, and the result is the next state and the next address. No
+     program counter, no separate memory: thinking is the state walking through the bank.
+     His version was trained by gradient descent and never learned. Here the bank would
+     learn by local rules: evidence on which operation helped from which state, and new
+     operations written in one go. Aimed at holding, at multi-step calculation, at acting.
+     The owner: "i suspect it can actually work. but idk how. its a whole other route to a
+     general learner i think." *building*
+136. **Seeing battery.** The owner: "shape identification. square. triangle. lines. dot.
+     object tracking." Name the shape (dot, line, square, triangle, cross, ring) wherever
+     it is and whatever its size; which way a line points; how many things there are; where
+     a moving thing is now (which part of the sheet), and where it will be in a few steps;
+     follow one thing among others that look the same; a thing that passes behind a cover
+     and comes out the other side. Answers by button, by pointing (a motor line per region),
+     and by moving a marker onto it. *queued: starts when the invariance battery lands,
+     since it reuses that battery's shape drawing*
+
+### From the outside catalogue (added 2026-11-25)
+
+`docs/outside-catalogue.md` has 149 mechanisms from fields that were never about learning
+machines, each translated to bits. These are the ones to try first, queued in this order
+and started as machine time frees up (both machines are full).
+
+137. **A bank of predictors at history lengths 2, 4, 8, 16 ...** [from branch predictors in
+     processors (TAGE); new here] Hashed tables of small counters, each indexed by the last
+     2, 4, 8, ... steps of what happened; the longest history that has an opinion wins.
+     Built for exactly our shape of hardware, and aimed at the gap and at sequences. With a
+     pacemaker count (a gap kept as a stored number of ticks, not as activity). *queued*
+138. **Credit by code.** [from simultaneous perturbation in control engineering] Every unit
+     nudges its behaviour up or down following its own fixed pseudo-random code, all at
+     once; each unit then correlates the outcome with its own code. One experiment the size
+     of the whole decision, credit that is still per unit, a few counters each. Aimed at
+     teaching the inside. *queued*
+139. **Units pay the units that set them up.** [bucket brigade; Baum's economy] A unit that
+     earns passes part of its earnings to the units whose firing let it fire; wealth is
+     conserved, and the poor are replaced. Credit that flows backward as payment. Aimed at
+     teaching the inside and at chains of actions. *queued*
+140. **Copy, vary, and keep a frozen copy.** [the immune system; gene duplication] A unit
+     pulled two ways is duplicated so one copy can change and the other stay; units that
+     fit badly are copied with more changes; proven units are set aside unchanged. Aimed at
+     keeping while adding. *queued*
+141. **Never erase: unlearning is new learning tagged with its context.** [extinction in
+     animals] *queued, with 140*
+142. **Run it again.** [Braitenberg's vehicle 13] After a rare strong outcome, loop the last
+     few recorded spike maps through learning several times. *queued, small*
+143. **Tax the common answer.** [ecology: kill the winner] The more often an answer is
+     given, the harder it is to give. Aimed at the lock. *queued, small*
+144. **Look one step ahead.** [Braitenberg's vehicle 14] Counters for "after this, that" and
+     for how good "that" was; choose by the predicted next state. The project has no
+     lookahead at all. *queued, with the critic*
+145. **The behaviour battery.** Twenty-two small worlds from a century of animal learning
+     that any learner should pass and the task map lacks: habituation, blocking,
+     overshadowing, latent inhibition, extinction with recovery and renewal, partial
+     reward, second-order conditioning, reversal, learning sets, matching, interval timing,
+     latent learning, spacing, superstition. *queued*
+Also from Braitenberg, for whoever builds a holding region: holding activity while wiring by
+co-activity runs ties the held units together and loses their order.
