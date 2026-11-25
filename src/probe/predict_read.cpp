@@ -73,8 +73,7 @@ struct LifeNumbers {
 };
 
 // the life as blobrun lives it; frames kept when asked
-static void live(Blob& blob, const RunFlags& flags, int64_t steps, Frames* keep,
-                 LifeNumbers& out) {
+static void live(Blob& blob, const RunFlags& flags, int64_t steps, Frames* keep, LifeNumbers& out) {
     auto began = std::chrono::steady_clock::now();
     start(blob, flags);
     TaskTicker& tt = ticker;
@@ -423,9 +422,9 @@ int probe_predict(int argc, char** argv) {
         int h = std::atoi(at);
         int count = (int)fut_line.size();
         FutureScore lines = future_fit(fut_lines, count, fut_lines, count, fut_rows, h);
-        FutureScore sheet = lean ? lines
-                                 : future_fit(fut_x, (int)sheet_cells.size(), fut_lines, count,
-                                              fut_rows, h);
+        FutureScore sheet =
+            lean ? lines
+                 : future_fit(fut_x, (int)sheet_cells.size(), fut_lines, count, fut_rows, h);
         int hc = (int)hidden_cells.size();
         FutureScore inner = future_fit(fut_hidden, hc, fut_lines, count, fut_rows, h);
         FutureScore both =

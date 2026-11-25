@@ -212,13 +212,18 @@ def tables(opt, folder):
                              if a in arms else "-")
             out.append(f"| {w} | {h} | " + " | ".join(cells) + " |")
     if "hop" in arms and "born" in arms:
-        out.append("\nPer seed, hop minus born (hidden cells), seeds " +
-                   ",".join(map(str, seeds)) + ":\n")
+        show = [a for a in ("born", "hop", "coin", "shuf") if a in arms]
+        out.append("\nPer seed (" + ",".join(map(str, seeds)) + "), the hidden cells' reader "
+                   "minus the lines' reader, " + " / ".join(show) + ":\n")
         for w in worlds:
             for h in (1, 8):
-                k = f"h{h}_hidden"
-                _, d = diff(got(w, "hop", "future", k), got(w, "born", "future", k))
-                out.append(f"- {w} h={h}: " + " ".join(f"{v:+.3f}" for v in d))
+                k, kl = f"h{h}_hidden", f"h{h}_lines"
+                ds = [[None if x is None or y is None else x - y
+                       for x, y in zip(got(w, a, "future", k), got(w, a, "future", kl))]
+                      for a in show]
+                out.append(f"- {w} h={h}: " + "; ".join(
+                    " / ".join(f"{d[i]:+.3f}" if d[i] is not None else "-" for d in ds)
+                    for i in range(len(seeds))))
 
     # 2. the inside read
     out.append("\n## 2. The inside read: hidden cells only, a fresh linear reader\n")
@@ -243,6 +248,13 @@ def tables(opt, folder):
     for w, q in qrows:
         cells = [diff(got(w, x, q, "hidden"), got(w, y, q, "hidden"))[0] for x, y in pairs]
         out.append(f"| {w} | {q} | " + " | ".join(cells) + " |")
+    show = [a for a in ("born", "hop", "coin", "shuf") if a in arms]
+    out.append("\nPer seed (" + ",".join(map(str, seeds)) + "), hidden cells, " +
+               " / ".join(show) + ":\n")
+    for w, q in qrows:
+        vals = [got(w, a, q, "hidden") for a in show]
+        out.append(f"- {w} {q}: " + "; ".join(
+            " / ".join(fmt(v[i], 5) for v in vals) for i in range(len(seeds))))
 
     # 3. the predictor cells' own skill, the task, the cost
     # the shuffled arm's life is the hop arm's life (its skill would be the replay's)
