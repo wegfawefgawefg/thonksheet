@@ -4,7 +4,53 @@ Idea 135. 2026-11-25. Engine `src/vm/`, `blobrun --engine vm`, `scripts/vm.sh`.
 
 ## The answer first
 
-PLACEHOLDER
+**Does it converge on anything? Yes.** The bit version, taught by local rules and no
+gradient, learns and stays learned with one setting: delayed echo across 20 silent steps
+(400 ticks) goes from 0.71 in the first 1,000 steps to 1.00 in every window after, on all 8
+report seeds; echo with 16 cues, both-not-either, delayed echo at every gap, serial
+addition 0.88, a cue held through 8 distracting events 0.76. With the input held still it
+settles on one set of entries (a fixed point); trials with the same cue walk the same path
+through the bank; different cues walk disjoint ones.
+
+**Why his did not, in his words "stuck in minor loops".** It reproduces from his code: with
+256 ops and nearest-op lookup the state sits on one op forever, with or without input, at
+birth and after training; with his refractory lockout of 4 or 8 ticks it cycles through
+exactly 5 or 9 ops, whatever the input does. The op added each tick is as large as the
+state, so the state becomes its nearest op, and that op is again the nearest. There is no
+"do nothing", the input is a small part of what chooses the op, and no loss reaches which
+op is chosen.
+
+**What made the bit version converge**, each checked by switching it off: an operation
+leaves untouched bits alone (so a still state is a fixed point, which is the hold); the
+input is overwritten into half of the address every tick (with the input weighing little,
+as in his machine, everything is at a coin); and the input writes into the state through
+the bank, by events written in one go with no reward (without them everything is at a
+coin and the walk hardly depends on the input). One winner per tick, as in his machine, is
+enough once those hold (delayed echo 0.94 and 0.95, order 0.77 and 0.86, choice seeds). The refractory lockout is not what
+prevents loops.
+
+**What it does that the sheets cannot**: hold a thing over any silence (the sheets hold
+about 20 ticks; this holds 400 and more, exactly: 0 bits of the state change in the gap),
+and learn a pair in one go. **What it does that the memory engine (a hashed lookup of the
+last four events) cannot**: keep a cue through more distracting events than a fixed depth
+(4 events 0.86 against 0.50; 8 events 0.76 against 0.50), carry a computed value further
+back (serial addition 0.88 against 0.69), answer patterns never rewarded by nearness
+(0.78 against 0.45), and hold through input noise (0.94 against 0.50 at 3% of cells
+flipped). At 8 distractors it also beats the reference GRU (0.58), and at a 20-step gap
+(GRU 0.49).
+
+**What it cannot do**: count time (a still state cannot tell a short gap from a long one;
+gap and beat at a coin), credit a press judged a step later (two-step at a coin; the
+memory gets 0.99), learn a gate on what to keep (so 8 distractors is 0.76 and serial
+addition 0.88, not 1.00), handle 32 buttons and fine holds with one setting, generalise to
+a shape in a new place, or run fast (about a fifth of the memory engine's speed). The GRU
+beats it on most rows.
+
+**Does it belong with a sheet?** Not in front of one: its events want an input that looks
+the same every time it comes. Beside one, offering the sheet a held value, maybe; untested
+(section 7).
+
+SUITE-SUMMARY
 
 ## 1. Why the original did not learn
 
@@ -248,7 +294,43 @@ Before events waited for the input to settle, the vm fell like the memory (delay
 0.48 at 3%): every noisy tick was a new event that cleared half of M. Since, it holds
 through noise the memory cannot; order is still lost. The GRU does not notice the noise.
 
-SUITE-PLACEHOLDER
+### The whole suite, one setting
+
+`scripts/suite.sh vm --engine vm` (`scripts/vm.sh suite`), seeds 5 to 12, 54 minutes, 2 runs
+at a time; scorecard `out/scorecards/vm.csv`. Beside it the memory engine, the fixed GRU
+and the best sheet (`blob-readout`, frozen sheet with the evidence readout) from their own
+scorecards. Late scores; chance is coin flips.
+
+| row | vm | vm, learning off | chance | memory | gru-fixed | best sheet |
+| --- | --- | --- | --- | --- | --- | --- |
+| echo k=2, 4, 8, 16 | 1.00, 1.00, 1.00, 1.00 | 0.46, 0.22, 0.10, 0.05 | 0.47 ... 0.05 | 0.99 ... 0.98 | ... 1.00 | 1.00, 1.00, 0.84, 0.31 |
+| capacity, largest k held | **16** (all seeds) | 0 | 0 | 16 | | 8 |
+| shuffled echo | 1.00 | 0.46 | 0.48 | 0.99 | | 1.00 |
+| delayed echo, 2 steps | **1.00** | 0.45 | 0.48 | 0.99 | 1.00 | 0.55 |
+| beat, every 4 steps | 0.42 ±0.01 | 0.50 | 0.51 | 0.99 | 1.00 | 0.50 |
+| sequence (prediction) | 0.50 (no predictor) | 0.50 | 0.50 | | | 0.57 |
+| catch 4x4 | 0.54 ±0.05 | 0.25 | 0.25 | 0.99 | 0.72 | 0.32 |
+| cartpole, lean (steps per fall) | 20.5 | 22.8 | 23.3 | 109 | 12.0 | 17.6 |
+| cartpole, sparse | 43 ±31 | 22.8 | 23.3 | 279 | 14.2 | 14.2 |
+| echo, cue and button 1, 2, 3, 5 tiles apart | 1.00 at every distance | | 0.47 | | | 1.00, 0.91, 0.85, 0.59 |
+| order | 0.87 ±0.12 | 0.45 | 0.48 | 0.99 | 1.00 | 0.69 |
+| both-not-either | 0.96 ±0.02 | 0.46 | 0.48 | 0.99 | 0.97 | 0.88 |
+| gap | 0.48 | 0.45 | 0.47 | 0.99 | 1.00 | 0.52 |
+| place (never-rewarded places) | 0.21 ±0.10 | 0.46 | 0.47 | 0.63 ±0.34 | 0.16 | 0.25 |
+| echo B after A | 1.00 | 0.21 | 0.23 | | | 0.99 |
+| echo A retested after B, first window / end | 0.96 / 1.00 | 0.45 | 0.46 | 1.00 | 1.00 | 0.98 / 1.00 |
+| echo after 400,000 ticks unplugged, first window | **1.00** | 0.43 | 0.47 | 0.99 | 1.00 | 1.00 |
+| ticks/s in the echo life (loaded machine) | 47,000 | | | 187,000 | 36,000 | 63,000 |
+| ticks/s at 8x8, 16x16, 32x32 tiles | 49,100, 17,900, 4,900 | | | | | |
+| bytes per sheet cell (32x32 tiles) | 782 | | | | | |
+
+The suite's reach rows ("cue readable at N tiles") read the shell's sheet, where the vm's M
+bits are laid on cells with no geometry, so they say nothing about this engine; distance
+does not exist for it (echo is 1.00 at 5 tiles). Its "stays alive" rows likewise are the M
+bits on the sheet (77% of cells silent: X and the bank are not on the sheet). Beat is below
+a coin: with no input between beats the state is a fixed point and cannot count steps.
+
+MAP-PLACEHOLDER
 
 ## 4. Inside it
 
