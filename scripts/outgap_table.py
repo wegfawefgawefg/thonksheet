@@ -36,7 +36,7 @@ def parse_ladder(path):
         rows[key] = vals[:5]
         if quiet:
             rows[key + "  (quiet buttons)"] = [float(q) for q in quiet[:5]]
-        if "close goods" in rest:
+        if "close goods" in rest and float(rest.split("close goods")[1]) > 0:
             rows[key + "  (close goods)"] = [None] * 4 + [float(rest.split("close goods")[1])]
     return rows
 

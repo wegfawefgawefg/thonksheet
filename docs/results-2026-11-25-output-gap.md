@@ -44,7 +44,43 @@ How it scored (born sheet, seeds 5-12, 20,000 digits; the ladder below):
 
 ## Short version
 
-SHORT
+MNIST test digits, seeds 5-12, born sheet, at 20,000 digits unless said.
+
+- **Where the 0.23 goes.** A reader of every non-sensor cell fit offline: 0.926. The same
+  online, one pass: 0.905. Integer weights told the right answer (the perceptron): 0.864.
+  The same told only good or bad, moving on good the way the engine does: **0.577**, three
+  or four buttons dead for good. The real motor cells with only what they hear: 0.602; as
+  thresholded cells: 0.691; with one-bit connections chosen by the engine's counters: 0.692.
+  The engine: 0.692. So one step holds the loss: **the rule's good half** (0.28 on the
+  linear reader); local hearing costs nothing; thresholded cells win 0.09 of it back;
+  one-bit counters cost nothing more; and on the plain rule the engine equals my copy of it,
+  so nothing is left unnamed there.
+- **Why the good half fails with ten buttons.** On every good the pressed button gains and
+  the nine others lose a little. A winner wins more; and with accuracy over one half, goods
+  outnumber bads, so a button that is seldom pressed is pushed down more often than up and
+  sinks. The gate (move on good only when the vote was close) stops the first. Moving only
+  the runner-up on a close good stops the second.
+- **The fix, in the engine** (`--g.readout_good 2 --g.margin_percent 20 --g.margin_win 2`):
+  **0.822, 0.845, 0.852** at 20,000, 60,000, 120,000 digits, against 0.692, 0.673, 0.649
+  plain and 0.811, 0.799, 0.759 with the gate alone. No drift, still rising at 120,000;
+  every seed between 0.847 and 0.856 at 120,000; no button goes quiet. With competitive
+  learning on from the first digit: 0.816, 0.837, 0.844 (gate 0.811, 0.798, 0.708). Nothing
+  changes per tick; a reward moves two buttons' cells instead of ten, so training per digit
+  went from 3.2 ms (plain) and 2.0 ms (gate) to 1.2 ms.
+- **What is left**: the fixed engine is 0.04 under the told-the-answer perceptron at 20,000
+  (0.025 at 120,000) and 0.10 under the offline reader. Under the gate my copy of the motor
+  cell reads 0.1 lower than the real one, for a reason not found. And one rung is not fixed:
+  **the sign**. A one-bit excitatory connection can only speak for a button; a linear reader
+  limited to weights of zero or more loses 0.18 under the gate. Opponent cells (half of each
+  button's cells vote against it) were built and cost in the engine.
+- **The lived sheet's lead does not reach the output.** Offline 0.951 against 0.926 born;
+  online float 0.924 against 0.905; but integer readers, the motor cells and the engine read
+  the lived sheet no better than the born one (engine plain 0.693 / 0.692; fixed engine on
+  the lived sheet 0.818 and 0.845 at 20,000 and 120,000, against 0.822 and 0.852 born). The lead is lost at the first integer rung (0.844 against
+  0.864); centring the counts gets about 0.01 of it back late (2 seeds).
+- **Toy rows**: 16 cues 0.305 to 0.605, 8 cues 0.842 to 0.940, order 0.695 to 0.779, echo
+  k=2 and k=4 unchanged; **exclusive-or 0.883 to 0.793** (the gate's cost; with two buttons
+  the new rule is the gate). Reference lives byte-identical.
 
 ## The ladder
 
@@ -165,7 +201,7 @@ test accuracy, seeds 5-12:
 | competition on from the first digit | gate | 0.603 | 0.789 | 0.811 | 0.798 | 0.708 |
 | competition on from the first digit | **runner-up + gate** | 0.582 | 0.757 | **0.816** | **0.837** | **0.844** |
 | lived, then frozen | plain | 0.568 | 0.669 | 0.693 | 0.679 | 0.653 |
-| lived, then frozen | runner-up + gate | LIVEDRIVAL |
+| lived, then frozen | runner-up + gate | 0.554 | 0.758 | 0.818 | 0.837 | 0.845 |
 
 (every sheet has `--g.tile_winners 4`; competition is `--g.compete_on 1 --g.compete_shift 5`.)
 
@@ -183,7 +219,9 @@ test accuracy, seeds 5-12:
   stops the other buttons draining.
 - **The lived sheet still does not help the output.** With competition on from the first
   digit the fixed output reads 0.844, a hair under the born sheet's 0.852; a fresh linear
-  reader gets 0.952 from such a sheet and 0.926 from the born one. LIVEDNOTE
+  reader gets 0.952 from such a sheet and 0.926 from the born one. On the frozen lived sheet
+  it reads 0.818, 0.837, 0.845 (born 0.822, 0.845, 0.852). The ladder below says where the
+  lead is lost.
 
 What else was tried in the engine, seed 5, 2,000 test digits (the gate alone on that seed,
 all 10,000 test digits: 0.801, 0.785, 0.747 at 20,000, 60,000, 120,000; runner-up + gate:
@@ -209,7 +247,28 @@ pay it; the inhibitory sources the engine wires may already carry most of it.
 
 ## Toy rows
 
-TOYS
+The working setting (`--g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4
+--g.readout_balance 1`, 40,000 steps of 20 ticks, 3x3 groups, 128 motor cells a button, 256
+over all for 8 and 16 cues), and the same with the gate alone and with the runner-up rule
+and the gate. Late score (mean of the last 4 of 40 windows), seeds 5-12; the learning-off
+twin in brackets. `scripts/outgap.sh toys NAME FLAGS`.
+
+| | echo k=2 | k=4 | k=8 | k=16 | both-not-either | order |
+|---|---|---|---|---|---|---|
+| working | 1.000 (0.519) | 0.997 (0.247) | 0.842 (0.116) | 0.305 (0.047) | **0.883** (0.489) | 0.695 (0.480) |
+| gate (`--g.readout_good 1 --g.margin_percent 20 --g.margin_win 2`) | 1.000 | 0.898 | 0.866 | 0.609 | 0.793 | 0.779 |
+| **runner-up + gate** (`--g.readout_good 2 --g.margin_percent 20 --g.margin_win 2`) | 1.000 | **0.993** | **0.940** | 0.605 | 0.793 | **0.779** |
+
+- With two buttons the runner-up is the other button, so the two rules are the same rule:
+  the lives on echo k=2, both-not-either and order are identical to the gate's.
+- Where there are more buttons the runner-up part is what keeps the small rows: k=4 0.898
+  with the gate alone (one or two seeds fall), 0.993 with the runner-up rule; k=8 0.866
+  against 0.940. Sixteen cues: both double the working setting (0.305 to 0.61).
+- **The cost is exclusive-or**: 0.883 to 0.793, the gate's known cost (the tags job had
+  0.80). Order gains 0.08. Moving on every good (the working setting has
+  `readout_good 0`, nothing on good) is what exclusive-or wants and what many buttons cannot
+  afford; this setting does not solve both.
+- These toys run with `readout_evidence 1` as the working setting does; the MNIST runs use 2.
 
 ## Cost
 
