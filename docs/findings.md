@@ -329,6 +329,17 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
     lines depend on a press nothing can know, and "the future is in the lines" is
     partly the test's doing; the coin control spreads errors over all lines where real
     errors sit on the few that change; one setting, picked on seeds 1 and 2.
+- **With no hand-built cells: 13 of 22, and the best exclusive-or and parity of 3 on
+  the board** (plan item A2, docs/results-2026-11-26-one-setting-2.md, `scripts/oneset.sh
+  a2rucomp`). The runner-up output rule with competitive learning beside it, no reward
+  to the inside, quick map, seeds 5 to 12: exclusive-or 0.997, parity of 3 0.831 (the
+  one setting 0.642, the GRU 0.518), gap 0.938, delayed echo 0.919, copy of 2 0.927,
+  online MNIST 0.838 (GRU 0.733). It lacks what hold cells give: the 1,000-tick hold
+  0.508, 16 cues 0.620, order 0.733, catch 0.366. The runner-up rule swapped into the
+  one setting keeps its 15 rows and lifts online MNIST 0.714 to 0.841. Competitive
+  learning added to the one setting does not add (15 rows; order, gap, exclusive-or and
+  copy fall): hold cells and learned loops compete. The chain goes to 0.000 wherever
+  competitive learning is on.
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),

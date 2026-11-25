@@ -75,10 +75,13 @@ critic. The unattended search is stopped on this PC and still runs on stevejobs.
 
 Added after the wind-up, ahead of the rest (these are the first rules that move a wall,
 so they come first):
-- A2. *(running unattended, coordinator)* The one setting with what merged after it:
-  the runner-up output rule in place of the close-vote gate, competitive learning beside
-  or in place of time and hold cells, on the quick map (`scripts/oneset.sh`). Takes in
-  the first part of item 9 and the "whole suite with the rule on" left by item 2a.
+- A2. *(done: docs/results-2026-11-26-one-setting-2.md; with no hand-built cells the
+  runner-up rule and competitive learning pass 13 of 22, best on exclusive-or, parity of
+  3, gap and copy; the runner-up rule goes into the one setting (MNIST 0.714 to 0.841,
+  same 15 rows); competitive learning does not add to it. Left: competitive learning in
+  the one setting at four winners, hold cells alone beside it, an inside read for these
+  columns, why the chain dies under competitive learning)* The one setting with what
+  merged after it, on the quick map.
 - A. *(done, merged: docs/results-2026-11-26-one-setting.md, `scripts/oneset.sh best`;
   one setting passes 15 of 22 worlds on seeds 5 to 12, the output rule alone 6, the GRU
   16; the critic does not combine; 12 in 100 neurons end silent after a long life. Left:
