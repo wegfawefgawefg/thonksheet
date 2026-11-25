@@ -35,6 +35,59 @@ Order of work:
    fixed feedback of the error. Then the stranger ones (credit by code, payment).
 4. The memory stays as a reference and as a possible organ, not as the answer.
 
+## The queue (2026-11-25)
+
+The owner: "how many bots do you have going can you cut to like 4. a big queue of tasks is
+better." So: four agents at a time, each a short scoped job from the top of this list;
+when one hands back, its result is merged and recorded and the next item starts. Items
+are ordered by the one question above. An item is struck when done, with where the result
+is.
+
+Running (four):
+- Inside learning: feedback tags from the chosen action, and the barely-correct margin
+  rule.
+- The vvm route (a state that is the address of its next operation).
+- The calculation battery, with answers that are patterns and held-out inputs.
+- The GPU: any world, the evidence counters, the memory engine, one call per table of
+  designs.
+
+Winding up (told to stop, write up and hand back; to be merged and recorded): the combined
+core, reverse replay, nudges and balance, more worlds, the invariance battery, the
+function battery, the dynamics family, the rest of the map, rule tables, long memory, the
+critic. The unattended search is stopped on this PC and still runs on stevejobs.
+
+Queued, in order:
+1. The inside-learning test as one script: after a life, freeze, wipe the output, fit a
+   fresh output, and compare with the machine as born and a random projection, on MNIST
+   and on the held-out columns. Every item below is scored with it.
+2. Competitive learning with local inhibition, no reward: units that win on an input
+   move toward it (in bits: gain the input's bits, lose others, under a budget).
+3. A local "is this real" score per region: real input against shuffled or self-made
+   input, each region raising its activity for one and lowering it for the other.
+4. Predicting the input: every unit learns to predict a neighbour or the next tick from
+   the rest; what is mispredicted is what gets learned.
+5. Fixed random feedback of the output's error to the inside (the bits form of direct
+   feedback alignment), beside the tags result.
+6. Credit by code (idea 138).
+7. Units pay the units that set them up (idea 139).
+8. A memory that knows near from far (idea 152), scored on MNIST.
+9. The output: a weighted vote (147) and the drift on long lives (146).
+10. Finish the critic: cartpole with the reward lag fixed, against the memory engine's 109
+    and 279 steps per fall.
+11. The suite a lookup table cannot pass (149) and the held-out split (126): fold every
+    battery's never-shown rows into the scoreboard as their own columns.
+12. The seeing battery (136): shapes, tracking, counting, behind a cover.
+13. The behaviour battery (145).
+14. Two regions, one tuned to ring and one to mix (112), on delayed echo and hold.
+15. A bank of predictors at history lengths 2, 4, 8, ... (137).
+16. Copy, vary, keep a frozen copy; never erase (140, 141).
+17. Look one step ahead (144), on the acting worlds.
+18. Position tolerance learned from motion (idea 104) on the invariance battery.
+19. A red-team agent: beat the best design by any means that keeps the rules (127).
+20. Loop audit: cut mechanisms and suite rows that have earned nothing; one page.
+21. Long memory, whatever its wind-up leaves unfinished: the forgetting curve to a
+    million steps, the freezer.
+
 ## Earlier: first blob (docs/effort-2026-11-24-first-blob.md)
 
 1. Core: birth, tick, regulation, learning, speed test. *done*
