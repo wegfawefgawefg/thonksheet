@@ -247,7 +247,8 @@ speed-host)
         shift 2
         for lives in 1 64 1024 $largest; do
             printf '%-22s %6s lives: ' "$name" $lives
-            gpu --lives $lives "${b[@]}" "$@" | grep -E "^gpu" | sed 's/.*s: \([0-9]*\) life-ticks.*/\1/'
+            gpu --lives $lives "${b[@]}" "$@" 2>/dev/null | grep -E "^gpu" |
+                sed 's/.*s: \([0-9]*\) life-ticks.*/\1/'
         done
         printf '%-22s    cpu core: ' "$name"
         local cpu_args=()
