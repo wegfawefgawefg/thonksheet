@@ -35,6 +35,7 @@ value on every line, so the suite needs each value somewhere.
    - good or bad after every answer
    - good or bad late, after several steps
    - by being shown the answer
+   - by a verdict for each output (with two-valued outputs this is being shown the answer)
    - by acting on a world that answers back
 3. **What has to come out.** One of a few buttons; one of many; an amount; a sequence of
    presses; a press at the right moment; a whole pattern.
@@ -129,11 +130,18 @@ seeds and, above all, together under one setting):
 
 ## Holes
 
-Kinds of task with no world yet: the long game (tier 12); output that is a whole pattern or
-an amount instead of a button; a changed rule on the *same* lines and buttons (today's second
+Kinds of task with no world yet: the long game (tier 12); output that is an amount
+instead of a button; a changed rule on the *same* lines and buttons (today's second
 task uses new ones, so nothing interferes). Each needs a world before any design can be said to work on
 "any task". Built 2026-11-25 (`scripts/map.sh`, docs/curriculum.md "The rest of the map"):
 no teacher (tier 10), being shown the answer (`--shown N`) and damage to the sheet
 (`--damage P`, `--damage-tile 1`); their full-seed runs are unfinished (quick check: no
 engine learns from being shown; the readout rule loses nothing to 20 in 100 silenced).
 Output over several steps is now covered by copy (one press a step).
+Output that is a whole pattern is covered by the calculation battery (`--task calc`,
+`scripts/calc.sh`, docs/results-2026-11-25-calculation.md): with a verdict per bit the
+working rule learns pattern answers that are weighted sums of the input lines at small
+sizes, and nothing that needs a product of distant lines; with one verdict for the whole
+answer it holds two bits. Every member holds out a quarter of its cases, so this is also
+the first battery a lookup table fails (memory: seen 0.88 to 0.99, held out near the most
+common answer).

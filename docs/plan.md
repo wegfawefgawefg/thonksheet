@@ -45,10 +45,13 @@ is.
 
 Running (four), as of 2026-11-25 night:
 - Item B below (idea 155) and item C below (the critic).
-- The calculation battery, with answers that are patterns and held-out inputs.
 - Item A below: one setting with everything that worked (`scripts/oneset.sh`).
+- Queued items 1 and 2 as one job: the inside-learning test as a script, then competitive
+  learning with local inhibition scored by it.
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
-153, 154), both merged. Their slots went to items B and C.
+153, 154), both merged; their slots went to items B and C. The calculation battery
+(ideas 133, 134; docs/results-2026-11-25-calculation.md), merged; its slot went to
+queued items 1 and 2.
 Also running unattended, not an agent: the readout suite on stevejobs (`thonk-ref`, log
 `out/readout.log` there; pull with `MINI_DIR=thonk-ref scripts/mini.sh pull`). The memory,
 GRU and plain-net suites on the integrated code are done and on the scoreboard. The search
@@ -83,10 +86,10 @@ so they come first):
   says about the tests is in `docs/findings.md`, "The references on every row".
 
 Queued, in order:
-1. The inside-learning test as one script: after a life, freeze, wipe the output, fit a
+1. *(running, with item 2)* The inside-learning test as one script: after a life, freeze, wipe the output, fit a
    fresh output, and compare with the machine as born and a random projection, on MNIST
    and on the held-out columns. Every item below is scored with it.
-2. Competitive learning with local inhibition, no reward: units that win on an input
+2. *(running)* Competitive learning with local inhibition, no reward: units that win on an input
    move toward it (in bits: gain the input's bits, lose others, under a budget).
 3. A local "is this real" score per region: real input against shuffled or self-made
    input, each region raising its activity for one and lowering it for the other.
@@ -101,7 +104,10 @@ Queued, in order:
 10. Finish the critic: cartpole with the reward lag fixed, against the memory engine's 109
     and 279 steps per fall.
 11. The suite a lookup table cannot pass (149) and the held-out split (126): fold every
-    battery's never-shown rows into the scoreboard as their own columns.
+    battery's never-shown rows into the scoreboard as their own columns. The calculation
+    battery is the first such suite (memory: seen 0.88 to 0.99, held out near the most
+    common answer); what is left is the scoreboard columns.
+11b. Tidy: `src/world/task.cpp` is 541 lines, over the 500-line rule; split it.
 12. The seeing battery (136): shapes, tracking, counting, behind a cover.
 13. The behaviour battery (145).
 14. Two regions, one tuned to ring and one to mix (112), on delayed echo and hold.

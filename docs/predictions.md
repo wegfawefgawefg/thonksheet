@@ -154,3 +154,9 @@ inner neurons measurably better for a task than unsupervised wiring already make
     life. (60%)
    - *Scored 2026-11-25: probably wrong, not measured on a quiet machine: one loaded life ran at 31,000 ticks a second against about 200,000.*
 
+29. **One good or bad for a whole pattern answer fails from 3 output bits on** with the
+    working rule (it moves only on bad, so a right bit is pushed wrong whenever another
+    bit was wrong; balance at p = (1 + p^B) / 2). With moves on good as well, from about 5
+    bits. Written by the calculation bot before its whole-answer runs
+    (docs/results-2026-11-25-calculation.md).
+   - *Scored 2026-11-25: right in shape. Equal to per-bit grading at 1 bit, a little lost at 2 (0.84 against 0.99), at the learning-off twin from 3 bits on (0.39 to 0.55); moves on good partly rescue 3 and 4 bits, not 6 or 8.*

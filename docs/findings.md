@@ -74,6 +74,18 @@ integrated code. What that table says about the tests, before it says anything a
   with the critic 0.97 on the tuning seeds. It is the one row where a rule of ours beats
   all three references, and it is the row that needs credit one step back.
 
+**Calculation (2026-11-25, `docs/results-2026-11-25-calculation.md`).** Answers that are
+bit patterns, 28 kinds at 56 sizes, a quarter of each one's cases never rewarded. With a
+verdict per bit the working rule learns what is a weighted sum of its input lines (copy to
+8 bits, not, compare, max, the carry-out of a sum up to 6 bits) and nothing that needs a
+product of distant lines (sum bits, exclusive-or, parity of 4, the ALUs, programs of two
+steps). Of 56: 7 learned with held-out cases too, 3 on seen cases only, 16 the sheet
+carries and the rule does not reach, 30 the sheet does not carry. Where it learns, held
+out stays within 0.05 to 0.16 of seen, so it is a rule and not a table. The memory engine
+is the reverse: 0.88 to 0.99 on seen cases, the most common answer on held-out ones (add
+0.11, exclusive-or 0.05). The GRU and plain net, held out, get only comparison. This
+battery is the suite a lookup cannot pass.
+
 ## The headline (2026-11-25)
 
 **The output can now learn online, from good and bad alone, things no input line carries.**
@@ -341,6 +353,20 @@ docs/results-2026-11-25-mnist.md
     alone and the input writes into the state.** [likely: one engine, 8 seeds] Matching by
     nearness and waiting for the input to settle is what lets it survive noise and answer
     unseen patterns, where a hashed lookup cannot.
+41. **The frozen sheet is a linear-plus-pairs feature bank.** [likely: one engine, 56
+    worlds] On the calculation battery a reader of the sheet as born equals a reader of
+    the raw input lines within a few hundredths, except for exclusive-ors of lines that
+    sit together (0.54 to 0.66, 0.72 to 0.91). With finding 33 this is what "rich" means
+    for this sheet today: little beyond its input, and nothing at a distance. So carry
+    stops at the first sum bit (an exclusive-or of lines N apart), and a program stops at
+    two instructions though the sheet still holds the previous one at 0.96.
+42. **One verdict cannot teach many outputs with an error rule that moves only on bad.**
+    [likely; predicted from the rule's drift balance before the runs] One good or bad for
+    the whole answer equals a verdict per bit at one output bit, loses a little at two,
+    and sits at the learning-off twin from three bits on (0.39 to 0.55 where per-bit
+    grading reaches 0.94). Moving on good as well partly rescues 3 and 4 bits, not 6 or 8.
+    A verdict per two-valued output is being shown the answer, bit by bit. A wide answer
+    needs that, or a rule that splits one verdict among many outputs.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 
@@ -404,4 +430,8 @@ it.*
   The memory engine learns catch (0.99) and cartpole (109 lean, 279 sparse) once credit
   reaches two steps back, which confirms the lean reward's one-step lag from a second side.
 - **More than four things.** Eight cues are now learned (0.84) by the new readout on the
-  full engine. Sixteen is untested with it.
+  full engine. Sixteen is untested with it. An answer of 8 or 9 bits, with 14 to 16 motor
+  cells a group, learns below its learning-off twin (add of 8 bits 0.38 against 0.45):
+  groups fall silent. `readout_evidence 3` removes the drop and costs copy of 8 bits 0.78
+  to 0.66. And reach sets which output bits can be learned: in copy of 8 bits the bit
+  whose line is nearest the motors gets 0.90, the furthest 0.50.

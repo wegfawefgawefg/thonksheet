@@ -544,10 +544,15 @@ would be cool if we can arbitrarily learn calculations."
 133. **The calculation battery.** Adding and multiplying in binary with the answer given as
      bits, comparing, sorting three numbers, an ALU (an operation code and two operands),
      running a short program on a register, turning and moving points in 2D and 3D. Needs
-     an answer that is several bits at once, not one of a few buttons. *building*
+     an answer that is several bits at once, not one of a few buttons. *built 2026-11-25:
+     `--task calc`, `scripts/calc.sh`, docs/results-2026-11-25-calculation.md. 7 of 56
+     learned with held-out cases; nothing that needs a product of distant lines. Next: a
+     layout with the operands' bits side by side; more motor cells per output.*
 134. **An answer that is a pattern.** Several independent yes/no outputs read at once, each
      graded. Fills the "whole pattern out" hole in the task map; needed for calculation,
-     for copying, and later for generating sound or text. *building, with 133*
+     for copying, and later for generating sound or text. *built with 133: two motor
+     groups per bit, voted like two buttons. A verdict per bit teaches; one verdict for
+     the whole answer holds two bits (finding 42).*
 135. **The state is the address of what to do next.** [the owner's vvm, 2026; kin to
      Kanerva's memory and to production systems] A different route to a general learner,
      not a sheet: one state (a long bit vector) and a bank of operations found by content.
