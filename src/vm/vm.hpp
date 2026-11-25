@@ -51,6 +51,7 @@ struct VmGenome {
     int set_shift = 9;        // set-mask density over M at birth
     int clr_shift = 7;        // clear-mask density over M at birth
     int m_target = 128;       // wanted M bits on per 1,024
+    int homeostat = 1;        // 0: no thinning of sets or clears toward m_target
     int out_noise_shift = 4;  // a motor cell also fires by chance
     int out_bar_bits = 9;     // a cell fires when its vote beats a random number this wide
     int credit_ticks = 20;    // evidence: entries this recent are graded by an outcome
@@ -73,6 +74,9 @@ struct VmGenome {
     // 1: an event entry's address also samples M (its context), and an input in a new
     // context is a new event: transitions become (input, state) -> a new mark
     int event_m = 0;
+    // 1: when the input changes, its detector makes its mark whether or not it is among the
+    // winners (answer entries for the same input out-match it). 0: only when it wins
+    int event_route = 1;
     // the last this-many words of M form a ring that slides one bit along every tick: a
     // permutation, so a mark keeps all its bits and its place tells how long ago it was made
     int m_slide_words = 0;
@@ -117,6 +121,7 @@ struct VmBlob {
     int16_t* vote = nullptr;        // per motor cell
     int8_t* delta = nullptr;        // per motor cell, scratch for an outcome
 
+    int32_t event_entry = -1;  // the event whose mark is made this tick, -1 none
     uint32_t now = 0;          // ticks lived, the stamp of the latest tick
     uint32_t last_outcome = 0; // tick of the latest reward
     uint64_t rng[4] = {};

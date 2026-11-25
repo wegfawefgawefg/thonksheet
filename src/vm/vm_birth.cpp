@@ -279,6 +279,7 @@ static const VmField fields[] = {
     {"set_shift", &VmGenome::set_shift},
     {"clr_shift", &VmGenome::clr_shift},
     {"m_target", &VmGenome::m_target},
+    {"homeostat", &VmGenome::homeostat},
     {"out_noise_shift", &VmGenome::out_noise_shift},
     {"out_bar_bits", &VmGenome::out_bar_bits},
     {"credit_ticks", &VmGenome::credit_ticks},
@@ -297,6 +298,7 @@ static const VmField fields[] = {
     {"event_set_shift", &VmGenome::event_set_shift},
     {"event_clr_shift", &VmGenome::event_clr_shift},
     {"event_m", &VmGenome::event_m},
+    {"event_route", &VmGenome::event_route},
     {"m_slide_words", &VmGenome::m_slide_words},
     {"refract", &VmGenome::refract},
 };

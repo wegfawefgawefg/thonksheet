@@ -39,6 +39,9 @@ struct PlugSettings {
     // than the nearest N
     int motor_spread = 0;
     int motor_spread_even = 0;
+    // noise on the input: each attached sensor cell, good and bad included, is flipped each
+    // tick with chance input_noise / 1,024 (0 none). the same for every engine
+    int input_noise = 0;
 };
 
 struct Plug {
@@ -64,6 +67,7 @@ struct Plug {
 
     // ticks left on the good and bad lines
     int good_left = 0, bad_left = 0;
+    uint64_t noise_state = 0x6e6f697365ull; // --input-noise draws, deterministic
 
     // --motor-spread: line L's cells are spread_neuron[spread_first[L] .. spread_first[L + 1])
     int spread_first[PLUG_MAX_MOTOR_LINES + 1] = {};

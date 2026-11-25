@@ -214,16 +214,32 @@ void vm_events(VmBlob& v) {
         on += __builtin_popcountll(x[w]);
         v.x_last[w] = x[w];
     }
-    if (!v.vg.learning_on || !v.vg.event_on || changed == 0 || on < v.vg.event_min_bits) {
+    v.event_entry = -1;
+    if (!v.vg.event_on || changed == 0 || on < v.vg.event_min_bits) {
         return;
     }
-    for (int k = 0; k < v.vg.active; k++) {
-        int e = v.winners[k];
+    // event_route: the best detector anywhere in the bank; else only among the winners
+    int count = v.vg.event_route ? v.vg.entries : v.vg.active;
+    int best = -1;
+    for (int i = 0; i < count; i++) {
+        int e = v.vg.event_route ? i : v.winners[i];
         int size = v.x_size[e];
-        if (4 * v.match_x[e] >= 3 * size && 2 * size >= on && writes_something(v, e) &&
+        if (4 * v.match_x[e] >= 3 * size && 2 * size >= on &&
+            (best < 0 || v.match_x[e] > v.match_x[best]) && writes_something(v, e) &&
             (!v.vg.event_m || context_matches(v, e))) {
-            return; // already known
+            best = e;
         }
+    }
+    if (best >= 0) {
+        // already known: with routing its mark is made now, winner or not
+        v.event_entry = v.vg.event_route ? best : -1;
+        if (v.vg.event_route) {
+            v.last_fired[best] = v.now;
+        }
+        return;
+    }
+    if (!v.vg.learning_on) {
+        return;
     }
     int e = vm_quietest_entry(v);
     if (e < 0) {
@@ -234,5 +250,9 @@ void vm_events(VmBlob& v) {
     vm_random_effect(v, e, v.vg.event_set_shift, v.vg.event_clr_shift);
     // counts as just used; with refraction not as firing on the tick before, so it acts
     v.last_fired[e] = v.vg.refract && v.now > 2 ? v.now - 2 : v.now;
+    if (v.vg.event_route) {
+        v.event_entry = e; // a new event leaves its mark at once
+        v.last_fired[e] = v.now;
+    }
     v.stats.events++;
 }

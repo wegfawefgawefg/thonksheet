@@ -46,6 +46,7 @@ static const char* usage =
     "  --gap-long N       gap: blank steps between blinks, long (default 3)\n"
     "  --place-size N     place: the sheet is N x N (default 4)\n"
     "  --place-hold N     place: places never rewarded, the scored ones (default 3)\n"
+    "  --input-noise N    plug: each sensor cell flips with chance N/1024 per tick (default 0)\n"
     "  --distract N       distract: distracting events between cue and ask (default 4)\n"
     "  --add-bias N       serial-add: chance x16 a pair passes the carry on (default 12)\n"
     "  --maj-hold N       majority: patterns of 32 never rewarded, the scored ones (default 6)\n"
@@ -210,6 +211,8 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.plug.reward_line_ticks = (int)v;
         } else if (std::strcmp(flag, "--rest-ticks") == 0) {
             flags.plug.rest_ticks = (int)v;
+        } else if (std::strcmp(flag, "--input-noise") == 0) {
+            flags.plug.input_noise = (int)v;
         } else if (std::strcmp(flag, "--k") == 0) {
             flags.task_settings.k = (int)v;
         } else if (std::strcmp(flag, "--delay") == 0) {

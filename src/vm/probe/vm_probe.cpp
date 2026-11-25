@@ -219,15 +219,87 @@ static void show_trials(const Recording& r, int count) {
     }
 }
 
+// the walk with the input held: 200 ticks to settle, then 1,000 recorded. mode 0 blank, 1 the
+// task's first line held on, 2 its first and second lines taking turns every 20 ticks.
+// prints distinct winner sets and entries, and the period the walk settles into
+static void walk(Blob* blob, TaskTicker& tt, int mode) {
+    VmBlob& v = vm_of(*blob);
+    int K = v.vg.active;
+    std::vector<std::vector<int32_t>> sets;
+    std::vector<uint8_t> seen((size_t)v.vg.entries, 0);
+    tt.plug.good_left = tt.plug.bad_left = 0;
+    std::vector<int32_t> last_a, last_b;
+    double alike = 0;
+    int alike_n = 0;
+    for (int t = 0; t < 1200; t++) {
+        TaskSense sense;
+        bool second = mode == 2 && (t / 20) % 2;
+        if (mode == 1 || mode == 2) {
+            sense.singles[second ? 1 : 0] = 1;
+        }
+        plug_set_lines(tt.plug, sense);
+        plug_write(tt.plug, *blob);
+        vm_tick(*blob);
+        if (t < 200) {
+            continue;
+        }
+        std::vector<int32_t> w(v.winners, v.winners + K);
+        std::sort(w.begin(), w.end());
+        for (int32_t e : w) {
+            seen[(size_t)e] = 1;
+        }
+        if (mode == 2 && t % 20 == 19) {
+            (second ? last_b : last_a) = w;
+            if (!last_a.empty() && !last_b.empty()) {
+                alike += jaccard_sets(last_a.data(), last_b.data(), K);
+                alike_n++;
+            }
+        }
+        sets.push_back(w);
+    }
+    std::vector<std::vector<int32_t>> distinct;
+    for (auto& s : sets) {
+        if (std::find(distinct.begin(), distinct.end(), s) == distinct.end()) {
+            distinct.push_back(s);
+        }
+    }
+    int entries = 0;
+    for (uint8_t u : seen) {
+        entries += u;
+    }
+    // the smallest period, exact and up to ties (3/4 shared), over the last 400 ticks
+    int exact = 0, loose = 0;
+    int n = (int)sets.size();
+    for (int p = 1; p <= 200 && (!exact || !loose); p++) {
+        bool ok_exact = true, ok_loose = true;
+        for (int t = n - 400 + p; t < n; t++) {
+            ok_exact = ok_exact && sets[t] == sets[t - p];
+            ok_loose = ok_loose && jaccard_sets(sets[t].data(), sets[t - p].data(), K) >= 0.75;
+        }
+        exact = !exact && ok_exact ? p : exact;
+        loose = !loose && ok_loose ? p : loose;
+    }
+    const char* names[3] = {"blank", "one line held", "two lines taking turns /20"};
+    std::printf("  %-27s winner sets %4zu distinct, entries %4d, period exact %3d, up to ties %3d",
+                names[mode], distinct.size(), entries, exact, loose);
+    if (mode == 2) {
+        std::printf(", the two lines' winners alike %.2f", alike_n ? alike / alike_n : 0.0);
+    }
+    std::printf("\n");
+}
+
 int main(int argc, char** argv) {
     int64_t test_steps = 2000;
     int show = 3;
+    bool walk_report = false;
     std::vector<char*> rest = {argv[0]};
     for (int i = 1; i < argc; i++) {
         if (i + 1 < argc && std::strcmp(argv[i], "--test-steps") == 0) {
             test_steps = std::atoll(argv[++i]);
         } else if (i + 1 < argc && std::strcmp(argv[i], "--show") == 0) {
             show = std::atoi(argv[++i]);
+        } else if (std::strcmp(argv[i], "--walk") == 0) {
+            walk_report = true;
         } else {
             rest.push_back(argv[i]);
         }
@@ -250,6 +322,7 @@ int main(int argc, char** argv) {
     int64_t total = flags.steps + test_steps;
     int64_t step = 0;
     std::vector<uint8_t> used((size_t)v.vg.entries, 0);
+    std::vector<uint8_t> ever((size_t)v.vg.entries, 0);
     bool step_open = false;
     while (step < total) {
         bool recording = step >= flags.steps;
@@ -262,6 +335,9 @@ int main(int argc, char** argv) {
         }
         ticker_before_tick(tt, *blob);
         vm_tick(*blob);
+        for (int k = 0; k < rec.K; k++) {
+            ever[(size_t)v.winners[k]] = 1;
+        }
         if (recording) {
             std::vector<int32_t> w(v.winners, v.winners + rec.K);
             std::sort(w.begin(), w.end());
@@ -309,9 +385,22 @@ int main(int argc, char** argv) {
                 "%u of %d\n",
                 v.vg.entries, distinct, (unsigned long long)v.stats.writes, v.stats.m_on,
                 v.free_cells);
-    alike_by_position(rec);
-    hold_kind(rec);
-    show_trials(rec, show);
+    int ever_n = 0;
+    for (uint8_t u : ever) {
+        ever_n += u;
+    }
+    std::printf("entries that ever fired over the life: %d of %d\n", ever_n, v.vg.entries);
+    if (test_steps > 0) {
+        alike_by_position(rec);
+        hold_kind(rec);
+        show_trials(rec, show);
+    }
+    if (walk_report) {
+        std::printf("\nthe walk with the input held (200 ticks to settle, 1,000 recorded):\n");
+        for (int mode = 0; mode < 3; mode++) {
+            walk(blob, tt, mode);
+        }
+    }
     vm_free(blob);
     return 0;
 }

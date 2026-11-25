@@ -102,10 +102,14 @@ static void apply_operations(VmBlob& v) {
             s |= v.set[at];
             c |= v.clr[at];
         }
-        if (over) {
-            s &= rng_next(v.rng);
-        } else {
-            c &= rng_next(v.rng);
+        if (v.event_entry >= 0) {
+            s |= v.set[(size_t)v.event_entry * mw + w];
+            c |= v.clr[(size_t)v.event_entry * mw + w];
+        }
+        uint64_t r = rng_next(v.rng);
+        if (v.vg.homeostat) {
+            s &= over ? r : ~0ull;
+            c &= over ? ~0ull : r;
         }
         m[w] = (m[w] & ~(c & ~s)) | (s & ~c);
         on += (uint32_t)std::popcount(m[w]);

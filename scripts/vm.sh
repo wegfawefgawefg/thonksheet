@@ -41,7 +41,7 @@ suite)
     exec scripts/suite.sh vm --engine vm "$@"
     ;;
 *)
-    sed -n '2,17p' "$0"
+    sed -n '2,18p' "$0"
     exit 1
     ;;
 esac
