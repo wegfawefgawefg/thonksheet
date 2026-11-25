@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstring>
+#include <thread>
 
 // births, upload, read back, the check, and the CPU path.
 
@@ -48,26 +49,49 @@ bool gpu_run_open(GpuContext& g, GpuBatch& b, const GpuFlags& f,
     return gpu_batch_open(g, b, w.shape, w.params, w.words, spv);
 }
 
+// lives [first, first + count) born and packed, every `step`-th one from `from`
+static void birth_some(const GpuFlags& f, const std::vector<GpuLifeSpec>& lives, int first,
+                       int count, int from, int step, GpuLifeData* out) {
+    for (int i = from; i < count; i += step) {
+        const GpuLifeSpec& spec = lives[(size_t)(first + i)];
+        Blob* blob = minimal_birth(spec.genome, spec.mg, spec.seed);
+        RunFlags rf = f.run;
+        rf.task_seed = spec.seed;
+        gpu_life_pack(out[i], minimal_of(*blob), rf, spec.seed);
+        minimal_free(blob);
+    }
+}
+
 bool gpu_run_upload(GpuContext& g, GpuBatch& b, const GpuFlags& f,
                     const std::vector<GpuLifeSpec>& lives, std::vector<CpuLife>* check) {
     int total = (int)lives.size();
     int size = f.check ? total : gpu_group_size(g, b.shape);
+    size = f.group > 0 && f.group < size ? f.group : size;
     std::vector<GpuLifeData> data;
+    double born = 0, sent = 0;
     for (int first = 0; first < total; first += size) {
         int count = total - first < size ? total - first : size;
         data.resize((size_t)count);
-        for (int i = 0; i < count; i++) {
-            const GpuLifeSpec& spec = lives[(size_t)(first + i)];
-            Blob* blob = minimal_birth(spec.genome, spec.mg, spec.seed);
-            RunFlags rf = f.run;
-            rf.task_seed = spec.seed;
-            gpu_life_pack(data[(size_t)i], minimal_of(*blob), rf, spec.seed);
-            minimal_free(blob);
+        // births are independent: --birth-threads of them at once
+        auto t = std::chrono::steady_clock::now();
+        std::vector<std::thread> helpers;
+        for (int h = 1; h < f.birth_threads; h++) {
+            helpers.emplace_back(birth_some, std::cref(f), std::cref(lives), first, count, h,
+                                 f.birth_threads, data.data());
         }
+        birth_some(f, lives, first, count, 0, f.birth_threads, data.data());
+        for (std::thread& helper : helpers) {
+            helper.join();
+        }
+        auto u = std::chrono::steady_clock::now();
+        born += std::chrono::duration<double>(u - t).count();
         if (!gpu_group_add(g, b, first, data.data(), count)) {
             return false;
         }
+        sent += std::chrono::duration<double>(std::chrono::steady_clock::now() - u).count();
     }
+    std::printf("births %.2f s on %d threads, packing and upload %.2f s\n", born, f.birth_threads,
+                sent);
     if (check) {
         check->resize(lives.size());
         for (size_t i = 0; i < lives.size(); i++) {

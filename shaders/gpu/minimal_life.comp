@@ -239,15 +239,17 @@ void main() {
         for (int n = tid; n < N; n += WG) {
             int t = tile_of(n), b = n & 63;
             int drive = 0;
+            // a mask is read only where its source tile spiked (most do not, most ticks), and
+            // every such read is issued before any is used, so they wait in parallel
+            uint64_t m[9];
+            for (int k = 0; k < 9; k++) {
+                bool live = uniform64(s_map[cur][local_tile(t, k)]) != 0UL;
+                m[k] = live ? masks[g_mask_base + uint((t * 9 + k) * 64 + b)] : 0UL;
+            }
             for (int k = 0; k < 9; k++) {
                 int src = local_tile(t, k);
-                uint64_t s = uniform64(s_map[cur][src]);
-                if (s != 0UL) {
-                    uint64_t inh = uniform64(s_inh[src]);
-                    uint64_t e = s & ~inh, i = s & inh;
-                    uint64_t m = masks[g_mask_base + uint((t * 9 + k) * 64 + b)];
-                    drive += bc64(e & m) - G.inhibit_gain * bc64(i & m);
-                }
+                uint64_t s = uniform64(s_map[cur][src]), inh = uniform64(s_inh[src]);
+                drive += bc64(s & ~inh & m[k]) - G.inhibit_gain * bc64(s & inh & m[k]);
             }
             if (drive >= int(thresholds[thr_base + uint(n)])) {
                 atomicOr(s_would(t), 1UL << b);

@@ -20,16 +20,18 @@ struct GpuFlags {
     bool check = false;     // step the CPU engine alongside and compare every tick
     bool validate = false;  // Vulkan validation layers
     GpuDevice device = GpuDevice::gpu;
-    int workgroup = 256;  // threads per life
-    int wave = 0;         // subgroup size to ask for, 0 the driver's
-    int dispatch_ms = 50; // aim for submits about this long
-    int max_ticks = 4096; // never more ticks than this in one dispatch
-    int check_ticks = 16; // ticks per dispatch while checking
-    std::string out;      // one row per life
-    std::string windows;  // one row per life per window
-    std::string settings; // csv of settings in
-    std::string shader;   // the .spv to run; empty is the built one
-    RunFlags run;         // the task and plug, as blobrun reads them
+    int workgroup = 256;   // threads per life
+    int group = 0;         // lives per dispatch at most (0: as many as fit)
+    int birth_threads = 2; // CPU threads for births
+    int wave = 0;          // subgroup size to ask for, 0 the driver's
+    int dispatch_ms = 50;  // aim for submits about this long
+    int max_ticks = 4096;  // never more ticks than this in one dispatch
+    int check_ticks = 16;  // ticks per dispatch while checking
+    std::string out;       // one row per life
+    std::string windows;   // one row per life per window
+    std::string settings;  // csv of settings in
+    std::string shader;    // the .spv to run; empty is the built one
+    RunFlags run;          // the task and plug, as blobrun reads them
 };
 
 // the settings file's columns and rows, kept to be echoed into the output

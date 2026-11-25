@@ -21,6 +21,8 @@ static const char* usage =
     "  --validate         Vulkan validation layers on\n"
     "  --check            run the CPU engine alongside, compare every tick (small batches)\n"
     "  --workgroup N      threads per life (default 256)\n"
+    "  --group N          lives per dispatch at most (default: as many as one buffer holds)\n"
+    "  --birth-threads N  CPU threads making the lives (default 2)\n"
     "  --wave N           ask for subgroups of N lanes (32 or 64 on the GPU; default: driver)\n"
     "  --dispatch-ms N    aim for submits about N ms long (default 50)\n"
     "  --max-ticks N      ticks per dispatch at most (default 4096)\n"
@@ -54,8 +56,8 @@ bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, Minimal
         bool mine = is(a, "--lives") || is(a, "--seed-from") || is(a, "--tiles") ||
                     is(a, "--settings") || is(a, "--out") || is(a, "--windows") ||
                     is(a, "--device") || is(a, "--workgroup") || is(a, "--wave") ||
-                    is(a, "--dispatch-ms") || is(a, "--max-ticks") || is(a, "--check-ticks") ||
-                    is(a, "--shader");
+                    is(a, "--birth-threads") || is(a, "--group") || is(a, "--dispatch-ms") ||
+                    is(a, "--max-ticks") || is(a, "--check-ticks") || is(a, "--shader");
         if (!mine) {
             rest.push_back(argv[i]);
             continue;
@@ -91,6 +93,10 @@ bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, Minimal
                 f.tiles = (int)n;
             } else if (is(a, "--workgroup")) {
                 f.workgroup = (int)n;
+            } else if (is(a, "--group")) {
+                f.group = (int)n;
+            } else if (is(a, "--birth-threads")) {
+                f.birth_threads = n < 1 ? 1 : (int)n;
             } else if (is(a, "--wave")) {
                 f.wave = (int)n;
             } else if (is(a, "--dispatch-ms")) {

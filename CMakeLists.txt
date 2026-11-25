@@ -131,7 +131,9 @@ if(gpu_sources AND Vulkan_FOUND AND GPU_GLSLANG AND NOT THONK_NO_VIEW AND TARGET
                    ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp)
     target_include_directories(blobgpu PRIVATE src)
     target_compile_options(blobgpu PRIVATE ${warnings} ${speed})
-    target_link_libraries(blobgpu PRIVATE blobminimal blobworld blobcore Vulkan::Vulkan)
+    find_package(Threads REQUIRED)
+    target_link_libraries(blobgpu PRIVATE blobminimal blobworld blobcore Vulkan::Vulkan
+                          Threads::Threads)
     target_compile_definitions(blobgpu PRIVATE BLOBGPU_SHADER_DIR="${CMAKE_BINARY_DIR}/shaders/gpu")
     file(GLOB gpu_shader_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/shaders/gpu/*.comp)
     file(GLOB gpu_shader_includes CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/shaders/gpu/*.glsl)
