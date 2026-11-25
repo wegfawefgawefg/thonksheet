@@ -57,6 +57,18 @@ void life_run(Sheet& s, int64_t digits, int chunks, const std::vector<uint64_t>&
 void activity_report(const Sheet& s, const Rows& rows, const char* label);
 void wiring_report(const Sheet& s, const std::vector<uint64_t>& born, const char* label);
 
+// the inside's ladder (mnist_transplant.cpp): the sheet written out for the offline model,
+// a model's wiring written in, and the reader's rows written out
+void sheet_describe(const Sheet& s, const char* path);
+bool sheet_load_wiring(Sheet& s, const char* path);
+struct RowsOut {
+    const Rows* rows;
+    const std::vector<int>* images;   // each row's digit
+    const std::vector<int>* partners; // and on the pair test its partner
+};
+void rows_write(const RowsOut& train, const RowsOut& test, const std::vector<int>& cols,
+                const char* path);
+
 // own flags are read by the caller; everything else is blobrun's (task, plug, --g. numbers)
 bool sheet_start(Sheet& s, int argc, char** argv, const char* const* own, int own_count);
 void sheet_free(Sheet& s);

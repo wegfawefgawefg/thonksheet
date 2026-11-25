@@ -28,6 +28,9 @@
 //                  sum, 2 the same class or not; --pair-mix 1 interleaved, not side by side
 //                  (mnist_data.hpp, docs/results-2026-11-25-hop-real.md)
 //   --scale M      how the reader scales features (mnist_learn.hpp; default 0)
+//   --describe F   the inside's ladder (mnist_transplant.cpp): write the sheet as born to F
+//   --wiring-load F   rewire the cells F lists before anything else (the transplant)
+//   --rows-out F   write the reader's rows of the non-sensor cells to F
 //   --live N       first a life of N training digits with rewards and the genome's own
 //                  learning (idea 155), then the motor cells put back to their born wiring,
 //                  so the reader sees the lived inside with the born output cells
@@ -40,9 +43,10 @@
 #include <cstdio>
 
 static const char* const ceiling_own[] = {
-    "--fit",       "--settle", "--test-count",   "--passes",     "--lr-1000", "--pretrain",
-    "--shift",     "--val",    "--gap",          "--views",      "--scale",   "--live",
-    "--live-coin", "--life",   "--life-shuffle", "--life-teach", "--pair",    "--pair-mix"};
+    "--fit",       "--settle",      "--test-count",   "--passes",     "--lr-1000", "--pretrain",
+    "--shift",     "--val",         "--gap",          "--views",      "--scale",   "--live",
+    "--live-coin", "--life",        "--life-shuffle", "--life-teach", "--pair",    "--pair-mix",
+    "--describe",  "--wiring-load", "--rows-out"};
 
 // a copy of rows with only the given columns
 static void pick_columns(const Rows& in, const std::vector<int>& cols, Rows& out) {
@@ -154,6 +158,14 @@ int mnist_ceiling(int argc, char** argv) {
     const Mnist* data = mnist_data();
 
     double t0 = now_seconds();
+    const char* load = text_flag(argc, argv, "--wiring-load", nullptr);
+    if (load && !sheet_load_wiring(s, load)) {
+        sheet_free(s);
+        return 1;
+    }
+    if (const char* describe = text_flag(argc, argv, "--describe", nullptr)) {
+        sheet_describe(s, describe);
+    }
     std::vector<uint64_t> born;
     wiring_snapshot(s, born);
     wiring_report(s, born, "as born");
@@ -212,6 +224,10 @@ int mnist_ceiling(int argc, char** argv) {
                 "reader s");
     std::vector<View> views;
     make_views(s, views);
+    if (const char* rows_out = text_flag(argc, argv, "--rows-out", nullptr)) {
+        rows_write({&train, &images, &partners}, {&test, &test_images, &test_partners},
+                   views[0].cols, rows_out);
+    }
     for (size_t v = 0; v < views.size(); v++) {
         if (!((view_mask >> v) & 1)) {
             continue;
