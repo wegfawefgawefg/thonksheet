@@ -633,7 +633,7 @@ co-activity runs ties the held units together and loses their order.
      small adds, the easiest thing here to run by the thousand. Port it, with a host-world
      mode (engine on the card, world on the CPU, one exchange per step) so every world on
      the map runs, not only Echo. Then the search can vary the memory's shape (what goes in
-     the address) on held-out worlds at ten million ticks a second. *building*
+     the address) on held-out worlds at ten million ticks a second. *done (`scripts/gpu.sh settings in.csv out.csv --tasks ... --twin`, either engine). Any world runs with the engine on the card and the world on the CPU, exchanging once a step; the minimal engine's evidence counters, far slots and delays are ported; all of it bit-exact with the CPU (44 of 44 task kinds for the minimal engine, 43 of 44 for the memory engine). Life-ticks a second: host worlds about 7 million, evidence counters 0.6 to 5 million, the memory engine 12 to 16 million (32 to 58 cores' worth). 64 memory designs on 8 worlds with twins: 3.6 seconds. No fault on the card. docs/results-2026-11-25-gpu.md*
 152. **A memory that knows near from far.** The memory engine on MNIST, one pass from good
      and bad, each digit new when first answered: 0.20 with its defaults, 0.32 at best
      (address from the current picture only, 1,024 tables; chance 0.10; the sheet's readout

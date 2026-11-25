@@ -48,8 +48,9 @@ Running (four):
   rule.
 - The vvm route (a state that is the address of its next operation).
 - The calculation battery, with answers that are patterns and held-out inputs.
-- The GPU: any world, the evidence counters, the memory engine, one call per table of
-  designs.
+- ~~The GPU: any world, the evidence counters, the memory engine, one call per table of
+  designs.~~ Done; being merged. The slot is held by the integration agent until the
+  merges are in.
 
 Wound up and recorded (six merged, five being merged by an integration agent): the combined
 core, reverse replay, nudges and balance, more worlds, the invariance battery, the
