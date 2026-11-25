@@ -17,6 +17,10 @@
 // at the cut a source that is wired now beats one that is not (so one step on an unwired
 // source does not evict anything). nothing at zero or below is wired, so a neuron can end up
 // with fewer. strength: counter 1..9 is 1, 10..19 is 4, 20 and up is 5.
+//
+// replay_strong_budget: the count of strong connections is kept fixed too. of the wired
+// sources the highest counters, as many as the neuron had strong ones, are strength 4 (ties
+// to what is strong now), the rest 1, and nothing is 5, so the walk cannot add drive.
 
 constexpr int COUNTER_TOP = 31;
 constexpr int BORN_SCALE = 4;
@@ -36,6 +40,7 @@ ReplayState* replay_state(Blob& blob) {
         round64(sizeof(ReplayState)),
         round64(neurons * REPLAY_ROW),
         round64(neurons * sizeof(uint16_t)),
+        round64(neurons * sizeof(uint16_t)),
         round64(planes * 8),
         round64(planes * 8),
         round64(HISTORY * stride * 8),
@@ -49,22 +54,23 @@ ReplayState* replay_state(Blob& blob) {
         total += s;
     }
     uint8_t* block = (uint8_t*)std::calloc(total, 1);
-    uint8_t* at[10];
+    uint8_t* at[11];
     size_t off = 0;
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 11; i++) {
         at[i] = block + off;
         off += sizes[i];
     }
     ReplayState* r = (ReplayState*)at[0];
     r->evidence = (int8_t*)at[1];
     r->keep = (uint16_t*)at[2];
-    r->born_w0 = (uint64_t*)at[3];
-    r->born_w1 = (uint64_t*)at[4];
-    r->walk[0] = (uint64_t*)at[5];
-    r->walk[1] = (uint64_t*)at[6];
-    r->next[0] = (uint64_t*)at[7];
-    r->next[1] = (uint64_t*)at[8];
-    r->touched = (uint64_t*)at[9];
+    r->strong = (uint16_t*)at[3];
+    r->born_w0 = (uint64_t*)at[4];
+    r->born_w1 = (uint64_t*)at[5];
+    r->walk[0] = (uint64_t*)at[6];
+    r->walk[1] = (uint64_t*)at[7];
+    r->next[0] = (uint64_t*)at[8];
+    r->next[1] = (uint64_t*)at[9];
+    r->touched = (uint64_t*)at[10];
     std::memcpy(r->born_w0, blob.w0, planes * 8);
     std::memcpy(r->born_w1, blob.w1, planes * 8);
     blob.replay = r;
@@ -80,8 +86,12 @@ static int8_t* counter_row(Blob& blob, ReplayState& r, int n) {
                 c[k * TILE_NEURONS + b] = (int8_t)(BORN_SCALE * blob_weight(blob, n, k, b));
             }
         }
-        int have = count_fan_in(blob, n);
+        int have = count_fan_in(blob, n), strong = 0;
+        for (int k = 0; k < SLOTS; k++) {
+            strong += __builtin_popcountll(blob.w1[blob_weight_index(n, k)]);
+        }
         r.keep[n] = (uint16_t)(have > 0 ? have : 1);
+        r.strong[n] = (uint16_t)strong;
     }
     return c;
 }
@@ -117,6 +127,48 @@ static void take_bits(Blob& blob, uint64_t* pool, uint64_t* wired, int& room) {
         }
         pool[k] = m;
     }
+}
+
+// replay_strong_budget: the top r.strong[n] wired counters at 4, the rest at 1
+static bool set_strong_budget(Blob& blob, ReplayState& r, int n, const int8_t* c,
+                              const uint64_t* wired, const uint64_t* now) {
+    int histogram[COUNTER_TOP + 1] = {};
+    for (int k = 0; k < SLOTS; k++) {
+        for (int b = 0; b < TILE_NEURONS; b++) {
+            int v = c[k * TILE_NEURONS + b];
+            histogram[v > 0 ? v : 0] += (int)((wired[k] >> b) & 1);
+        }
+    }
+    int want = r.strong[n], above = 0, cut = COUNTER_TOP;
+    while (cut > 1 && above + histogram[cut] < want) {
+        above += histogram[cut];
+        cut--;
+    }
+    int room = want - above;
+    uint64_t strong[SLOTS], tie_now[SLOTS], tie_new[SLOTS];
+    for (int k = 0; k < SLOTS; k++) {
+        uint64_t over = 0, at = 0;
+        for (int b = 0; b < TILE_NEURONS; b++) {
+            int v = c[k * TILE_NEURONS + b];
+            over |= (uint64_t)(v > cut) << b;
+            at |= (uint64_t)(v == cut) << b;
+        }
+        int64_t w = blob_weight_index(n, k);
+        strong[k] = want > 0 ? over & wired[k] : 0;
+        tie_now[k] = want > 0 ? at & wired[k] & blob.w1[w] : 0;
+        tie_new[k] = want > 0 ? at & wired[k] & ~blob.w1[w] : 0;
+    }
+    take_bits(blob, tie_now, strong, room);
+    take_bits(blob, tie_new, strong, room);
+    bool changed = false;
+    for (int k = 0; k < SLOTS; k++) {
+        int64_t w = blob_weight_index(n, k);
+        changed = changed || wired[k] != now[k];
+        blob.w0[w] = wired[k] & ~strong[k];
+        blob.w1[w] = strong[k];
+    }
+    blob.fan_in[n] = (uint16_t)count_fan_in(blob, n);
+    return changed;
 }
 
 bool replay_rewire(Blob& blob, ReplayState& r, int n) {
@@ -164,6 +216,9 @@ bool replay_rewire(Blob& blob, ReplayState& r, int n) {
     take_bits(blob, tie_new, wired, room);
     // strengths from the counters
     bool changed = false;
+    if (blob.genome.replay_strong_budget) {
+        return set_strong_budget(blob, r, n, c, wired, now);
+    }
     for (int k = 0; k < SLOTS; k++) {
         uint64_t s4 = 0, s5 = 0;
         for (int b = 0; b < TILE_NEURONS; b++) {

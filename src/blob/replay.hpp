@@ -13,6 +13,7 @@ constexpr int REPLAY_ROW = SLOTS * TILE_NEURONS; // counters per neuron, one byt
 struct ReplayState {
     int8_t* evidence;  // per neuron a signed counter per possible source (REPLAY_ROW)
     uint16_t* keep;    // per neuron the connections it keeps; 0 until its row is first used
+    uint16_t* strong;  // per neuron its strong connections then (replay_strong_budget)
     uint64_t* born_w0; // the wiring at birth (the first tick), as the two weight planes
     uint64_t* born_w1;
     // walked spikes, HISTORY maps of tile_count + 1 words, indexed by age: [0] should have

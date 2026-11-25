@@ -40,7 +40,7 @@ LEARNING_ONLY = {
     "readout_balance",
     "lose_shift_steps", "win_stay_steps", "lose_shift_fires", "bad_cut_on",
     "replay_depth", "replay_shift", "replay_thin", "replay_new", "replay_quiet",
-    "replay_until", "replay_reset", "replay_shuffle",
+    "replay_until", "replay_reset", "replay_shuffle", "replay_strong_budget",
 }
 
 
