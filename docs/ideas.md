@@ -227,7 +227,12 @@ Status words: idea, building, tried (with result), kept, dropped.
     fired, bad subtracts; a connection exists while its counter is in the top of the
     neuron's budget. Weak evidence then adds up over many tries before anything is wired.
     Why: table neurons needed 4-bit counters to learn four cues (2-bit gave 0.56), and
-    every probe says the signal is present but thin. *building, in the minimal engine*
+    every probe says the signal is present but thin. *tried in the minimal engine: helps
+    reach (0.39 to 0.60 at 3 tiles), holding more (4 cues 0.41 to 0.63 with counters on
+    every neuron; 8 cues above chance) and exclusive-or (0.26 to 0.58). Does not help time.
+    Costs the one-tile reflex 0.2 and, on every neuron, six times the reward-path work and
+    memory. The same idea at the full engine's readout, with an error rule, is idea 58's
+    winner. docs/results-2026-11-24-evidence.md*
 60. **Experiments the size of a decision.** [known in RL, new on this sheet] credit. One
     neuron's noise changes the answer once in 2,500 flips. So explore at the level of the
     answer: now and then the world nudges one whole button group for a step (motor
@@ -255,3 +260,9 @@ Status words: idea, building, tried (with result), kept, dropped.
     neither falls apart when the sheet grows 16 times around the same task; the full
     engine is erratic at every size. Only Echo, only 3 seeds, and the input and output
     areas stayed the same size.*
+65. **Put the winners together.** [ours] The minimal engine as the base (budget, each neuron
+    keeping its rate, inhibition, co-activity wiring only while plugged in), plus the things
+    that earned a place elsewhere: the error rule that knows which button was pressed,
+    evidence counters at the motor cells and inside, many motor cells per button, delays
+    for the time tasks. Does the combination keep the reflex, the reach, the features and
+    the speed at once? *building*

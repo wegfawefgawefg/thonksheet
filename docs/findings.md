@@ -78,12 +78,18 @@ plain linear reader can get out of the sheet. docs/results-2026-11-24-readout.md
     the real signal, so the rule as first built learned the exact opposite (0.00 on six
     seeds of eight; 1.00 with its sign reversed). This was a slip, not a principle.
 
-14. **Evidence before commitment.** [likely; a second test is running] A connection that
+14. **Evidence before commitment.** [solid for reach and for holding more: two engines] A connection that
     flips on one reward cannot add up a thin signal. Give each possible source a hidden
     counter (6 bits), move it a step on each reward, and wire the sources with the most
     evidence. On a frozen sheet this takes exclusive-or from 0.57 to 0.79 and Echo at three
     tiles from 0.57 to 0.74 over the same rule without counters, and it keeps improving at
     the end of a life where the plain rule has stopped.
+    The second test, in the minimal engine with the whole sheet learning: Echo at three
+    tiles 0.39 to 0.60, four cues 0.41 to 0.63, exclusive-or 0.26 to 0.58, eight cues above
+    chance for the first time in that engine. Two limits. The credit feeding the counters
+    has to be broad (every neuron that spiked; noise-only credit does nothing). And without
+    the error rule of finding 15 it costs the plain reflex 0.2 (0.94 to 0.73). Width is not
+    the lever (6 bits best, 4 close, 8 worse); summing evidence at all is.
 15. **The output must know which action was taken.** [likely] The rule that works is an
     error rule: on bad, the cells of the button that was pressed lose their recently active
     inputs and the cells of the other buttons gain them; on good nothing is strengthened.
@@ -101,6 +107,11 @@ plain linear reader can get out of the sheet. docs/results-2026-11-24-readout.md
     times around the same task (minimal engine 0.94, 0.93, 0.92 at 4,096, 16,384 and 65,536
     neurons). Three seeds, one task, input and output areas unchanged.
 
+19. **Counters inside the sheet help it hold more.** [hint] In the minimal engine, counters
+    on the motor cells alone leave four cues at 0.39; counters on every neuron lift it to
+    0.63, every seed up. This is the first sign of a reward rule making neurons inside the
+    sheet more useful. It costs memory (82 to 493 bytes per neuron) and reward-time work.
+
 ## Walls
 
 - **Reading a thin signal: broken at the output, standing inside.** An error rule moving
@@ -110,8 +121,9 @@ plain linear reader can get out of the sheet. docs/results-2026-11-24-readout.md
   (exclusive-or 0.88 down to 0.63): the old inner rule fights the new readout.
 - **Reach.** Three tiles is now learned (0.85 frozen, 0.97 with the sheet learning). Past
   about five tiles nothing arrives to be read.
-- **Time.** Nothing learns delayed echo. Nothing connects a reward to anything older than
-  a few ticks.
+- **Time.** Nothing learns delayed echo, now also with evidence counters and with delays
+  on: answers rise only because it presses more, and among presses it is at chance. Order
+  is learned by the new readout (0.70 to 0.84); a gap in time before the question is not.
 - **Locking on.** A sheet settles on one answer and keeps giving it while punished: Echo
   seed 3 and crossed shuffled-echo lives. The cause is the reward rule strengthening its
   own answer: making that stronger (win-stay) deepens the lock (0.56 to 0.14), and making
