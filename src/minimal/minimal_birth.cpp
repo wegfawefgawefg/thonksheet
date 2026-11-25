@@ -35,6 +35,7 @@ static void sanitize(MinimalGenome& mg) {
     mg.far_percent = clamp_int(mg.far_percent, 0, 100);
     mg.far_reach = clamp_int(mg.far_reach, 1, 64);
     mg.delay_max = clamp_int(mg.delay_max, 1, MIN_DELAY_MAX);
+    mg.delay_min = clamp_int(mg.delay_min, 1, mg.delay_max);
     mg.far_delay_per_tile = clamp_int(mg.far_delay_per_tile, 0, 16);
     mg.delay_percent = clamp_int(mg.delay_percent, 0, 100);
     // the oldest map learning reads is credit_ticks - 1 + delay_max ticks back
@@ -124,7 +125,7 @@ static bool draw_far(MinimalBlob& m, int tile, uint32_t& far, int& distance) {
     return false;
 }
 
-// far tiles and slot delays. local delays: the smaller of two draws in 1..delay_max, so short
+// far tiles and slot delays. local delays: the smaller of two draws in delay_min..delay_max, so short
 // ones are common; a far slot's delay is its distance x far_delay_per_tile (at least 1).
 static void set_far_and_delays(MinimalBlob& m) {
     const Blob& b = m.shell;
@@ -135,8 +136,9 @@ static void set_far_and_delays(MinimalBlob& m) {
         bool sensor = (b.sensor[t] >> (n % TILE_NEURONS)) & 1;
         if (m.delay) {
             for (int k = 0; k < MIN_SLOTS; k++) {
-                int d1 = 1 + (int)rng_below(m.rng, (uint32_t)mg.delay_max);
-                int d2 = 1 + (int)rng_below(m.rng, (uint32_t)mg.delay_max);
+                uint32_t span = (uint32_t)(mg.delay_max - mg.delay_min + 1);
+                int d1 = mg.delay_min + (int)rng_below(m.rng, span);
+                int d2 = mg.delay_min + (int)rng_below(m.rng, span);
                 bool drawn = (int)rng_below(m.rng, 100) < mg.delay_percent;
                 m.delay[min_index(m, n, k)] = (uint8_t)(drawn ? (d1 < d2 ? d1 : d2) : 1);
             }
@@ -318,6 +320,7 @@ static const MinimalField fields[] = {
     {"far_percent", &MinimalGenome::far_percent},
     {"far_reach", &MinimalGenome::far_reach},
     {"delay_max", &MinimalGenome::delay_max},
+    {"delay_min", &MinimalGenome::delay_min},
     {"far_delay_per_tile", &MinimalGenome::far_delay_per_tile},
     {"delay_percent", &MinimalGenome::delay_percent},
     {"noise_sign", &MinimalGenome::noise_sign},

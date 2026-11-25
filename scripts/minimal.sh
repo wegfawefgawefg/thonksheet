@@ -59,6 +59,10 @@ preset() {
     far3) echo --task echo --k 2 --g.motor_y 48 --g.motor_h 16 ;;
     far4) echo --task echo --k 2 --g.sensor_y 10 --g.sensor_h 16 --g.motor_y 48 --g.motor_h 16 ;;
     far5) echo --task echo --k 2 --g.sensor_y 2 --g.sensor_h 16 --g.motor_y 48 --g.motor_h 16 ;;
+    dist1 | dist2 | dist3 | dist5) echo --task echo --k 2 --distance "${1#dist}" ;; # as the suite
+    go) echo --task go-no-go ;;
+    retention) echo --task echo --retention echo --window 200 --retest 10000 ;;
+    idle) echo --task echo --idle 400000 --window 200 --retest 10000 ;;
     *) echo "no preset $1" >&2; exit 1 ;;
     esac
 }

@@ -60,7 +60,8 @@ struct MinimalGenome {
     int far_slots = 0;          // 0..2 far slots per neuron
     int far_percent = 15;       // share of non-sensor neurons that get each far slot
     int far_reach = 3;          // typical far distance in tiles (2 and up, long tail)
-    int delay_max = 1;          // slot delays drawn in 1..this; 1 is the one-tick reading
+    int delay_max = 1;          // slot delays drawn in delay_min..this; 1 is the one-tick reading
+    int delay_min = 1;          // shortest local slot delay drawn (idea 65: long delays only)
     int far_delay_per_tile = 1; // far slot delay: distance x this, capped at delay_max
     int delay_percent = 100;    // share of local slots that draw a delay (the rest read 1 back)
     // evidence counters (docs/results-2026-11-24-evidence.md): a hidden counter per possible
