@@ -249,14 +249,14 @@ double calc_window_score(Task& task) {
     CalcState& c = task.calc;
     int out = c.out_bits;
     double score = ratio(c.bits[0], c.trials[0] * out);
-    task.extra[0] = ratio(c.whole[0], c.trials[0]);
-    task.extra[1] = or_none(c.bits[1], c.trials[1] * out);
-    task.extra[2] = or_none(c.whole[1], c.trials[1]);
+    task.score_extra[0] = ratio(c.whole[0], c.trials[0]);
+    task.score_extra[1] = or_none(c.bits[1], c.trials[1] * out);
+    task.score_extra[2] = or_none(c.whole[1], c.trials[1]);
     for (int b = 0; b < out; b++) {
-        task.extra[3 + b] = ratio(c.bit_right[0][b], c.trials[0]);
-        task.extra[3 + out + b] = or_none(c.bit_right[1][b], c.trials[1]);
+        task.score_extra[3 + b] = ratio(c.bit_right[0][b], c.trials[0]);
+        task.score_extra[3 + out + b] = or_none(c.bit_right[1][b], c.trials[1]);
     }
-    task.extras = 3 + 2 * out;
+    task.score_extras = 3 + 2 * out;
     for (int h = 0; h < 2; h++) {
         c.trials[h] = c.whole[h] = c.bits[h] = 0;
         for (int b = 0; b < CALC_MAX_OUT; b++) {

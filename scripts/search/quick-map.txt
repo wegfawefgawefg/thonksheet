@@ -1,0 +1,41 @@
+# The quick map: the worlds every candidate of the search is scored on (docs/search.md).
+# Tiers 1 to 4 of docs/task-map.md as they stood on main on 2026-11-25.
+#
+# The budget: seconds of one core for one pass of every world on one seed, on this PC.
+# Measured 2026-11-25 with this PC at load 37 on 32 threads (about half speed): full
+# engine 184 s (13.5 s a life world, 2 s a probe), table 351 s, minimal 53 s. Quiet, about
+# half that. `scripts/search.sh report` shows what a pass really costs, per world, engine
+# and machine, and marks a map over budget. Adding a world means raising this on purpose
+# or cutting one.
+budget   200
+
+# every life: 10,000 steps (20 ticks a step from the plug), windows of 200; late = the
+# last tenth. No coin or twin inside the call: the twin is its own cached run.
+life     --steps 10000 --window 200 --no-baselines --alive-ticks 0 --rhythm-ticks 0
+# every probe (full engine only): the sheet as born, learning off
+probe    --tries 1500 --settle 5000
+select   1 2 3
+confirm  5 6 7 8
+pass     0.3
+timeout  900
+
+# name    tier kind  zero  full  fast engines  flags
+# zero is chance (life) or the "lost" reading (probe); full is perfect, or a reading that
+# counts as fully readable. fast: the first race (if none is marked, the 3 cheapest).
+echo2     1    life  0.50  1.00  fast all      --task echo --k 2
+echo4     1    life  0.25  1.00  fast all      --task echo --k 4
+echo8     1    life  0.125 1.00  -    all      --task echo --k 8
+shuffled  1    life  0.50  1.00  -    all      --task shuffled-echo
+gonogo    1    life  0.50  1.00  -    all      --task go-no-go
+dist2     1    life  0.50  1.00  -    all      --task echo --distance 2
+dist3     1    life  0.50  1.00  -    all      --task echo --distance 3
+xor       2    life  0.50  1.00  fast all      --task both-not-either
+order     4    life  0.50  1.00  -    all      --task order
+gap       4    life  0.50  1.00  -    all      --task gap
+delayed   4    life  0.50  1.00  -    all      --task delayed-echo --delay 2
+beat      4    life  0.50  1.00  -    all      --task beat --period 4
+sequence  4    life  0.50  1.00  -    all      --task sequence
+f-xor     2    probe 0.30  6.00  -    blob     --feature xor
+f-order   4    probe 0.30  6.00  -    blob     --feature order
+f-gap     4    probe 0.30  6.00  -    blob     --feature gap
+f-hold20  4    probe 0.30  6.00  -    blob     --feature hold --hold-gap 20

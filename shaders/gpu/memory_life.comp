@@ -1,0 +1,224 @@
+#version 460
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
+#extension GL_EXT_shader_8bit_storage : require
+#extension GL_EXT_shader_atomic_int64 : require
+#extension GL_GOOGLE_include_directive : require
+
+// The memory engine (src/memory/), many lives at once, with host worlds: one workgroup is one
+// life and a dispatch is one task step (the reward the host sent for the last step, the rest
+// ticks, the step's ticks; the motor counts go back). The tables of a frame and of a reward
+// are spread over the threads; everything that draws a random word or depends on order runs
+// on thread 0 in the CPU engine's order, so a life is the CPU's bit for bit.
+// src/gpu/gpu_memory.hpp holds the layout.
+
+layout(local_size_x_id = 0) in;
+layout(constant_id = 1) const int TILES = 64;
+layout(constant_id = 10) const int IN_WORDS = 16;     // input tiles (the sheet's sensor tiles)
+layout(constant_id = 11) const int MOTOR_CELLS = 64;  // the sheet's motor cells
+layout(constant_id = 12) const int TABLES = 256;      // frame slots per frame (the most tables)
+layout(constant_id = 13) const int COUNTERS = 1;      // counters per life
+layout(constant_id = 14) const int ENTRIES = 1;       // next-input entries per life
+layout(constant_id = 15) const int POS = 1;           // table bits per life
+
+layout(push_constant) uniform Push {
+    int ticks;
+    int first;
+}
+push;
+
+#include "memory_layout.glsl"
+#include "minimal_random.glsl"
+
+shared uint64_t s_task[TILES + 1];   // the task's sensor words this step (host)
+shared uint64_t s_map[TILES + 1];    // motor cells fired this tick
+shared uint64_t s_in[IN_MAX];        // what is sensed this tick
+shared uint64_t s_field[10][FIELD_WORDS]; // a frame's address fields
+shared int s_sum[UNITS], s_count[MAX_MOTORS];
+shared int s_done, s_resting, s_changed, s_surprise, s_newframe, s_hit;
+shared int s_first, s_mixed, s_marked, s_unit, s_fresh, s_pressed;
+shared uint s_lines, s_attached_units, s_unassigned;
+shared uint s_e;
+shared int s_cr_count, s_cr_ring[FRAMES], s_cr_unit[FRAMES], s_cr_dir[FRAMES];
+
+uint g_world, g_life;
+int g_tid, g_wg;
+
+uint64_t world_row(int row, int t) {
+    return world_words[g_world + uint(row * (TILES + 1) + t)];
+}
+uint motor_neuron(int c) {
+    return meta[IN_MAX + c];
+}
+bool button_cell(int line, int c) {
+    uint n = motor_neuron(c);
+    return ((world_row(1 + MAX_LINES + line, int(n >> 6)) >> (n & 63u)) & 1UL) != 0UL;
+}
+// a cell of some button (plug_mark_motors)
+bool cell_attached(int c, int motor_lines) {
+    for (int line = 0; line < motor_lines; line++) {
+        if (button_cell(line, c)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+uint64_t mix(uint64_t h, uint64_t v) {
+    h ^= v + 0x9e3779b97f4a7c15UL + (h << 6) + (h >> 2);
+    return h * 0xff51afd7ed558ccdUL;
+}
+
+uint64_t hash_now() {
+    uint64_t h = 0x6d656dUL;
+    for (int w = 0; w < IN_WORDS; w++) {
+        h = mix(h, lives[g_life].in_now[w]);
+    }
+    return h;
+}
+
+int msb64(uint64_t x) {
+    uvec2 v = unpackUint2x32(x);
+    return v.y != 0u ? 32 + findMSB(v.y) : findMSB(v.x);
+}
+
+// 0..3 exactly, then 4 buckets per doubling (memory_level)
+int level_of(int64_t ticks) {
+    if (ticks < 4L) {
+        return ticks < 0L ? 0 : int(ticks);
+    }
+    int e = msb64(uint64_t(ticks));
+    int mantissa = int((ticks >> (e - 2)) & 3L);
+    int level = 4 * (e - 1) + mantissa;
+    return level < LEVELS ? level : LEVELS - 1;
+}
+
+Rng rng_load() {
+    Rng r;
+    r.s0 = lives[g_life].rng[0];
+    r.s1 = lives[g_life].rng[1];
+    r.s2 = lives[g_life].rng[2];
+    r.s3 = lives[g_life].rng[3];
+    return r;
+}
+void rng_store(Rng r) {
+    lives[g_life].rng[0] = r.s0;
+    lives[g_life].rng[1] = r.s1;
+    lives[g_life].rng[2] = r.s2;
+    lives[g_life].rng[3] = r.s3;
+}
+
+#include "memory_store.glsl"
+
+// before a tick: rest ticks, the good and bad lines (ticker_before_tick, plug_write)
+void before_tick() {
+    s_resting = lives[g_life].rest_left > 0 ? 1 : 0;
+    lives[g_life].rest_left -= s_resting;
+    uint lines = 0u;
+    if (lives[g_life].good_left > 0) {
+        lines |= 1u;
+        lives[g_life].good_left--;
+    }
+    if (lives[g_life].bad_left > 0) {
+        lines |= 2u;
+        lives[g_life].bad_left--;
+    }
+    s_lines = lines & lives[g_life].attached;
+}
+
+// a reward from the host: the good or bad line and the rest ticks (plug_reward,
+// plug_quiet_lines), then the store (memory_reward)
+void host_start(MemGenome G) {
+    if (g_tid == 0) {
+        s_done = xin[g_life].run != 0 ? 0 : 1;
+        s_pressed = xin[g_life].valence;
+        if (s_done == 0 && s_pressed != 0) {
+            int valence = s_pressed;
+            if ((lives[g_life].attached & 3u) != 0u) {
+                lives[g_life].good_left = valence > 0 ? P.reward_line_ticks : lives[g_life].good_left;
+                lives[g_life].bad_left = valence < 0 ? P.reward_line_ticks : lives[g_life].bad_left;
+            }
+            lives[g_life].rest_left = P.rest_ticks;
+        }
+    }
+    for (int t = g_tid; t <= TILES; t += g_wg) {
+        s_task[t] = xwords[g_life * uint(TILES + 1) + uint(t)];
+        s_map[t] = 0UL;
+    }
+    barrier();
+    if (s_done == 0 && s_pressed != 0) {
+        memory_reward(G, s_pressed, xin[g_life].acted);
+    }
+}
+
+void main() {
+    g_life = gl_WorkGroupID.x + uint(push.first);
+    g_tid = int(gl_LocalInvocationID.x);
+    g_wg = int(gl_WorkGroupSize.x);
+    if (int(g_life) >= P.lives) {
+        return;
+    }
+    const MemGenome G = genomes[g_life];
+    g_world = uint(lives[g_life].block * WORLD_ROWS * (TILES + 1));
+    host_start(G);
+    barrier();
+    if (g_tid == 0) {
+        for (int i = 0; i < MAX_MOTORS; i++) {
+            s_count[i] = lives[g_life].motor_count[i];
+        }
+    }
+    barrier();
+
+    for (int step_tick = 0; step_tick < push.ticks; step_tick++) {
+        if (s_done != 0) {
+            break;
+        }
+        barrier();
+        if (g_tid == 0) {
+            before_tick();
+        }
+        barrier();
+        memory_tick(G);
+        barrier();
+        // after a tick: count the motor cells that fired, and end the step on its last tick
+        const int motor_lines = lives[g_life].motor_lines;
+        if (s_resting == 0) {
+            for (int j = g_tid; j < motor_lines * TILES; j += g_wg) {
+                int line = j / TILES, t = j % TILES;
+                int c = bc64(s_map[t] & world_row(1 + MAX_LINES + line, t));
+                if (c != 0) {
+                    atomicAdd(s_count[line], c);
+                }
+            }
+        }
+        barrier();
+        for (int t = g_tid; t <= TILES; t += g_wg) {
+            s_map[t] = 0UL;
+        }
+        if (g_tid == 0 && s_resting == 0) {
+            int in_step = lives[g_life].tick_in_step;
+            if (in_step == 0) {
+                lives[g_life].surprise = s_surprise; // the ticker reads it after the first
+            }
+            in_step++;
+            lives[g_life].tick_in_step = in_step;
+            if (in_step >= P.ticks_per_step) {
+                for (int i = 0; i < MAX_MOTORS; i++) {
+                    xout[g_life].motor_count[i] = s_count[i];
+                    s_count[i] = 0;
+                }
+                xout[g_life].surprise = lives[g_life].surprise;
+                lives[g_life].tick_in_step = 0;
+                s_done = 1;
+            }
+        }
+        barrier();
+    }
+
+    barrier();
+    if (g_tid == 0) {
+        for (int i = 0; i < MAX_MOTORS; i++) {
+            lives[g_life].motor_count[i] = s_count[i];
+        }
+    }
+}

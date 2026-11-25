@@ -1,6 +1,7 @@
 #pragma once
 
 #include "minimal/minimal.hpp"
+#include "minimal/minimal_keyed.hpp"
 
 #include <cstdint>
 
@@ -9,6 +10,11 @@
 // learning names a spike by its age (0 = the newest map). "the sources active just before
 // it" are, for slot k, the map `delay` ticks older than the spike, at the slot's source tile:
 // exactly what the neuron read when it fired.
+
+// rng_mode 1: the next words come from this draw site's own stream (minimal_keyed.hpp)
+inline void min_site(MinimalBlob& m, uint32_t site, uint32_t where, uint32_t age) {
+    min_reseed(m.rng, m.mg.rng_mode, m.rng_key, m.shell.stats.tick, site, where, age);
+}
 
 // the mask (and delay) word of neuron n, slot k
 inline int64_t min_index(const MinimalBlob& m, int n, int k) {
@@ -70,3 +76,15 @@ void min_evidence_reward(MinimalBlob& m, bool better, int shift);
 void min_evidence_cowire(MinimalBlob& m, int n);
 // counters at their lowest and highest value, over every counter neuron (for the probes)
 void min_evidence_ends(const MinimalBlob& m, double& low, double& high);
+// one step up on the counters of n's slot k selected by `up`, one down on `down`
+void min_evidence_move(MinimalBlob& m, int n, int k, uint64_t up, uint64_t down);
+// rebuild n's mask from its counters
+void min_evidence_read(MinimalBlob& m, int n);
+
+// the readout (minimal_readout.cpp): the buttons' cells of tile t, which the inner rules leave
+// alone while it runs (0 when it is off)
+inline uint64_t min_readout_cells(const MinimalBlob& m, int t) {
+    return m.mg.readout && m.shell.motor_attached ? m.shell.motor_attached[t] : 0;
+}
+// a reward: the error rule at the buttons' cells
+void min_readout_reward(MinimalBlob& m, int valence);

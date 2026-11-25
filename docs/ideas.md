@@ -237,22 +237,22 @@ Status words: idea, building, tried (with result), kept, dropped.
     neuron's noise changes the answer once in 2,500 flips. So explore at the level of the
     answer: now and then the world nudges one whole button group for a step (motor
     babbling), and the usual rules learn from what follows. Also aimed at the lock, since it
-    forces the other answer to be tried. *building*
+    forces the other answer to be tried. *tried in all three engines (`--babble`, fading form best). It unfreezes the minimal engine's lives stuck on wrong answers (crossed lives 0.67 to 0.77, four cues 0.40 to 0.47, eight cues 0.08 to 0.19, the first score above chance there); small or negative in the full and table engines; no engine's crossed lives pass 0.8. docs/results-2026-11-24-babble-and-balance.md*
 61. **Make good and bad equally common.** [known, as a baseline] credit. Under cartpole's
     reward bad arrives on 73% of steps whatever is done, so it says little. Thin out
     whichever signal is commoner until the two balance, at the plug, so every engine gets
-    it. *building*
+    it. *tried (`--balance 1`): evens good and bad exactly and helps nothing; harmful under the sparse cartpole reward. Same doc as 60*
 62. **Credit walks backward through the recorded ticks.** [ours; reverse replay is known in
     biology] credit to the inside. The sheet keeps its last 16 spike maps. When the readout
     is wrong, walk them backward: the motor cells that should change name the sources that
     were active one delay earlier, those name theirs, and so on for a few steps, moving
     evidence counters along the paths that actually fired. A backward pass with no
     gradients, only along edges that carried a spike, costing about one tick per step back
-    and only on a reward. Aimed at teaching neurons inside the sheet. *building*
+    and only on a reward. Aimed at teaching neurons inside the sheet. *tried (`--g.replay_depth N`), and it is the first rule here that makes the inside better. One step back is best: exclusive-or 0.88 to 0.985, echo at 5 tiles 0.59 to 0.88, eight cues 0.84 to 0.92; order and gap unchanged. A fresh output on the frozen walked sheet reads exclusive-or at 0.997 against 0.874 on the sheet as born, so the inside learned; it does not carry to another task. Two cautions: random signs give about half the gain (0.95), and on reach tasks the walk feeds itself over long lives (rate 112 against a target of 32 by 160,000 steps). Deeper than one step hurts. docs/results-2026-11-25-reverse-replay.md*
 63. **More worlds.** The rungs between Echo and cartpole are missing. A two-armed bandit
     (no cue; which button pays), a two-step chain (press A then B), a track (move toward a
     target with feedback each step), a small grid to forage in, mountain car, pendulum. And
-    long lives: proper RL takes hundreds of thousands of steps on cartpole. *building*
+    long lives: proper RL takes hundreds of thousands of steps on cartpole. *built (`scripts/ladder.py`): bandit, switching bandit, chain, track, forage, mountain car, pendulum, cartpole variants. The readout learns what a one-step table can (bandit 0.77, the chain's cued second press 0.72, forage with warmer/colder 0.64, mountain car with an energy reward 0.94) and nothing that needs credit one step back. Found that cartpole's reward judged the press before the one it followed; fixed by the semi-implicit step, now the default. Million-step lives for the readout unrun. docs/results-2026-11-25-more-worlds.md*
 64. **Does it survive growing?** Everything was tuned at 4,096 neurons. Run the same tasks at
     16,384 and 65,536. *tried on Echo with 2 cues, seeds 5 to 7, late score. Minimal engine:
     0.94, 0.93, 0.92 at 4,096 / 16,384 / 65,536 neurons, every seed within 0.91 to 0.97.
@@ -265,7 +265,7 @@ Status words: idea, building, tried (with result), kept, dropped.
     that earned a place elsewhere: the error rule that knows which button was pressed,
     evidence counters at the motor cells and inside, many motor cells per button, delays
     for the time tasks. Does the combination keep the reflex, the reach, the features and
-    the speed at once? *building*
+    the speed at once? *tried, partly finished (`scripts/minimal.sh core`): the minimal engine with the error-rule readout on 128 cells a button, co-activity wiring everywhere, far slots and delays 1..8. Echo 0.99, 3 tiles 0.86, 5 tiles 0.76, eight cues 0.87, sixteen 0.53 (the full engine 0.31), delayed echo with the ask right after the cue 0.99; exclusive-or only 0.72, order and gap at chance. Co-activity wiring inside is worth 0.05 to 0.25 on every row that learns; the noise-graded reward rule and inner counters cost and were left out. docs/results-2026-11-25-core.md*
 
 ## The wider space (added 2026-11-25)
 
@@ -283,24 +283,24 @@ ones?" There are. Three things widen the search from here.
   the richness screen first and the suite second.
 
 ### What a connection does over a few ticks
-66. **Tiring synapses.** A source that just fired counts for less for a few ticks. *idea*
-67. **Warming synapses.** A source that just fired counts for more for a few ticks. *idea*
-68. **Tiring neurons.** A neuron's threshold jumps when it fires and drifts back. *idea*
+66. **Tiring synapses.** A source that just fired counts for less for a few ticks. *tried: harmful on the sensor lines, a small help on the sheet's own (which +0.6). docs/results-2026-11-25-family-dynamics.md*
+67. **Warming synapses.** A source that just fired counts for more for a few ticks. *tried: null or harmful. Same doc as 66*
+68. **Tiring neurons.** A neuron's threshold jumps when it fires and drifts back. *tried (`--g.tire_jump 4 --g.tire_shift 7`), and it is the first sheet change that makes delayed echo learnable: 0.55 to 0.91 two steps back, order 0.70 to 0.88, gap 0.52 to 0.68, at a cost to exclusive-or (0.88 to 0.78). Seeds 5-12, frozen sheet with the readout. Same doc as 66*
 69. **A slow second potential.** Each neuron keeps a second sum that leaks much more slowly
-    and adds to the first. *idea*
-70. **Rebound.** A neuron that was just inhibited is easier to fire for a few ticks. *idea*
+    and adds to the first. *tried (`--g.slow_leak_shift 6 --g.slow_share_shift 4`): delayed echo 0.84, order 0.85, gap 0.69; exclusive-or 0.75. Same doc as 66*
+70. **Rebound.** A neuron that was just inhibited is easier to fire for a few ticks. *tried: null. Same doc as 66*
 71. **Up and down states.** A neuron has two thresholds and stays "up" until it falls below
-    the lower one. *idea*
+    the lower one. *tried: null. Same doc as 66*
 
 ### What a neuron computes
 72. **Any-branch neurons.** Fire if any one slot has enough active sources (an OR of ANDs),
-    not on the sum over slots. *idea*
-73. **Veto.** One inhibitory source on a branch cancels the whole branch. *idea*
-74. **Coincidence only.** Fire only if sources at two different delays are both active. *idea*
+    not on the sum over slots. *tried in the screen only: exclusive-or readable +0.2 to +0.5. Same doc as 66*
+73. **Veto.** One inhibitory source on a branch cancels the whole branch. *tried: null to small loss. Same doc as 66*
+74. **Coincidence only.** Fire only if sources at two different delays are both active. *tried: harmful; on every neuron it silences the sheet. Same doc as 66*
 75. **Winner in the tile.** After the tick, only the most-driven few neurons of each tile keep
-    their spike. *idea*
+    their spike. *tried (winners 2): exclusive-or 0.88 to 0.98 through the readout, time tasks unchanged or worse. Same doc as 66*
 76. **Table plus count.** A table over the neuron's four strongest sources, a popcount over
-    the rest. *idea*
+    the rest. *not built*
 
 ### Wiring
 77. **Mirror links.** If A listens to B, B is likelier to listen to A (loops by design). *idea*
@@ -327,7 +327,7 @@ ones?" There are. Three things widen the search from here.
 
 ### Credit
 90. **A value cell.** A group of neurons learns to predict good and bad, and its change, not
-    the raw reward, is what teaches. *idea*
+    the raw reward, is what teaches. *tried with a critic (`--g.critic_on 1`, `scripts/critic.sh`; seeds 1-4 only): a second group of cells learns how well things are going, and its surprise teaches the buttons. Bandit 0.77 to 1.00, chain 0.78 to 0.97 (the GRU gets 0.01: the first row where a sheet beats the reference), catch 0.20 to 0.32, cartpole with the lean reward on the fixed world 20 to 89 steps per fall and still rising (the GRU 798). The surprise has to teach on good as well as bad, and the critic needs an opponent half. Report seeds and long lives unrun. docs/results-2026-11-25-critic.md*
 91. **Error by the difference of two phases.** Run a few ticks with the answer clamped and a
     few without; learn from the difference in each neuron's activity. *idea*
 92. **Teach the inside to help the readout.** An inner neuron gains evidence when the readout
@@ -371,7 +371,7 @@ is a mechanism to try. All are scored on the invariance battery (idea 101).
 101. **The invariance battery.** A task per kind of change (place, scale, turn, thickness,
      time shift, tempo, pitch, clutter), rewarded on some versions and scored on versions
      never rewarded, with and without the pattern drifting through its versions, measured at
-     three levels: is it readable, does the readout get it, does the whole thing. *building*
+     three levels: is it readable, does the readout get it, does the whole thing. *built (`scripts/invariance.sh`, `blobprobe invariance`): position, scale, rotation, brightness, clutter, mixed, 3D view, time shift, tempo, pitch, with held-out versions never rewarded. Nothing carries a shape to a new place (0.49), turn (0.36), tempo (0.45) or pitch; small size is partly carried (0.69 to 0.77). The MLP and GRU learn every taught version and fail the same held-out rows. The old place world was a trap (a held-out picture overlaps the other shape twice as often as its own), which is why everything scored below chance on it. docs/results-2026-11-25-invariance-battery.md*
 102. **What follows is the same thing.** [known: the trace rule] As a thing moves, the
      detectors it sets off one after another get wired to the same cells, because wiring
      uses a slow "fired recently". One local rule that gives place, size and turn alike,
@@ -398,7 +398,7 @@ not known to do it.
      pattern. sin, cos, theres lots of cheap envs we can do. and we should be able to learn
      all of em." Boolean functions of N cues (and, or, parity, majority, random truth
      tables), counting, functions of a number (step, tent, sine, cosine, sums, products),
-     functions of the last few cues; each scored as readable, read, and learned. *building*
+     functions of the last few cues; each scored as readable, read, and learned. *built, partly run (`scripts/functions.sh`, `blobprobe reader`): and, or and majority of up to 8 lines are learned (0.96 to 1.00); parity stops at 2 lines (parity of 3: readable 0.58, learned 0.54) and no sheet carries parity of 4. A richer sheet climbs one rung (rich4: parity of 3 readable 0.86, learned 0.76); a bigger sheet does not. The number and past families are unrun. docs/results-2026-11-25-function-battery.md*
 110. **A shell of views.** [known] The owner: "you have a shape, and you rotate it, you still
      know what it is. you form some imagination of a nd shell." As far as is known a brain
      does not rotate a model; it ties together the views that follow each other as a thing
@@ -441,7 +441,7 @@ not known to do it.
      than), number, parts and wholes (grammar), chance (answers right only most of the
      time), context (a cue that changes what another means), longer memory (copy, recall,
      n-back), no teacher (predict the next input, fill in a gap), being shown the answer,
-     and damage to the sheet. `docs/task-map.md` lists the tiers. *building*
+     and damage to the sheet. `docs/task-map.md` lists the tiers. *built, partly run (`scripts/map.sh`): 21 worlds for relation, number, parts and wholes, chance, context, longer memory and no teacher, plus being shown the answer and damage. The readout learns thin and noisy association (rare cue 1.00, noisy lines 0.99, context line 0.93, a rule that switches 0.94) and holds a cue for one step (copy of 2 0.66, 1-back 0.71); nothing held two steps, no relation on untaught items, no grammar, analogy or count. Being shown the answer teaches no engine; the readout loses nothing to 20 in 100 of the sheet silenced. docs/results-2026-11-25-rest-of-map.md*
 117. **The fixed-net reference.** One ordinary network (a small two-layer one, and a small
      recurrent one), one size, one recipe, behind the same plug, told only good and bad,
      run on the whole map with nothing changed between tasks. Not to beat it task by task:
@@ -458,6 +458,30 @@ not known to do it.
      for the whole map. Today the readout runs use flags chosen per task (long delays for
      the time tasks, more motor cells here, smaller line groups there). *idea: the combined
      engine is the first to be held to it*
+119. **The unattended search.** A loop that draws designs (genome numbers and mechanism
+     switches), scores each on a quick map of worlds, keeps the best and varies them, on
+     this PC and stevejobs, with a held-out set of worlds it never sees. A combination
+     search: it cannot invent a mechanism, only find which of ours go together. *built and
+     running (`scripts/search.sh`, docs/search.md, docs/search-leaderboard.md): candidates
+     raced through four rungs, confirmation on seeds 5-8 that selection never sees,
+     survives being killed, a seam for the GPU, rule tables as a kind of number. On a small
+     case (3 worlds, 163 candidates) it found settings passing 2 of 3 where the defaults
+     pass 1, by trading echo with 2 cues for 4. The long run: full engine on this PC
+     (from the search agent's worktree, which must stay), minimal and table on stevejobs,
+     48 hours from 2026-11-25 04:46 UTC. Nothing beats the defaults yet. Speed: minimal 51
+     candidates per core hour, table 6, full engine 1.*
+120. **The rule as a table.** The learning rule itself as a small lookup table (what a
+     connection does given a few local bits: fired, source fired, good, bad, acted), so the
+     search can vary rules and not only numbers. *built (`--g.rule_on`, `--rule-file`, `scripts/rules.sh`): a rule is a table over ten local yes-or-no facts, 1,024 entries. The error rule, the old good/bad rule and growth are all written as tables and score like the originals. A search over inside rules ran 11 generations and its best table gains +0.12 on its own selection seeds; nothing is confirmed on fresh seeds. docs/results-2026-11-25-rule-tables.md*
+121. **Many lives on the GPU.** *done for the minimal engine and the Echo family
+     (`scripts/gpu.sh`, src/gpu/, shaders/gpu/). One workgroup steps one life; bit-exact
+     with the CPU engine (`blobgpu --check`, nine cases; full-length lives identical as
+     text). 9.5 million life-ticks a second at 1,000 lives or more, the work of about 44
+     unloaded cores; 16,384 lives and their twins (26 billion ticks) in 40 minutes with no
+     fault on the card. Echo over 16,384 seeds: 0.947 (sd 0.021). Not ported: evidence
+     counters, far slots, delays, worlds outside the Echo family.
+     docs/results-2026-11-25-gpu.md*
+122. (number not used)
 
 ### Outside the sheet (added 2026-11-25)
 
@@ -504,14 +528,14 @@ would be cool if we can arbitrarily learn calculations."
 
 129. **Long-horizon worlds.** A stream of new cue-answer pairs for a whole life with old
      ones re-asked at ages of a hundred to a million steps (a forgetting curve); a thing
-     shown once and asked for much later; rare events. *building*
+     shown once and asked for much later; rare events. *built (`blobrun --long`, `scripts/longlife.sh`): hold, lifelong pairs, once, rare, drift. Baseline: every engine has lost a pair by 10,000 steps and holds 8 to 14 at once. docs/results-2026-11-25-long-memory.md*
 130. **A pattern freezer.** [known: consolidation, cascade synapses] A connection whose
      evidence has stayed strong for a long time gets locked: it stops decaying and takes
-     much stronger contrary evidence to move. *building*
+     much stronger contrary evidence to move. *tried in three forms on two engines: null to harmful. Forgetting here is a capacity limit (the output holds 10 to 14 pairs), not counters drifting. Decay keeps the output learning for a whole life and wrecks eight cues; no rate suits both*
 131. **A timeline with log spacing.** [known in theory; cheap here] Beside the ring of the
      last 16 ticks, keep a few slower maps: what fired in the last 32, 64, ... 4,096 ticks,
      each refreshed half as often as the one before. Twelve small maps reach back thousands
-     of ticks, and a slot can listen to any of them. *building*
+     of ticks, and a slot can listen to any of them. *null as slow maps on table neurons; works as time cells (cells that fire in log-spaced bins of the ticks since an input line last came on) beside cells that hold without leaking (`--g.time_percent 10 --g.hold_percent 10`): delayed echo 0.53 to 1.00, gap 0.98, order 0.99, eight cues 0.96, a hold of 5,000 ticks 0.98, echo and exclusive-or unchanged. Two to four seeds; the cells take their input straight from sensor lines, which is a built-in prior*
 132. **The owner's earlier machines.** `binary-brain-v1` (June 2025: an always-on one-bit
      substrate with three-factor local rules and four broadcast bits; the direct ancestor of
      this project) and `vvm` (a state vector that looks up its next operation by content).
@@ -605,3 +629,17 @@ co-activity runs ties the held units together and loses their order.
      pixels). A sheet, or anything, that learns such a code with no reward, feeding the
      memory. This is the invariance problem restated as one organ's job. *queued behind the
      invariance battery*
+151. **The memory engine on the GPU, and any world.** The memory engine is table lookups and
+     small adds, the easiest thing here to run by the thousand. Port it, with a host-world
+     mode (engine on the card, world on the CPU, one exchange per step) so every world on
+     the map runs, not only Echo. Then the search can vary the memory's shape (what goes in
+     the address) on held-out worlds at ten million ticks a second. *done (`scripts/gpu.sh settings in.csv out.csv --tasks ... --twin`, either engine). Any world runs with the engine on the card and the world on the CPU, exchanging once a step; the minimal engine's evidence counters, far slots and delays are ported; all of it bit-exact with the CPU (44 of 44 task kinds for the minimal engine, 43 of 44 for the memory engine). Life-ticks a second: host worlds about 7 million, evidence counters 0.6 to 5 million, the memory engine 12 to 16 million (32 to 58 cores' worth). 64 memory designs on 8 worlds with twins: 3.6 seconds. No fault on the card. docs/results-2026-11-25-gpu.md*
+152. **A memory that knows near from far.** The memory engine on MNIST, one pass from good
+     and bad, each digit new when first answered: 0.20 with its defaults, 0.32 at best
+     (address from the current picture only, 1,024 tables; chance 0.10; the sheet's readout
+     gets 0.71). Its codes are parities of 16 random cells, so one changed pixel changes
+     the whole address: it has exact recall and no sense of "nearly the same". Tables that
+     read small sets of raw input bits (an n-tuple memory; the table neurons are close to
+     this) keep nearness. Give the memory such an address and score it on MNIST and on the
+     held-out rows. *queued: small*
+

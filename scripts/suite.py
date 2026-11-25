@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The suite (docs/bench.md): every row of the bench table for one engine or variant.
 
-    scripts/suite.py NAME [--quick] [--resume] [blobrun flags and --g.name value ...]
+    scripts/suite.py NAME [--quick] [--resume] [--only JOB,...] [blobrun flags ...]
 
 Runs each test on the report seeds (5 to 12; --quick: 5 and 6 with short lives), each life
 beside its learning-off twin and coin flips, at most 2 runs at a time under nice. Writes
@@ -9,6 +9,9 @@ out/scorecards/NAME.csv and prints it. Everything after NAME that is not --quick
 --resume goes to every blobrun call, last, so it can pick an engine (--table, --engine) or
 change genome numbers. Nothing here knows which engine runs: all of it goes through
 blobrun, and every number comes from the -sum.csv each blobrun call writes.
+
+--only runs just the named jobs (see jobs_for; `--only worlds` is the more-worlds rows of
+idea 63) and writes a scorecard with only their rows.
 """
 
 import csv
@@ -18,6 +21,9 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from map_worlds import PROTOCOL_KEYS, PROTOCOLS, WORLDS  # noqa: E402  the rest of the map
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLOBRUN = os.path.join(ROOT, "build", "blobrun")
@@ -32,10 +38,79 @@ QUICK = {"steps": 4000, "window": 200, "phase_window": 200, "retest": 1000,
          "idle": 40000, "reach": ["--reach-settle", "4000", "--reach-blocks", "400"],
          "speed_ms": 300, "alive": 4096, "seeds": [5, 6]}
 
+# more worlds (idea 63, docs/curriculum.md): job, blobrun flags, row label, what the score is
+PLACE2 = ["--sensor-side", "2", "--number-code", "place"]
+MORE_WORLDS = [
+    ("bandit2", ["--task", "bandit"], "bandit, 2 buttons (share on the best)"),
+    ("bandit4", ["--task", "bandit", "--k", "4"], "bandit, 4 buttons (share on the best)"),
+    ("switch2", ["--task", "switch-bandit"],
+     "switching bandit, every 1,000 steps (best share, late in each block)"),
+    ("chain", ["--task", "chain"], "chain A then B, stage shown (2 x chains / steps)"),
+    ("chain-nocue", ["--task", "chain", "--chain-cue", "0"],
+     "chain A then B, stage not shown (2 x chains / steps)"),
+    ("track", ["--task", "track"], "track 5, nearer good (share of steps nearer)"),
+    ("track-arrive", ["--task", "track", "--track-reward", "arrive"],
+     "track 5, arrival only (share of steps nearer)"),
+    ("forage", ["--task", "forage", "--sensor-side", "2"],
+     "forage 5x5, warmer (share of steps nearer)"),
+    ("forage-cold", ["--task", "forage", "--forage-warmer", "0", "--sensor-side", "2"],
+     "forage 5x5, arrival only (share of steps nearer)"),
+    ("mcar", ["--task", "mountain-car"] + PLACE2,
+     "mountain car, energy reward (share of episodes at the goal)"),
+    ("pend", ["--task", "pendulum"] + PLACE2,
+     "pendulum swing-up, energy reward (share of steps upright)"),
+    ("cartpole-wide", ["--task", "cartpole", "--cart-reward", "lean", "--cart-start",
+                       "wide"] + PLACE2, "cartpole, lean reward, wide starts (steps per fall)"),
+    ("cartpole-rel", ["--task", "cartpole", "--cart-reward", "relative"] + PLACE2,
+     "cartpole, relative reward (steps per fall)"),
+    # semi is cartpole's default since 2026-11-25, so this row now repeats the plain lean one;
+    # kept so older scorecards line up
+    ("cartpole-semi", ["--task", "cartpole", "--cart-reward", "lean", "--cart-integrator",
+                       "semi"] + PLACE2,
+     "cartpole, lean reward, semi-implicit: a step's reward judges its press (steps per fall)"),
+]
+
+# the invariance battery (scripts/invariance.sh has its three levels): held-out versions are
+# never rewarded and are the score; the rewarded versions' score is the second row
+INVARIANCE = [("position", "1", "a shape at a place never rewarded"),
+              ("scale", "1", "a shape at a size never rewarded (1x)"),
+              ("rotation", "1", "a shape turned in a way never rewarded"),
+              ("bright", "1", "a shape dimmer than ever rewarded (control)"),
+              ("clutter", "1", "a shape in more clutter than ever rewarded"),
+              ("mixed", "1", "a size at a place never rewarded together"),
+              ("view", "1", "a 3D object from angles never rewarded"),
+              ("shift", "3", "a tune starting at a time never rewarded"),
+              ("tempo", "3", "a tune faster than ever rewarded"),
+              ("pitch", "1", "a tune at a pitch never rewarded")]
+INVARIANCE_MOTION = ["position", "scale", "rotation", "bright", "clutter", "mixed", "view"]
+MOTION = ["--inv-motion", "50", "--inv-motion-steps", "8"]
+
 FEATURES = [("order", "order: which of two cues came on first"),
             ("both-not-either", "both-not-either: exactly one of two cues"),
             ("gap", "gap: short or long gap between two blinks"),
             ("place", "place: shape at a place never rewarded")]
+
+# the function battery (scripts/functions.sh), a few rungs of its ladder
+FUNCTIONS = [
+    ("fn-parity3", "points: parity of 3 lines",
+     ["--task", "points", "--fn", "parity", "--fn-lines", "3"]),
+    ("fn-parity4", "points: parity of 4 lines",
+     ["--task", "points", "--fn", "parity", "--fn-lines", "4"]),
+    ("fn-majority5", "points: majority of 5 lines",
+     ["--task", "points", "--fn", "majority", "--fn-lines", "5"]),
+    ("fn-count4", "points: how many of 4 lines are on (5 buttons)",
+     ["--task", "points", "--fn", "count", "--fn-lines", "4"]),
+    ("fn-sine-held", "number: band of sine(x), 16 lines, 4 bands, x never rewarded",
+     ["--task", "number", "--fn", "sine", "--fn-lines", "16", "--fn-bands", "4",
+      "--fn-hold", "3", "--sensor-side", "2"]),
+    ("fn-product", "two numbers: product above or below half, 8 lines each",
+     ["--task", "two-numbers", "--fn", "product", "--fn-lines", "8", "--fn-bands", "2",
+      "--sensor-side", "2"]),
+    ("fn-recall", "past: the first of 2 items, 2 blank steps between",
+     ["--task", "past", "--fn", "recall", "--fn-gap", "2"]),
+    ("fn-same", "past: the last 2 items the same, back to back",
+     ["--task", "past", "--fn", "same", "--fn-gap", "0"]),
+]
 
 
 def jobs_for(life, readout):
@@ -70,6 +145,21 @@ def jobs_for(life, readout):
     if readout:
         # the control: a readout that can learn at all, where the input hands over the answer
         jobs["readout-echo"] = (["--task", "echo", "--frozen-readout"] + plain, 1)
+    # the rest of the map (scripts/map_worlds.py): tiers 9 and 10, being shown, damage
+    for name, kind, _, args in WORLDS:
+        jobs["map-" + name] = (args + plain, 1)
+    for name, kind, _, args in PROTOCOLS:
+        jobs["map-" + name] = (args + ["--steps", s, "--window", str(life["phase_window"]),
+                                       "--retest", str(life["retest"])], 1.3)
+    for job, _, args in FUNCTIONS:
+        jobs[job] = (args + plain, 1)
+    for job, flags, _ in MORE_WORLDS:
+        jobs[job] = (flags + plain, 1)
+    for kind, side, _ in INVARIANCE:
+        jobs["inv-" + kind] = (["--task", "inv-" + kind, "--sensor-side", side] + plain, 1)
+    for kind in INVARIANCE_MOTION:
+        jobs["inv-%s-motion" % kind] = (["--task", "inv-" + kind, "--sensor-side", "1"] +
+                                        MOTION + plain, 1)
     # the calculation battery (ideas 133, 134; scripts/calc.sh has all of it): answers that
     # are patterns of bits, a verdict per bit, some cases held out
     for job, calc in CALC_JOBS:
@@ -153,6 +243,25 @@ def rows_for():
                      "ticks_per_s_" + size))
     rows.append(("fits the machine", "bytes per neuron (32x32 tiles)", "speed",
                  "bytes_per_neuron_32x32"))
+    # the rest of the map: the window score late in the life (no-teacher worlds: the sheet's
+    # own predictions; meaningless for engines that keep none, such as the minimal one)
+    for name, kind, what, _ in WORLDS:
+        rows.append(("map: " + kind, "%s: %s" % (name, what), "map-" + name, "late"))
+    for name, kind, what, _ in PROTOCOLS:
+        for key in PROTOCOL_KEYS[kind]:
+            rows.append(("map: " + kind, "%s: %s, %s" % (name, what, key), "map-" + name, key))
+    for job, label, _ in FUNCTIONS:
+        rows.append(("fixed functions (the battery)", label, job, "late"))
+    # after every older row, so old scorecards still line up
+    for job, _, label in MORE_WORLDS:
+        rows.append(("more worlds (idea 63)", label, job, "late"))
+    for kind, _, label in INVARIANCE:
+        rows.append(("invariance", "%s: %s" % (kind, label), "inv-" + kind, "late"))
+        rows.append(("invariance", "%s: on the rewarded versions" % kind, "inv-" + kind,
+                     "taught_late"))
+    for kind in INVARIANCE_MOTION:
+        rows.append(("invariance", "%s + motion (half the life drifting), held out" % kind,
+                     "inv-%s-motion" % kind, "late"))
     calc = [("copy, 4 bits (the control)", "calc-copy4"), ("add, 2 + 2 bits", "calc-add2"),
             ("add, 4 + 4 bits", "calc-add4"), ("xor, 4 bits", "calc-xor4"),
             ("program of 2 steps on a 3-bit register", "calc-program2"),
@@ -283,7 +392,16 @@ def main():
     name = args[0]
     quick = "--quick" in args[1:]
     resume = "--resume" in args[1:]
-    extra = [a for a in args[1:] if a not in ("--quick", "--resume")]
+    only = None
+    extra = []
+    rest = args[1:]
+    while rest:
+        a = rest.pop(0)
+        if a == "--only" and rest:
+            more = ",".join(w[0] for w in MORE_WORLDS)
+            only = rest.pop(0).replace("worlds", more).split(",")
+        elif a not in ("--quick", "--resume"):
+            extra.append(a)
     life = QUICK if quick else FULL
     card_name = name + ("-quick" if quick else "")
     outdir = os.path.join(ROOT, "out", "suite", card_name)
@@ -291,6 +409,12 @@ def main():
 
     readout = readout_supported(extra, outdir)
     jobs = jobs_for(life, readout)
+    if only:
+        unknown = [j for j in only if j not in jobs]
+        if unknown:
+            print("no job %s; jobs: %s" % (" ".join(unknown), " ".join(jobs)))
+            return 1
+        jobs = {j: jobs[j] for j in only}
     life_flags = BASE + ["--alive-ticks", str(life["alive"])]
     todo = []
     for job, (job_args, cost) in jobs.items():
@@ -323,7 +447,7 @@ def main():
                                                          (time.time() - started) / 60), flush=True)
     # speed alone, after everything else, so the suite's own other run is not beside it
     speed_stem = os.path.join(outdir, "speed-s%d" % life["seeds"][0])
-    if not (resume and os.path.exists(speed_stem + "-sum.csv")):
+    if not only and not (resume and os.path.exists(speed_stem + "-sum.csv")):
         code = run_one(["nice", "-n", "19", BLOBRUN, "--speed", "--speed-ms",
                         str(life["speed_ms"]), "--seed", str(life["seeds"][0]), "--out",
                         speed_stem + ".csv"] + extra, speed_stem + ".txt")
@@ -331,7 +455,10 @@ def main():
             failed.append("speed")
     minutes = (time.time() - started) / 60
 
-    table = collect(rows_for(), jobs, life["seeds"], outdir)
+    rows = rows_for()
+    if only:
+        rows = [r for r in rows if r[2] in jobs]
+    table = collect(rows, jobs, life["seeds"], outdir)
     commit = subprocess.run(["git", "-C", ROOT, "rev-parse", "--short", "HEAD"],
                             capture_output=True, text=True).stdout.strip()
     about = [("name", card_name), ("flags", " ".join(extra)),
@@ -343,6 +470,8 @@ def main():
              ("speed", "single core under nice -n 19, CPU clock capped at about 4.6 GHz, "
                        "other agents' runs on the machine: not comparable with quiet runs"),
              ("frozen readout", "yes" if readout else "not in this engine")]
+    if only:
+        about.append(("only", " ".join(only)))
     card = os.path.join(ROOT, "out", "scorecards", card_name + ".csv")
     write_card(card, table, about)
     print_card(table)

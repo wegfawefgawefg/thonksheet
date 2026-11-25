@@ -2,6 +2,7 @@
 
 #include "blob/genome.hpp"
 #include "world/plug.hpp"
+#include "world/plug_babble.hpp"
 #include "world/task.hpp"
 
 #include <cstdint>
@@ -15,6 +16,10 @@ enum class Protocol {
     capacity,  // echo with 2, 4, 8 and 16 cues, each a separate life
     reach,     // how far a cue can be read across the sheet, no reward
     speed,     // ticks per second at three sizes, and bytes per neuron
+    shown,     // the task with the answer shown (the right cells made to fire), no reward;
+               // then tested with no help and no reward (life_shown_damage.cpp)
+    damage,    // the task, then part of the sheet silenced, then the task again
+    longlife,  // long memory: per-bucket scores and the forgetting table (life_long.cpp)
 };
 
 // blobrun's command line, parsed into plain settings
@@ -45,6 +50,11 @@ struct RunFlags {
     int reach_settle = 30000;         // reach: ticks before measuring
     int reach_blocks = 4000;          // reach: blocks of 20 ticks measured
     int speed_ms = 2000;              // speed: time spent at each size
+    int shown_ticks = 0;              // shown: last ticks of an answer step made to fire
+    int damage_pct = 0;               // damage: share of non-sensor neurons silenced, in 100
+    int damage_tile = 0;              // damage: 1 silences the tile of the first cue line
+
+    BabbleSettings babble; // ideas 60 and 61: babbling and balanced good/bad, off by default
 };
 
 // false after printing a message (or the usage) to stderr

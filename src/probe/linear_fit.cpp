@@ -77,7 +77,7 @@ static double dot(const double* a, const double* b, int n) {
 }
 
 // solve (a + ridge I) x = b in place for `cols` right-hand sides; a is m x m, kept intact
-bool ridge_solve(const std::vector<double>& a, int m, double ridge, const double* b,
+static bool ridge_solve(const std::vector<double>& a, int m, double ridge, const double* b,
                         int cols, std::vector<double>& x) {
     std::vector<double> l(a);
     for (int i = 0; i < m; i++) {
@@ -117,6 +117,11 @@ bool ridge_solve(const std::vector<double>& a, int m, double ridge, const double
         }
     }
     return true;
+}
+
+bool linear_ridge_solve(const std::vector<double>& a, int m, double ridge, const double* b,
+                        int cols, std::vector<double>& x) {
+    return ridge_solve(a, m, ridge, b, cols, x);
 }
 
 // share right over rows [from, to), with weights w (features x classes) on `features`
@@ -301,4 +306,14 @@ void linear_report(const LinearData& data, const char* label, int cue_tile,
     print_grid("3x3 tiles around it (a motor cell's local view)", block_acc, w, h, cue_tile,
                motor_tiles);
     std::fflush(stdout);
+}
+
+double linear_score(const LinearData& data) {
+    Standard s;
+    standardize(data, s);
+    std::vector<int> all((size_t)data.neurons);
+    for (int j = 0; j < data.neurons; j++) {
+        all[(size_t)j] = j;
+    }
+    return fit_primal(data, s, all);
 }

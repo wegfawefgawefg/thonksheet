@@ -73,7 +73,34 @@ struct TableGenome {
 
     int report = 0; // 1: print counter and firing-rate spreads every report_ticks, and at death
     int report_ticks = 1 << 16;
+
+    // long memory (table_memory.cpp, docs/results-2026-11-25-long-memory.md). all at 0 is
+    // off, and then nothing differs: not one random draw, not one byte.
+    // timeline (idea 131): slow maps beside the ring. level k (1..timeline_levels) is
+    // refreshed every 2^(4+k) ticks: mode 1, the OR of every map in that span; mode 2, one
+    // sampled map handed down from the level below. an input reads a level, not a tick,
+    // with chance timeline_percent.
+    int timeline_levels = 0;
+    int timeline_mode = 1;
+    int timeline_percent = 0;
+    int timeline_source = 0; // 1: an input that reads a level reads a sensor cell near it
+    // integrator cells (catalogue 99, 180): this percent of the free (not sensor, not motor)
+    // neurons count onsets of one sensor cell near them, with no leak, and fire while the
+    // count is above 0; every good or bad clears them. exempt from noise and the rate bar.
+    int hold_percent = 0;
+    int hold_cap = 15;
+    // the freezer (idea 130): a table counter pushed further at the end of its range
+    // deepens a lock (chance 2^-lock_shift, up to lock_levels deep). a move against a lock
+    // of depth d goes through with chance 2^-(lock_hold * d) and opens the lock.
+    int lock_levels = 0;
+    int lock_shift = 4;
+    int lock_hold = 3;
+    // forgetting as room: on each good or bad, this many random table entries step once
+    // toward the middle (locked ones do not)
+    int decay = 0;
 };
+
+constexpr int TABLE_MAX_LEVELS = 15; // timeline levels: input codes 16..30
 
 struct TableStats {
     uint64_t regulated = 0; // counters moved by the rate regulation
@@ -89,8 +116,9 @@ struct TableBlob {
     int words_per_neuron = 0; // 2^K * B / 64, at least 1
     int words_per_plane = 0;  // 2^K / 64, at least 1 (one bit per entry, for the report)
 
-    // input[n * K + j] is (source neuron << 4) | delay. delay 1..15 reads that many ticks
-    // back. an input off the sheet points at the always-zero word (source tile_count * 64).
+    // input[n * K + j] is (source neuron << 5) | code. code 1..15 reads that many ticks
+    // back; 16 + k reads timeline level k + 1. an input off the sheet points at the
+    // always-zero word (source tile_count * 64).
     uint32_t* input = nullptr;
     // table[n * words_per_neuron + entry * B / 64] holds counter `entry` of neuron n at bit
     // (entry * B) % 64, packed, so one load and a shift read it. B is 1, 2 or 4.
@@ -108,6 +136,16 @@ struct TableBlob {
     uint8_t* bar = nullptr;
     uint32_t* sector_free = nullptr;
     uint32_t* sector_fired = nullptr;
+
+    // long memory (table_memory.cpp); null while off
+    uint64_t* level = nullptr;       // timeline: level k's map at level + k * (tile_count + 1)
+    uint64_t* level_acc = nullptr;   // timeline mode 1: the OR still being gathered, per level
+    uint64_t* hold_cell = nullptr;   // integrator cells, a mask word per tile
+    uint32_t* hold_source = nullptr; // per neuron: the sensor cell an integrator counts
+    uint8_t* hold_count = nullptr;   // per neuron: onsets since the last good or bad
+    uint64_t* held = nullptr;        // per tile: integrator cells with a count above 0
+    uint64_t* lock = nullptr;        // freezer: 2 bits per table entry
+    int lock_words = 0;              // lock words per neuron
 
     int32_t reward_average = 0; // mode 1, x256
     uint64_t rng[4] = {};
@@ -153,6 +191,19 @@ inline bool table_step(TableBlob& tb, int neuron, int entry, int direction) {
 inline bool table_output(const TableBlob& tb, int neuron, int entry) {
     return table_counter(tb, neuron, entry) >= tb.bar[tb.tile_sector[neuron / TILE_NEURONS]];
 }
+
+// long memory (table_memory.cpp): birth-time setup after the ordinary arrays, the per-tick
+// timeline and integrator update after a map is written, the clear on good or bad, and a
+// table step that respects the freezer's locks
+void table_memory_birth(TableBlob& tb);
+void table_memory_free(TableBlob& tb);
+void table_memory_tick(TableBlob& tb);
+void table_memory_reward(TableBlob& tb);
+bool table_step_locked(TableBlob& tb, int neuron, int entry, int direction);
+void table_memory_decay(TableBlob& tb);
+// a new input of the neuron at (x, y), as (source << 5) | code: the source at its delay, or
+// by chance (timeline on) a level, read from a sensor cell near (x, y) if timeline_source
+uint32_t table_memory_input(TableBlob& tb, uint32_t source, uint32_t delay, int x, int y);
 
 // spreads of counters and firing rates, printed to stdout (table_report.cpp)
 void table_report(TableBlob& tb, const char* when);

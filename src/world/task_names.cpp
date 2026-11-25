@@ -27,6 +27,13 @@ const char* task_single_name(const Task& task, int i) {
         return i == 0 ? "cue" : "ask";
     case TaskKind::place:
         return "ask";
+    case TaskKind::invariance: {
+        // the time kinds have three notes before the ask; the rest only the ask
+        static const char* const names[4] = {"note A", "note B", "note C", "ask"};
+        return inv_by_tick(task) && task.settings.inv.kind != (int)InvKind::pitch
+                   ? (i < 4 ? names[i] : nullptr)
+                   : (i == 0 ? "ask" : nullptr);
+    }
     default:
         return nullptr;
     }
@@ -56,6 +63,10 @@ const char* task_motor_name(const Task& task, int i) {
         return i == 0 ? "short" : "long";
     case TaskKind::place:
         return i == 0 ? "shape \\" : "shape /";
+    case TaskKind::invariance: {
+        static const char* const names[4] = {"thing 0", "thing 1", "thing 2", "thing 3"};
+        return i < 4 ? names[i] : nullptr;
+    }
     default:
         return nullptr;
     }

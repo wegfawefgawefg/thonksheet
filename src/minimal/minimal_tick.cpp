@@ -140,6 +140,7 @@ static void regulate(MinimalBlob& m, const uint64_t* fired) {
     const MinimalGenome& mg = m.mg;
     for (int t = 0; t < m.shell.tile_count; t++) {
         uint64_t fixed = m.shell.sensor[t];
+        min_site(m, MIN_DRAW_REGULATE, (uint32_t)t, 0);
         uint64_t up = fired[t] & ~fixed & sparse_word(m.rng, mg.up_shift);
         uint64_t down = ~fixed & ~up & sparse_word(m.rng, mg.down_shift);
         uint8_t* thr = m.threshold + (int64_t)t * TILE_NEURONS;
@@ -159,11 +160,18 @@ static void regulate(MinimalBlob& m, const uint64_t* fired) {
 // a firing neuron, by chance, swaps one connection for a source it just heard
 static void cowire(MinimalBlob& m, const uint64_t* fired) {
     for (int t = 0; t < m.shell.tile_count; t++) {
+        min_site(m, MIN_DRAW_COWIRE, (uint32_t)t, 0);
         uint64_t pick = fired[t] & ~m.shell.sensor[t] & sparse_word(m.rng, m.mg.cowire_shift);
+        // the readout's cells: left out, or (readout_cowire) wired through their counters
+        uint64_t reader = min_readout_cells(m, t);
+        pick &= m.mg.readout_cowire ? ~0ull : ~reader;
         while (pick) {
-            int n = t * TILE_NEURONS + __builtin_ctzll(pick);
+            int b = __builtin_ctzll(pick);
+            int n = t * TILE_NEURONS + b;
             pick &= pick - 1;
-            if (m.ev_tiles && m.mg.ev_cowire && m.ev_row[n] >= 0) {
+            min_site(m, MIN_DRAW_COWIRE_PICK, (uint32_t)n, 0);
+            bool counters = m.mg.ev_on || ((reader >> b) & 1);
+            if (m.ev_tiles && m.mg.ev_cowire && m.ev_row[n] >= 0 && counters) {
                 min_evidence_cowire(m, n); // evidence: a counter goes up, the mask follows
                 continue;
             }
@@ -194,12 +202,18 @@ void minimal_tick(Blob& blob) {
     for (int t = 0; t < blob.tile_count; t++) {
         uint64_t would = plain ? would_fire_plain(m, prev, t) : would_fire(m, next, t);
         uint64_t sensor = blob.sensor[t];
-        uint64_t noise = sparse_word(m.rng, mg.noise_shift) & ~sensor;
-        uint64_t fired = ((would | noise) & ~sensor) | (blob.sense_in[t] & sensor);
+        min_site(m, MIN_DRAW_NOISE, (uint32_t)t, 0);
+        // an urged cell (idea 60) counts as a noise spike: an experiment the rule grades
+        uint64_t noise = (sparse_word(m.rng, mg.noise_shift) | blob.urge[t]) & ~sensor;
+        uint64_t inner = (would | noise) & ~sensor;
+        // the world's damage and being shown the answer (both null unless asked for)
+        inner &= blob.silenced ? ~blob.silenced[t] : ~0ull;
+        inner |= blob.forced ? blob.forced[t] & ~sensor : 0;
+        uint64_t fired = inner | (blob.sense_in[t] & sensor);
         out[t] = fired;
-        noise_out[t] = noise & ~would;
+        noise_out[t] = noise & ~would & inner;
         fired_count += (uint32_t)__builtin_popcountll(fired);
-        noise_count += (uint32_t)__builtin_popcountll(noise & ~would);
+        noise_count += (uint32_t)__builtin_popcountll(noise_out[t]);
     }
     out[blob.tile_count] = 0;
     noise_out[blob.tile_count] = 0;

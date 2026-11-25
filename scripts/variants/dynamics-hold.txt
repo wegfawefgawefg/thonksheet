@@ -1,0 +1,6 @@
+# ideas 68 and 69 on longer delays: how long does the sheet hold the cue for the readout?
+default: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128
+tiring neurons 4, fade 7: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tire_jump 4 --g.tire_shift 7
+slow 6, share 1/16: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.slow_leak_shift 6 --g.slow_share_shift 4
+both: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tire_jump 4 --g.tire_shift 7 --g.slow_leak_shift 6 --g.slow_share_shift 4
+tiring neurons 4, fade 8: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tire_jump 4 --g.tire_shift 8

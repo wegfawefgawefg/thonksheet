@@ -72,6 +72,7 @@ static double run_steps(const ProbeArgs& args, Blob& blob, TaskTicker& tt, int64
             presses->steps++;
         }
         if (tt.valence != 0) {
+            plug_mark_acted(tt.plug, blob, tt.move); // for the readout, as blobrun does
             probe_reward(args, blob, tt.valence);
         }
         step++;

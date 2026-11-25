@@ -1,0 +1,62 @@
+# The minimal engine's search space (src/minimal/minimal.hpp). One line per number:
+#   flag  kind  range  default  [tags]     (format: scripts/search/space.py)
+# The default must be the engine's own default (the standard plug for --ticks and the
+# sides), so a number at its default stays off the command line.
+engine minimal
+flags  --engine minimal
+twin   --g.learning_on 0
+order  --m.threshold_min --m.threshold_max
+
+# the plug: one setting for every world (a world's own layout flags still win)
+--ticks              choice 12,16,20,24,28   20   plug always
+--sensor-side        choice 2,3              3    plug always
+--motor-side         choice 2,3,4            3    plug always
+--reward-ticks       int    1..4             2    plug
+--rest-ticks         choice 0,2,4,8          0    plug
+--motor-spread       choice 0,16,32,64,128   0    plug
+--motor-spread-even  switch 0..1             0    plug
+
+# the sheet, from the shared genome
+--g.tiles_w             fixed  8      8
+--g.tiles_h             fixed  8      8
+--g.inhibitory_percent  int    0..50  25
+--g.learning_on         fixed  1      1   learn
+
+# MinimalGenome
+--m.learning_on         fixed  1        1     learn
+--m.budget              int    16..128  48
+--m.budget_on           switch 0..1     1     learn
+--m.inhibit_gain        int    0..10    4
+--m.threshold_min       int    1..6     1
+--m.threshold_max       int    1..10    4
+--m.threshold_cap       choice 32,64,128,255  255
+--m.up_shift            shift  1..8     4
+--m.down_shift          shift  5..13    9
+--m.noise_shift         shift  5..13    9
+--m.credit_ticks        int    2..28    20    learn
+--m.learn_shift         shift  0..6     0     learn
+--m.avg_shift           int    1..10    5     learn
+--m.grade_mode          switch 0..1     0     learn
+--m.drop_mode           switch 0..1     0     learn
+--m.cowire_on           switch 0..1     1     learn
+--m.cowire_shift        shift  2..10    6     learn  when=--m.cowire_on:1
+--m.cowire_needs_input  switch 0..1     1     learn  when=--m.cowire_on:1
+--m.far_slots           int    0..2     0
+--m.far_percent         int    0..100   15  when=--m.far_slots
+--m.far_reach           int    2..6     3  when=--m.far_slots
+--m.delay_max           int    1..12    1
+--m.far_delay_per_tile  int    0..3     1  when=--m.far_slots
+--m.delay_percent       int    0..100   100  when=--m.delay_max
+--m.ev_on               choice 0,1,2    0     learn
+--m.ev_bits             int    2..8     4     learn  when=--m.ev_on
+--m.ev_init             int    0..8     2     learn  when=--m.ev_on
+--m.ev_read             choice 0,1,2    0     learn  when=--m.ev_on
+--m.ev_spikes           choice 0,1,2    0     learn  when=--m.ev_on
+--m.ev_fired_min        int    1..8     1     learn  when=--m.ev_on
+--m.ev_quiet            choice 0,1,2    1     learn  when=--m.ev_on
+--m.ev_quiet_shift      shift  0..6     0     learn  when=--m.ev_on
+--m.ev_shift            shift  0..6     0     learn  when=--m.ev_on
+--m.ev_inh              switch 0..1     0     learn  when=--m.ev_on
+--m.ev_cowire           switch 0..1     1     learn  when=--m.ev_on
+--m.noise_sign          choice -1,1     1     learn
+--m.noise_pair          switch 0..1     0     learn

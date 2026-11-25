@@ -118,6 +118,88 @@ static void put(FILE* sum, int driver, const char* key, double value) {
     std::fprintf(sum, "%s,%s,%.6g\n", driver_names[driver], key, value);
 }
 
+// episodes (falls, dots, arrivals) and wins, the unit reinforcement learning counts, for
+// the kinds that have them
+static void life_episodes(TaskKind kind, const bool* ran, FILE* sum) {
+    const char* name = task_episode_name(kind);
+    if (!name) {
+        return;
+    }
+    const char* win = task_win_name(kind);
+    for (int d = 0; d < (int)Driver::count; d++) {
+        if (!ran[d]) {
+            continue;
+        }
+        const LifeResult& r = results[d];
+        std::printf("%-10s %lld %s", driver_names[d], (long long)r.episodes, name);
+        if (win) {
+            std::printf(", %lld %s", (long long)r.wins, win);
+        }
+        std::printf("\n");
+        put(sum, d, "episodes", (double)r.episodes);
+        put(sum, d, "wins", (double)r.wins);
+    }
+}
+
+// ideas 60 and 61: scores without babbled steps (also as <stem>-clean.csv) and how often
+// each signal came, per step, before and after balance
+static bool life_signal_report(const RunFlags& flags, const std::string& csv, FILE* sum,
+                               const std::string& key, const bool* ran, size_t edge) {
+    std::string path = stem_of(csv) + "-clean.csv";
+    FILE* f = std::fopen(path.c_str(), "w");
+    if (!f) {
+        std::fprintf(stderr, "blobrun: cannot write %s\n", path.c_str());
+        return false;
+    }
+    std::fprintf(f, "window,end_step");
+    for (int d = 0; d < (int)Driver::count; d++) {
+        if (ran[d]) {
+            std::fprintf(f, ",%s", driver_names[d]);
+        }
+    }
+    std::fprintf(f, "\n");
+    size_t windows = (size_t)(flags.steps / flags.window);
+    for (size_t w = 0; w < windows; w++) {
+        std::fprintf(f, "%zu,%lld", w, (long long)((w + 1) * flags.window));
+        for (int d = 0; d < (int)Driver::count; d++) {
+            if (ran[d]) {
+                std::fprintf(f, ",%.6f", w < results[d].clean.size() ? results[d].clean[w] : 0.0);
+            }
+        }
+        std::fprintf(f, "\n");
+    }
+    std::fclose(f);
+
+    std::printf("%-10s %10s %10s %9s %19s %19s\n", "", "early*", "late*", "babbled",
+                "good raw/sent", "bad raw/sent");
+    for (int d = 0; d < (int)Driver::count; d++) {
+        if (!ran[d]) {
+            continue;
+        }
+        const LifeResult& r = results[d];
+        double steps = r.steps > 0 ? (double)r.steps : 1.0;
+        double early = mean(r.clean, 0, edge);
+        double late = mean(r.clean, windows - edge, windows);
+        std::printf("%-10s %10.4f %10.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n", driver_names[d], early,
+                    late, (double)r.babbled / steps, (double)r.good_raw / steps,
+                    (double)r.good_sent / steps, (double)r.bad_raw / steps,
+                    (double)r.bad_sent / steps);
+        put(sum, d, (key + "early_clean").c_str(), early);
+        put(sum, d, (key + "late_clean").c_str(), late);
+        put(sum, d, (key + "babbled_per_step").c_str(), (double)r.babbled / steps);
+        put(sum, d, (key + "babble_obeyed").c_str(),
+            r.babbled > 0 ? (double)r.obeyed / (double)r.babbled : 0.0);
+        put(sum, d, (key + "no_move_unbabbled").c_str(),
+            r.steps > r.babbled ? (double)r.still / (double)(r.steps - r.babbled) : 0.0);
+        put(sum, d, (key + "good_raw_per_step").c_str(), (double)r.good_raw / steps);
+        put(sum, d, (key + "bad_raw_per_step").c_str(), (double)r.bad_raw / steps);
+        put(sum, d, (key + "good_sent_per_step").c_str(), (double)r.good_sent / steps);
+        put(sum, d, (key + "bad_sent_per_step").c_str(), (double)r.bad_sent / steps);
+    }
+    std::printf("* without babbled steps (right / tries tasks only)\n");
+    return true;
+}
+
 // --task for the whole life. writes `csv`, and early/late under `prefix` in the summary.
 static bool life_plain(const RunFlags& flags, const std::string& csv, FILE* sum, const char* prefix,
                        bool end_numbers, double* late_out) {
@@ -148,6 +230,22 @@ static bool life_plain(const RunFlags& flags, const std::string& csv, FILE* sum,
         }
     }
     life_extra_report(csv, ran, results, sum, edge);
+    life_episodes(flags.task, ran, sum);
+    if (babble_on(flags.babble) && !life_signal_report(flags, csv, sum, key, ran, edge)) {
+        return false;
+    }
+    // versions rewarded and not scored (place, the invariance battery)
+    for (int d = 0; d < (int)Driver::count; d++) {
+        const std::vector<double>& t = results[d].taught;
+        if (!ran[d] || t.size() != windows || t.empty() || t[0] < 0) {
+            continue;
+        }
+        double early = mean(t, 0, edge), late = mean(t, windows - edge, windows);
+        std::printf("%-10s %10.4f %10.4f %+12.4f   on the rewarded versions\n", driver_names[d],
+                    early, late, late - early);
+        put(sum, d, (key + "taught_early").c_str(), early);
+        put(sum, d, (key + "taught_late").c_str(), late);
+    }
     for (int d = 0; d < (int)Driver::count; d++) {
         if (ran[d] && results[d].end.measured) {
             life_end_print(results[d].end, driver_names[d], stdout);
@@ -230,6 +328,69 @@ static bool life_phases(const RunFlags& flags, FILE* sum) {
     return true;
 }
 
+// shown: the task with the answer shown and no good or bad, then a test with neither.
+// damage: the task, then part of the sheet silenced and the task again.
+static bool life_shown_or_damage(const RunFlags& flags, FILE* sum) {
+    LifePhase phases[2];
+    phases[0] = life_phase_main(flags);
+    phases[1] = phases[0];
+    phases[1].steps = flags.retest;
+    bool shown = flags.protocol == Protocol::shown;
+    if (shown) {
+        phases[0].shown_ticks = flags.shown_ticks;
+        phases[0].withhold = true;
+        phases[1].withhold = true;
+        std::printf("shown: %s for %lld steps with the right button's cells made to fire for "
+                    "the last %d ticks of each answer step, no good or bad; then %lld steps "
+                    "with no help and no good or bad\n",
+                    task_name(flags.task), (long long)flags.steps, flags.shown_ticks,
+                    (long long)flags.retest);
+    } else {
+        phases[1].damage_pct = flags.damage_pct;
+        phases[1].damage_tile = flags.damage_tile;
+        std::printf("damage: %s for %lld steps, then %s silenced, then %lld steps more\n",
+                    task_name(flags.task), (long long)flags.steps,
+                    flags.damage_tile ? "the cue tile's inner cells" : "part of the sheet",
+                    (long long)flags.retest);
+    }
+    bool ran[(int)Driver::count];
+    if (!run_lives(flags, phases, 2, ran) || !write_csv(flags.out, flags, ran, results, 2)) {
+        return false;
+    }
+    const char* r_shown[4] = {"teach_end", "test_start", "test_mean", "test_end"};
+    const char* r_damage[4] = {"before", "after_start", "after_end", nullptr};
+    const char* const* names = shown ? r_shown : r_damage;
+    std::printf("windows of %d steps; end = mean of the phase's last tenth, start = its first "
+                "window, mean = all its windows\n",
+                flags.window);
+    std::printf("%-10s %12s %12s %12s %12s\n", "", names[0], names[1], names[2],
+                names[3] ? names[3] : "");
+    for (int d = 0; d < (int)Driver::count; d++) {
+        if (!ran[d]) {
+            continue;
+        }
+        const LifeResult& r = results[d];
+        const std::vector<double>& s = r.scores;
+        size_t a0 = (size_t)r.first_window[0], a1 = (size_t)r.first_window[1];
+        size_t b1 = (size_t)r.first_window[2];
+        double a_end = mean(s, a1 - edge_of(flags, a1 - a0), a1);
+        double b_start = b1 > a1 ? s[a1] : 0.0;
+        double b_end = mean(s, b1 - edge_of(flags, b1 - a1), b1);
+        double v[4] = {a_end, b_start, shown ? mean(s, a1, b1) : b_end, b_end};
+        std::printf("%-10s %12.4f %12.4f %12.4f", driver_names[d], v[0], v[1], v[2]);
+        if (names[3]) {
+            std::printf(" %12.4f", v[3]);
+        }
+        std::printf("\n");
+        for (int k = 0; k < 4; k++) {
+            if (names[k]) {
+                put(sum, d, names[k], v[k]);
+            }
+        }
+    }
+    return true;
+}
+
 // echo with 2, 4, 8, 16 cues, a life each. a k counts as held when its late score is at least
 // halfway from chance (1/k) to perfect. the k=2 life's room and aliveness go in the summary.
 static bool life_capacity(const RunFlags& flags, FILE* sum) {
@@ -275,6 +436,9 @@ int protocol_run(const RunFlags& flags) {
     if (flags.protocol == Protocol::speed) {
         return protocol_speed(flags);
     }
+    if (flags.protocol == Protocol::longlife) {
+        return protocol_long(flags);
+    }
     FILE* sum = summary_open(flags.out);
     if (!sum) {
         return 1;
@@ -291,8 +455,13 @@ int protocol_run(const RunFlags& flags) {
     case Protocol::capacity:
         ok = life_capacity(flags, sum);
         break;
+    case Protocol::shown:
+    case Protocol::damage:
+        ok = life_shown_or_damage(flags, sum);
+        break;
     case Protocol::reach:
     case Protocol::speed:
+    case Protocol::longlife:
         break;
     }
     std::fclose(sum);

@@ -1,5 +1,8 @@
 #include "blob/birth_shape.hpp"
 #include "blob/blob.hpp"
+#include "blob/fire_dynamics.hpp"
+#include "blob/long_memory.hpp"
+#include "blob/critic.hpp"
 #include "blob/random_words.hpp"
 #include "blob/tick_steps.hpp"
 #include "blob/weight_levels.hpp"
@@ -278,6 +281,7 @@ Blob* blob_birth(const Genome& genome, uint64_t seed) {
     blob->sense_in = (uint64_t*)alloc_lines(map_bytes);
     blob->sense_attached = (uint64_t*)alloc_lines(map_bytes);
     blob->predicted = (uint64_t*)alloc_lines(map_bytes);
+    blob->urge = (uint64_t*)alloc_lines(map_bytes);
     blob->local_tile = (uint32_t*)alloc_lines(sizeof(uint32_t) * blob->tile_count * LOCAL_SLOTS);
     blob->far_tile = (uint32_t*)alloc_lines(sizeof(uint32_t) * n * FAR_SLOTS);
     blob->slot_delay = (uint8_t*)alloc_lines(n * SLOTS);
@@ -300,6 +304,7 @@ Blob* blob_birth(const Genome& genome, uint64_t seed) {
         wire(*blob);
     }
     set_sectors(*blob);
+    dynamics_birth(*blob, seed);
     return blob;
 }
 
@@ -307,6 +312,7 @@ void blob_free(Blob* blob) {
     if (!blob) {
         return;
     }
+    critic_free(*blob);
     std::free(blob->spikes[0]); // the whole ring
     void* arrays[] = {
         blob->recent,      blob->inhibitory,      blob->sensor,          blob->motor,
@@ -315,17 +321,27 @@ void blob_free(Blob* blob) {
         blob->w1,          blob->potential,       blob->threshold,       blob->leak_shift,
         blob->cooldown,    blob->cooldown_len,    blob->fan_in,          blob->tile_sector,
         blob->sector_bias, blob->sector_activity, blob->sector_surprise, blob->sector_target,
-        blob->noise_ring,  blob->noise_trace,     blob->active_trace,
+        blob->noise_ring,  blob->noise_trace,     blob->active_trace,    blob->urge,
         blob->motor_attached, blob->motor_acted, blob->readout_last,
         blob->readout_row,    blob->readout_evidence, blob->readout_keep,
+        blob->rule_words,
+        blob->sent,           blob->warm,             blob->tire,
+        blob->slow,           blob->rebound,          blob->up,
+        blob->any_branch,     blob->veto,             blob->coincide,
     };
     for (void* p : arrays) {
         std::free(p);
     }
+    std::free(blob->replay); // one block (blob/replay.hpp)
+    long_memory_free(*blob);
     delete blob;
 }
 
 void blob_reward(Blob& blob, int valence) {
+    // critic_on: every step lands here, and the critic's surprise replaces the valence
+    if (critic_step(blob, valence)) {
+        return;
+    }
     if (valence > 0) {
         blob.good_ticks = blob.genome.reward_ticks;
     } else if (valence < 0) {

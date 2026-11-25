@@ -267,12 +267,13 @@ bool plug_attach(Plug& plug, Blob& blob, const TaskShape& shape, const PlugSetti
     plug = Plug{};
     plug.settings = settings;
     plug.shape = shape;
+    plug_map_prepare(plug);
     if (settings.sensor_side < 1 || settings.sensor_side > PLUG_MAX_SIDE ||
         settings.motor_side < 1 || settings.motor_side > PLUG_MAX_SIDE) {
         std::fprintf(stderr, "plug: group side must be 1..%d\n", PLUG_MAX_SIDE);
         return false;
     }
-    if (!lay_sensors(plug, blob, shape) || !lay_motors(plug, blob, shape)) {
+    if (!lay_sensors(plug, blob, plug.shape) || !lay_motors(plug, blob, shape)) {
         return false;
     }
     if (settings.distance > 0 && !move_apart(plug, blob, settings.distance)) {
@@ -343,7 +344,10 @@ void plug_set_lines(Plug& plug, const TaskSense& sense) {
     for (int i = 0; i < shape.singles; i++) {
         plug.line_on[plug.first_single + i] = sense.singles[i] != 0;
     }
-    for (int i = 0; i < shape.sheet_w * shape.sheet_h; i++) {
+    if (plug.map_src_w > 0) {
+        plug_map_lines(plug, sense);
+    }
+    for (int i = 0; plug.map_src_w == 0 && i < shape.sheet_w * shape.sheet_h; i++) {
         plug.line_on[plug.first_sheet + i] = sense.sheet[i] != 0;
     }
     // a number lights its lines from the left as it passes evenly spaced thresholds

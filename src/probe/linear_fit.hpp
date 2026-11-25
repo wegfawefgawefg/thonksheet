@@ -22,7 +22,11 @@ struct LinearData {
 void linear_report(const LinearData& data, const char* label, int cue_tile,
                    const std::vector<int>& motor_tiles);
 
-// solve (a + ridge I) x = b for `cols` right-hand sides (b and x are m x cols, row-major);
-// a is m x m and kept intact. false if not positive definite. (linear_fit.cpp)
-bool ridge_solve(const std::vector<double>& a, int m, double ridge, const double* b, int cols,
-                 std::vector<double>& x);
+// the same reader on every feature at once, primal; only the test share right. for small
+// feature sets such as the task's own input lines (blobprobe linear's shortcut check)
+double linear_score(const LinearData& data);
+
+// solve (a + ridge I) x = b for `cols` right-hand sides; a is m x m (cholesky). false if a
+// is not positive definite
+bool linear_ridge_solve(const std::vector<double>& a, int m, double ridge, const double* b,
+                        int cols, std::vector<double>& x);

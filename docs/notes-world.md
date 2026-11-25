@@ -10,6 +10,20 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
 - `world/task_reflex.cpp`: echo, shuffled echo, delayed echo, go/no-go, beat.
 - `world/task_sequence.cpp`, `world/task_control.cpp` (catch, cartpole).
 - `world/task_feature.cpp`: order, both-not-either, gap, place (features nobody designed in).
+- `world/task_script.hpp/.cpp`: tiers 9 and 10 (the rest of the map), every one a trial
+  script; `task_relation.cpp`, `task_sheet_number.cpp`, `task_grammar.cpp`,
+  `task_chance.cpp`, `task_memory.cpp`, `task_unsupervised.cpp` draw the trials.
+  `world/plug_hidden.cpp`: fill-in's count of hidden cells' own predictions.
+- `world/task_function.hpp/.cpp`: the function battery (points, number, two-numbers, past):
+  function names, the `--fn` flags, drawing inputs, the shared trial; the class of every
+  input in `task_function_points.cpp` (points, past) and `task_function_number.cpp`
+  (number, two-numbers, the sheet they are drawn on).
+- `world/task_bandit.cpp` (bandit, switching bandit, chain), `world/task_move.cpp` (track,
+  forage), `world/task_classic.cpp` (mountain car, pendulum, with a 16.16 series sine):
+  the more worlds of idea 63.
+- `world/task_invariance.hpp/.cpp`, `world/task_invariance_draw.cpp`: the invariance
+  battery (one task kind, `--task inv-<kind>`), its moving stretches, its pictures, tunes
+  and 3D objects. `world/plug_map.cpp`: `--bitmap-map logpolar`.
 - `world/task_calc.hpp/.cpp`, `world/calc_ops.hpp/.cpp`, `world/task_calc_flags.cpp`: the
   calculation battery (`--task calc --calc OP`), answers that are patterns of bits.
 - `world/plug_pattern.cpp`: reading a pattern answer off pairs of motor lines, and the
@@ -17,14 +31,22 @@ Handoff for `src/world/` (plug, tasks, stand-in) and `src/run/` (`blobrun`).
 - `world/standin.hpp/.cpp`: a Blob shell with only the arrays the plug touches, and a fake
   tick (coin-flip motors, or the right motor group firing). Needs no core.
 - `run/main.cpp`: the driver calls (birth, tick, reward, death; declared in `run/drive.hpp`)
-  and `main`. `run/run_flags.cpp`: the command line.
+  and `main`. `run/run_flags.cpp`: the command line; `run/run_flags_worlds.hpp` the
+  more-worlds flags (a header, so the build lists that name `run_flags.cpp` stay as they are).
 - `run/life.cpp`: one life as phases (task steps or unplugged ticks), never reset.
 - `run/life_protocols.cpp`: plain life, retention, idle, capacity; the csv and the summary.
 - `run/life_measures.cpp`: `--reach` and `--speed`.
 - `run/life_end.cpp`: room and aliveness at the end of a life.
+- `run/life_shown_damage.cpp`: the world's two hooks into every engine (`blob.silenced`,
+  `blob.forced`) for `--damage` and `--shown`.
 - `run/life_extra.cpp`: a task's extra scores per window (the calculation battery) into the
   summary and `<stem>-extra.csv`.
 - `probe/rhythm_find.hpp`, `probe/carry_measure.hpp`: shared with `blobprobe`.
+- `probe/reader.cpp`: `blobprobe reader`, level (a) of the function battery (a ridge reader
+  of the frozen sheet and of the input lines; held-out values scored apart). Results so
+  far: `docs/results-2026-11-25-function-battery.md` (unfinished; resume lines there).
+- `probe/invariance.cpp`, `probe/invariance_show.cpp`, `probe/linear_split.cpp`:
+  `blobprobe invariance`, level (a) of the battery, and `--show 1`, its pictures as text.
 
 ## The plug
 
@@ -116,6 +138,33 @@ that fires the right group every tick and predicts its input exactly.
 | both-not-either | A, B, ask; 2 buttons | right / trials | 0.45 | 1.00 |
 | gap 1 or 3 | cue, ask; 2 buttons | right / trials | 0.44 | 1.00 |
 | place 4x4, 3 held out | ask, 4x4 sheet; 2 buttons | right / held-out trials | 0.44 | 1.00 |
+| bandit k=2 (k=4) | one line always on; k buttons | presses on the best / steps | 0.47 (0.24) | 1.00 |
+| switching bandit k=2 | as bandit | best / steps, second half of each block | 0.46 | 1.00 |
+| chain, stage shown or not | 2 stage lines (or 1 always on); 2 buttons | 2 x chains / steps | 0.29 | 1.00 |
+| track 5, shaped or arrive | 5x2 bitmap; left, right | steps ending nearer / steps | 0.46 | 1.00 |
+| forage 5x5, warmer or not | 5x5 bitmap (side 2); 4 buttons | steps ending nearer / steps | 0.38 | 1.00 |
+| mountain car | 2 numbers x 8 lines (side 2) | episodes at the goal / episodes | 0.00 | 1.00 |
+| pendulum | 2 numbers x 8 lines (side 2) | steps upright / steps | 0.05 | 0.86 |
+| inv-position | ask, 16x12 sheet at side 1; 2 buttons | right / held-out trials | 0.48 | 1.00 |
+| inv-scale | | | 0.47 | 1.00 |
+| inv-rotation | | | 0.47 | 1.00 |
+| inv-bright | | | 0.48 | 1.00 |
+| inv-clutter | | | 0.48 | 1.00 |
+| inv-mixed | | | 0.47 | 1.00 |
+| inv-view | | | 0.47 | 1.00 |
+| inv-shift | A, B, C, ask at side 3; 2 buttons | | 0.48 | 1.00 |
+| inv-tempo | | | 0.49 | 1.00 |
+| inv-pitch | ask, 16x8 sheet at side 1; 2 buttons | | 0.50 | 1.00 |
+
+The function battery (79 members, `scripts/functions.py --list`; 20,000 steps, window 200,
+seed 1): perfect is 1.000 on every member; coin is 0.47-0.48 on two-button members and a
+little under 1/answers on the rest (0.31 for 3, 0.23 for 4, 0.18 for 5, 0.11 for 8, 0.10
+for 9). `--task points --fn parity --fn-lines 2` gives a csv byte-identical to
+both-not-either, whose own 40,000-step csv did not change.
+
+The battery rows: 20,000 steps, window 200, `--ticks 20`, mean over all windows; the
+rewarded versions score the same (coin 0.45-0.48, perfect 1.00). Definitions:
+`docs/curriculum.md`, "Invariance".
 
 The four new rows were checked with the core linked (coin and perfect are the stand-in
 either way), mean over all 100 windows. Definitions: `docs/curriculum.md`, "Features nobody
@@ -143,6 +192,18 @@ nice -n 19 ./build/blobrun --task catch --steps 40000
 nice -n 19 ./build/blobrun --task cartpole --steps 100000 --window 1000
 ```
 
+The invariance battery (`scripts/invariance.sh` runs it at three levels):
+
+```
+nice -n 19 ./build/blobrun --task inv-scale --sensor-side 1 --ticks 20       picture kinds
+nice -n 19 ./build/blobrun --task inv-rotation --sensor-side 1 --inv-motion 50    with motion
+nice -n 19 ./build/blobrun --task inv-tempo --sensor-side 3 --ticks 20        time kinds
+nice -n 19 ./build/blobrun --task inv-position --sensor-side 1 --inv-hold r6  6 places held
+nice -n 19 ./build/blobrun --task inv-scale --sensor-side 1 --bitmap-map logpolar
+nice -n 19 ./build/blobprobe invariance --task inv-view --sensor-side 1 --ticks 20   level (a)
+scripts/invariance.sh show rotation                                  the pictures as text
+```
+
 New tasks and settings:
 
 ```
@@ -153,6 +214,50 @@ nice -n 19 ./build/blobrun --task place --place-size 4 --place-hold 3 --steps 20
 nice -n 19 ./build/blobrun --task echo --distance 3 --show-plug     any task, N tiles apart
 nice -n 19 ./build/blobrun --task echo --cue-offset 2               cues and buttons 2 and 3
 ```
+
+The function battery (definitions: `docs/curriculum.md`, "The function battery"):
+
+```
+nice -n 19 ./build/blobrun --task points --fn parity --fn-lines 3          and or parity majority
+nice -n 19 ./build/blobrun --task points --fn exactly --fn-k 1 --fn-lines 4  exactly table
+nice -n 19 ./build/blobrun --task points --fn table-nonlin --fn-lines 4    table-lin count first
+nice -n 19 ./build/blobrun --task number --fn sine --fn-lines 16 --fn-bands 4 --sensor-side 2
+nice -n 19 ./build/blobrun --task number --fn sine --fn-lines 16 --fn-bands 4 --fn-hold 3 \
+    --sensor-side 2                                                      held-out x only scored
+nice -n 19 ./build/blobrun --task two-numbers --fn product --fn-lines 8 --fn-bands 2 --sensor-side 2
+nice -n 19 ./build/blobrun --task past --fn same --fn-gap 2                recall majority parity
+nice -n 19 ./build/blobprobe reader --task points --fn parity --fn-lines 3 --ticks 20 \
+    --sensor-side 3 --motor-side 3 --seed 5                              level (a): linear reader
+scripts/functions.sh main                                               the whole battery
+```
+
+Number kinds lay x on the bitmap sheet, 8 lines a row in a snake, so they need 2x2 sensor
+groups or smaller (`--sensor-side 2`); at 3x3 the plug refuses a sheet 8 wide.
+More worlds (idea 63; definitions in `docs/curriculum.md`, "More worlds"). Easiest through
+`scripts/task.sh <world>`, which picks 2x2 sensor groups and the place code where a world
+needs them; `scripts/ladder.py` runs the whole set for every engine and rule:
+
+```
+scripts/task.sh bandit --k 4
+scripts/task.sh switch-bandit --switch-every 1000
+scripts/task.sh chain --chain-cue 0
+scripts/task.sh track --track-reward arrive
+scripts/task.sh forage --forage-warmer 0
+scripts/task.sh mountain-car --classic-reward goal
+scripts/task.sh pendulum
+scripts/task.sh cartpole --cart-start wide | --cart-reward relative | --cart-integrator euler
+scripts/task.sh cartpole --million                  1,000,000 steps in 100 windows
+python3 scripts/ladder.py run --rules minimal [--long]; python3 scripts/ladder.py table
+```
+
+- Every life now prints episodes (and wins where a kind has them) per driver, for catch,
+  cartpole and the new worlds: `blob 1162 falls`, `coin 6666 dots, 1633 caught`. The
+  summary gets `episodes` and `wins` keys; the window csv is unchanged.
+- `--windows N` makes the window steps / N, so a long life keeps a small csv.
+- Cartpole's step was gym's Euler step: a push moves the pole only on the next step, so a
+  step's reward does not judge its own press. `--cart-integrator semi` changes that, and
+  since the critic merge (2026-11-25) it is the default; `--cart-integrator euler` keeps the
+  old step for reproducing older cartpole numbers (curriculum, notes on cartpole).
 
 Life protocols (one per call; without them a call is one task for the whole life, as
 before, with byte-identical csvs). Definitions: `docs/curriculum.md`, stage 4. Easiest
@@ -262,6 +367,10 @@ show the room rows as n/a. Runs and logs go to `out/suite/<name>/`; the scorecar
 `out/scorecards/<name>.csv` (committed; the rest of `out/` is not). Speed is measured last,
 alone among the suite's runs, but other agents may be running: the scorecard says so.
 
+More-worlds rows (idea 63) come after every older row, under "more worlds (idea 63)", so
+old scorecards still line up; `--only JOB,...` runs only some jobs (`--only worlds`: the
+new rows) and writes a scorecard with only those rows.
+
 `blobrun --help` lists every flag. Output: `out/<task>-s<seed>.csv` with columns
 `window,end_step` then one per life run (`blob`, `learn_off`, `coin`, `perfect`), and a table:
 
@@ -316,6 +425,111 @@ linking against a throwaway stub core; it builds and runs.
   its own; 8x8 needs `--sensor-side 1`. The plug refuses cleanly when lines do not fit.
 - Score per window is 0 when a window holds no try (a window shorter than one delayed-echo
   trial). Keep windows well above the trial length.
+
+## The rest of the map (2026-11-25)
+
+Tiers 9 and 10, being shown the answer and damage: 21 worlds with an easy and a hard
+setting each, and two life protocols. Definitions: `docs/curriculum.md`, "The rest of the
+map". The list of worlds with their flags is `scripts/map_worlds.py`, shared by
+`scripts/map.py` and `scripts/suite.py`. Results: `docs/results-2026-11-25-rest-of-the-map.md`.
+
+How the new tasks are built:
+
+- Every one is a trial script (`Task::Script` in `task.hpp`): per step the single lines on,
+  the sheet bits on, the button wanted (-1 none) and flags: `SCRIPT_SCORED` (counts toward
+  the score), `SCRIPT_REWARDED` (good or bad follow), `SCRIPT_PROBE` (the offline reader
+  keeps this step, label = the wanted button). `task_script.cpp` runs it; one file per family
+  draws trials. New kinds sit at the end of `TaskKind`; `task.cpp` hands them all to the
+  script runner before its old switches.
+- Held-out trials are scored and not rewarded; taught trials of a held-out world are
+  rewarded and kept in `tally[2..3]`, not printed.
+- No-teacher worlds attach no good or bad. Their buttons exist only to give the reader its
+  classes; presses do nothing. Their window score comes from `task.extra`: the share of sensor
+  cells predicted right (predict-next), hit rate less false alarms of the hidden cells' own
+  predictions (fill-in, counted every tick by `plug_count_hidden` from `TaskSense.hidden`),
+  wrong predictions on breaks less on regular steps (odd-event). The minimal engine fills no
+  `predicted` and no `surprise`: its prediction share reads 1.00 and the others 0, which
+  mean nothing; `map.py` shows them as "-". (The suite's old sequence row has the same
+  problem for the minimal engine.)
+- `--shown N` and `--damage P` / `--damage-tile 1` are life protocols (`life_protocols.cpp`)
+  with two phases. Phase settings in `LifePhase`: `shown_ticks`, `withhold` (the ticker scores
+  the answer but passes no valence and raises no good/bad line), `damage_pct`, `damage_tile`.
+  The hooks are two arrays on the Blob shell, `silenced` and `forced`, tile_count + 1 words
+  each, null unless a protocol makes them (`life_shown_damage.cpp`); every engine's fire
+  step ANDs out `silenced` and ORs in `forced` (sensor cells untouched). With both null every
+  engine's csv is byte-identical to before.
+- `blobprobe linear` keeps a step of a new world when `task.probe_marks` moves (the old
+  tasks still use `tally[1]`). It also prints the same reader fitted to the task's own input
+  lines over the last `--history` steps (16) and to their brightness, one feature per count:
+  `--lines-from N --lines-to N` keep only some lines, to ask what one item alone tells.
+
+```
+scripts/map.sh map                          every world, three levels, seeds 5-12
+scripts/map.sh map --quick                  seeds 5 and 6, 4,000-step lives (a few minutes)
+scripts/map.sh map --only copy-easy,copy-hard --levels b
+scripts/map.sh map --print                  the table from runs already in out/map/map/
+scripts/task.sh same --item-lines 6 --item-on 3 --hold 6         one life, one world
+scripts/task.sh echo --damage 20 --window 200 --retest 10000      damage protocol
+scripts/task.sh echo --shown 6 --window 200 --retest 10000        being shown the answer
+scripts/readout.sh reference brackets --length 8 --seed 5         the reader on one world
+```
+
+`map.sh` levels: (a) `blobprobe linear`, full engine as born, `--motor-spread 128`, 3,000
+probe steps after 30,000 settling ticks; no-teacher worlds also (a') after a whole
+40,000-step life of the design rule with no reward (`--learning 1 --settle 800000`); (b)
+`blobrun` with the readout rule (`--g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4
+--g.readout_balance 1 --motor-spread 128`, the same for every world), no-teacher worlds with
+the plain full engine instead; (c) `--engine minimal` and `--table`, no extra flags. Every
+life is the standard one (20 ticks a step, 3x3 groups, 40,000 steps, windows of 1,000;
+protocols windows of 200 and a 10,000-step retest); the sheet worlds use 2x2 sensor groups.
+Runs go to `out/map/<name>/`; split across machines with `--levels`, copy the runs into one
+folder and `--print`.
+
+## Long memory worlds and `--long` (2026-11-25)
+
+`world/task_long.cpp` (hold, pairs, once, rare, drift; settings in `task_long.hpp`, flags in
+`task_long_flags.cpp`) and `run/life_long.cpp` (the protocol). Definitions:
+`docs/curriculum.md`, "Long memory". Shared edits were kept to the enum, the name table, one
+case group per switch in `task.cpp`, one `LongSettings` in `TaskSettings`, one `LongState`
+in `Task`, one flag hook in `run_flags.cpp` and one protocol entry.
+
+- `blobrun --long --task pairs ...` runs the engine, coin flips and the perfect player (the
+  learning-off twin only without `--no-baselines`), one life each, and writes per window
+  per driver a row of each bucket's right answers over asks (`score` is the headline:
+  probes for pairs and once, the rare patterns for rare, all pairs for drift, asks for
+  hold). The summary has `<bucket>_all`, `_before`, `_after` (split at `drift_at` for
+  drift, half the life otherwise), `_asked`, and `held` for pairs and once.
+- `held` is the forgetting curve above chance rescaled to 0..1, integrated over age (flat
+  before age 100, straight lines between ages), over steps per pair; an age within two
+  standard errors of chance counts as 0.
+- For the full engine the end of a life also prints button cells with no connection and the
+  share of evidence counters at an end of their range or not zero.
+- Speed: a step is 20 ticks, so 10M steps is 200M ticks. On this PC under load the full
+  engine ran 20k to 38k ticks/s, table neurons about 14k; on stevejobs under load table
+  neurons about 19k, the minimal engine about 58k (a 10M-step life about 1 hour).
+- Ticks per step stay 20 as everywhere; a hold gap is given in steps (`--hold-steps`).
+
+## The invariance battery (2026-11-25)
+
+- One `TaskKind::invariance`; which change it is lives in `TaskSettings::inv` (so the
+  other agents adding task kinds touch the enum once). `--task inv-<kind>` sets both.
+  Its flags are parsed in `invariance_flag` (task_invariance.cpp), one hook in
+  run_flags.cpp. `task_name` says "invariance", so the default csv is
+  `out/invariance-s<seed>.csv` for every kind; give `--out`.
+- Held-out trials are tally 0/1 (the window score), rewarded ones 2/3.
+  `task_taught_score` reads 2/3 for place and the battery; `life.cpp` keeps it per window
+  and the summary gets `taught_early` and `taught_late` (place's were never printed).
+- The time kinds change their lines inside a step. `ticker_before_tick` now senses on
+  every tick when `inv_by_tick` says so, after telling the task the tick
+  (`inv_set_tick`); every other task still senses once a step (csvs byte-identical).
+- `--bitmap-map logpolar` (`plug_map.cpp`) is the only plug change: at attach the task's
+  bitmap size is swapped for 16 x 8 and a table says which task pixels each mapped line
+  ORs; `plug_set_lines` fills the mapped lines from it. Off by default; any task with a
+  bitmap can use it (catch too, though there it means little).
+- `blobprobe invariance` drives any engine (`--engine minimal`, `--table`); blobprobe now
+  links the minimal and table libraries (CMakeLists, two blocks).
+- Moving stretches count as steps of the life: with `--inv-motion 50` a 40,000-step life
+  has half as many trials.
 
 ## Reading a scorecard run with a readout rule in its flags (2026-11-25)
 

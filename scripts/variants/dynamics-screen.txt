@@ -1,0 +1,52 @@
+# ideas 66-75 (docs/results-2026-11-25-family-dynamics.md): each mechanism at 3 or 4
+# strengths, on the sheet as born. the first line is the baseline.
+default:
+syn tire 2 ticks, keep 1/2: --g.syn_tire_ticks 2 --g.syn_tire_keep_shift 1
+syn tire 4 ticks, keep 1/2: --g.syn_tire_ticks 4 --g.syn_tire_keep_shift 1
+syn tire 8 ticks, keep 1/2: --g.syn_tire_ticks 8 --g.syn_tire_keep_shift 1
+syn tire 4 ticks, keep 1/8: --g.syn_tire_ticks 4 --g.syn_tire_keep_shift 3
+syn warm 2 ticks: --g.syn_warm_ticks 2
+syn warm 4 ticks: --g.syn_warm_ticks 4
+syn warm 8 ticks: --g.syn_warm_ticks 8
+syn warm 4 ticks, 1/2: --g.syn_warm_ticks 4 --g.syn_warm_shift 1
+tire neuron 1: --g.tire_jump 1
+tire neuron 2: --g.tire_jump 2
+tire neuron 4: --g.tire_jump 4
+tire neuron 8: --g.tire_jump 8
+tire neuron 4, slow fade: --g.tire_jump 4 --g.tire_shift 6
+slow 6, share 1/64: --g.slow_leak_shift 6 --g.slow_share_shift 6
+slow 6, share 1/32: --g.slow_leak_shift 6 --g.slow_share_shift 5
+slow 6, share 1/16: --g.slow_leak_shift 6 --g.slow_share_shift 4
+slow 8, share 1/128: --g.slow_leak_shift 8 --g.slow_share_shift 7
+slow 8, share 1/64: --g.slow_leak_shift 8 --g.slow_share_shift 6
+rebound 8, drop 4: --g.rebound_level 8 --g.rebound_drop 4
+rebound 16, drop 4: --g.rebound_level 16 --g.rebound_drop 4
+rebound 16, drop 8: --g.rebound_level 16 --g.rebound_drop 8
+rebound 32, drop 8, 8 ticks: --g.rebound_level 32 --g.rebound_drop 8 --g.rebound_ticks 8
+updown 2: --g.updown_drop 2
+updown 4: --g.updown_drop 4
+updown 8: --g.updown_drop 8
+updown 4, floor -8: --g.updown_drop 4 --g.updown_floor -8
+any-branch 25%: --g.any_branch_percent 25
+any-branch 50%: --g.any_branch_percent 50
+any-branch 100%: --g.any_branch_percent 100
+veto 25%: --g.veto_percent 25
+veto 50%: --g.veto_percent 50
+veto 100%: --g.veto_percent 100
+coincide 25%: --g.coincide_percent 25
+coincide 50%: --g.coincide_percent 50
+coincide 100%: --g.coincide_percent 100
+winners 2: --g.tile_winners 2
+winners 4: --g.tile_winners 4
+winners 8: --g.tile_winners 8
+winners 16: --g.tile_winners 16
+syn tire 4 ticks, sheet only: --g.syn_tire_ticks 4 --g.syn_tire_keep_shift 1 --g.syn_sensors 0
+syn tire 8 ticks, sheet only: --g.syn_tire_ticks 8 --g.syn_tire_keep_shift 1 --g.syn_sensors 0
+syn tire 4 ticks, keep 1/8, sheet only: --g.syn_tire_ticks 4 --g.syn_tire_keep_shift 3 --g.syn_sensors 0
+syn warm 4 ticks, sheet only: --g.syn_warm_ticks 4 --g.syn_sensors 0
+syn warm 8 ticks, sheet only: --g.syn_warm_ticks 8 --g.syn_sensors 0
+slow 6, share 1/8: --g.slow_leak_shift 6 --g.slow_share_shift 3
+slow 7, share 1/16: --g.slow_leak_shift 7 --g.slow_share_shift 4
+slow 7, share 1/32: --g.slow_leak_shift 7 --g.slow_share_shift 5
+tire neuron 8, slow fade: --g.tire_jump 8 --g.tire_shift 6
+tire neuron 4, slower fade: --g.tire_jump 4 --g.tire_shift 7

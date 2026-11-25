@@ -134,7 +134,7 @@ static CalcScore fit_bits(const CalcRows& rows, const std::vector<uint64_t>& ans
     double best = -1;
     std::vector<double> alpha;
     for (double ridge : ridges) {
-        if (!ridge_solve(gram, fit, ridge * d, y.data(), out_bits, alpha)) {
+        if (!linear_ridge_solve(gram, fit, ridge * d, y.data(), out_bits, alpha)) {
             continue;
         }
         std::vector<int> val(seen.begin(), seen.begin() + train);
@@ -227,6 +227,45 @@ static CalcScore nearest_bits(const CalcRows& rows, const std::vector<uint64_t>&
     out.n[1] = score(held, 0, out.bit[1], out.whole[1]);
     for (int h = 0; h < 2; h++) {
         for (double v : out.bit[h]) {
+            out.bits[h] += v / out_bits;
+        }
+    }
+    return out;
+}
+
+// the best constant answer: each bit the value it has more often on the stored seen trials
+static CalcScore constant_bits(const CalcRows& rows, const std::vector<uint64_t>& answer,
+                               int out_bits) {
+    std::vector<int> seen, held;
+    for (size_t r = 0; r < rows.held.size(); r++) {
+        (rows.held[r] ? held : seen).push_back((int)r);
+    }
+    int train = (int)seen.size() * 3 / 4;
+    uint64_t guess = 0;
+    for (int b = 0; b < out_bits; b++) {
+        int on = 0;
+        for (int i = 0; i < train; i++) {
+            on += (int)((answer[(size_t)seen[(size_t)i]] >> b) & 1);
+        }
+        guess |= (uint64_t)(2 * on > train) << b;
+    }
+    CalcScore out;
+    const std::vector<int>* sets[2] = {&seen, &held};
+    for (int h = 0; h < 2; h++) {
+        size_t from = h == 0 ? (size_t)train : 0;
+        out.bit[h].assign((size_t)out_bits, 0.0);
+        for (size_t w = from; w < sets[h]->size(); w++) {
+            uint64_t wrong = answer[(size_t)(*sets[h])[w]] ^ guess;
+            out.whole[h] += (wrong & ((1ull << out_bits) - 1)) == 0;
+            for (int b = 0; b < out_bits; b++) {
+                out.bit[h][(size_t)b] += !((wrong >> b) & 1);
+            }
+        }
+        out.n[h] = (int)(sets[h]->size() - from);
+        double count = out.n[h] > 0 ? out.n[h] : 1;
+        out.whole[h] /= count;
+        for (double& v : out.bit[h]) {
+            v /= count;
             out.bits[h] += v / out_bits;
         }
     }
@@ -360,6 +399,7 @@ int probe_calc(int argc, char** argv) {
     if (csv) {
         std::fprintf(csv, "reader,key,value\n");
     }
+    report(csv, label, "constant", constant_bits(inputs, answers, out_bits), out_bits);
     report(csv, label, "nearest", nearest_bits(inputs, answers, out_bits), out_bits);
     report(csv, label, "inputs", fit_bits(inputs, answers, out_bits), out_bits);
     report(csv, label, "sheet", fit_bits(sheet, answers, out_bits), out_bits);

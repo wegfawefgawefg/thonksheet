@@ -1,0 +1,7 @@
+# idea 60 on report seeds. settings picked on tuning seeds (babble-tune.txt), one for every
+# engine: steady babbles 32 steps in 1024; fade babbles up to 256 in 1024, scaled by the
+# recent share of bad answers. an urged cell is urged with chance 64/256 per tick.
+# the twins keep the plug flags: learning off, babbled the same way.
+baseline: --signal-report 1
+steady: --babble 32 --babble-fire 64
+fade: --babble 256 --babble-fade 1
