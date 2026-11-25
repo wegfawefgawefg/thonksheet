@@ -140,7 +140,9 @@ def grid(folder, rows, arms, opt, baselines=False, by_args=False):
             name = "%s-%s-%s" % (what, setting_key(st), arm)
             for s in opt["seeds"]:
                 job, path = life_job(folder, name, task_args, st, arm, s, opt, baselines)
-                jobs.append(job)
+                # --arms: launch only these (the table still shows whatever is there)
+                if not opt.get("arms") or arm in opt["arms"]:
+                    jobs.append(job)
                 where.setdefault((label, arm), []).append(path)
     run_all(jobs, opt)
     return {k: [late_and_rate(p) for p in v] for k, v in where.items()}

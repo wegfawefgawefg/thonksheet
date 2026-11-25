@@ -134,3 +134,126 @@ lattice across the top half, where the rule pushes the firing rate from 29 to 50
 gain is gone (held at target rate, a part of it comes back: 0.59 and 0.62 against 0.51
 and 0.49).** The tile's winners in the off arm, the motor spread and the life length do
 not matter; either shape change alone costs a third of the gain at most.
+
+## 3. Is it time? The freeze, shuffled, reward-free, churn and rate arms
+
+`scripts/timerule.sh controls` (`out/timerule/controls.md`), seeds 5-12, the suite's sheet.
+These arms freeze the inside part way: they are measurements of what the rule left in the
+cells, not a method (the method stays the one life with every rule on). "One life" is the
+plain blobrun life of 40,000 steps. Transfer is `blobprobe transfer`: a life of 20,000 steps,
+then every inner rule stopped, the motor cells put back as born and a fresh readout learning
+the task (fresh task seed) for 20,000 steps; its late score.
+
+- born: no life. lived: the rule on, the task in order, rewarded.
+- shuffled: the same life, but each step shows the lines of a step drawn at random from the
+  last 256 (`--life-scramble 1`): the same frames, the time order gone.
+- quiet: the rule on, no good or bad reaching the sheet (`--life-quiet 1`).
+- churn: the rule's moves toward random sources.
+- running: the rule left on after the life, beside the fresh readout (`--then-inside 1`).
+- kept: the rule on for the first half, then off, the same readout learning throughout
+  (`--then-keep 1`).
+- -cap: the rate held at target (`--g.threshold_cap 1000`) in life and read.
+
+| row | one life: off | on | churn | on, cap | born | lived | shuffled | quiet | churn | running | kept | born, cap | lived, cap | shuffled, cap |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| delayed echo, 2 steps | 0.587 | 0.913 | 0.537 | 0.874 | 0.560 | 0.920 | 0.889 | 0.860 | 0.557 | 0.925 | 0.924 | 0.575 | 0.880 | 0.785 |
+| gap | 0.544 | 0.938 | 0.503 | 0.929 | 0.537 | 0.952 | 0.959 | 0.917 | 0.523 | 0.929 | 0.960 | 0.530 | 0.934 | 0.845 |
+| order | 0.664 | 0.728 | 0.606 | 0.809 | 0.657 | 0.705 | 0.808 | 0.744 | 0.649 | 0.703 | 0.734 | 0.667 | 0.817 | 0.689 |
+
+Paired against born (transfer; the cap arms against born at cap), mean and seeds above:
+
+| row | lived | shuffled | quiet | churn | running | kept | lived, cap | shuffled, cap |
+|---|---|---|---|---|---|---|---|---|
+| delayed echo, 2 steps | +0.360 (8/8) | +0.330 (8/8) | +0.300 (8/8) | -0.002 (3/8) | +0.366 (8/8) | +0.364 (8/8) | +0.305 (8/8) | +0.211 (8/8) |
+| gap | +0.415 (8/8) | +0.422 (8/8) | +0.379 (8/8) | -0.014 (3/8) | +0.392 (8/8) | +0.422 (8/8) | +0.404 (8/8) | +0.316 (8/8) |
+| order | +0.048 (6/8) | +0.151 (8/8) | +0.087 (8/8) | -0.007 (3/8) | +0.046 (5/8) | +0.077 (7/8) | +0.150 (7/8) | +0.021 (5/8) |
+
+- **The inside carries it.** After the life the rule can stop: a fresh readout on the frozen
+  sheet gets all of the gain (delayed echo 0.920 frozen against 0.925 with the rule still on;
+  gap 0.952 against 0.929). With the rule on for half a life and then off, the readout ends
+  where the whole-life rule does (0.924, 0.960).
+- **It is not the task's time order.** A life on the same frames in shuffled order builds
+  nearly all of it (+0.33 and +0.42 against +0.36 and +0.42; at target rate two thirds:
+  +0.21 and +0.32). Nothing about "cue, then 2 blanks, then ask" has to be seen: what the
+  rule uses is which cells are on together inside a step.
+- **No reward is needed.** The quiet life gives +0.30 and +0.38.
+- **Churn gives nothing**, and the rate is not it (the cap arms keep most of the gain).
+- Order moves little on the whole life (+0.06; at target rate +0.15) and its shuffled life
+  does better than its real one: the gain there is small and not about order.
+
+## 4. What the cells wired
+
+`scripts/timerule.sh wiring` (seeds 5-8, `out/timerule/wiring.md`; ran on stevejobs). After
+the life every rule is stopped and delayed echo shown again for 2,000 trials (fresh task
+seed). A fresh ridge reader of the cue from the hidden cells, test trials, at each step of
+the trial (cue / blank / ... / ask; the ask step also hears the press, which carries the
+answer once the readout has it), and the number of hidden cells with |d'| >= 0.5 for the cue
+at that step. "near": only the hidden cells in the 3x3 tiles round a button's cell, which is
+all the readout can hear.
+
+| sheet | read by step, all hidden | near the buttons | cells with \|d'\| >= 0.5 |
+|---|---|---|---|
+| suite 2 steps, born | 1.000 / 1.000 / 0.967 / 0.722 | 1.000 / 1.000 / 0.957 / 0.692 | 451 / 388 / 30 / 0 |
+| suite 2 steps, rule on | 1.000 / 1.000 / 1.000 / 0.998 | 1.000 / 1.000 / 0.999 / 0.993 | 599 / 768 / 418 / 360 |
+| suite 2 steps, churn | 1.000 / 1.000 / 0.962 / 0.697 | 1.000 / 1.000 / 0.940 / 0.677 | 417 / 406 / 33 / 0 |
+| suite 2 steps, shuffled life | 1.000 / 1.000 / 1.000 / 0.994 | 1.000 / 1.000 / 0.996 / 0.992 | 598 / 642 / 379 / 590 |
+| suite 2 steps, quiet life | 1.000 / 1.000 / 0.994 / 0.987 | 1.000 / 1.000 / 0.988 / 0.976 | 564 / 630 / 194 / 172 |
+| suite 4 steps, born | 1.000 / 1.000 / 0.972 / 0.728 / 0.550 / 0.485 | 1.000 / 0.998 / 0.956 / 0.708 / 0.527 / 0.510 | 444 / 388 / 34 / 0 / 0 / 0 |
+| suite 4 steps, rule on | 1.000 / 1.000 / 0.950 / 0.733 / 0.557 / 0.538 | 1.000 / 1.000 / 0.941 / 0.740 / 0.584 / 0.559 | 258 / 261 / 80 / 2 / 0 / 0 |
+| pred 4 steps, born | 1.000 / 0.999 / 0.848 / 0.609 / 0.525 / 0.516 | 1.000 / 0.995 / 0.812 / 0.607 / 0.522 / 0.524 | 178 / 135 / 5 / 0 / 0 / 0 |
+| pred 4 steps, rule on | 1.000 / 1.000 / 0.613 / 0.525 / 0.499 / 0.486 | 1.000 / 0.999 / 0.559 / 0.516 / 0.495 / 0.512 | 117 / 54 / 2 / 0 / 0 / 0 |
+| pred 2 steps, born | 1.000 / 0.999 / 0.825 / 0.615 | 1.000 / 0.998 / 0.774 / 0.597 | 172 / 124 / 3 / 0 |
+| pred 2 steps, rule on | 1.000 / 1.000 / 0.589 / 0.519 | 1.000 / 1.000 / 0.591 / 0.504 | 210 / 152 / 0 / 0 |
+
+Where the connections of the cells that carry the cue through the blanks come from
+(connections per cell; carriers: |d'| >= 0.5 over the blanks together, each by its own
+preference; cue+ / cue-: sensor cells of the cue line it prefers / the other; carry+ /
+carry-: hidden carriers of the same / the other cue; hidden: other hidden cells):
+
+| sheet | cue+ | cue- | ask | other lines | motor | carry+ | carry- | hidden | inhibitory |
+|---|---|---|---|---|---|---|---|---|---|
+| suite 2 steps, born | 0.91 | 0.39 | 0.34 | 7.02 | 4.38 | 3.06 | 2.29 | 35.58 | 14.99 |
+| suite 2 steps, rule on | 2.27 | 0.08 | 0.15 | 1.43 | 2.40 | **27.85** | 2.49 | 12.29 | 14.18 |
+| suite 2 steps, churn | 0.90 | 0.44 | 0.35 | 8.29 | 3.74 | 2.96 | 2.23 | 35.44 | 14.47 |
+| suite 2 steps, shuffled life | 2.41 | 0.11 | 0.17 | 1.67 | 2.28 | **30.01** | 2.46 | 11.56 | 13.98 |
+| suite 2 steps, quiet life | 3.06 | 0.13 | 0.20 | 2.18 | 2.21 | **25.70** | 2.41 | 15.19 | 13.97 |
+| suite 4 steps, rule on | 6.53 | 0.40 | 0.13 | 1.04 | 3.11 | **22.09** | 1.54 | 18.84 | 14.76 |
+| pred 4 steps, rule on | 3.38 | 0.08 | 0.53 | 1.53 | 5.05 | 5.56 | 0.14 | 29.36 | 13.03 |
+| pred 2 steps, rule on | 2.79 | 0.12 | 0.45 | 2.93 | 3.80 | 15.41 | 1.26 | 22.50 | 12.59 |
+
+The cells a fresh reader of the last blank leans on most (top 64 by weight) in the lived
+sheet, and the same cells in the born, churned and time-shuffled sheets of the same seed:
+
+| same cells, in | cue+ | carry+ | carry- | hidden | motor | inhibitory | \|carry d'\| |
+|---|---|---|---|---|---|---|---|
+| lived (rule on) | 0.22 | 10.49 | 7.80 | 12.79 | 5.05 | 12.47 | 1.74 |
+| born | 0.21 | 1.38 | 1.39 | 27.23 | 5.63 | 12.47 | 0.18 |
+| churn | 0.21 | 1.28 | 1.26 | 27.30 | 5.71 | 12.47 | 0.19 |
+| shuffled life | 0.23 | 8.89 | 7.35 | 14.93 | 4.93 | 12.47 | 0.98 |
+
+Mean slot delay of the carriers' inputs is 1.9 to 2.2 ticks for every class and every sheet
+(table in `out/timerule/wiring.md`); a step is 20 ticks and the longest delay a slot can
+have is 15. No cell sees "the cue now and the cue some steps ago" through its own slots.
+
+What the cells wired, plainly:
+
+- **Not time detectors. Cell assemblies that hold the cue.** The compete2 guess was wrong.
+  After a life with the rule, the hidden cells that carry a cue through the blanks take 28 of
+  their ~60 excitatory connections from other carriers of the *same* cue and 2.5 from
+  carriers of the other (born: 3.1 and 2.3), plus the sensor cells of their own cue (2.3
+  against 0.08). That is a self-exciting loop per cue: what a cue lights stays lit after
+  it goes off. At 2 steps it lasts to the ask (360 cells still carry the cue there, born
+  none) and the cue is read at 0.99 to 1.00 by any reader, the readout's neighbours
+  included. Classic Hebbian assemblies (Hebb 1949; the reverberating loops of attractor
+  working memory), made here by "move toward what was on when you fired".
+- **They hold for about two steps.** At 4 steps the rule builds the same loops (22 against
+  1.5) but the cue has faded by the third blank on the lived sheet as on the born one
+  (0.557 against 0.550). That is the delay cutoff of point 2: the loops prolong the trace,
+  they do not latch.
+- **On the prediction sheet the loops do not form strongly enough.** 0 to 2 cells carry the
+  cue past the first blank with the rule; the readable trace is *shorter* than born (0.589
+  against 0.825 at the second blank). The rate climbs to 50 and the extra firing is not
+  cue-specific. That is finding 50's "time since the cue read worse" on that sheet.
+- **They come from co-activity, not order.** The shuffled life wires the same loops (30
+  against 2.5) in the same cells (the reader's top cells carry at |d'| 0.98 after a shuffled
+  life, 1.74 after the real one, 0.18 as born).

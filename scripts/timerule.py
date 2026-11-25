@@ -155,6 +155,9 @@ def main():
         elif a == "--seeds":
             opt["seeds"] = seeds_of(argv[i + 1])
             i += 1
+        elif a == "--arms":
+            opt["arms"] = argv[i + 1].split(",")
+            i += 1
         elif a == "--jobs":
             opt["jobs"] = int(argv[i + 1])
             i += 1

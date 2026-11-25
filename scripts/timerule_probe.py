@@ -139,6 +139,11 @@ def wire_parse(base):
         if m:
             pairs = re.findall(r"(\S+) ([0-9.]+)", m.group(2))
             out["wiring"][m.group(1)] = {k: float(v) for k, v in pairs}
+        m = re.match(r"(top|carriers|all hidden) +mean slot delay: +(.*)", line)
+        if m:
+            pairs = re.findall(r"(\S+) ([0-9.]+)", m.group(2))
+            out["delay"] = out.get("delay", {})
+            out["delay"][m.group(1)] = {k: float(v) for k, v in pairs}
     return out
 
 
@@ -198,6 +203,17 @@ def wiring(opt):
             if p and all(who in x["wiring"] for x in p):
                 lines.append("| %s | %s | %s |" % (name, who, " | ".join(
                     fmt(mean([x["wiring"][who][k] for x in p]), 2) for k in keys)))
+    lines += ["", "Mean slot delay in ticks (a step is 20 ticks; local slots draw 1 to 4) of the "
+              "carriers' inputs by source, against every hidden cell's hidden inputs:", "",
+              "| sheet | carriers: cue+ | carriers: carry+ | carriers: hidden | all hidden: hidden |",
+              "|---|---|---|---|---|"]
+    for name, _, _, _, _ in WIRE_SHEETS:
+        p = [x for x in parsed[name] if "carriers" in x.get("delay", {})]
+        if p:
+            lines.append("| %s | %s | %s | %s | %s |" % (name, *[
+                fmt(mean([x["delay"][w][k] for x in p if x["delay"][w].get(k)]), 2)
+                for w, k in (("carriers", "cue+"), ("carriers", "carry+"), ("carriers", "hidden"),
+                             ("all hidden", "hidden"))]))
     lines += ["", "The lived sheet's top 64 cells (suite d2 on), the same cells in the other "
               "sheets of the same seed (each sheet's carriers by its own activity):", "",
               "| sheet | cue+ | carry+ | carry- | hidden | motor | inhib | abs carry d' |",
