@@ -119,3 +119,36 @@ if(minimal_sources)
         target_link_libraries(minimalprobe PRIVATE blobminimal blobworld blobcore)
     endif()
 endif()
+
+# blobgpu: the minimal engine on a Vulkan compute device, many lives at once, headless only
+# (src/gpu/, shaders/gpu/). Skipped without Vulkan or glslangValidator, or with THONK_NO_VIEW.
+find_package(Vulkan QUIET)
+find_program(GPU_GLSLANG glslangValidator)
+file(GLOB gpu_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/gpu/*.cpp)
+if(gpu_sources AND Vulkan_FOUND AND GPU_GLSLANG AND NOT THONK_NO_VIEW AND TARGET blobminimal
+   AND TARGET blobworld AND TARGET blobcore)
+    add_executable(blobgpu ${gpu_sources} ${CMAKE_SOURCE_DIR}/src/run/task_ticker.cpp
+                   ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp)
+    target_include_directories(blobgpu PRIVATE src)
+    target_compile_options(blobgpu PRIVATE ${warnings} ${speed})
+    target_link_libraries(blobgpu PRIVATE blobminimal blobworld blobcore Vulkan::Vulkan)
+    target_compile_definitions(blobgpu PRIVATE BLOBGPU_SHADER_DIR="${CMAKE_BINARY_DIR}/shaders/gpu")
+    file(GLOB gpu_shader_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/shaders/gpu/*.comp)
+    file(GLOB gpu_shader_includes CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/shaders/gpu/*.glsl)
+    set(gpu_shader_outputs)
+    foreach(source ${gpu_shader_sources})
+        get_filename_component(name ${source} NAME)
+        set(output ${CMAKE_BINARY_DIR}/shaders/gpu/${name}.spv)
+        add_custom_command(OUTPUT ${output}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/shaders/gpu
+            COMMAND ${GPU_GLSLANG} -V --target-env vulkan1.3 -I${CMAKE_SOURCE_DIR}/shaders/gpu
+                    -o ${output} ${source}
+            DEPENDS ${source} ${gpu_shader_includes}
+            COMMENT "glslang gpu/${name}")
+        list(APPEND gpu_shader_outputs ${output})
+    endforeach()
+    add_custom_target(blobgpu_shaders ALL DEPENDS ${gpu_shader_outputs})
+    add_dependencies(blobgpu blobgpu_shaders)
+else()
+    message(STATUS "blobgpu skipped: needs Vulkan, glslangValidator and the minimal engine")
+endif()

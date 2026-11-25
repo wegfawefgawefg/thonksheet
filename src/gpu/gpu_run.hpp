@@ -1,0 +1,28 @@
+#pragma once
+
+#include "gpu/gpu_batch.hpp"
+#include "gpu/gpu_cpu.hpp"
+#include "gpu/gpu_flags.hpp"
+
+#include <vector>
+
+// the pieces of a blobgpu run that main.cpp calls in order
+
+// every life's genome runs on the GPU as written, and every life shares the first one's sheet
+bool gpu_run_supported(const std::vector<GpuLifeSpec>& lives);
+// the world from the first life, the pipeline and the shared tables
+bool gpu_run_open(GpuContext& g, GpuBatch& b, const GpuFlags& f,
+                  const std::vector<GpuLifeSpec>& lives, const char* spv);
+// born on the CPU and uploaded a group at a time. check: the CPU lives are kept, born again
+bool gpu_run_upload(GpuContext& g, GpuBatch& b, const GpuFlags& f,
+                    const std::vector<GpuLifeSpec>& lives, std::vector<CpuLife>* check);
+// every life's window scores, read back
+bool gpu_run_scores(GpuContext& g, GpuBatch& b, std::vector<std::vector<double>>& scores);
+// the check after a dispatch: each CPU life of the group runs the same ticks, then the whole
+// state is compared. false (with a message) on the first difference.
+bool gpu_run_check(GpuContext& g, GpuBatch& b, GpuGroup& group, std::vector<CpuLife>& cpu,
+                   int ticks);
+// the CPU engine, one life after another on this thread. ticks lived and seconds spent
+// ticking (birth not counted) come back.
+void cpu_run(const GpuFlags& f, const std::vector<GpuLifeSpec>& lives,
+             std::vector<std::vector<double>>& scores, int64_t& ticks, double& seconds);

@@ -13,12 +13,12 @@
 
 // what is drawn (the top byte of the key)
 enum MinDrawSite : uint32_t {
-    MIN_DRAW_NOISE = 1,      // per tile: the noise word
-    MIN_DRAW_REGULATE = 2,   // per tile: threshold up word, then down word
-    MIN_DRAW_COWIRE = 3,     // per tile: which firing neurons swap by co-activity
+    MIN_DRAW_NOISE = 1,       // per tile: the noise word
+    MIN_DRAW_REGULATE = 2,    // per tile: threshold up word, then down word
+    MIN_DRAW_COWIRE = 3,      // per tile: which firing neurons swap by co-activity
     MIN_DRAW_COWIRE_PICK = 4, // per neuron: the swap itself
-    MIN_DRAW_GRADE = 5,      // per tile and age: which graded neurons move
-    MIN_DRAW_GRADE_PICK = 6, // per neuron and age: the move itself
+    MIN_DRAW_GRADE = 5,       // per tile and age: which graded neurons move
+    MIN_DRAW_GRADE_PICK = 6,  // per neuron and age: the move itself
 };
 
 // the splitmix64 finalizer, a bijection

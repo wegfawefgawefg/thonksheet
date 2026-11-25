@@ -1,0 +1,324 @@
+#version 460
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
+#extension GL_EXT_shader_8bit_storage : require
+#extension GL_EXT_shader_atomic_int64 : require
+#extension GL_GOOGLE_include_directive : require
+
+// The minimal engine (src/minimal/), many lives at once. One workgroup is one life; a
+// dispatch steps every life of a group by up to push.ticks ticks, each tick as blobrun's life
+// loop does it: the ticker writes the lines, the sheet fires, thresholds move, co-activity
+// wiring, motor spikes are counted, and on a step's last tick the task answers and good or bad
+// grades the neurons whose latest spike was noise. Lives are independent, so a workgroup
+// barrier is the only sync. Random words are keyed (rng_mode 1), so this matches the CPU
+// engine bit for bit. src/gpu/gpu_layout.hpp holds the layout.
+
+layout(local_size_x_id = 0) in;
+layout(constant_id = 1) const int TILES = 64;  // tiles in a sheet
+layout(constant_id = 2) const int STRIDE = 72; // words from one ring map to the next
+layout(constant_id = 3) const int TILES_W = 8; // tiles across the sheet
+
+layout(push_constant) uniform Push {
+    int ticks;
+}
+push;
+
+#include "minimal_layout.glsl"
+#include "minimal_random.glsl"
+
+const int N = TILES * 64;
+
+// per tick, shared by the life's threads
+shared uint64_t s_map[2][TILES + 1]; // previous and newest spike maps
+shared uint64_t s_inh[TILES + 1];
+shared uint64_t s_sensor[TILES + 1];
+shared uint64_t s_sense[TILES];     // sensor bits the world writes this tick
+shared uint64_t s_would[TILES];     // fired by input
+shared uint64_t s_up[TILES], s_down[TILES], s_cow[TILES];
+shared uint64_t s_graded[TILES];    // graded by this reward
+shared uint64_t s_age[5][TILES];    // their ages, a bit plane each
+shared int s_count[MAX_MOTORS];
+shared uint s_lines;
+shared int s_resting, s_grade, s_better, s_shift, s_done;
+
+uint g_mask_base, g_ring_base;
+int g_now;
+
+// the source tile of local slot k of tile t: itself and the 8 around it, TILES off the sheet
+int local_tile(int t, int k) {
+    int x = t % TILES_W + k % 3 - 1, y = t / TILES_W + k / 3 - 1;
+    bool on = x >= 0 && y >= 0 && x < TILES_W && y < TILES / TILES_W;
+    return on ? y * TILES_W + x : TILES;
+}
+
+#include "minimal_learn.glsl"
+#include "minimal_world.glsl"
+
+// before a tick: a step's first tick shows the task, then the plug writes good, bad and the
+// task's lines (ticker_before_tick, plug_write)
+void before_tick(inout Life L) {
+    s_resting = L.rest_left > 0 ? 1 : 0;
+    if (L.rest_left > 0) {
+        L.rest_left--;
+    } else if (L.tick_in_step == 0) {
+        L.line_on = task_lines(L);
+    }
+    uint lines = L.line_on;
+    if (L.good_left > 0) {
+        lines |= 1u;
+        L.good_left--;
+    }
+    if (L.bad_left > 0) {
+        lines |= 2u;
+        L.bad_left--;
+    }
+    s_lines = lines & P.attached;
+}
+
+// after a tick: on a step's last tick the answer, the task's move, the window score, and
+// the reward against its running average (ticker_after_tick, the life loop, minimal_reward)
+void after_tick(inout Life L, Genome G, uint life) {
+    s_grade = 0;
+    if (s_resting != 0) {
+        return;
+    }
+    L.tick_in_step++;
+    if (L.tick_in_step < P.ticks_per_step) {
+        return;
+    }
+    int counts[MAX_MOTORS];
+    for (int i = 0; i < MAX_MOTORS; i++) {
+        counts[i] = s_count[i];
+        s_count[i] = 0;
+    }
+    int move = plug_choice(counts);
+    int valence = task_step(L, move);
+    L.tick_in_step = 0;
+    if (valence != 0) {
+        if (P.uses_reward != 0) {
+            L.good_left = valence > 0 ? P.reward_line_ticks : L.good_left;
+            L.bad_left = valence < 0 ? P.reward_line_ticks : L.bad_left;
+        }
+        L.line_on = 0u;
+        L.rest_left = P.rest_ticks;
+    }
+    L.step++;
+    if (L.step % P.window == 0) {
+        if (L.windows < P.max_windows) {
+            scores[life * uint(P.max_windows) + uint(L.windows)] = uvec2(L.right, L.chances);
+        }
+        L.windows++;
+        L.right = 0;
+        L.chances = 0;
+    }
+    if (L.step >= P.steps) {
+        s_done = 1;
+    }
+    if (valence == 0) {
+        return;
+    }
+    int delta = (valence > 0 ? 256 : -256) - L.reward_avg;
+    L.reward_avg += delta >= 0 ? delta >> G.avg_shift : -((-delta) >> G.avg_shift);
+    if (G.learning_on == 0 || delta == 0) {
+        return;
+    }
+    int width = findMSB(abs(delta)) + 1;
+    s_grade = 1;
+    s_better = (delta > 0) == (G.noise_sign >= 0) ? 1 : 0;
+    s_shift = G.learn_shift + (width >= 9 ? 0 : 9 - width);
+}
+
+void main() {
+    const uint life = gl_WorkGroupID.x;
+    const int tid = int(gl_LocalInvocationID.x);
+    const int WG = int(gl_WorkGroupSize.x);
+    if (int(life) >= P.lives) {
+        return;
+    }
+    const Genome G = genomes[life];
+    const uint thr_base = life * uint(N);
+    g_mask_base = life * uint(TILES * 9 * 64);
+    g_ring_base = life * uint(2 * RING * STRIDE);
+    const uint noise_base = g_ring_base + uint(RING * STRIDE);
+    const uint motor_base = uint((1 + MAX_LINES) * (TILES + 1));
+    const bool cowire_gate =
+        G.learning_on != 0 && G.cowire_on != 0 && (G.cowire_needs_input == 0 || P.attached != 0u);
+
+    Life L = lives[life];
+    g_now = L.now;
+    uint64_t tick = L.tick;
+    const uint64_t key = L.key;
+    if (tid == 0) {
+        for (int i = 0; i < MAX_MOTORS; i++) {
+            s_count[i] = L.motor_count[i];
+        }
+        s_done = L.done;
+    }
+    for (int t = tid; t <= TILES; t += WG) {
+        s_inh[t] = inhibitory[life * uint(TILES + 1) + uint(t)];
+        s_sensor[t] = world_words[t];
+        s_map[0][t] = rings[g_ring_base + uint(g_now * STRIDE + t)];
+        s_map[1][t] = 0UL;
+    }
+    int cur = 0;
+    barrier();
+
+    for (int step_tick = 0; step_tick < push.ticks; step_tick++) {
+        if (s_done != 0) {
+            break;
+        }
+        barrier();
+        // the lines go onto the sensor neurons
+        if (tid == 0) {
+            before_tick(L);
+        }
+        barrier();
+        uint lines = s_lines;
+        for (int t = tid; t < TILES; t += WG) {
+            uint64_t sense = 0UL;
+            for (uint on = lines; on != 0u; on &= on - 1u) {
+                sense |= world_words[uint((1 + findLSB(on)) * (TILES + 1) + t)];
+            }
+            s_sense[t] = sense;
+            s_would[t] = 0UL;
+        }
+        barrier();
+
+        // fire: excitatory minus gain x inhibitory over the 9 local slots, against threshold
+        for (int n = tid; n < N; n += WG) {
+            int t = n >> 6, b = n & 63;
+            int drive = 0;
+            for (int k = 0; k < 9; k++) {
+                int src = local_tile(t, k);
+                uint64_t s = s_map[cur][src];
+                if (s != 0UL) {
+                    uint64_t m = masks[g_mask_base + uint((t * 9 + k) * 64 + b)];
+                    uint64_t inh = s_inh[src];
+                    drive += bc64(s & ~inh & m) - G.inhibit_gain * bc64(s & inh & m);
+                }
+            }
+            if (drive >= int(thresholds[thr_base + uint(n)])) {
+                atomicOr(s_would[t], 1UL << b);
+            }
+        }
+        barrier();
+
+        // per tile: noise, the new map, regulation and co-activity words, motor spikes
+        const int next = (g_now + 1) & (RING - 1);
+        for (int t = tid; t < TILES; t += WG) {
+            uint64_t would = s_would[t], sensor = s_sensor[t];
+            Rng r = rng_at(key, tick, SITE_NOISE, uint(t), 0u);
+            uint64_t noise = sparse_word(r, G.noise_shift) & ~sensor;
+            uint64_t fired = ((would | noise) & ~sensor) | (s_sense[t] & sensor);
+            rings[g_ring_base + uint(next * STRIDE + t)] = fired;
+            rings[noise_base + uint(next * STRIDE + t)] = noise & ~would;
+            s_map[cur ^ 1][t] = fired;
+            r = rng_at(key, tick, SITE_REGULATE, uint(t), 0u);
+            uint64_t up = fired & ~sensor & sparse_word(r, G.up_shift);
+            s_up[t] = up;
+            s_down[t] = ~sensor & ~up & sparse_word(r, G.down_shift);
+            uint64_t cow = 0UL;
+            if (cowire_gate) {
+                r = rng_at(key, tick, SITE_COWIRE, uint(t), 0u);
+                cow = fired & ~sensor & sparse_word(r, G.cowire_shift);
+            }
+            s_cow[t] = cow;
+            if (s_resting == 0) {
+                for (int line = 0; line < P.motor_lines; line++) {
+                    int c = bc64(fired & world_words[motor_base + uint(line * (TILES + 1) + t)]);
+                    if (c != 0) {
+                        atomicAdd(s_count[line], c);
+                    }
+                }
+            }
+        }
+        memoryBarrierBuffer();
+        barrier();
+        g_now = next;
+        cur ^= 1;
+
+        // per neuron: threshold up or down, and a co-activity swap
+        for (int n = tid; n < N; n += WG) {
+            int t = n >> 6, b = n & 63;
+            uint64_t bit = 1UL << b;
+            if ((s_up[t] & bit) != 0UL) {
+                uint thr = uint(thresholds[thr_base + uint(n)]);
+                thresholds[thr_base + uint(n)] = uint8_t(thr + (thr < uint(G.threshold_cap) ? 1u : 0u));
+            } else if ((s_down[t] & bit) != 0UL) {
+                uint thr = uint(thresholds[thr_base + uint(n)]);
+                thresholds[thr_base + uint(n)] = uint8_t(thr - (thr > 1u ? 1u : 0u));
+            }
+            if ((s_cow[t] & bit) != 0UL) {
+                Rng r = rng_at(key, tick, SITE_COWIRE_PICK, uint(n), 0u);
+                gain_active(t, b, 0, r, G.budget_on);
+            }
+        }
+        tick++;
+        if (tid == 0) {
+            after_tick(L, G, life);
+        }
+        barrier();
+
+        // a reward: grade the neurons whose latest spike in the window was noise
+        if (s_grade != 0) {
+            const int shift = s_shift;
+            for (int t = tid; t < TILES; t += WG) {
+                uint64_t not_sensor = ~s_sensor[t], seen = 0UL, graded = 0UL;
+                uint64_t a0 = 0UL, a1 = 0UL, a2 = 0UL, a3 = 0UL, a4 = 0UL;
+                for (int a = 0; a < G.credit_ticks; a++) {
+                    uint index = uint(((g_now - a) & (RING - 1)) * STRIDE + t);
+                    uint64_t spikes = rings[g_ring_base + index];
+                    uint64_t noise = rings[noise_base + index];
+                    uint64_t pick = (G.grade_mode == 0 ? noise : spikes) & ~seen & not_sensor;
+                    seen |= spikes;
+                    if (pick == 0UL) {
+                        continue;
+                    }
+                    Rng r = rng_at(key, tick, SITE_GRADE, uint(t), uint(a));
+                    pick &= sparse_word(r, shift);
+                    graded |= pick;
+                    a0 |= (a & 1) != 0 ? pick : 0UL;
+                    a1 |= (a & 2) != 0 ? pick : 0UL;
+                    a2 |= (a & 4) != 0 ? pick : 0UL;
+                    a3 |= (a & 8) != 0 ? pick : 0UL;
+                    a4 |= (a & 16) != 0 ? pick : 0UL;
+                }
+                s_graded[t] = graded;
+                s_age[0][t] = a0;
+                s_age[1][t] = a1;
+                s_age[2][t] = a2;
+                s_age[3][t] = a3;
+                s_age[4][t] = a4;
+            }
+            barrier();
+            const bool better = s_better != 0;
+            for (int n = tid; n < N; n += WG) {
+                int t = n >> 6, b = n & 63;
+                if (((s_graded[t] >> b) & 1UL) == 0UL) {
+                    continue;
+                }
+                int age = 0;
+                for (int j = 0; j < 5; j++) {
+                    age |= int((s_age[j][t] >> b) & 1UL) << j;
+                }
+                Rng r = rng_at(key, tick, SITE_GRADE_PICK, uint(n), uint(age));
+                if (better) {
+                    gain_active(t, b, age, r, G.budget_on);
+                } else {
+                    lose_active(t, b, age, r, G.budget_on);
+                }
+            }
+        }
+    }
+
+    barrier();
+    if (tid == 0) {
+        L.now = g_now;
+        L.tick = tick;
+        for (int i = 0; i < MAX_MOTORS; i++) {
+            L.motor_count[i] = s_count[i];
+        }
+        L.done = s_done;
+        lives[life] = L;
+    }
+}
