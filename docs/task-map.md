@@ -63,7 +63,7 @@ alone: a design may pass tier 4 before tier 3.
 | 8 | keeping and adding | second task after the first; retest; idle; capacity; a changed rule; damage | second task 0.99 with the first kept at 0.98; idle loses nothing |
 | 9 | relation, number, parts and wholes, chance, context | same/different; odd one out; counting; grammar; noisy answers; context switch | being built |
 | 10 | no teacher | predict the next input; fill in a missing part; notice the odd one | hole |
-| 11 | real data | MNIST digits; spoken digits or tones; characters of text | being built (MNIST first) |
+| 11 | real data | MNIST digits; spoken digits or tones; characters of text | MNIST: a linear reader of the never-taught sheet 0.924 (linear on pixels 0.922, two-layer net 0.955); the sheet's own readout from good and bad 0.71 |
 | 12 | the long game | a maze; snake on a big board; several tasks interleaved for a whole life | hole |
 
 ### The fixed reference
@@ -86,6 +86,9 @@ until checked.
   good and bad; the second is the two-layer network. Neither of those baselines can cope
   with a digit that is moved or turned; tier 5 is where a sheet could do something they
   cannot.
+  *Where it stands:* the first target is met only by an offline reader (0.924), not by a
+  readout that hears only good and bad (0.71). Moved by 2 pixels every learner, plain ones
+  included, keeps about two thirds of its score.
 - **Cartpole balanced.** A classic control task learned from good and bad alone.
 - **One life, every tier.** The same sheet meeting worlds from each tier in turn without
   being reset.

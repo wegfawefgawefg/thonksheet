@@ -47,6 +47,14 @@ it balances for 1,000 steps). Those three are not our private walls. They are wh
 fixed ordinary network also stops, and where it would normally be redesigned per task.
 docs/results-2026-11-25-fixed-net-reference.md
 
+**MNIST, first pass (2026-11-25).** The never-taught sheet, read offline by a linear
+reader, gets 0.924 on the test digits: level with a linear classifier on the pixels (0.922),
+under a random projection of the same bits (0.943) and a small two-layer network (0.955).
+The sheet's own readout, learning online from good and bad, gets 0.71 in about a minute
+(20,000 digits) and then drifts down. So for digits the sheet adds about a point to its
+input, and the online readout loses twenty more. The readout is the gap.
+docs/results-2026-11-25-mnist.md
+
 ## Principles that hold so far
 
 1. **A neuron must pay for what it keeps.** [solid] A fixed budget of connections, where
@@ -126,8 +134,8 @@ docs/results-2026-11-25-fixed-net-reference.md
     A cell that only knows whether it fired itself gets roughly half the benefit. The
     world has to tell the motor cells which button won. That is one bit per cell, and it
     is the one part of the rule that is not strictly local.
-16. **A decision needs many cells.** [likely] 32 or more motor cells per button, instead of
-    9, adds 0.02 to 0.13. It is the count that matters, to beat spike noise, more than
+16. **A decision needs many cells.** [solid: echo and MNIST] 32 or more motor cells per button, instead of
+    9, adds 0.02 to 0.13. On MNIST 51 to 102 cells a button took 0.62 to 0.71. It is the count that matters, to beat spike noise, more than
     where the cells sit.
 17. **Do not strengthen your own answer on good.** [likely] The rule above never does, and
     it has no locked lives: shuffled Echo is 1.00 on every seed, crossed ones included,
@@ -136,6 +144,9 @@ docs/results-2026-11-25-fixed-net-reference.md
     good, but on a good that was barely won, deepen the hidden evidence of what helped.
     Without that case learning time grows exponentially with size; with it, about twice as
     many patterns are held. Being tested (the tags-and-margin run).
+    And with ten buttons it is simply wrong: on MNIST the readout stays near chance (0.14)
+    unless the right button also gains on good (0.41 with it, same settings). Blaming the
+    pressed button says little when nine others could have been right.
 
 18. **Size does not break it, so far.** [hint] Echo scores the same with the sheet grown 16
     times around the same task (minimal engine 0.94, 0.93, 0.92 at 4,096, 16,384 and 65,536
@@ -177,6 +188,17 @@ docs/results-2026-11-25-fixed-net-reference.md
     and pruning took mirror wiring from 0.80 reciprocal back to 0.15 within 100,000 ticks.
     A wiring idea has to live in the growth rule to survive a life.
 
+25. **A random sheet is not much of a feature maker for real input.** [hint] For digits the
+    frozen sheet holds its input plus about a point; a plain random projection of the same
+    bits adds three. Finding 8 ("already rich") is about time and combination features of
+    a few lines; it does not carry to pictures. What raised the digit ceiling was layout
+    (the digit spread over the whole sheet: 0.856 to 0.924), not any genome number, and
+    the sheets tuned rich for order and gap read digits worse.
+26. **Counters that fill up silence a cell.** [likely] With ten buttons more than a cell's
+    budget of counters sat at the top value; the rewiring step then wired none of them and
+    4 to 6 buttons went quiet for good. Fixed (`readout_evidence 2`). Sixteen-cue echo
+    (0.31) may be the same fault and is being re-run.
+
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 
 - Finding 14's hidden counter is a known device (permanence in HTM; hidden states in binary
@@ -217,7 +239,9 @@ docs/results-2026-11-25-fixed-net-reference.md
 - **A new place.** A shape learned in some places is answered wrongly in a place never
   rewarded (0.25 where chance is 0.49). The reference networks fail it the same way (0.16),
   so the wall is real and general, though the world itself needs a cell-by-cell check
-  (everything scores below chance, which smells of overlapping shapes). Nothing in the sheet shares what one patch learned
+  (everything scores below chance, which smells of overlapping shapes). On MNIST a
+  digit moved 2 pixels drops every learner to about two thirds of its score (linear 0.91
+  to 0.60, two-layer net 0.96 to 0.65, sheet ceiling 0.92 to 0.66). Nothing in the sheet shares what one patch learned
   with another. This is the missing prior the owner started from on day one (a convolution
   shares; this sheet does not).
 - **Acting in a world.** Nothing of ours learns catch or cartpole. On cartpole learning

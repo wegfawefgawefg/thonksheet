@@ -429,7 +429,14 @@ not known to do it.
      sheet, ten buttons, good and bad only. Three numbers: what a linear reader gets from a
      never-taught sheet, what the evidence readout learns, and how long it takes. Targets: a
      linear classifier on pixels (about 92%), then a small two-layer network (about 97%).
-     *building*
+     *done, first pass (`scripts/mnist.sh`). A linear reader of the never-taught sheet:
+     0.924 on the test set (linear on pixels 0.922, two-layer net 0.955, a random
+     projection of the same bits 0.943). The sheet's own readout from good and bad: 0.71,
+     reached in 20,000 digits (about a minute), then it drifts down (0.687 at 60,000, 0.635
+     after three passes). It was at chance until: good also moves the right button, a fix
+     for counters at the clamp silencing buttons, wired strength 1, 102 cells a button, the
+     digit spread over the whole sheet. Moved 2 pixels, everything (ours and the plain
+     learners) keeps about two thirds of its score. docs/results-2026-11-25-mnist.md*
 116. **The rest of the map.** Worlds for relation (same or different, odd one out, bigger
      than), number, parts and wholes (grammar), chance (answers right only most of the
      time), context (a cue that changes what another means), longer memory (copy, recall,
@@ -568,3 +575,13 @@ and started as machine time frees up (both machines are full).
      latent learning, spacing, superstition. *queued*
 Also from Braitenberg, for whoever builds a holding region: holding activity while wiring by
 co-activity runs ties the held units together and loses their order.
+146. **Why the readout drifts down on a long life.** On MNIST it peaks at 20,000 digits and
+     then loses a point every 20,000 more. Not the counter clamp. Suspects: the motor
+     cells' threshold regulation; sources dropped and re-wired at the budget's edge. The
+     same thing may be hiding in every long life. *queued: small, first when a core frees*
+147. **A weighted vote.** Wired strength set by where the counter stands (1, 4, 5 are already
+     in the weight planes), so a motor cell is a weighted vote and not a count. Aimed at the
+     25 points between the sheet's readout (0.71) and what a linear reader gets from the
+     same sheet (0.92). *queued*
+148. **Search richness on digits.** The rich sheets found for order and gap read digits
+     worse than the default. Score the search on the digit ceiling. *queued*
