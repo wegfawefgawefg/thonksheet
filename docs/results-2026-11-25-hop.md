@@ -251,6 +251,77 @@ FLAGS --only mnist`.
 | hop1s5 | 1 | `--g.hop_shift 5` | 0.9331 | 0.9281 | +0.0050 | | 35 / 34 | 5.4 | 0.16 | 0.22 | 19,200 | 0.46 M |
 | **hop1s7** | 1 | `--g.hop_shift 7` | **0.9336** | 0.9303 | +0.0033 | | 38 / 38 | 5.9 | 0.26 | 0.18 | 17,600 | 0.20 M |
 
+What the tuning says. The rule's first setting (a step with chance 1/8) **hurts** MNIST
+(0.922 against born 0.925) and is beaten by its own coin control by 0.01: with 20,000
+verdicts in a life, each teaching a third of the cells, the counters churn (90% of born
+inputs gone, pixel inputs 7.3 to 3.7 a cell). Slower moves are better (shift 5, 7, 9), and
+only from shift 7 on do the real errors beat the coin, by a few thousandths. Good teaching
+too (`hop_good`) triples the verdicts and is worst. Near-not-fired marks, best on the toys,
+are no better here at shift 3. The coin raises the rate (36 to 38 against 30 to 32 at
+shift 3); at shift 7 lived and coin fire alike. Picked for the report: shift 7, both modes.
+
+**The report, seeds 5-12** (`scripts/inside.sh hop2s7-report --teach 2 --g.hop_on 1
+--g.hop_shift 7 --only mnist --seeds 5-12`, and `hop1s7-report --teach 1 ...`; the born
+column is one set of runs for both):
+
+| seed | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | mean |
+|---|---|---|---|---|---|---|---|---|---|
+| born | 0.9248 | 0.9272 | 0.9273 | 0.9239 | 0.9255 | 0.9192 | 0.9249 | 0.9278 | 0.9251 |
+| **told the answer (2): lived** | 0.9358 | 0.9347 | 0.9353 | 0.9375 | 0.9366 | 0.9334 | 0.9348 | 0.9361 | **0.9355** |
+| 2: coin | 0.9355 | 0.9349 | 0.9350 | 0.9344 | 0.9325 | 0.9324 | 0.9356 | 0.9369 | 0.9346 |
+| 2: shuffled digits | 0.9253 | 0.9244 | 0.9231 | 0.9238 | 0.9220 | 0.9263 | 0.9249 | 0.9254 | 0.9244 |
+| **told good or bad (1): lived** | 0.9325 | 0.9334 | 0.9351 | 0.9336 | 0.9330 | 0.9330 | 0.9369 | 0.9352 | **0.9341** |
+| 1: coin | 0.9335 | 0.9319 | 0.9294 | 0.9320 | 0.9296 | 0.9320 | 0.9310 | 0.9295 | 0.9311 |
+| 1: shuffled digits | 0.9274 | 0.9192 | 0.9230 | 0.9234 | 0.9212 | 0.9220 | 0.9273 | 0.9251 | 0.9236 |
+
+| | born | told the answer: lived / coin / shuffled | told good or bad: lived / coin / shuffled |
+|---|---|---|---|
+| mean | 0.9251 | 0.9355 / 0.9346 / 0.9244 | 0.9341 / 0.9311 / 0.9236 |
+| lived minus it | | +0.0104 (born), +0.0009 (coin; -0.0008 to +0.0041, 5 of 8 above), +0.0111 (shuffled) | +0.0090 (born), +0.0030 (coin; -0.0010 to +0.0059, 7 of 8 above), +0.0105 (shuffled) |
+| rate while read | 33.1 | 37.8 / 38.5 / 32.8 | 36.7 / 35.5 / 32.3 |
+| pixel inputs a cell, pixel likeness, born inputs kept | 7.3, 0.05, 1.00 | 5.7, 0.19, 0.21 / 5.8, 0.14, 0.22 / 7.3, 0.05, 0.16 | 5.9, 0.18, 0.26 / 5.8, 0.14, 0.27 / 6.7, 0.05, 0.19 |
+| the readout's share right in the life | | 0.66 / 0.66 / 0.09 | 0.65 / 0.68 / 0.09 |
+
+Baselines (`out/inside/baselines.txt`): linear on grey pixels 0.922, random projection 0.943,
+two-layer net 0.955; competitive learning (compete doc, seeds 5-12) 0.952.
+
+- **The lived inside beats the born one by 0.01 and the shuffled-digit life by 0.01, on
+  every seed, in both modes. The errors are not what buys it.** The coin control, the same
+  amount of rewiring with every error on a random line, gets almost all of it (told the
+  answer: 0.9346 against 0.9355). What the life on real digits does by itself, through the
+  churn, is what competitive learning's shuffled control showed: cells that are marked
+  together while they are near firing climb together in a random walk (a counter that
+  moves more often wanders further, and the top of the budget is taken by those), so cells
+  drift toward co-active pixels (likeness 0.05 to 0.14 for the coin, 0.19 lived). The
+  shuffled life has no co-active pixels to drift toward and stays at born.
+- **What the errors add on MNIST is a few thousandths**: +0.001 told the answer, +0.003
+  told good or bad (7 of 8 seeds).
+- With the rate held at target (below) the errors' share is larger.
+
+**The rate held at target** (`--g.threshold_cap 1000`, as the compete doc's D and E). Seeds
+1 and 2 (`scripts/inside.sh hop2s7cap --teach 2 --g.hop_on 1 --g.hop_shift 7
+--g.threshold_cap 1000 --only mnist --kinds lived,coin`, run on stevejobs): lived 0.9358 and
+0.9374, coin 0.9280 and 0.9339, both reading at 31 spikes per 1,000 cell-ticks (born
+sheets at this cap read 0.9201, compete doc). REPORT_CAP
+
+**Together with competitive learning** (both on in the one taught life;
+`scripts/inside.sh hopcomp5 --teach 2 --g.hop_on 1 --g.hop_shift 5 --g.compete_on 1
+--g.tile_winners 4 --g.compete_shift 5 --only mnist`, and `hopcomp5-report ... --seeds 5-12
+--kinds lived,coin`, run on stevejobs):
+
+| | seeds 1, 2 | seeds 5-12 (mean) |
+|---|---|---|
+| born (tile winners) | 0.9261, 0.9225 | (0.9264, compete doc) |
+| competitive learning alone, same taught life (`comp5teach`) | 0.9565, 0.9531 | (0.9523, compete doc, no taught life) |
+| **both** | 0.9560, 0.9542 | **0.9530** (0.9511 to 0.9549) |
+| both, coin | 0.9546 | 0.9519 |
+| both, shuffled digits | 0.9410 | |
+
+Both on is competitive learning alone: +0.0003 on seeds 1 and 2 against the same taught
+life, +0.0011 over its coin on seeds 5-12 (6 of 8 above). Rate while read 62.9 (coin 62.5;
+competitive learning alone 63.2). The competitive rule decides the wiring; the error rule's
+steps disappear under it.
+
 ## Step 4: on from the first digit of the online life
 
 `scripts/mnist.sh online --seed S --checks 1000,5000,20000,60000,120000 --g.hop_on 1
