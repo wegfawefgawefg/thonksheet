@@ -14,6 +14,7 @@
 #   scripts/dynamics.sh check --top 10 --seeds 2,3
 # The readout rule on a frozen sheet with and without a mechanism (seeds 5-12):
 #   scripts/dynamics.sh readout                 every task in the results doc
+#   scripts/dynamics.sh hold                    delayed echo at delays 2, 4, 8
 #   scripts/dynamics.sh life delayed-echo --delay 1 --g.slow_leak_shift 8 --g.slow_share_shift 6
 # Cost: ticks per second (learning off and on) and bytes per neuron, each mechanism on:
 #   scripts/dynamics.sh cost
@@ -53,6 +54,14 @@ readout)
         sw --name "delayed echo, delay $d" --variants $v -- --task delayed-echo --delay $d $LIFE
     done
     sw --name "echo k=8" --variants $v -- --task echo --k 8 $LIFE
+    ;;
+hold)
+    # how many blank steps the cue survives for the readout (not run yet)
+    sw() { python3 scripts/sweep.py --jobs 2 --seeds 5-12 --out-dir out/dynamics/sweep "$@"; }
+    v=scripts/variants/dynamics-hold.txt
+    for d in 2 4 8; do
+        sw --name "delayed echo, delay $d" --variants $v -- --task delayed-echo --delay $d $LIFE
+    done
     ;;
 cost)
     while read -r name flags; do
