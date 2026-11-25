@@ -9,7 +9,17 @@
 // each sector against its target: a map (blue under, grey on target, red over), then bars
 void sectors_section(State& s) {
     const ViewFrame& f = s.frame;
-    ImGui::SeparatorText("sectors: activity / target, bias");
+    if (!ImGui::CollapsingHeader("sectors: activity / target, bias",
+                                 f.task.on ? 0 : ImGuiTreeNodeFlags_DefaultOpen)) {
+        return;
+    }
+    if (!(f.has & HAS_SECTORS)) {
+        ImGui::TextColored(DIM, f.engine == ENGINE_TABLE
+                                    ? "table neurons keep their sectors' bars inside (the neuron "
+                                      "panel shows a neuron's)"
+                                    : "the minimal engine has no sectors");
+        return;
+    }
     if (f.sectors.empty() || f.tiles_w == 0) {
         return;
     }
