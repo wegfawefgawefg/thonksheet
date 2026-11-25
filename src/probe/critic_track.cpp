@@ -2,7 +2,9 @@
 // blobrun does (the world calls blob_reward every step when critic_on), and for the last
 // --log steps writes one csv row per step: the critic cells' spikes over the step's last
 // 15 ticks, the surprise and what it counted as, the move, the valence, whether the press
-// was a random one, and whether the step ended in a fall (cartpole) or a judged dot (catch).
+// was a random one, whether the step ended in a fall (cartpole) or a judged dot (catch), and
+// the world as the step saw it (the chain's stage; mountain car's and the pendulum's
+// position and speed, 16.16).
 // scripts/critic_track.py bins the level by steps until the next fall. With --learning 0 the
 // same cells are read on the learning-off twin, so the born level is the null.
 // blobrun's task, plug, seed and --g. flags all work. Own flags: --log N (default 20000),
@@ -58,7 +60,7 @@ int probe_critic(int argc, char** argv) {
         std::fprintf(stderr, "blobprobe critic: cannot write %s\n", path);
         return 1;
     }
-    std::fprintf(out, "step,level,surprise,sign,move,valence,explored,ended\n");
+    std::fprintf(out, "step,level,surprise,sign,move,valence,explored,ended,phase,pos,vel\n");
 
     Blob* blob = blob_birth(flags.genome, flags.seed);
     static TaskTicker tt;
@@ -77,6 +79,9 @@ int probe_critic(int argc, char** argv) {
         ticker_before_tick(tt, *blob);
         blob_tick(*blob);
         int64_t ends_before = tt.task.tally[1];
+        // the world as the step saw it (the chain's stage; mountain car, pendulum: 16.16)
+        int phase = tt.task.phase;
+        int64_t pos = tt.task.pos, vel = tt.task.vel;
         if (!ticker_after_tick(tt, *blob)) {
             continue;
         }
@@ -97,9 +102,10 @@ int probe_critic(int argc, char** argv) {
         if (logged) {
             const CriticState* c = blob->critic;
             bool learned = c && flags.genome.learning_on;
-            std::fprintf(out, "%lld,%d,%d,%d,%d,%d,%d,%d\n", (long long)step, level,
+            std::fprintf(out, "%lld,%d,%d,%d,%d,%d,%d,%d,%d,%lld,%lld\n", (long long)step, level,
                          learned ? c->surprise : 0, learned ? c->sign : 0, tt.move, tt.valence,
-                         learned ? c->explored : 0, ended ? 1 : 0);
+                         learned ? c->explored : 0, ended ? 1 : 0, phase, (long long)pos,
+                         (long long)vel);
             ends_logged += ended;
         }
         step++;
