@@ -85,6 +85,7 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
             }
             step++;
             if (step % flags.window == 0) {
+                out.taught.push_back(task_taught_score(tt.task));
                 out.scores.push_back(task_window_score(tt.task));
             }
         }

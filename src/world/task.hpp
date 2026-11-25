@@ -1,5 +1,6 @@
 #pragma once
 
+#include "world/task_invariance.hpp"
 #include "world/world_random.hpp"
 
 #include <cstdint>
@@ -21,6 +22,7 @@ enum class TaskKind {
     both_not_either, // two cues; one button when exactly one is on, the other otherwise
     gap,             // one cue blinks twice; answer whether the gap was short or long
     place,           // a small shape at one of several places; answer which shape
+    invariance,      // the invariance battery: a shape in versions never rewarded (task_invariance)
     count,
 };
 
@@ -73,6 +75,7 @@ struct TaskSettings {
     // every step up, bad on a fall), 2 lean (every step: good if the pole and cart ended
     // nearer upright-and-centred than they began or are already there, bad if further)
     int cart_reward = 0;
+    InvarianceSettings inv; // the invariance battery
 };
 
 // fixed point for cartpole: 16 fractional bits
@@ -109,6 +112,8 @@ struct Task {
 
     // window score, meaning depends on the kind (see task_window_score)
     int64_t tally[4] = {};
+
+    InvarianceState inv; // the invariance battery
 };
 
 const char* task_name(TaskKind kind);
@@ -124,6 +129,9 @@ int task_perfect_move(const Task& task);
 int task_step(Task& task, const TaskStepIn& in);
 // score over the steps since the last call, then start a new window
 double task_window_score(Task& task);
+// place and the invariance battery: right / tries on the rewarded versions since the last
+// window score (call it first); -1 for other tasks
+double task_taught_score(const Task& task);
 
 // per-kind halves, in task_reflex.cpp, task_sequence.cpp, task_control.cpp and
 // task_feature.cpp

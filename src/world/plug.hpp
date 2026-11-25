@@ -39,7 +39,12 @@ struct PlugSettings {
     // than the nearest N
     int motor_spread = 0;
     int motor_spread_even = 0;
+    // how a task's bitmap lands (plug_map.cpp): 0 as it is, 1 log-polar (8 rings x 16
+    // angles about the bitmap's middle, so growing and turning become sliding)
+    int bitmap_map = 0;
 };
+
+constexpr int PLUG_MAP_RINGS = 8, PLUG_MAP_ANGLES = 16;
 
 struct Plug {
     PlugSettings settings;
@@ -68,6 +73,11 @@ struct Plug {
     // --motor-spread: line L's cells are spread_neuron[spread_first[L] .. spread_first[L + 1])
     int spread_first[PLUG_MAX_MOTOR_LINES + 1] = {};
     int spread_neuron[PLUG_MAX_SPREAD] = {};
+
+    // --bitmap-map logpolar: the task's own bitmap size, and for each mapped line the task
+    // pixels it is the OR of (a bit each)
+    int map_src_w = 0, map_src_h = 0;
+    uint64_t map_from[PLUG_MAP_RINGS * PLUG_MAP_ANGLES][TASK_MAX_SHEET / 64] = {};
 };
 
 // lay the task's lines onto the blob and attach them. false (with a message on stderr) if
@@ -99,6 +109,12 @@ int plug_choice(Plug& plug);
 void plug_clear_counts(Plug& plug);
 // raise the good (+1) or bad (-1) line for the next reward_line_ticks ticks
 void plug_reward(Plug& plug, int valence);
+
+// --bitmap-map (plug_map.cpp): name to setting; at attach, swap the task's bitmap size for
+// the mapped one and build the table; each step, the mapped lines from the task's pixels
+bool plug_map_from_name(const char* name, int& map);
+void plug_map_prepare(Plug& plug);
+void plug_map_lines(Plug& plug, const TaskSense& sense);
 
 // cells per line
 inline int plug_sensor_group(const Plug& plug) {
