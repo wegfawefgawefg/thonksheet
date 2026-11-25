@@ -25,6 +25,9 @@ void linear_report(const LinearData& data, const char* label, int cue_tile,
 // the same reader on every feature at once, primal; only the test share right. for small
 // feature sets such as the task's own input lines (blobprobe linear's shortcut check)
 double linear_score(const LinearData& data);
+// the whole-sheet reader of linear_report alone (dual, for more neurons than trials): only
+// the test share right (blobprobe predict, idea 162)
+double linear_whole(const LinearData& data);
 
 // solve (a + ridge I) x = b for `cols` right-hand sides; a is m x m (cholesky). false if a
 // is not positive definite

@@ -230,6 +230,12 @@ static bool life_plain(const RunFlags& flags, const std::string& csv, FILE* sum,
         }
     }
     life_extra_report(csv, ran, results, sum, edge);
+    for (int d = 0; d < (int)Driver::count; d++) {
+        if (ran[d]) {
+            predict_print(results[d].predict, driver_names[d], stdout);
+            predict_write_sum(results[d].predict, driver_names[d], sum);
+        }
+    }
     life_episodes(flags.task, ran, sum);
     if (babble_on(flags.babble) && !life_signal_report(flags, csv, sum, key, ran, edge)) {
         return false;

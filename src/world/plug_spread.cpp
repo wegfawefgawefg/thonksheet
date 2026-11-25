@@ -29,10 +29,11 @@ bool plug_spread_motors(Plug& plug, const Blob& blob) {
     int dir = (along_y ? dy : dx) >= 0 ? 1 : -1;
     const int* sensor_cell = along_y ? plug.sensor_cell_y : plug.sensor_cell_x;
     const int* motor_cell = along_y ? plug.motor_cell_y : plug.motor_cell_x;
-    int first_cue = plug.sensor_lines > plug.first_single ? plug.first_single : 0;
+    int first_cue = plug.first_extra > plug.first_single ? plug.first_single : 0;
     int sensor_reach = (s.sensor_side - 1) * g.sensor_stride;
     int cue_lo = 1 << 30, cue_hi = -(1 << 30);
-    for (int line = first_cue; line < plug.sensor_lines; line++) {
+    // the task's own lines: a caller's extra lines (idea 162) leave the buttons where they were
+    for (int line = first_cue; line < plug.first_extra; line++) {
         cue_lo = sensor_cell[line] < cue_lo ? sensor_cell[line] : cue_lo;
         int hi = sensor_cell[line] + sensor_reach;
         cue_hi = hi > cue_hi ? hi : cue_hi;

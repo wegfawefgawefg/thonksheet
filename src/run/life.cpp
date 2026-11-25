@@ -1,5 +1,6 @@
 #include "run/life.hpp"
 
+#include "run/predict.hpp"
 #include "run/task_ticker.hpp"
 
 #include <chrono>
@@ -15,6 +16,7 @@ LifePhase life_phase_main(const RunFlags& flags) {
 
 // the task ticker is large; one per process is enough, lives run one after another
 static TaskTicker ticker;
+static Predictor predictor; // idea 162, when flags.predict asks (predict.hpp)
 
 bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int count,
               LifeResult& out) {
@@ -57,7 +59,11 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
         pf.task = phase.task;
         pf.task_settings = phase.settings;
         pf.task_seed = phase.task_seed;
-        if (!ticker_start(tt, *blob, pf)) {
+        pf.steps = phase.steps;
+        if (!core_blob(driver)) {
+            pf.predict = PredictSettings{}; // idea 162's cells learn by the full engine's rule
+        }
+        if (!ticker_start(tt, *blob, pf) || !predict_attach(predictor, tt, *blob, pf)) {
             life_hooks_free(*blob);
             death(driver, blob);
             return false;
@@ -75,6 +81,7 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
         // has the answer on the step's last tick (then rest ticks, if any, before the next)
         int64_t step = 0;
         while (step < phase.steps) {
+            predict_before_tick(predictor, tt, *blob);
             int perfect_move = ticker_before_tick(tt, *blob);
             if (phase.shown_ticks > 0) {
                 // the answer shown: the right button's cells fire at the end of the step
@@ -86,9 +93,11 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
             if (measure && last && step >= count_from) {
                 alive_count_tick(alive, *blob);
             }
+            predict_after_tick(predictor, tt, *blob);
             if (!ticker_after_tick(tt, *blob)) {
                 continue;
             }
+            predict_step_end(predictor, *blob, tt.in.move);
             // with a critic the blob hears every step, valence 0 included (blob/critic.hpp)
             if (tt.valence != 0 || (flags.genome.critic_on && core_blob(driver))) {
                 if (tt.plug.shape.pattern_bits > 0) {
@@ -118,6 +127,7 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
                 out.extra_task = &tt.task;
             }
         }
+        out.predict = predictor.score;
         out.episodes += tt.task.episodes;
         out.wins += tt.task.wins;
         // no cell stays urged past the phase

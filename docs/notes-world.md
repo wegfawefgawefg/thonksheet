@@ -555,3 +555,62 @@ a scorecard such as `blob-readout` (run with `--g.learn_mode 5 ...`) those rows 
 the old readout at chance. The rows labelled "whole blob learns" are the ones that ran with
 the flags given, which for mode 5 means a frozen sheet with the new readout.
 
+
+## Every line is a target: predictor cells and extra lines (idea 162, 2026-11-25)
+
+Results: `docs/results-2026-11-25-predict.md`. Off by default; with no `--predict*` flag a
+life is byte-identical (the four reference lives were checked).
+
+- **Flags** (`world/predict_flags.cpp`, one hook in `run_flags.cpp`; `blobrun --help` lists
+  them): `--predict 1,2,4,8` horizons in steps (1..15, at most 4); `--predict-press 1` the
+  last press as lines; `--predict-errors 1` the shortest horizon's errors as lines;
+  `--predict-cells N` most cells per answer group (4); `--predict-shift S` the verdict's
+  chance (default the readout's own `readout_shift`); `--predict-score-from N` the first
+  step tallied (default: the last quarter of the life).
+- **Targets.** Good and bad when the task attaches them, then every line of the task's own
+  (singles, bitmap, number lines). Not the extra lines.
+- **Cells** (`run/predict.cpp`). Each (target, horizon) is a pattern bit: an "off" and an
+  "on" group of motor cells, voted over the step. A tie answers off. The cells are the motor
+  lattice cells no button uses, nearest the top of the sheet first, dealt round the groups.
+  With the default regions the buttons take every motor cell, so the battery widens the
+  regions: `--g.sensor_w 64 --g.motor_stride 1 --motor-spread 64` (sensor lattice across the
+  top half; every cell of the bottom-left quadrant a motor cell, 1,024 of them; 64 cells a
+  button). Catch then gets 2 cells a group, cartpole 4.
+- **Verdict.** When step t + h is sensed, horizon h's answers from step t are graded against
+  its lines (good and bad: the plug's timers, i.e. the reward of step t + h - 1). The wrong
+  bits' cells are marked (both groups attached, the answering group acted; the world's own
+  marks saved and put back) and `blob_readout_verdict` runs the readout's error step at once
+  on step t's spike maps, kept in a ring of 16 steps x 16 maps (the core's one new function,
+  `learn_readout.cpp`). With `readout_good` the right bits get a good the same way. With
+  `readout_center` the verdict would overwrite the centre reference; not used.
+- **Extra lines** (`PlugSettings.extra_lines`, `Plug.first_extra`): laid after the numbers,
+  in columns as tall as the shelf they land in, attached like any line; the buttons' spread
+  and `--distance` ignore them, so the buttons keep their cells. `predict_attach` lays the
+  plug a second time with them. Set at a step's first tick, before the lines are written:
+  press lines one per button (the last step's press), error lines two per target ("said on,
+  was off", "said off, was on").
+- **The loop** (`life.cpp`, `blobprobe predict`): `predict_before_tick` (senses the step's
+  lines a tick early to grade and set the extra lines; the ticker then senses the same),
+  `predict_after_tick` (counts), `predict_step_end` after `ticker_after_tick` (reads the
+  answers, keeps the maps). Only the full engine and its twin get it; `--rest` is refused.
+- **The hook for idea 159**: `Predictor::error` (`predict_errors`), per target, the shortest
+  horizon's signed error at this step's start (+1 came on unpredicted, -1 predicted and did
+  not come). This is where the errors would go one hop to hidden cells.
+- **Summary keys** per driver: `pred_lines`, `pred_cells`, `pred_verdicts`, and per horizon
+  `pred_h<h>_right|same|common|common_balanced|same_balanced|balanced|tied|changed|
+  changed_right|on|on_right|off_right`.
+- **`blobprobe predict`** (`probe/predict_read.cpp`, `probe/predict_labels.cpp`): live
+  `--life N` steps (rewards as blobrun gives them), or `--shuffle 1` (the same life's frames
+  replayed to a fresh sheet of the same seed in a shuffled order, no task, no reward), freeze,
+  then read the world afresh (task seed + 7919, moves from a fixed coin) with a ridge reader
+  of the whole sheet (`linear_whole`, new in `linear_fit.cpp`) and of the hidden cells, beside
+  readers of the lines. `--trials`, `--settle`, `--label`, `--out`.
+
+```
+scripts/predict.sh main                    the battery, seeds 5-12
+scripts/predict.sh smoke --quick           1 seed, short lives
+nice -n 19 ./build/blobrun --task chain --ticks 20 --sensor-side 2 --motor-side 3 \
+    --motor-spread 64 --window 1000 --steps 20000 --g.sensor_w 64 --g.motor_stride 1 \
+    --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 \
+    --predict 1,2,4,8 --predict-shift 2
+```
