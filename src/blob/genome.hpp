@@ -366,6 +366,13 @@ struct Genome {
     int replay_bad_only = 0;   // 1: the backward walk runs on bad only, even with readout_good
     int actor_good = 0;        // 1: a good surprise teaches the actor's good half (pressed
                                // gain, others lose) whatever readout_good says
+    // counted competition (learn_compete.cpp, docs/results-2026-11-26-steady.md). >0, with
+    // compete_on: competitive learning decides once every this many ticks (a digit, when it
+    // equals the step's ticks) instead of on every spike: each tile's tile_winners (4 if 0)
+    // hidden cells that fired most over the window move, with chance 2^-compete_shift,
+    // toward every source that was on in it. 0 is off and changes nothing.
+    int compete_window = 0;
+    int compete_window_on = 1; // a source is on in a window if it fired this many times
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

@@ -32,6 +32,8 @@
 //   --wiring-load F   rewire the cells F lists before anything else (the transplant)
 //   --rows-out F   write the reader's rows of the non-sensor cells to F
 //   --twice 1 and the other probes of mnist_repeat.cpp (all off unless given)
+//   --life-ticks, --life-settle, --life-set, --life-target: a steadier sheet for the life only
+//                  (mnist_steady.cpp; off unless given)
 //   --live N       first a life of N training digits with rewards and the genome's own
 //                  learning (idea 155), then the motor cells put back to their born wiring,
 //                  so the reader sees the lived inside with the born output cells
@@ -48,7 +50,8 @@ static const char* const ceiling_own[] = {
     "--shift",     "--val",         "--gap",          "--views",      "--scale",   "--live",
     "--live-coin", "--life",        "--life-shuffle", "--life-teach", "--pair",    "--pair-mix",
     "--describe",  "--wiring-load", "--rows-out",     "--twice",      "--rec-cut", "--delays-one",
-    "--pace-off",  "--read-freeze", "--reset-digit",  "--input-every", "--count-from", "--inh-fast"};
+    "--pace-off",  "--read-freeze", "--reset-digit",  "--input-every", "--count-from", "--inh-fast",
+    "--life-ticks", "--life-settle", "--life-set", "--life-target"};
 
 // a copy of rows with only the given columns
 static void pick_columns(const Rows& in, const std::vector<int>& cols, Rows& out) {
@@ -176,7 +179,7 @@ int mnist_ceiling(int argc, char** argv) {
     s.blob->genome.hop_teach = s.teach > 0 ? s.teach : s.blob->genome.hop_teach;
     if (pretrain > 0) {
         s.shuffle = int_flag(argc, argv, "--life-shuffle", 0);
-        life_run(s, pretrain, 10, born);
+        steady_life(s, argc, argv, pretrain, born);
         s.shuffle = 0;
     }
     if (s.teach > 0) {
