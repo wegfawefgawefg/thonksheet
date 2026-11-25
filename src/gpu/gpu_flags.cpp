@@ -1,5 +1,7 @@
 #include "gpu/gpu_flags.hpp"
 
+#include "gpu/gpu_host.hpp"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -30,21 +32,31 @@ static const char* usage =
     "  --max-ticks N      ticks per dispatch at most (default 4096)\n"
     "  --check-ticks N    ticks per dispatch while checking (default 16, at most 31)\n"
     "  --shader PATH      another build of minimal_life.comp (.spv), for speed experiments\n"
+    "  --host             host worlds: the task runs on the CPU, the sheet on the GPU, one\n"
+    "                     exchange per step (automatic for tasks the shader does not have)\n"
+    "  --tasks LIST       host worlds, each life on every world of the list, e.g.\n"
+    "                     echo:k=8,order,gap,catch:catch-size=4/4 (key=value is a blobrun\n"
+    "                     flag; / separates its values); one late score per world per row\n"
+    "  --host-threads N   CPU threads for the host worlds (default 4, at most 4)\n"
     "blobrun flags: --task, --k, --delay, --steps, --ticks, --window, --edge, --sensor-side,\n"
     "  --motor-side, --reward-ticks, --rest-ticks, --cue-offset, --g.name V, --m.name V\n"
-    "tasks on the GPU: echo, shuffled-echo, delayed-echo, both-not-either\n";
+    "  --engine E         minimal (default) or memory (src/memory/, host worlds, --y.name V)\n"
+    "tasks in the shader: echo, shuffled-echo, delayed-echo, both-not-either; every other\n"
+    "  task (and these with --host) runs as a host world\n";
 
 static bool is(const char* a, const char* b) {
     return std::strcmp(a, b) == 0;
 }
 
-bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, MinimalGenome& mg) {
+bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, MinimalGenome& mg,
+                     MemoryGenome& yg) {
     // blobgpu's own flags out; the rest go to blobrun's parser
     std::vector<char*> rest = {argv[0]};
     for (int i = 1; i < argc; i++) {
         const char* a = argv[i];
         const char* v = i + 1 < argc ? argv[i + 1] : nullptr;
-        bool flag_only = is(a, "--twin") || is(a, "--check") || is(a, "--validate");
+        bool flag_only =
+            is(a, "--twin") || is(a, "--check") || is(a, "--validate") || is(a, "--host");
         if (is(a, "--help") || is(a, "-h")) {
             std::fputs(usage, stderr);
             return false;
@@ -53,6 +65,7 @@ bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, Minimal
             f.twin |= is(a, "--twin");
             f.check |= is(a, "--check");
             f.validate |= is(a, "--validate");
+            f.host |= is(a, "--host");
             continue;
         }
         bool mine = is(a, "--lives") || is(a, "--seed-from") || is(a, "--tiles") ||
@@ -60,7 +73,7 @@ bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, Minimal
                     is(a, "--device") || is(a, "--workgroup") || is(a, "--wave") ||
                     is(a, "--birth-threads") || is(a, "--birth") || is(a, "--group") ||
                     is(a, "--dispatch-ms") || is(a, "--max-ticks") || is(a, "--check-ticks") ||
-                    is(a, "--shader");
+                    is(a, "--shader") || is(a, "--tasks") || is(a, "--host-threads");
         if (!mine) {
             rest.push_back(argv[i]);
             continue;
@@ -80,6 +93,9 @@ bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, Minimal
             f.birth_gpu = is(v, "gpu");
         } else if (is(a, "--shader")) {
             f.shader = v;
+        } else if (is(a, "--tasks")) {
+            f.tasks = v;
+            f.host = true;
         } else if (is(a, "--out")) {
             f.out = v;
         } else if (is(a, "--windows")) {
@@ -112,17 +128,37 @@ bool gpu_flags_parse(int argc, char** argv, GpuFlags& f, Genome& genome, Minimal
                 f.dispatch_ms = (int)n;
             } else if (is(a, "--max-ticks")) {
                 f.max_ticks = (int)n;
+            } else if (is(a, "--host-threads")) {
+                f.host_threads = n < 1 ? 1 : (n > 4 ? 4 : (int)n);
             } else {
                 f.check_ticks = (int)n;
             }
         }
     }
     int count = (int)rest.size();
+    f.run_args.assign(rest.begin(), rest.end());
     apply_genome_args(count, rest.data(), f.run.genome);
     if (!run_flags_parse(count, rest.data(), f.run)) {
         return false;
     }
+    // in the shader or as host worlds, a GPU life is one plain life with no babbling, no
+    // critic and no per-tick tunes (each --tasks world is checked again as it is read)
+    if (!host_world_supported(f.run, task_name(f.run.task))) {
+        return false;
+    }
     apply_minimal_args(count, rest.data(), mg);
+    apply_memory_args(count, rest.data(), yg);
+    // the core's readout (idea 65) needs the life loop's press marks, which neither the
+    // shader nor the host worlds give; per-life rows are checked again in gpu_run
+    if (mg.readout != 0 || mg.inner_reward != 1) {
+        std::fprintf(stderr, "blobgpu: the core's readout and inner_reward 0 (idea 65) are "
+                             "not ported\n");
+        return false;
+    }
+    if (f.run.engine != "minimal" && f.run.engine != "memory" && f.run.engine != "blob") {
+        std::fprintf(stderr, "blobgpu: --engine is minimal (default) or memory\n");
+        return false;
+    }
     if (f.tiles > 0) {
         f.run.genome.tiles_w = f.tiles;
         f.run.genome.tiles_h = f.tiles;
@@ -194,13 +230,16 @@ static bool apply_row(const GpuSettings& s, const std::vector<std::string>& row,
             life.seed = std::strtoull(row[c].c_str(), nullptr, 10);
             continue;
         }
-        std::string flag =
-            name.rfind("g.", 0) == 0 || name.rfind("m.", 0) == 0 ? "--" + name : "--m." + name;
+        bool named =
+            name.rfind("g.", 0) == 0 || name.rfind("m.", 0) == 0 || name.rfind("y.", 0) == 0;
+        std::string flag = named ? "--" + name : "--m." + name;
         std::string value = row[c];
         char program[] = "blobgpu";
         char* args[] = {program, flag.data(), value.data()};
         if (flag.rfind("--g.", 0) == 0) {
             apply_genome_args(3, args, life.genome);
+        } else if (flag.rfind("--y.", 0) == 0) {
+            apply_memory_args(3, args, life.yg); // exits on an unknown name
         } else {
             apply_minimal_args(3, args, life.mg); // exits on an unknown name
         }
@@ -209,14 +248,15 @@ static bool apply_row(const GpuSettings& s, const std::vector<std::string>& row,
 }
 
 bool gpu_lives_list(const GpuFlags& f, const Genome& genome, const MinimalGenome& mg,
-                    GpuSettings& settings, std::vector<GpuLifeSpec>& lives) {
+                    const MemoryGenome& yg, int worlds, GpuSettings& settings,
+                    std::vector<GpuLifeSpec>& lives) {
     lives.clear();
     if (!f.settings.empty()) {
         if (!read_settings(f.settings, settings)) {
             return false;
         }
         for (size_t r = 0; r < settings.rows.size(); r++) {
-            GpuLifeSpec life{f.seed_from + r, genome, mg};
+            GpuLifeSpec life{f.seed_from + r, genome, mg, 0, yg};
             apply_row(settings, settings.rows[r], life);
             if (f.device != GpuDevice::cpu || f.check) {
                 life.mg.rng_mode = 1;
@@ -225,7 +265,7 @@ bool gpu_lives_list(const GpuFlags& f, const Genome& genome, const MinimalGenome
         }
     } else {
         for (int i = 0; i < f.lives; i++) {
-            lives.push_back(GpuLifeSpec{f.seed_from + (uint64_t)i, genome, mg});
+            lives.push_back(GpuLifeSpec{f.seed_from + (uint64_t)i, genome, mg, 0, yg});
         }
     }
     if (lives.empty()) {
@@ -237,7 +277,17 @@ bool gpu_lives_list(const GpuFlags& f, const Genome& genome, const MinimalGenome
         for (size_t i = 0; i < learning; i++) {
             GpuLifeSpec twin = lives[i];
             twin.mg.learning_on = 0;
+            twin.yg.learning_on = 0;
             lives.push_back(twin);
+        }
+    }
+    // every world runs the same lives
+    size_t per_world = lives.size();
+    for (int w = 1; w < worlds; w++) {
+        for (size_t i = 0; i < per_world; i++) {
+            GpuLifeSpec life = lives[i];
+            life.world = w;
+            lives.push_back(life);
         }
     }
     return true;

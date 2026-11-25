@@ -6,6 +6,34 @@ behind each. A finding moves up a grade only when a second, different experiment
 Grades: **solid** (two or more independent results), **likely** (one clean result),
 **hint** (one result, few seeds or one engine).
 
+## Where it stands (2026-11-25, night, after eleven jobs were wound up)
+
+Each line is one job's result; most are on few seeds or unfinished, and are graded below.
+
+- **The inside can be taught, one step back.** Sending the output's error back along the
+  spikes that just happened (reverse replay, one step) lifts exclusive-or 0.88 to 0.985,
+  reach to five tiles 0.59 to 0.88, eight cues 0.84 to 0.92, and a fresh output on the
+  frozen result reads better than on the sheet as born (0.997 against 0.874). It is the
+  first rule here that passes the inside-learning test. It is task-specific, half of the
+  gain comes from unsigned rewiring, and over long lives it feeds itself and runs hot.
+- **Time yields to a slow variable in the neuron.** A threshold that jumps on firing and
+  fades over about a hundred ticks takes delayed echo 0.55 to 0.91, order to 0.88, gap to
+  0.68. Cells that hold without leaking, beside cells that mark time since an input came
+  on, take delayed echo, gap and order to 0.98 or better and hold a cue 5,000 ticks.
+- **Acting yields to a critic.** A second group of cells that learns how well things are
+  going, and teaches the buttons by its surprise: bandit 1.00, two-step chain 0.97 (the
+  GRU reference: 0.01), cartpole 20 to 89 steps per fall and rising (the GRU: 798).
+- **Cartpole was broken.** Its reward judged the press before the one it followed, so no
+  rule that credits the current press could learn it. Fixed (semi-implicit step). Every
+  earlier cartpole number, the references' included, is on the faulty world.
+- **Nothing generalises, and that includes the references.** On the invariance battery no
+  engine carries a shape to a new place, turn, tempo or pitch; the MLP and GRU learn every
+  taught version and fail the same held-out rows. The old place world was a trap.
+- **The sheet carries pairs, not triples.** And, or, majority of 8 lines: learned. Parity
+  of 2: yes. Parity of 3: only on the richest sheet. Parity of 4: no sheet.
+- **Keeping is a capacity limit.** The output holds 8 to 14 pairs and has lost any pair by
+  10,000 steps; freezing strong counters does not help.
+
 ## The headline (2026-11-25)
 
 **The output can now learn online, from good and bad alone, things no input line carries.**
@@ -230,6 +258,37 @@ docs/results-2026-11-25-mnist.md
 28. **Most of our worlds test remembering.** [solid: the memory engine passes them] A suite
     for "any task" needs, in every family, cases that were never shown.
 
+29. **Credit one step back reaches the inside; further back does not.** [likely: one
+    engine, 8 seeds, with a fresh-output check] See "Where it stands". The step back must
+    use evidence counters on inner neurons (principle 14 again) and only walk from spikes.
+    Open: the runaway on long lives; the half that unsigned rewiring explains; transfer.
+30. **Holding needs a slow variable inside the neuron, not a ringing sheet.** [likely: two
+    independent mechanisms, 8 seeds each for the first] Tiring neurons, a slow second
+    potential, or non-leaking cells each make delayed echo learnable. The ringing sheet
+    from finding 22 holds too but the output reads it worse. Each costs exclusive-or about
+    0.1; a winner-in-the-tile rule lifts exclusive-or to 0.98 and may pay that back.
+31. **An actor needs a critic, and the critic's surprise must teach on good as well as
+    bad.** [hint: 4 tuning seeds] Finding 17 holds only when the world's own verdict is the
+    teacher. A critic made of spiking cells needs an opponent half so common swings cancel.
+32. **Wiring by co-activity is the inner rule that pays beside an error-rule output.**
+    [likely: third result for principle 3] In the minimal engine it adds 0.05 to 0.25 on
+    every row that learns and loses none; the noise-graded reward rule and inner counters
+    there cost. With it, sixteen cues reach 0.53.
+33. **The sheet's features are roughly pairwise.** [likely] Parity of three lines is
+    carried only by the richest sheet tried and parity of four by none; size does not
+    help, because new tiles grow away from the input.
+34. **The output learns thin, noisy and context-dependent association, and nothing held two
+    steps.** [hint] Rare cue 1.00, noisy lines 0.99, a context line 0.93, a rule that
+    switches 0.94; copy of two and 1-back about 0.7; grammar, brackets, 2-back, analogy,
+    counting and every relation on untaught items at chance. Being shown the answer
+    teaches nothing. Silencing a fifth of the sheet costs the output nothing.
+35. **A whole-button nudge unfreezes a rule stuck on wrong answers.** [likely, one engine]
+    In the minimal engine; little or nothing in the others. Evening out good and bad does
+    nothing.
+36. **A learning rule can be written as a table of ten local facts.** [solid as a
+    construction] The error rule, the old rule and growth all are, and score alike. No
+    evolved table is confirmed yet.
+
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 
 - Finding 14's hidden counter is a known device (permanence in HTM; hidden states in binary
@@ -248,6 +307,16 @@ docs/results-2026-11-25-mnist.md
   runs ties the held units together and loses their order.
 
 ## Walls
+
+*As of the night of 2026-11-25 the list below is partly out of date: "Time", "Reach",
+"Acting in a world" and "inside learning" each have a first mechanism that moves them (see
+"Where it stands"). The walls still fully standing are: carrying anything to a case never
+shown (a new place, turn, tempo; held-out relations and numbers); features of three or
+more things at once; holding two things in order; keeping more than about a dozen pairs;
+real data past a linear reader. And one new one: a rule that teaches the inside
+consistently is a positive loop in a recurrent sheet, and rate regulation does not hold
+it.*
+
 
 - **Reading a thin signal: broken at the output, standing inside.** An error rule moving
   evidence counters at the motor cells reads most of what a linear reader can (see the

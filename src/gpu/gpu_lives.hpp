@@ -2,6 +2,7 @@
 
 #include "blob/blob.hpp"
 #include "gpu/gpu_batch.hpp"
+#include "memory/memory.hpp"
 #include "minimal/minimal.hpp"
 #include "run/run_flags.hpp"
 
@@ -18,6 +19,8 @@ struct GpuLifeSpec {
     uint64_t seed = 1;
     Genome genome;
     MinimalGenome mg;
+    int world = 0;   // host worlds: which of the batch's worlds
+    MemoryGenome yg; // --engine memory: its numbers (mg is not used)
 };
 
 // the batch's world: task and plug numbers, sensor, line and button masks
@@ -27,6 +30,10 @@ struct GpuWorld {
     GpuShape shape;
 };
 
+// the task runs inside the shader (the Echo family); any other runs as a host world
+bool gpu_world_in_shader(TaskKind kind);
+// the grown-back pieces (evidence counters, far slots, delays) run with host worlds only
+bool gpu_needs_host(const MinimalGenome& mg);
 // a minimal genome the shader runs as written; false with the reason if it is not
 bool gpu_genome_supported(const MinimalGenome& mg, std::string& why);
 // the world from a born life (the plug is attached to it and detached again)

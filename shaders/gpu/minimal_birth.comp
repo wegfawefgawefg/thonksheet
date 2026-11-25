@@ -4,15 +4,20 @@
 #extension GL_EXT_shader_8bit_storage : require
 #extension GL_GOOGLE_include_directive : require
 
-// Births on the GPU: minimal_birth's set_kinds and wire (src/minimal/minimal_birth.cpp) for
-// the plain engine, one thread per life, drawing from the life's own stream in the CPU's
-// order, so a life is born bit for bit as on the CPU. The buffers start as zeros. Far slots
-// and delays (which draw in between) are not ported.
+// Births on the GPU: minimal_birth's set_kinds, set_far_and_delays and wire
+// (src/minimal/minimal_birth.cpp), and the evidence counters' first values
+// (min_evidence_birth), one thread per life, drawing from the life's own stream in the CPU's
+// order, so a life is born bit for bit as on the CPU. The buffers start as zeros.
 
 layout(local_size_x = 64) in;
 layout(constant_id = 1) const int TILES = 64;
 layout(constant_id = 2) const int STRIDE = 72;
 layout(constant_id = 3) const int TILES_W = 8;
+layout(constant_id = 5) const int SLOTS = 9;
+layout(constant_id = 6) const int DELAY = 0;
+layout(constant_id = 7) const int EV = 0;
+layout(constant_id = 8) const int EV_BITS = 1;
+layout(constant_id = 9) const int EV_ROWS = 1;
 
 layout(push_constant) uniform Push {
     int unused;
@@ -32,6 +37,36 @@ int local_tile(int t, int k) {
 
 bool is_sensor(int n) {
     return ((world_words[n >> 6] >> (n & 63)) & 1UL) != 0UL;
+}
+
+const int FAR = SLOTS - 9;
+
+// a far tile for a neuron in `tile`: distance mostly 2..reach+1 with a long tail, a point on
+// the square ring at that distance (draw_far). false if it fell off the sheet 8 times.
+bool draw_far(inout Rng r, Genome G, int tile, out int far, out int distance) {
+    const int tiles_h = TILES / TILES_W;
+    int tx = tile % TILES_W, ty = tile / TILES_W;
+    int longest = TILES_W > tiles_h ? TILES_W : tiles_h;
+    far = TILES;
+    distance = 1;
+    for (int attempt = 0; attempt < 8; attempt++) {
+        int d = 2 + int(rng_below(r, uint(G.far_reach)));
+        while ((rng_next(r) & 3UL) == 0UL && d < longest) {
+            d += 1 + int(rng_below(r, uint(G.far_reach)));
+        }
+        int side = int(rng_below(r, 4u));
+        int p = int(rng_below(r, uint(2 * d))) - d;
+        int dx = side == 0 ? p : (side == 1 ? d : (side == 2 ? -p : -d));
+        int dy = side == 0 ? -d : (side == 1 ? p : (side == 2 ? d : -p));
+        int x = tx + dx, y = ty + dy;
+        if (x < 0 || y < 0 || x >= TILES_W || y >= tiles_h) {
+            continue;
+        }
+        far = y * TILES_W + x;
+        distance = d;
+        return true;
+    }
+    return false;
 }
 
 void main() {
@@ -58,29 +93,100 @@ void main() {
         }
     }
 
-    // wire: every non-sensor neuron gets `budget` random sources over its 9 slots
-    const uint mask_base = life * uint(TILES * 9 * 64);
+    // set_far_and_delays: local delays the smaller of two draws in 1..delay_max (for
+    // delay_percent of the slots), far tiles for far_percent of the non-sensor neurons, a far
+    // slot's delay its distance x far_delay_per_tile
+    const uint mask_base = life * uint(TILES * SLOTS * 64);
+    const uint far_base = life * uint(TILES * FAR * 64);
+    const bool delays_on = DELAY != 0 && G.delay_max > 1;
+    for (int n = 0; n < N && (delays_on || G.slots > 9); n++) {
+        int t = n >> 6, b = n & 63;
+        if (delays_on) {
+            for (int k = 0; k < 9; k++) {
+                int d1 = 1 + int(rng_below(r, uint(G.delay_max)));
+                int d2 = 1 + int(rng_below(r, uint(G.delay_max)));
+                bool drawn = int(rng_below(r, 100u)) < G.delay_percent;
+                delays[mask_base + uint((t * SLOTS + k) * 64 + b)] =
+                    uint8_t(drawn ? (d1 < d2 ? d1 : d2) : 1);
+            }
+        }
+        for (int j = 0; j < G.slots - 9; j++) {
+            int far = TILES, distance = 1;
+            if (!is_sensor(n) && int(rng_below(r, 100u)) < G.far_percent) {
+                draw_far(r, G, t, far, distance);
+            }
+            far_tiles[far_base + uint((t * FAR + j) * 64 + b)] = uint(far);
+            if (delays_on) {
+                int d = distance * G.far_delay_per_tile;
+                delays[mask_base + uint((t * SLOTS + 9 + j) * 64 + b)] =
+                    uint8_t(d < 1 ? 1 : (d > G.delay_max ? G.delay_max : d));
+            }
+        }
+        for (int j = G.slots - 9; j < FAR; j++) {
+            far_tiles[far_base + uint((t * FAR + j) * 64 + b)] = uint(TILES); // none
+            if (DELAY != 0) {
+                delays[mask_base + uint((t * SLOTS + 9 + j) * 64 + b)] = uint8_t(1);
+            }
+        }
+    }
+    for (int n = 0; n < N && FAR > G.slots - 9; n++) {
+        int t = n >> 6, b = n & 63;
+        for (int j = G.slots - 9; j < FAR; j++) {
+            far_tiles[far_base + uint((t * FAR + j) * 64 + b)] = uint(TILES);
+        }
+    }
+    for (int n = 0; n < N && DELAY != 0 && !delays_on; n++) {
+        int t = n >> 6, b = n & 63;
+        for (int k = 0; k < SLOTS; k++) {
+            delays[mask_base + uint((t * SLOTS + k) * 64 + b)] = uint8_t(1);
+        }
+    }
+
+    // wire: every non-sensor neuron gets `budget` random sources over its slots
+    // evidence: every counter at zero, the wired sources ev_init above it
+    const int zero = 1 << (G.ev_bits - 1), top = (1 << G.ev_bits) - 1;
+    const int wired_value = zero + G.ev_init > top ? top : zero + G.ev_init;
     for (int n = 0; n < N; n++) {
         if (is_sensor(n)) {
             continue;
         }
         int t = n >> 6, b = n & 63;
-        uint64_t w[9];
-        for (int k = 0; k < 9; k++) {
+        uint64_t w[SLOTS];
+        for (int k = 0; k < SLOTS; k++) {
             w[k] = 0UL;
         }
         int have = 0;
         for (int tries = 0; have < G.budget && tries < 100000; tries++) {
-            int k = int(rng_below(r, 9u));
+            int k = int(rng_below(r, uint(G.slots)));
             uint64_t bit = 1UL << rng_below(r, 64u);
-            uint64_t allowed = local_tile(t, k) == TILES ? 0UL : (k == 4 ? ~(1UL << b) : ~0UL);
+            int src = k < 9 ? local_tile(t, k) : int(far_tiles[far_base + uint((t * FAR + k - 9) * 64 + b)]);
+            uint64_t allowed = src == TILES ? 0UL
+                               : k >= 9 ? ~inhibitory[life * uint(TILES + 1) + uint(src)]
+                               : k == 4 ? ~(1UL << b)
+                                        : ~0UL;
             if ((allowed & bit) != 0UL && (w[k] & bit) == 0UL) {
                 w[k] |= bit;
                 have++;
             }
         }
-        for (int k = 0; k < 9; k++) {
-            masks[mask_base + uint((t * 9 + k) * 64 + b)] = w[k];
+        for (int k = 0; k < SLOTS; k++) {
+            masks[mask_base + uint((t * SLOTS + k) * 64 + b)] = w[k];
         }
+        if (EV == 0 || G.ev_on == 0) {
+            continue;
+        }
+        if (G.ev_on == 1 && ((ev_meta[2 * (TILES + 1) + t] >> b) & 1UL) == 0UL) {
+            continue; // counters on the motor cells only
+        }
+        int row = int(ev_meta[TILES + 1 + t]) + bc64(ev_meta[t] & ((1UL << b) - 1UL));
+        uint p = life * uint(EV_ROWS * SLOTS * EV_BITS) + uint(row * SLOTS * EV_BITS);
+        for (int k = 0; k < SLOTS; k++) {
+            for (int i = 0; i < G.ev_bits; i++) {
+                uint64_t base = ((zero >> i) & 1) != 0 ? ~0UL : 0UL;
+                uint64_t set = ((wired_value >> i) & 1) != 0 ? ~0UL : 0UL;
+                ev_planes[p + uint(k * EV_BITS + i)] = (base & ~w[k]) | (set & w[k]);
+            }
+        }
+        ev_lines[life * uint(EV_ROWS) + uint(row)] = uint8_t(wired_value);
     }
 }

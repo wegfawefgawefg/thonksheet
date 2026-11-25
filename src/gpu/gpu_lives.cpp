@@ -8,18 +8,16 @@
 // born lives and the world, laid out for the shader.
 
 bool gpu_genome_supported(const MinimalGenome& mg, std::string& why) {
-    // the port is the plain engine: 9 local slots read one tick back, random drops, the plain
-    // reward rule. the grown-back pieces stay on the CPU for now.
-    if (mg.far_slots != 0) {
-        why = "far_slots (not ported)";
-    } else if (mg.delay_max > 1) {
-        why = "delay_max above 1 (not ported)";
-    } else if (mg.ev_on != 0) {
-        why = "ev_on, evidence counters (not ported)";
-    } else if (mg.drop_mode != 0) {
+    // the plain engine everywhere; evidence counters, far slots and delays with host worlds
+    // (gpu_needs_host). drop_mode 1 and noise_pair stay on the CPU.
+    if (mg.drop_mode != 0) {
         why = "drop_mode 1 (not ported)";
     } else if (mg.noise_pair != 0) {
         why = "noise_pair (not ported)";
+    } else if (mg.readout != 0) {
+        why = "the core's readout (m.readout, idea 65; not ported)";
+    } else if (mg.inner_reward != 1) {
+        why = "inner_reward 0 (the core's switch; not ported)";
     } else if (mg.rng_mode != 1) {
         why = "rng_mode must be 1 (keyed words)";
     } else {
@@ -43,6 +41,12 @@ static GpuTaskKind kind_of(TaskKind kind, bool& ok) {
         ok = false;
         return GPU_ECHO;
     }
+}
+
+bool gpu_world_in_shader(TaskKind kind) {
+    bool known = false;
+    kind_of(kind, known);
+    return known;
 }
 
 static void set_bit(std::vector<uint64_t>& words, size_t first, int neuron) {
@@ -119,10 +123,31 @@ static int clamp_int(int v, int lo, int hi) {
     return v < lo ? lo : (v > hi ? hi : v);
 }
 
-// the numbers the shaders read, clamped as minimal_birth's sanitize() clamps them (the plain
-// engine: delay_max 1). change both together.
+bool gpu_needs_host(const MinimalGenome& mg) {
+    return mg.ev_on != 0 || mg.far_slots != 0 || mg.delay_max > 1;
+}
+
+// the numbers the shaders read, clamped as minimal_birth's sanitize() clamps them. change
+// both together.
 static void genome_numbers(GpuGenome& g, const MinimalGenome& mg, const Genome& sheet) {
     g = GpuGenome{};
+    g.slots = MIN_SLOTS + clamp_int(mg.far_slots, 0, MIN_FAR_MAX);
+    g.delay_max = clamp_int(mg.delay_max, 1, MIN_DELAY_MAX);
+    g.far_percent = clamp_int(mg.far_percent, 0, 100);
+    g.far_reach = clamp_int(mg.far_reach, 1, 64);
+    g.far_delay_per_tile = clamp_int(mg.far_delay_per_tile, 0, 16);
+    g.delay_percent = clamp_int(mg.delay_percent, 0, 100);
+    g.ev_on = clamp_int(mg.ev_on, 0, 2);
+    g.ev_bits = clamp_int(mg.ev_bits, 2, 8);
+    g.ev_init = clamp_int(mg.ev_init, 0, 255);
+    g.ev_read = clamp_int(mg.ev_read, 0, 2);
+    g.ev_spikes = mg.ev_spikes;
+    g.ev_fired_min = clamp_int(mg.ev_fired_min, 1, 8);
+    g.ev_quiet = mg.ev_quiet;
+    g.ev_quiet_shift = clamp_int(mg.ev_quiet_shift, 0, 30);
+    g.ev_shift = clamp_int(mg.ev_shift, 0, 30);
+    g.ev_inh = mg.ev_inh;
+    g.ev_cowire = mg.ev_cowire;
     g.learning_on = sheet.learning_on && mg.learning_on;
     g.budget_on = mg.budget_on;
     g.inhibit_gain = clamp_int(mg.inhibit_gain, 0, 64);
@@ -132,7 +157,7 @@ static void genome_numbers(GpuGenome& g, const MinimalGenome& mg, const Genome& 
     g.up_shift = mg.up_shift;
     g.down_shift = mg.down_shift;
     g.noise_shift = mg.noise_shift;
-    g.credit_ticks = clamp_int(mg.credit_ticks, 1, MIN_HISTORY - 2);
+    g.credit_ticks = clamp_int(mg.credit_ticks, 1, MIN_HISTORY - 1 - g.delay_max);
     g.learn_shift = mg.learn_shift;
     g.avg_shift = clamp_int(mg.avg_shift, 0, 16);
     g.grade_mode = mg.grade_mode;
@@ -144,12 +169,18 @@ static void genome_numbers(GpuGenome& g, const MinimalGenome& mg, const Genome& 
     g.inhibitory_percent = sheet.inhibitory_percent;
 }
 
-// a newborn life's clock, reward average and task
+// a newborn life's clock, reward average and task (the task's part only for the tasks in
+// the shader; a host world's task is on the host)
 static void life_start(GpuLife& L, uint64_t seed, const RunFlags& flags) {
-    Task task;
-    task_reset(task, flags.task, flags.task_settings, seed);
     L = GpuLife{};
     L.key = seed ^ 0x4d696e696d616c00ull; // minimal_birth's rng_key
+    bool known = false;
+    kind_of(flags.task, known);
+    if (!known) {
+        return;
+    }
+    Task task;
+    task_reset(task, flags.task, flags.task_settings, seed);
     L.world = task.random.state;
     L.cue = task.cue;
     L.phase = task.phase;
