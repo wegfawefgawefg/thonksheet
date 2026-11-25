@@ -284,7 +284,14 @@ value lines stay off); the first instruction is always a load, the register keep
 The ask line is on with the last instruction, so a program of length 1 is copy and every
 further instruction is one more step the register has to be held.
 
-The battery runs through `scripts/calc.sh` (docs/notes-world.md).
+Other forms: `--calc-form buttons` gives every member with at most 16 possible answers
+one button per answer, graded whole, for engines that press one button (a held-out case
+whose answer no seen case gives is not scored); `--calc-ball R` holds out every case within
+R line flips of a held case (case sets of 4,096 or fewer); `--calc-lay 1` lays two operands
+bit by bit side by side (a0 b0 a1 b1 ...).
+
+The battery runs through `scripts/calc.sh` (docs/notes-world.md); results in
+`docs/results-2026-11-25-calculation.md`.
 
 ## Reach
 
