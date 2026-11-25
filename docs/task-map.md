@@ -61,8 +61,8 @@ alone: a design may pass tier 4 before tier 3.
 | 6 | sound | the invariance battery's tune, tempo and pitch rows | being built |
 | 7 | acting | bandit; switching bandit; chain; track; catch; forage; mountain car; pendulum; cartpole; snake | catch 0.32 (chance 0.25); cartpole below a coin; the rest being built |
 | 8 | keeping and adding | second task after the first; retest; idle; capacity; a changed rule; damage | second task 0.99 with the first kept at 0.98; idle loses nothing |
-| 9 | relation, number, parts and wholes, chance, context | same/different; odd one out; counting; grammar; noisy answers; context switch | being built |
-| 10 | no teacher | predict the next input; fill in a missing part; notice the odd one | hole |
+| 9 | relation, number, parts and wholes, chance, context | same/different side by side and in turn; odd one out; bigger; analogy; how many; more or fewer; Reber grammar; brackets; parts of a figure; noisy reward; rare cue; noisy lines; context line; unsignalled switch; copy; recall past others; n-back (`scripts/map.sh`) | readout rule, frozen sheet: chance (1.00 at 1 in 40), noisy lines 0.99, bigger 0.97, context 0.93, switch every 500 0.94; same 0.66, more-fewer 0.70, copy of 2 0.66, recall past 1 0.69, 1-back 0.71; chance on analogy, grammar, brackets, counting over size, every relation on untaught items, every hold of 2 steps or more. Unfinished: no linear-reader or minimal-engine numbers yet (docs/results-2026-11-25-rest-of-the-map.md) |
+| 10 | no teacher | predict the next input; fill in a missing part; notice the odd one (`scripts/map.sh`) | built; the design rule's own predictions do not beat its twin on predict-next (0.48 against 0.52); fill-in 0.14 against -0.06; odd-event not yet run |
 | 11 | real data | MNIST digits; spoken digits or tones; characters of text | being built (MNIST first) |
 | 12 | the long game | a maze; snake on a big board; several tasks interleaved for a whole life | hole |
 
@@ -82,7 +82,10 @@ alone: a design may pass tier 4 before tier 3.
 
 ## Holes
 
-Kinds of task with no world yet: learning with no teacher (tier 10); the long game (tier
-12); output that is a whole pattern or an amount instead of a button; being shown the answer
-(imitation); damage to the sheet. Each needs a world before any design can be said to work
-on "any task".
+Kinds of task with no world yet: the long game (tier 12); output that is a whole pattern or
+an amount instead of a button. Each needs a world before any design can be said to work on
+"any task". Built 2026-11-25 (`scripts/map.sh`, docs/curriculum.md "The rest of the map"):
+no teacher (tier 10), being shown the answer (`--shown N`) and damage to the sheet
+(`--damage P`, `--damage-tile 1`); their full-seed runs are unfinished (quick check: no
+engine learns from being shown; the readout rule loses nothing to 20 in 100 silenced).
+Output over several steps is now covered by copy (one press a step).
