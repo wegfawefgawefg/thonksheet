@@ -5,11 +5,24 @@ What the viewer is, how to run it, and what is rough. Written by the viewer job 
 
 ## Running it
 
+The owner starts it with the scripts (they refuse to run for agents):
+
+```
+scripts/watch.sh echo                              a task, the full engine, slow at first
+scripts/watch.sh both-not-either --readout         the working rule learning exclusive-or
+scripts/watch.sh echo --engine minimal             the minimal engine
+scripts/watch.sh echo --table                      table neurons
+scripts/watch.sh --probe order                     readability of order, live, no task
+scripts/view.sh                                    no task, random input
+```
+
+`--readout` is the working rule (`--g.learn_mode 5 --g.readout_evidence 1
+--g.readout_shift 4 --g.readout_balance 1 --motor-spread 128`, as `scripts/readout.sh`'s
+BEST) with windows of 200 steps. Anything else after the task goes to blobview as is.
+
 ```
 cmake -S . -B build
 nice -n 19 cmake --build build -j4
-./build/blobview                       # the window, the real blob, nothing plugged in
-./build/blobview --fake mixed          # the viewer's own fake blob
 ./build/blobview --capture out.png --until 3000 --fake cycling   # no window at all
 ```
 
@@ -43,11 +56,29 @@ It can press keys, click, resize the window and take a screenshot of the Xvfb sc
 blobview `--frames N` so it ends by itself.
 
 Flags (`blobview --help`): `--fake [mixed|healthy|dying|saturating|cycling]`, `--real`,
-`--tiles W H`, `--seed N`, `--capture out.png`, `--until N` (ticks before a capture,
-default 2,000), `--size W H`, `--select N`, `--select-cell X Y`, `--raster neurons|tiles`,
-`--paused`, `--slow TPS`, `--turbo`, `--input` (random bits on the sensor lines of a real
-blob, through `blob_sense`), `--frames N`, `--fullscreen`, `--validation`, `--no-twin`,
-`--g.NAME N` (a genome number).
+`--engine minimal` (with `--m.NAME N`), `--table` (with `--t.NAME N`), `--tiles W H`,
+`--seed N`, `--capture out.png`, `--until N` (ticks before a capture, default 2,000),
+`--size W H`, `--select N`, `--select-cell X Y`, `--select-button B` (a cell of button B),
+`--raster neurons|tiles`, `--paused`, `--slow TPS`, `--turbo`, `--input` (random bits on the
+sensor lines, through `blob_sense`), `--frames N`, `--fullscreen`, `--validation`,
+`--no-twin`, `--g.NAME N` (a genome number). Readability: `--probe FEATURE` (the probe is
+the world from the start: which, order, xor, gap or hold), `--measure FEATURE` (a capture
+measures once at the end and prints the numbers), `--probe-tries N` (1,000),
+`--probe-settle N` (300 ticks), `--probe-cue X Y` (the cue tile; default the task's first
+cue line's tile, else 1 1), `--hold-gap N` (20).
+
+Captures used for this round (lavapipe, validation on; in the viewer's worktree):
+
+```
+B="--g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128"
+blobview --task both-not-either --ticks 20 --sensor-side 3 --motor-side 3 --window 1000 $B \
+    --capture captures/xor-readout.png --until 800000 --select-button 1
+blobview --task echo --engine minimal --ticks 20 --sensor-side 3 --motor-side 3 --window 50 \
+    --capture captures/echo-minimal.png --until 60000 --select-button 0
+blobview --task echo --table ... --capture captures/echo-table.png --until 60000 --select-button 1
+blobview --probe which --capture captures/probe-which.png --until 60000
+blobview --task both-not-either ... $B --capture captures/xor-measure.png --until 100000 --measure xor
+```
 
 `--task NAME` and every other blobrun flag (`--k`, `--ticks`, `--window`, `--sensor-side`,
 `--rest-ticks`, `--task-seed`, ...) go to blobrun's own parser (`src/run/run_flags.cpp`),
@@ -76,6 +107,10 @@ Left hand and mouse:
 | T / G | tile lines / sector lines |
 | R | raster rows: a row per neuron / a row per tile |
 | Z | reset the zoom of the sheet and the raster |
+| V | pick a button's cell: the next button's, then the next rank (with a task) |
+| Q | the picked cell's evidence picture on / off |
+| C | readability tint: the next feature (which, order, xor, gap, hold, off); measured if not yet |
+| X | measure the tinted feature again (which, if none) |
 | left click | pick a neuron (a cell on the sheet, or a row of the raster in neuron rows) |
 | right drag | pan the sheet; scroll the raster rows when zoomed |
 | wheel | zoom the sheet (about the mouse) or the raster rows |
@@ -110,20 +145,50 @@ task) with `genome.learning_on` set from the box.
   good, bad: a point per tick over the tape, or a point per 256 ticks over the last 262,144
   ("long history"). Fired is scaled against twice the target, so dying sits low.
 - **Task on the sheet** (with `--task`). A ring round every group of cells the plug has
-  attached: good green, bad red, the task's own lines white, motor lines pink. A sensor
-  group is filled while its line is on. The motor group that gave the last answer is filled
-  green (good) or red (bad). Names above the groups: good, bad, cue 0, cue 1, motor 0,
-  motor 1 (go / no-go, ask, press / rest, left / right, bitmap WxH, cart x ... by task).
-  Round the whole sheet a frame in the last answer's colour fades out over one step, so a
-  good or bad event shows the moment it lands (and the good and bad lines tick up).
-- **Task** (right of the raster, with `--task`). The task and its settings, learning on or
-  off, the step and the tick inside it. The last try in words (cue 1, answered motor 0:
-  bad) and the last 100 tries as good / bad / still. A strip of the last tries, newest at
-  the right: what was wanted on top, what the blob did under it (blue motor 0, amber motor
-  1, dark: held still), and a green or red bar. Under it the score per window over the
-  whole life: the blob amber, its learning-off twin blue, a dashed blue line at the twin's
-  mean and a dashed grey line at the coin flips' mean (chance). Past 60 windows the raw
-  scores go faint and a running mean is drawn bold.
+  attached: good green, bad red, the task's own lines white. A sensor group is filled while
+  its line is on. Names above the groups, from the task (`world/task_names.hpp`). Round the
+  whole sheet a frame in the last answer's colour fades out over one step, so a good or bad
+  event shows the moment it lands (and the good and bad lines tick up).
+- **Buttons on the sheet** (with `--task`). Every cell of every button (one group, or the
+  `--motor-spread` cells dealt over the motor region) in that button's colour: dim while
+  quiet, lit when it fires, so the winner shows as its colour flaring. Packed buttons also
+  get their ring, filled green or red by the last answer; spread ones are named in the
+  readout panel instead. Colours are the same in the strip and the readout panel: cyan,
+  magenta, lime, orange, periwinkle, yellow, red, pale teal, then round the hue circle.
+- **Evidence picture** (a button's cell picked, Q toggles). Over every cell the picked cell
+  could hear (its 9 local tiles and far slots): green for a source its counter wants
+  wired, red for one it wants unwired, brighter the stronger (against the cell's own
+  largest value, at least a quarter of the counter range). Its wired sources keep their
+  rings (white excitatory, blue inhibitory, violet far). Small dots on the sources the last
+  change moved: white up, black down. Full engine with `readout_evidence`: the 6-bit
+  counters. Full engine without: connection strengths. Minimal engine with `ev_on`: its
+  bitsliced counters; without: the one-bit mask. Table neurons: nothing.
+- **Readability tint** (C, or `--probe`). Each tile tinted by the feature probe's number
+  for it (dark violet lost, teal readable, pale yellow easy, log scale), the number written
+  in when tiles are 30 pixels or more, the cue tile ringed white.
+- **Task** (right of the raster, with `--task`). The task and its settings (on hover when
+  the panel is short), learning on or off, the step and the tick inside it. The last try in
+  words: the lines that were on, what was wanted and done (in the buttons' colours), good
+  or bad, and the last 100 as good / bad / still. The world at the left when it has one:
+  its bitmap as the task shows it, or each number with its lines (lit where on) and a mark
+  at its place in its range. The strip of the last steps, newest at the right: a row per
+  on/off line, lit while it was on, then what was wanted, what was done, and a green or
+  red bar. Under it the score per window over the whole life: the blob amber, its
+  learning-off twin blue, a dashed blue line at the twin's mean and a dashed grey line at
+  the coin flips' mean (chance). A score above 1 (steps per fall) scales the plot to the
+  highest seen. Past 60 windows the raw scores go faint and a running mean is drawn bold.
+- **Readout** (side, with `--task`). Cells a button and what each keeps per source. Per
+  button: its colour and name, its cells' spikes so far this step and over the last
+  answered step (with a bar), "won" on the button pressed last, and at the last change the
+  cells whose drive went up and down (a local inhibitory source's counter going up counts
+  as down). The last change: its step, good or bad, the button pressed, and how many
+  changes so far. A map of the buttons' cells where they sit, each in its colour with a
+  green or red middle if the last change moved it up or down; a click picks the cell. The
+  picked cell: its button, wired count against its budget, how many sources it has
+  evidence for and against and the extremes, and what the last change did to it.
+- **Readability** (side). Per feature: not measured, measuring n of N, or the tries and its
+  mean number by distance from the cue tile (as `blobprobe feature` prints, each in its
+  tint). Picking a feature tints the sheet with it and measures it if it has not been.
 - **Health** (side). Silent (never fired on the tape), stuck (fired on more than a quarter of
   the ticks), spikes per 1,024 per tick, and the strongest repeat: the overlap of each tick
   with the one `lag` ticks before, for lags 1 to 64, against what chance would give. Each
@@ -132,14 +197,37 @@ task) with `genome.learning_on` set from the box.
   pulses every P ticks peaks at P, 2P, ...; the period is the first peak above 0.3 that is
   at least 0.6 of the highest, and it is marked (amber lines at P, 2P, ...) on that curve
   and on the overlap curve, which is now scaled to its own range so its shape shows.
-- **Neuron** (side). The picked neuron's numbers: threshold plus its sector's bias,
-  potential, leak, cooldown, fan-in by strength, inhibitory and far sources, targets, far
-  slots with their delays, sources by delay, and its own spikes over the last 256 ticks.
+- **Neuron** (side). The picked neuron's numbers, by engine. Full: threshold plus its
+  sector's bias, potential, leak, cooldown, fan-in by strength, inhibitory and far sources,
+  targets, far slots with their delays, sources by delay. Minimal: threshold, its one-bit
+  sources (inhibitory, far), targets through local slots, far slots, sources by delay.
+  Table neurons: inputs and counter width, its sector's bar, the entry used on the newest
+  tick and whether it fired, each input's cell and delay (amber if it was on for that
+  entry), targets, and the whole table as a grid (amber entries fire, blue stay quiet,
+  brighter further from the bar, the entry just used ringed). Then its own spikes over the
+  last 256 ticks.
 - **Sectors** (side). A map of the sectors coloured by activity over target (blue under,
   grey on, red over, black dead) with ratio and bias written in when the cells are big
-  enough, and the spread.
-- **Histograms** (side). Weight levels (1, 4, 5, and the empty count), spikes per neuron
-  (log bins), thresholds, fan-in, connection lengths in cells (local hump, far tail).
+  enough, and the spread. The minimal engine has none; table neurons keep theirs inside.
+- **Histograms** (side). Spikes per neuron (log bins), thresholds and fan-in (full and
+  minimal engines), weight levels (1, 4, 5, and the empty count) and connection lengths in
+  cells (full engine only).
+- **Lines over time** for other engines: minimal "gained", "lost", "counters moved"; table
+  neurons "surprise", "inputs swapped", "counters learned", "counters regulated"; a line
+  an engine does not count is grey and says so. Good and bad come from the plug's lines,
+  so they show for every engine.
+
+### Which engine fills what
+
+| | full | minimal | table |
+| --- | --- | --- | --- |
+| sheet, raster, recurrence, health, task | yes | yes | yes |
+| sectors | yes | none | inside the engine, not shown |
+| weight histograms, lengths | yes | no | no |
+| thresholds, fan-in | yes | yes | no |
+| neuron panel | full | its own | its own (inputs, table) |
+| evidence picture | counters or strengths | counters or mask | nothing per source |
+| readability | yes | yes | yes |
 
 ## How it is built
 
@@ -178,6 +266,44 @@ task) with `genome.learning_on` set from the box.
   and plots. Every GPU wait has a 5 second timeout and a lost device ends the loop.
 - `main.cpp` has the loop in paragraphs: pump input, take the latest snapshot, the panels,
   draw and present (or save the capture), rates.
+- Engines: `engine.cpp` is the only place that knows the full engine, the minimal one and
+  table neurons apart (birth, free, tick, reward, learning on/off, the lines they count).
+  Everything else reads the `Blob` shell: spikes, the kind masks, `sense_in`. What lives
+  outside the shell has a small fill per engine: `frame_fill_engines.cpp` (the picked
+  neuron and histograms for minimal and table) and `readout_watch.cpp` (what a cell keeps
+  per source). The twin is the same engine born with learning off, as blobrun's.
+- The readout: `readout_watch.cpp` on the sim thread. The buttons' cells come from the plug
+  (`plug_motor_cells`). Every tick their spikes add up per button; at an answer they become
+  "last step". Before a reward it copies every button cell's row (11 slots x 64 sources);
+  after the next tick (the full engine learns from a reward on the tick after it) it
+  compares, and a change becomes the "last change": per cell up and down, per source how
+  much it moved. While running flat out undrawn it skips this. The viewer marks the pressed
+  button's cells before the reward (`plug_mark_acted`), as blobrun's life does.
+- Readability: `sim_probe.cpp` runs `probe/feature_measure.hpp` (shared with
+  `blobprobe feature`, moved out of `probe/feature.cpp`, which prints the same numbers as
+  before) on the live sheet, one tick at a time, so it shows on the sheet while it runs.
+  Asked for during a task it waits for the end of a step, `plug_detach`es, turns the
+  engine's learning off, runs the tries flat out whatever the run mode, then turns learning
+  back and `plug_attach`es the same lines; the task stands still meanwhile. With `--probe`
+  it is the world: learning as the genome says, a fresh run each time one ends, the last
+  full run shown until the new one is a quarter done.
+- The task panel is generic: `world/task_names.hpp` names lines and buttons (a nullptr
+  falls back to "line 3", "button 2"); `TaskTry.lines` keeps which on/off lines were on per
+  step; the bitmap and numbers are copied from the ticker's `TaskSense` and the plug's lit
+  lines each snapshot. `panels/task_world.cpp` draws the world and the strip.
+- The sheet's per-cell colours: `renderer/overlay.cpp` builds a word per cell each frame
+  (button cells replace the kind colour; evidence and readability are laid over), uploaded
+  to a storage buffer per slot (binding 3) and read by `shaders/sheet.frag` when flag 4 is
+  set. The buttons' palette is `button_colors.hpp`.
+
+### What a task author provides for the viewer
+
+Nothing, for it to work: the plug lays the lines out, the panel shows every on/off line in
+the strip, the bitmap and numbers from `TaskSense`, the buttons from the plug, and the
+score from `task_window_score` (a share, or anything above 1 and the plot rescales). For it
+to read well, a case in `src/world/task_names.cpp` naming the on/off lines, the numbers and
+the buttons. A task with more than 32 on/off lines or more than 4 numbers shows only the
+first of them (16 rows in the strip); a bitmap of any size the task can sense is shown.
 
 ### Mans In My House alignment
 
@@ -240,6 +366,34 @@ task) with `genome.learning_on` set from the box.
   back, learning off + restart (a fresh life, grown/pruned flat, blob = twin). Clean exit.
 - Real GPU, headless task capture, under `timeout 20`: the same picture as lavapipe.
 
+### Engines, readout and readability (2026-11-25)
+
+- The viewer did not mark the pressed button's cells before a reward (`plug_mark_acted`),
+  so learn mode 5 learned nothing in it (both-not-either 0.47 after 10,000 steps). Fixed;
+  both-not-either with the working rule, 40,000 steps, window 1,000: the blob, learn_off
+  and coin rows equal blobrun's csv for the same flags (blob 0.578, 0.706, 0.700, 0.718,
+  ... 0.924; learn_off 0.524, 0.494, ...).
+- Echo with `--engine minimal` (3,000 steps, window 50) and with `--table`: the blob rows
+  equal blobrun's `blob` and `table` columns.
+- `blobprobe feature` after its measurement moved to `probe/feature_measure.hpp`: the same
+  numbers for all five features (300 tries, settle 2,000), diffed.
+- The readability probe in the viewer against blobprobe, "which" from (1, 1), 1,000 tries:
+  blobprobe (from birth) 11.0, 11.7, 3.1, 1.3, 0.9 by distance; the viewer's live probe
+  after 60,000 ticks of probing (learning on) 13.4, 15.2, 4.0, 1.7, 1.5. Same shape; the
+  sheet had learned from the probe's input meanwhile.
+- On demand during a task (xor with the working rule, step 5,000): xor readable 1.60,
+  1.81, 0.84, 0.34, 0.14 by distance from the A cue's tile; the plug is back on afterwards.
+- The readout panel after a bad step shows the pressed button's 128 cells all down and the
+  other's 128 all up, as the rule says.
+- Shaders (sheet.frag reading the overlay, binding 3): lavapipe with validation, no
+  messages, every capture above; then the RX 9070 XT headless under `timeout 20`, the
+  same picture.
+- The window under a private Xvfb on lavapipe: V, C (a measurement during a slow task, run
+  flat out, then the task resumed at 400 ticks a second), Q twice; 1100 x 700 with
+  cartpole. No validation messages.
+- Cost of watching the readout (256 cells, xor, 10,000 steps, capture on lavapipe): 8.5 s
+  drawn against 8.7 s with `--turbo` (within noise; the first version took 11.1 s).
+
 ### Rhythm
 
 The fired count's period (health panel), 4,096 neurons, seed 1:
@@ -269,10 +423,29 @@ ticks, measured it is 26. Learning on a task washes it out; a learning-off life 
   snapshot while a neuron is picked: fine at 100,000, worth a look at a million.
 - Echo is learned in about 150 steps, so at full speed the learning itself is invisible;
   start slow (`--slow 400`) or paused and use W.
-- The task panel's strip colours only motor 0 to 3 apart (blue, amber, violet, pink, then
-  round again); echo with k > 4 repeats colours.
 - Names on the sheet overlap when cells are small (big sheets, or a catch bitmap's many
   groups; only the bitmap's first group is named).
+- The last change is "what moved between the tick after this reward and the tick after
+  the last compared one". For learn mode 5 that is exactly the reward's work. For rules
+  that also change wiring between rewards (mode 0, the minimal engine's co-activity) it
+  includes those, so a minimal engine's "last change" is often a swap that nets to zero.
+- A measurement on demand freezes the task while it runs (about a second at full speed
+  for 1,000 tries), and if a reward was pending on the step before it the full engine
+  drops it (learning is off for those ticks). Not seen to matter; noted.
+- `--probe` (live) measures with learning as the genome says, so the sheet learns from the
+  probe's tries; that is the point (what learning does to readability), but it means the
+  numbers drift between runs.
+- The readability tint and the evidence picture can both be on; over each other they read
+  badly. Turn one off (C to off, or Q).
+- The readout map in the panel draws cells at their sheet positions, so a spread on a
+  stride-2 lattice is a grid of small dots; clickable, but small.
+- `--readout` is the full engine's rule. The minimal engine's error-rule readout (idea 65)
+  is on a branch; once it lands, `--engine minimal --m.readout 1 --m.ev_on 1
+  --motor-spread 128` should show its counters the same way (it moves the same ev_planes
+  the viewer reads), not checked.
+- Engines are told apart in `engine.cpp` by `#if BLOB_HAS_*`; the minimal and table
+  libraries are found by folder in `view.cmake` because the root CMakeLists includes the
+  viewer before it makes their targets.
 - The twin is not shown for a learning-off life apart from being equal to the blob.
 - No task switching from the UI (not asked for); restart keeps the task and seed.
 - The sim thread's snapshot copies every `TaskLine` and the 256 tries each frame; fine
@@ -280,4 +453,9 @@ ticks, measured it is 26. Learning on a task washes it out; a learning-off life 
 
 ## Needs from other areas
 
-- Nothing open.
+- Added outside `src/view/` this round, the smallest pieces that make the viewer generic:
+  `src/world/task_names.hpp/.cpp` (new: names for a task's on/off lines, numbers and
+  buttons; nullptr means "no name of its own"), and `src/probe/feature_measure.hpp` (new:
+  the feature probe's measurement, moved out of `probe/feature.cpp`, which now uses it).
+- World owners: when you add a task kind, add a case to `world/task_names.cpp` if its
+  lines have names. Nothing else is needed for the viewer.

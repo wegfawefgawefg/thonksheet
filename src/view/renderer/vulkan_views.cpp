@@ -3,6 +3,7 @@
 // frame costs the new tape rows, whatever the sheet's size.
 
 #include "layout.hpp"
+#include "renderer/overlay.hpp"
 #include "renderer/vulkan_internal.hpp"
 #include "view_frame.hpp"
 
@@ -68,14 +69,29 @@ void upload_views(Context& g, const ViewFrame& f, const ViewSettings& v) {
         std::memcpy(s.marks.mapped, g.mark_list.data(), sizeof(Mark) * s.mark_count);
     }
 
+    // the per-cell colours, when there are any
+    s.overlay_on = build_overlay(g.overlay_cells, f, v);
+    const size_t cells = static_cast<size_t>(f.tiles_w) * 8 * f.tiles_h * 8;
+    if (!buffer(g, s.overlay, sizeof(uint32_t) * std::max<size_t>(1, cells),
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)) {
+        s.overlay_on = false;
+        return;
+    }
+    if (s.overlay_on && g.overlay_cells.size() == cells) {
+        std::memcpy(s.overlay.mapped, g.overlay_cells.data(), sizeof(uint32_t) * cells);
+    } else {
+        s.overlay_on = false;
+    }
+
     // this slot's set onto its buffers (the slot is idle: begin() waited for it)
-    VkDescriptorBufferInfo infos[3] = {
+    VkDescriptorBufferInfo infos[4] = {
         {s.tape.buffer, 0, VK_WHOLE_SIZE},
         {g.kinds.buffer, 0, VK_WHOLE_SIZE},
         {s.marks.buffer, 0, VK_WHOLE_SIZE},
+        {s.overlay.buffer, 0, VK_WHOLE_SIZE},
     };
-    VkWriteDescriptorSet writes[3];
-    for (int i = 0; i < 3; ++i) {
+    VkWriteDescriptorSet writes[4];
+    for (int i = 0; i < 4; ++i) {
         writes[i] = VkWriteDescriptorSet{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         writes[i].dstSet = s.set;
         writes[i].dstBinding = static_cast<uint32_t>(i);
@@ -83,7 +99,7 @@ void upload_views(Context& g, const ViewFrame& f, const ViewSettings& v) {
         writes[i].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         writes[i].pBufferInfo = &infos[i];
     }
-    vkUpdateDescriptorSets(g.device, 3, writes, 0, nullptr);
+    vkUpdateDescriptorSets(g.device, 4, writes, 0, nullptr);
 }
 
 static ViewPush base_push(const Context& g, const ViewFrame& f, const Rect& r) {
@@ -149,7 +165,8 @@ void record_views(Context& g, const ViewFrame& f, const Layout& l, const ViewSet
     const float tile_px = place.cell_px * 8.0f;
     const bool tiles_fit = tile_px >= 24.0f;
     const bool sectors_fit = tile_px * std::max(1, f.sector_tiles) >= 24.0f;
-    sheet.flags = (v.tile_lines && tiles_fit ? 1u : 0u) | (v.sector_lines && sectors_fit ? 2u : 0u);
+    sheet.flags = (v.tile_lines && tiles_fit ? 1u : 0u) |
+                  (v.sector_lines && sectors_fit ? 2u : 0u) | (s.overlay_on ? 4u : 0u);
     quad(g, g.sheet, sheet, l.sheet, 1);
     if (s.mark_count > 0) {
         quad(g, g.marks, sheet, l.sheet, static_cast<uint32_t>(s.mark_count));
@@ -165,6 +182,9 @@ void record_views(Context& g, const ViewFrame& f, const Layout& l, const ViewSet
         target += sector.target;
     }
     raster.fade = target / static_cast<float>(std::max(1, f.neuron_count));
+    if (f.sectors.empty()) {
+        raster.fade = f.mean_rate; // an engine without sectors: against its own mean rate
+    }
     quad(g, g.raster, raster, l.raster, 1);
 
     // the recurrence square, comparing at most 256 words per pair of ticks

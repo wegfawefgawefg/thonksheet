@@ -15,11 +15,46 @@ static void title(const Rect& r, const char* text) {
                                             text);
 }
 
+// what the sheet's colours mean right now, under the sheet's title, when anything is laid
+// over it
+static void sheet_legend(State& s) {
+    const ViewFrame& f = s.frame;
+    char text[160] = "";
+    if (s.view.evidence && f.selected.neuron >= 0 && !f.selected.evidence.empty()) {
+        std::snprintf(text, sizeof text, "evidence of %d,%d: green for, red against", f.selected.x,
+                      f.selected.y);
+    } else if (s.view.tint >= 0 && s.view.tint < READ_FEATURES &&
+               !f.readable[s.view.tint].tile.empty()) {
+        std::snprintf(text, sizeof text, "tint: how readable '%s' is", feature_names[s.view.tint]);
+    } else if (s.view.buttons && !f.readout.cells.empty()) {
+        std::snprintf(text, sizeof text, "buttons' cells in their colours");
+    }
+    if (text[0] == '\0') {
+        return;
+    }
+    const Rect& r = s.layout.sheet;
+    const ImVec2 size = ImGui::CalcTextSize(text);
+    ImGui::GetBackgroundDrawList()->AddText(ImVec2(r.x + r.w - size.x, r.y - 16),
+                                            IM_COL32(242, 184, 75, 255), text);
+}
+
+static bool sheet_has_legend(const State& s) {
+    const ViewFrame& f = s.frame;
+    return (s.view.evidence && f.selected.neuron >= 0 && !f.selected.evidence.empty()) ||
+           (s.view.tint >= 0 && s.view.tint < READ_FEATURES &&
+            !f.readable[s.view.tint].tile.empty()) ||
+           (s.view.buttons && !f.readout.cells.empty());
+}
+
 static void view_titles(State& s) {
     const ViewFrame& f = s.frame;
     char text[200];
-    std::snprintf(text, sizeof text, "sheet  %d x %d cells   %s", f.tiles_w * 8, f.tiles_h * 8,
-                  s.view.zoom > 1.0f ? "(zoomed: Z resets)" : "");
+    if (sheet_has_legend(s)) {
+        std::snprintf(text, sizeof text, "sheet %s", s.view.zoom > 1.0f ? "(Z unzooms)" : "");
+    } else {
+        std::snprintf(text, sizeof text, "sheet  %d x %d cells   %s", f.tiles_w * 8, f.tiles_h * 8,
+                      s.view.zoom > 1.0f ? "(zoomed: Z resets)" : "");
+    }
     title(s.layout.sheet, text);
     const int shown = static_cast<int>(std::min<uint64_t>(f.tape.ticks, f.tape.len));
     float first = 0, per_px = 1;
@@ -37,6 +72,8 @@ static void view_titles(State& s) {
         title(s.layout.recur, text);
     }
     task_labels(s);
+    readability_labels(s);
+    sheet_legend(s);
     if (s.mode == RUN_TURBO) {
         const Rect& r = s.layout.sheet;
         ImGui::GetBackgroundDrawList()->AddText(ImVec2(r.x + 20, r.y + 20),
@@ -55,7 +92,7 @@ static void mode_button(State& s, const char* label, int mode) {
 static void controls(State& s) {
     const ViewFrame& f = s.frame;
     SimShared& sh = s.sim.shared;
-    ImGui::Text("thonksheet   %s", f.real ? "real blob" : "fake blob");
+    ImGui::Text("thonksheet   %s", engine_names[std::clamp(f.engine, 0, ENGINE_COUNT - 1)]);
     if (!f.real) {
         ImGui::SameLine();
         ImGui::TextColored(DIM, "(%s)", fake_scene_names[s.sim.settings.scene]);
@@ -106,7 +143,8 @@ static void controls(State& s) {
     }
     ImGui::SameLine();
     bool input = sh.input_on.load();
-    if (f.real && !s.sim.task.on && ImGui::Checkbox("random input", &input)) {
+    if (f.real && !s.sim.task.on && s.sim.settings.probe.feature < 0 &&
+        ImGui::Checkbox("random input", &input)) {
         sh.input_on = input;
     }
     ImGui::Checkbox("tiles (T)", &s.view.tile_lines);
@@ -168,7 +206,9 @@ static void health(State& s) {
     const float silent = 100.0f * f.silent / n;
     const float stuck = 100.0f * f.stuck / n;
     const int shown = static_cast<int>(std::min<uint64_t>(f.tape.ticks, f.tape.len));
-    ImGui::SeparatorText("health");
+    if (!ImGui::CollapsingHeader("health", ImGuiTreeNodeFlags_DefaultOpen)) {
+        return;
+    }
     ImGui::TextColored(silent > 20.0f ? ALARM : GREEN, "silent %.1f%%", silent);
     ImGui::SameLine();
     ImGui::TextColored(stuck > 2.0f ? ALARM : GREEN, "stuck on %.1f%%", stuck);
@@ -233,8 +273,10 @@ void draw_panels(State& s) {
                      ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
     controls(s);
     if (s.mode != RUN_TURBO) {
-        health(s);
+        readout_section(s);
         neuron_section(s);
+        readability_section(s);
+        health(s);
         sectors_section(s);
         histograms_section(s);
     }
