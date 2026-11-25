@@ -13,7 +13,7 @@ columns that differ only in learning share twins). Lives are cached by their com
 out/oneset/cache*.jsonl (a copy pulled from stevejobs can sit beside it as cache-mini.jsonl).
 
 Score: late = mean of the last tenth of the windows. chance = coin flips, perfect = the
-scripted player, both from `calibrate` (seeds 5 and 6). A row passes when its late score is
+scripted player, both from `calibrate` (seeds 5-12). A row passes when its late score is
 at least halfway from chance to perfect and above its twin by more than 2 standard errors
 (paired by seed). `table A,B,...` prints the columns side by side, each beside the first
 with the paired difference; `+` and `-` mark differences of 2 standard errors or more.
@@ -76,6 +76,8 @@ def merged(*parts):
 
 
 TWO_VALUES = {"--catch-size": 2}
+# coin flips and the scripted player come from memory-engine lives with baselines on
+CALIB_SEEDS = (5, 6, 7, 8, 9, 10, 11, 12)
 
 
 def life_cmd(row_args, col_args, seed):
@@ -154,7 +156,7 @@ def pick_rows(rows, only):
 
 def calib_of(cache, row_args):
     coins, perfects = [], []
-    for seed in (5, 6):
+    for seed in CALIB_SEEDS:
         key = "calib " + " ".join(life_cmd(row_args, ["--engine", "memory"], seed))
         if key in cache:
             coins.append(cache[key]["coin"])
@@ -269,7 +271,7 @@ def main():
     if opt.what == "calibrate" or opt.what == "run":
         todo = []
         for rname, rargs in rows:
-            for s in (5, 6):
+            for s in CALIB_SEEDS:
                 args = life_cmd(rargs, ["--engine", "memory"], s)
                 if "calib " + " ".join(args) not in cache:
                     todo.append((args, True))
