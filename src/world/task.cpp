@@ -11,6 +11,7 @@ static const char* const task_names[(int)TaskKind::count] = {
     "same", "same-then", "odd-one", "bigger", "analogy", "how-many", "more-fewer", "grammar",
     "brackets", "parts", "noisy-echo", "rare-cue", "noisy-lines", "context", "switch-rule",
     "copy", "recall", "n-back", "predict-next", "fill-in", "odd-event",
+    "points", "number",       "two-numbers",  "past",
 };
 
 const char* task_name(TaskKind kind) {
@@ -61,6 +62,11 @@ void task_reset(Task& task, TaskKind kind, const TaskSettings& settings, uint64_
         break;
     case TaskKind::mnist:
         mnist_reset(task);
+    case TaskKind::points:
+    case TaskKind::number:
+    case TaskKind::two_numbers:
+    case TaskKind::past:
+        function_reset(task);
         break;
     case TaskKind::count:
     default:
@@ -92,6 +98,11 @@ TaskShape task_shape(const Task& task) {
         return feature_shape(task);
     case TaskKind::mnist:
         return mnist_shape(task);
+    case TaskKind::points:
+    case TaskKind::number:
+    case TaskKind::two_numbers:
+    case TaskKind::past:
+        return function_shape(task);
     case TaskKind::count:
     default:
         break;
@@ -130,6 +141,11 @@ void task_sense(const Task& task, TaskSense& sense) {
         break;
     case TaskKind::mnist:
         mnist_sense(task, sense);
+    case TaskKind::points:
+    case TaskKind::number:
+    case TaskKind::two_numbers:
+    case TaskKind::past:
+        function_sense(task, sense);
         break;
     case TaskKind::count:
     default:
@@ -161,6 +177,11 @@ int task_perfect_move(const Task& task) {
         return feature_perfect_move(task);
     case TaskKind::mnist:
         return mnist_perfect_move(task);
+    case TaskKind::points:
+    case TaskKind::number:
+    case TaskKind::two_numbers:
+    case TaskKind::past:
+        return function_perfect_move(task);
     case TaskKind::count:
     default:
         break;
@@ -200,6 +221,11 @@ int task_step(Task& task, const TaskStepIn& in) {
         break;
     case TaskKind::mnist:
         valence = mnist_step(task, in);
+    case TaskKind::points:
+    case TaskKind::number:
+    case TaskKind::two_numbers:
+    case TaskKind::past:
+        valence = function_step(task, in);
         break;
     case TaskKind::count:
     default:
@@ -231,6 +257,10 @@ double task_window_score(Task& task) {
     case TaskKind::gap:
     case TaskKind::place:
     case TaskKind::mnist:
+    case TaskKind::points:
+    case TaskKind::number:
+    case TaskKind::two_numbers:
+    case TaskKind::past:
         // right answers over chances to answer
         score = ratio(t[0], t[1]);
         break;

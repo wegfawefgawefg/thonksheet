@@ -1,5 +1,6 @@
 #pragma once
 
+#include "world/task_function.hpp"
 #include "world/world_random.hpp"
 
 #include <cstdint>
@@ -45,6 +46,10 @@ enum class TaskKind {
     predict_next, // no teacher: a stream with structure; how well is the next input predicted
     fill_in,      // no teacher: patterns with a part sometimes blanked; is it filled in
     odd_event,    // no teacher: a regular stream with rare breaks; is the break noticed
+    points,          // function battery: a boolean function of N cue lines (task_function.hpp)
+    number,          // function battery: the band f(x) falls in, x as one lit line of L
+    two_numbers,     // function battery: the band of f(x1, x2)
+    past,            // function battery: a function of the last two or three items shown
     count,
 };
 
@@ -127,6 +132,7 @@ struct TaskSettings {
     int back = 1;           // n-back: how far back
     int markov_order = 1;   // predict-next: the next symbol depends on the last 1 or 2
     int diff_max = 0;       // bigger: largest difference shown, 0 any
+    FnSettings fn; // the function battery (task_function.hpp)
 };
 
 // fixed point for cartpole: 16 fractional bits
@@ -160,6 +166,7 @@ struct Task {
     int shape = 0, place = 0; // place: which shape, where (index into the places)
     uint64_t held_out = 0;    // place: one bit per place never rewarded
     bool scored = true;       // place: this trial is on a held-out place
+    FnState fn;               // the function battery
 
     // window score, meaning depends on the kind (see task_window_score)
     int64_t tally[4] = {};
@@ -252,3 +259,13 @@ void script_sense(const Task& task, TaskSense& sense);
 int script_perfect_move(const Task& task);
 int script_step(Task& task, const TaskStepIn& in);
 double script_window_score(Task& task);
+// the function battery, in task_function*.cpp
+void function_reset(Task& task);
+TaskShape function_shape(const Task& task);
+void function_sense(const Task& task, TaskSense& sense);
+int function_perfect_move(const Task& task);
+int function_step(Task& task, const TaskStepIn& in);
+// the battery's --fn flags: true if `flag` is one (ok false on a bad value); and a check of
+// the settings once the command line is read, false after a message
+bool function_flag(const char* flag, const char* value, TaskSettings& settings, bool& ok);
+bool function_settings_ok(TaskKind kind, const TaskSettings& settings);
