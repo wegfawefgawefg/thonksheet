@@ -51,10 +51,24 @@ Running (four):
 - The GPU: any world, the evidence counters, the memory engine, one call per table of
   designs.
 
-Winding up (told to stop, write up and hand back; to be merged and recorded): the combined
+Wound up and recorded (six merged, five being merged by an integration agent): the combined
 core, reverse replay, nudges and balance, more worlds, the invariance battery, the
 function battery, the dynamics family, the rest of the map, rule tables, long memory, the
 critic. The unattended search is stopped on this PC and still runs on stevejobs.
+
+Added after the wind-up, ahead of the rest (these are the first rules that move a wall,
+so they come first):
+- A. One setting with everything that worked: the readout, one step of reverse replay,
+  tiring neurons (or time and hold cells), winners in the tile, the critic. Does it hold
+  together on the whole map, and does the replay runaway stop under it? Scored with the
+  references beside it.
+- B. Reverse replay made safe: zero-sum steps per neuron or a threshold that rises with
+  gain; the unsigned half separated from the signed half; the inside-learning test on
+  MNIST (0.924 and 0.943 to beat) and on held-out rows.
+- C. The critic on report seeds and long lives, on the fixed cartpole, with the wide
+  critic.
+- D. Integration check: after the merges, re-run the suite for the readout, the GRU and
+  the memory engine, so the scoreboard is on the fixed cartpole and has the new rows.
 
 Queued, in order:
 1. The inside-learning test as one script: after a life, freeze, wipe the output, fit a

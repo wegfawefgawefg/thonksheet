@@ -84,6 +84,21 @@ setting, by storing what it has seen. So "every row of tiers 1 to 4 on one set o
 is met, by a lookup table, and the milestone needs sharpening: rows where the asked case
 was never shown (idea 149). The place world is the only such row today and it fails there.
 
+### After the wind-up (2026-11-25, night)
+
+Best per tier with the mechanisms that just landed (each still to be confirmed on the full
+seeds and, above all, together under one setting):
+- tier 4 (time): delayed echo 0.91 to 1.00, order 0.88 to 0.99, gap 0.68 to 0.98, with a
+  slow variable in the neuron or with time and hold cells. Beat and sequence unrun.
+- tier 5 and 6 (what stays the same): the invariance battery exists; every engine and both
+  references fail the held-out rows. The old place row is retired as a trap.
+- tier 7 (acting): with a critic, bandit 1.00, chain 0.97, cartpole 89 steps per fall;
+  cartpole now uses the fixed step by default.
+- tier 2 and 3: and, or, majority to 8 lines; parity to 2.
+- tier 9 and 10: 21 worlds built; association under noise and context learned, the rest
+  at chance.
+- tier 8 (keeping): 8 to 14 pairs held, gone by 10,000 steps.
+
 ## Milestones worth naming
 
 - **Every row of tiers 1 to 4 on one set of rules.** Not yet: nothing holds a cue past 20
