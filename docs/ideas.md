@@ -406,7 +406,10 @@ not known to do it.
 111. **A place that holds.** [known: persistent activity] The default sheet keeps a cue
      readable for 20 ticks and has lost it by 60. Search for sheets, or regions of a sheet,
      that hold it: slow leak, dense local excitation with wider inhibition, up and down
-     states. Aimed at the time wall. *running: a 500-sheet search on how long a cue is held*
+     states. Aimed at the time wall. *tried by search over the existing numbers: 60 ticks can
+     be held (readable at 3.4 to 3.9 on fresh seeds, default 0.23) by a sheet that keeps
+     ringing, at a third of the sharpness; nothing holds 150. Longer needs a mechanism and a
+     region of its own. docs/results-2026-11-25-richness-search.md*
 112. **Different regions, different rules.** [known] The owner: "grid cells have a different
      winner take all kind of activity bias too. that we wouldnt want everywhere in the brain
      but in somewhere probably?" Give each sector its own genome numbers, so one region can
@@ -436,7 +439,14 @@ not known to do it.
      recurrent one), one size, one recipe, behind the same plug, told only good and bad,
      run on the whole map with nothing changed between tasks. Not to beat it task by task:
      to see where an unchanged network stops, and to calibrate which worlds are learnable.
-     *building*
+     *done (`blobrun --engine mlp|gru`, `scripts/reference.sh`). A plain recurrent network
+     (GRU, 128 units, backprop through 8 steps, good and bad only) learns every row any of
+     our engines learns, at the same or a higher score: echo to 16 cues 1.00, exclusive-or
+     0.97, delayed echo, beat, order and gap all 1.00, catch 0.72. Ours leads only in
+     speed on association (level reached in 1,000 steps against 2,000 to 3,000). Both
+     networks fail the place never rewarded (0.16, below chance), holds past the GRU's
+     8-step window, and cartpole from good and bad (below a coin; told the answer they
+     balance). docs/results-2026-11-25-fixed-net-reference.md*
 118. **One setting for everything.** Score our own designs the same way: one set of numbers
      for the whole map. Today the readout runs use flags chosen per task (long delays for
      the time tasks, more motor cells here, smaller line groups there). *idea: the combined
@@ -498,3 +508,63 @@ would be cool if we can arbitrarily learn calculations."
 134. **An answer that is a pattern.** Several independent yes/no outputs read at once, each
      graded. Fills the "whole pattern out" hole in the task map; needed for calculation,
      for copying, and later for generating sound or text. *building, with 133*
+135. **The state is the address of what to do next.** [the owner's vvm, 2026; kin to
+     Kanerva's memory and to production systems] A different route to a general learner,
+     not a sheet: one state (a long bit vector) and a bank of operations found by content.
+     Each step the state looks up the few operations nearest to it, one is chosen and
+     applied to the state, and the result is the next state and the next address. No
+     program counter, no separate memory: thinking is the state walking through the bank.
+     His version was trained by gradient descent and never learned. Here the bank would
+     learn by local rules: evidence on which operation helped from which state, and new
+     operations written in one go. Aimed at holding, at multi-step calculation, at acting.
+     The owner: "i suspect it can actually work. but idk how. its a whole other route to a
+     general learner i think." *building*
+136. **Seeing battery.** The owner: "shape identification. square. triangle. lines. dot.
+     object tracking." Name the shape (dot, line, square, triangle, cross, ring) wherever
+     it is and whatever its size; which way a line points; how many things there are; where
+     a moving thing is now (which part of the sheet), and where it will be in a few steps;
+     follow one thing among others that look the same; a thing that passes behind a cover
+     and comes out the other side. Answers by button, by pointing (a motor line per region),
+     and by moving a marker onto it. *queued: starts when the invariance battery lands,
+     since it reuses that battery's shape drawing*
+
+### From the outside catalogue (added 2026-11-25)
+
+`docs/outside-catalogue.md` has 149 mechanisms from fields that were never about learning
+machines, each translated to bits. These are the ones to try first, queued in this order
+and started as machine time frees up (both machines are full).
+
+137. **A bank of predictors at history lengths 2, 4, 8, 16 ...** [from branch predictors in
+     processors (TAGE); new here] Hashed tables of small counters, each indexed by the last
+     2, 4, 8, ... steps of what happened; the longest history that has an opinion wins.
+     Built for exactly our shape of hardware, and aimed at the gap and at sequences. With a
+     pacemaker count (a gap kept as a stored number of ticks, not as activity). *queued*
+138. **Credit by code.** [from simultaneous perturbation in control engineering] Every unit
+     nudges its behaviour up or down following its own fixed pseudo-random code, all at
+     once; each unit then correlates the outcome with its own code. One experiment the size
+     of the whole decision, credit that is still per unit, a few counters each. Aimed at
+     teaching the inside. *queued*
+139. **Units pay the units that set them up.** [bucket brigade; Baum's economy] A unit that
+     earns passes part of its earnings to the units whose firing let it fire; wealth is
+     conserved, and the poor are replaced. Credit that flows backward as payment. Aimed at
+     teaching the inside and at chains of actions. *queued*
+140. **Copy, vary, and keep a frozen copy.** [the immune system; gene duplication] A unit
+     pulled two ways is duplicated so one copy can change and the other stay; units that
+     fit badly are copied with more changes; proven units are set aside unchanged. Aimed at
+     keeping while adding. *queued*
+141. **Never erase: unlearning is new learning tagged with its context.** [extinction in
+     animals] *queued, with 140*
+142. **Run it again.** [Braitenberg's vehicle 13] After a rare strong outcome, loop the last
+     few recorded spike maps through learning several times. *queued, small*
+143. **Tax the common answer.** [ecology: kill the winner] The more often an answer is
+     given, the harder it is to give. Aimed at the lock. *queued, small*
+144. **Look one step ahead.** [Braitenberg's vehicle 14] Counters for "after this, that" and
+     for how good "that" was; choose by the predicted next state. The project has no
+     lookahead at all. *queued, with the critic*
+145. **The behaviour battery.** Twenty-two small worlds from a century of animal learning
+     that any learner should pass and the task map lacks: habituation, blocking,
+     overshadowing, latent inhibition, extinction with recovery and renewal, partial
+     reward, second-order conditioning, reversal, learning sets, matching, interval timing,
+     latent learning, spacing, superstition. *queued*
+Also from Braitenberg, for whoever builds a holding region: holding activity while wiring by
+co-activity runs ties the held units together and loses their order.

@@ -1,0 +1,39 @@
+# wiring at birth (docs/results-2026-11-25-family-wiring.md). the first line is the baseline.
+default:
+layers 1: --g.wire_layers 1
+layers 2: --g.wire_layers 2
+layers 3: --g.wire_layers 3
+layers 5: --g.wire_layers 5
+fine 1: --g.wire_fine 1
+fine 2: --g.wire_fine 2
+fine 4: --g.wire_fine 4
+fine 8: --g.wire_fine 8
+slots 6: --g.wire_slots 6
+slots 4: --g.wire_slots 4
+slots 3: --g.wire_slots 3
+slots 2: --g.wire_slots 2
+mirror 25: --g.wire_mirror_percent 25
+mirror 50: --g.wire_mirror_percent 50
+mirror 100: --g.wire_mirror_percent 100
+hubs 1% x4: --g.wire_hub_per_1024 10 --g.wire_hub_shift 2
+hubs 3% x4: --g.wire_hub_per_1024 30 --g.wire_hub_shift 2
+hubs 3% x8: --g.wire_hub_per_1024 30 --g.wire_hub_shift 3
+hubs 10% x2: --g.wire_hub_per_1024 100 --g.wire_hub_shift 1
+stream 1: --g.wire_stream 1
+stream 2: --g.wire_stream 2
+stream 4: --g.wire_stream 4
+stream 2 down: --g.wire_stream 2 --g.wire_stream_dir 4
+stream 2 back: --g.wire_stream 2 --g.wire_stream_dir 10
+stream 2 turning: --g.wire_stream 2 --g.wire_stream_turn 8
+stream 4 turning: --g.wire_stream 4 --g.wire_stream_turn 16
+far topo tile: --g.wire_far_topo 1
+far topo tile j1: --g.wire_far_topo 1 --g.wire_far_jitter 1
+far topo map: --g.wire_far_topo 2
+far topo map j1: --g.wire_far_topo 2 --g.wire_far_jitter 1
+inhib wide 1: --g.wire_inhib_reach 1
+inhib wide 3: --g.wire_inhib_reach 3
+inhib local 1: --g.wire_inhib_reach -1
+inhib local 3: --g.wire_inhib_reach -3
+two sheets 25: --g.wire_two_sheets 25
+two sheets 50: --g.wire_two_sheets 50
+two sheets 100: --g.wire_two_sheets 100

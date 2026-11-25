@@ -15,7 +15,7 @@ layout(push_constant) uniform Push {
     uint tape_len;   // rows in the tape ring
     uint newest_row; // the ring row of the newest tick
     uint rows_valid; // rows written so far, at most tape_len
-    uint flags;      // sheet: 1 tile lines, 2 sector lines
+    uint flags;      // sheet: 1 tile lines, 2 sector lines, 4 the overlay
     uint sector_tiles;
     uint mode;       // raster: 0 a row per neuron, 1 a row per tile. recurrence: ticks across
     int selected;    // selected neuron, or -1
@@ -29,6 +29,17 @@ layout(std430, set = 0, binding = 0) readonly buffer TapeWords {
 layout(std430, set = 0, binding = 1) readonly buffer KindWords {
     uvec2 kinds[];
 };
+// per cell, row by row: a colour laid over the sheet (src/view/renderer/overlay.hpp), read
+// only when flags has 4. bytes: red, green, blue, then bit 7 "replaces the kind colour" and
+// bits 0..6 "this much laid over"
+layout(std430, set = 0, binding = 3) readonly buffer OverlayWords {
+    uint overlay[];
+};
+
+vec3 overlay_rgb(uint word) {
+    return vec3(float(word & 255u), float((word >> 8) & 255u), float((word >> 16) & 255u)) /
+           255.0;
+}
 
 const vec3 BACKGROUND = vec3(0.043, 0.051, 0.071); // #0b0d12
 const vec3 EXCITATORY = vec3(0.949, 0.722, 0.294); // #f2b84b

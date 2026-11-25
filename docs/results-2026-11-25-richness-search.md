@@ -98,3 +98,36 @@ to 0.50.
   sector regulation.
 
 The full suite on rich2 with the readout is running as scorecard `blob-rich2`.
+
+## Can a sheet hold a cue longer? (the hold search, same day)
+
+500 random sheets scored on the `hold` feature: cue A or B for 6 ticks, then nothing, read
+20, 60 or 150 ticks later (`scripts/richness.sh --name hold --features
+hold20,hold60,hold150,which run --samples 500`). The raw report is in
+`docs/results-2026-11-25-hold-report.txt`. The ten sheets with the longest holds were then
+re-measured on seeds 2, 3 and 4.
+
+| sheet | hold at 20 | at 60 | at 150 | which cue |
+| --- | --- | --- | --- | --- |
+| default | 1.10 | 0.23 | 0.03 | 10.7 |
+| longest hold at 60 (a) | 1.69 | 3.86 | 0.22 | 3.7 |
+| longest hold at 60 (b) | 0.60 | 3.39 | 0.45 | 3.5 |
+| best at 150 | 1.96 | 1.45 | 0.76 | 7.1 |
+
+- **Sixty ticks can be had from the existing numbers.** Two sheets keep the cue easy to read
+  (3.4 to 3.9) three times longer than the default can hold anything, on seeds they were
+  not chosen on.
+- **It costs the sheet its sharpness.** Those sheets tell the two cues apart a third as
+  well while the cue is on (3.5 against 10.7). What holds is fewer and weaker inhibitory
+  neurons, very dense local wiring, a high activity target: a sheet that keeps ringing.
+  What mixes well is the opposite.
+- **Nothing holds 150 ticks reliably.** The best is 0.76.
+- So holding and mixing want different sheets. One region tuned to ring, beside one tuned
+  to mix, is the obvious next design (idea 112), and tuning numbers will not get past about
+  a hundred ticks: longer holds need a mechanism (ideas 111, 131, cells that do not leak).
+
+Sheet (a): `--g.inhibitory_percent 16 --g.inhibit_gain 2 --g.threshold_min 7
+--g.threshold_max 19 --g.leak_shift_max 2 --g.cooldown_max 3 --g.local_connect_shift 1
+--g.far_percent 37 --g.far_reach_tiles 2 --g.local_delay_min 3 --g.local_delay_max 7
+--g.branch_bonus 3 --g.noise_shift 9 --g.sector_target_per_1024 67
+--g.sector_smooth_shift 5 --g.pacemakers_per_1024 5`

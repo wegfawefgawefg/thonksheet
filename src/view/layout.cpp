@@ -11,9 +11,11 @@ Layout layout_for(float w, float h, bool task) {
     const float left_w = std::max(300.0f, w - SIDE_W);
     l.side = Rect{left_w, 0, w - left_w, h};
 
-    // the raster along the bottom of the left part; with a task, the task panel at its right
-    const float raster_h = std::round(h * 0.28f);
-    const float task_w = task ? std::floor(std::max(360.0f, left_w * 0.4f)) : 0.0f;
+    // the raster along the bottom of the left part; with a task, the task panel at its right,
+    // given a bit more room so its strip and plot do not squeeze on small windows
+    const float raster_h =
+        task ? std::round(std::clamp(h * 0.33f, 240.0f, 420.0f)) : std::round(h * 0.28f);
+    const float task_w = task ? std::floor(std::clamp(left_w * 0.46f, 400.0f, 640.0f)) : 0.0f;
     l.raster =
         Rect{PAD, h - raster_h + l.label, left_w - 2 * PAD - task_w, raster_h - l.label - PAD};
     if (task) {

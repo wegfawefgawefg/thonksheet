@@ -1,20 +1,16 @@
-// The task: its panel under the middle column (what it is, the step, the last tries, the
-// score per window over the whole life against the learning-off twin and coin flips), and
-// the names of its lines on the sheet.
+// The task: its panel under the middle column (what it is, the step, the last try in
+// words, the world and the strip of the last steps (task_world.cpp), the score per window
+// over the whole life against the learning-off twin and coin flips), and the names of its
+// lines on the sheet. Works for any task kind: nothing below names one.
 
+#include "button_colors.hpp"
 #include "panels/palette.hpp"
 #include "state.hpp"
 
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
 #include <imgui.h>
-
-// a colour per motor line (what was right, what the blob did); dark for "hold still"
-static ImU32 move_color(int move) {
-    static const ImU32 colors[4] = {IM_COL32(74, 163, 255, 255), IM_COL32(242, 184, 75, 255),
-                                    IM_COL32(176, 140, 255, 255), IM_COL32(255, 107, 154, 255)};
-    return move < 0 ? IM_COL32(52, 56, 66, 255) : colors[move % 4];
-}
 
 static ImU32 color(const ImVec4& c, float alpha = 1.0f) {
     return ImGui::ColorConvertFloat4ToU32(ImVec4(c.x, c.y, c.z, c.w * alpha));
@@ -22,30 +18,6 @@ static ImU32 color(const ImVec4& c, float alpha = 1.0f) {
 
 static const TaskTry& try_at(const TaskView& t, int64_t age) {
     return t.tries[(t.tries_total - 1 - age) % TASK_TRIES];
-}
-
-// the last tries, newest at the right: what was right on top, what the blob did under it,
-// and a bar for good or bad
-static void tries_strip(const TaskView& t) {
-    const float w = ImGui::GetContentRegionAvail().x;
-    const float cell = 9.0f;
-    const int count = static_cast<int>(std::min<int64_t>(t.tries_total, (int)(w / cell)));
-    const ImVec2 at = ImGui::GetCursorScreenPos();
-    ImDrawList* dl = ImGui::GetWindowDrawList();
-    for (int i = 0; i < count; ++i) {
-        const TaskTry& tr = try_at(t, i);
-        const float x = at.x + w - (i + 1) * cell;
-        dl->AddRectFilled(ImVec2(x, at.y), ImVec2(x + cell - 2, at.y + cell - 1),
-                          move_color(tr.right));
-        dl->AddRectFilled(ImVec2(x, at.y + cell), ImVec2(x + cell - 2, at.y + 2 * cell - 1),
-                          move_color(tr.move));
-        const ImU32 bar = tr.valence > 0   ? color(GREEN)
-                          : tr.valence < 0 ? color(ALARM)
-                                           : IM_COL32(52, 56, 66, 255);
-        dl->AddRectFilled(ImVec2(x, at.y + 2 * cell + 1), ImVec2(x + cell - 2, at.y + 2 * cell + 4),
-                          bar);
-    }
-    ImGui::Dummy(ImVec2(w, 2 * cell + 5));
 }
 
 // a list squeezed into `width` pixels: the mean of the windows under each pixel
@@ -140,20 +112,24 @@ static void score_plot(const TaskView& t, const TaskScores& sc, float height) {
     const ImVec2 plot(at.x + 30, at.y);
     dl->AddRectFilled(plot, ImVec2(plot.x + size.x, plot.y + size.y), IM_COL32(22, 25, 33, 255));
 
-    // the scale: shares run 0..1; cartpole's steps per fall run to the highest seen
+    // the scale: a share runs 0..1; a score that goes past 1 (steps per fall, say) runs to
+    // the highest seen
     float top = 1.0f;
-    if (!t.ratio_score) {
-        for (const std::vector<float>* v : {&sc.blob, &sc.twin, &sc.coin}) {
-            for (float x : *v) {
-                top = std::max(top, x * 1.1f);
-            }
+    for (const std::vector<float>* v : {&sc.blob, &sc.twin, &sc.coin}) {
+        for (float x : *v) {
+            top = std::max(top, x > 1.0f ? x * 1.1f : 1.0f);
         }
     }
+    const bool share = top <= 1.0f;
+    // grid lines at quarters; on a short plot only the top and bottom are labelled
     for (int i = 0; i <= 4; ++i) {
         const float y = plot.y + size.y * i / 4.0f;
         dl->AddLine(ImVec2(plot.x, y), ImVec2(plot.x + size.x, y), IM_COL32(48, 53, 64, 255));
+        if (size.y < 80.0f && i != 0 && i != 4) {
+            continue;
+        }
         char label[16];
-        std::snprintf(label, sizeof label, t.ratio_score ? "%.2f" : "%.0f", top * (4 - i) / 4.0f);
+        std::snprintf(label, sizeof label, share ? "%.2f" : "%.0f", top * (4 - i) / 4.0f);
         dl->AddText(ImVec2(at.x, y - 7), color(DIM), label);
     }
 
@@ -214,16 +190,69 @@ static void legend(const TaskView& t, const TaskScores& sc) {
     ImGui::TextColored(DIM, "chance %.2f", mean_of(sc.coin));
 }
 
-static void move_name(int move, char* out, int size) {
-    if (move < 0) {
-        std::snprintf(out, size, "nothing");
-    } else {
-        std::snprintf(out, size, "motor %d", move);
-    }
+static const char* button_name(const TaskView& t, int b) {
+    return b < 0 ? "nothing" : b < t.motors ? t.motor_names[b] : "?";
 }
 
 static const char* answer_word(int valence) {
     return valence > 0 ? "good" : valence < 0 ? "bad" : "neutral";
+}
+
+// a button's name in its colour
+static void button_text(const TaskView& t, int b) {
+    float rgb[3] = {0.55f, 0.58f, 0.64f};
+    if (b >= 0) {
+        button_rgb(b, rgb);
+    }
+    ImGui::TextColored(ImVec4(rgb[0], rgb[1], rgb[2], 1.0f), "%s", button_name(t, b));
+}
+
+// the last try in words: the lines that were on, what was wanted and done, how it went; and
+// the share of the last 100
+static void last_try(const TaskView& t) {
+    if (t.tries_total == 0) {
+        ImGui::TextColored(DIM, "no answer yet");
+        return;
+    }
+    const TaskTry& last = try_at(t, 0);
+    char on[96] = "";
+    for (int i = 0; i < std::min(t.singles, 32); ++i) {
+        if ((last.lines >> i) & 1) {
+            const size_t used = std::strlen(on);
+            std::snprintf(on + used, sizeof on - used, "%s%s", used > 0 ? ", " : "",
+                          t.single_names[i]);
+        }
+    }
+    if (t.singles > 0) {
+        ImGui::Text("%s:", on[0] != '\0' ? on : "no line on");
+        ImGui::SameLine();
+    }
+    ImGui::TextColored(DIM, "wanted");
+    ImGui::SameLine();
+    button_text(t, last.right);
+    ImGui::SameLine();
+    ImGui::TextColored(DIM, "did");
+    ImGui::SameLine();
+    button_text(t, last.move);
+    ImGui::SameLine();
+    ImGui::TextColored(last.valence > 0   ? GREEN
+                       : last.valence < 0 ? ALARM
+                                          : DIM,
+                       "%s", answer_word(last.valence));
+    int good = 0, bad = 0;
+    const int n = static_cast<int>(std::min<int64_t>(t.tries_total, 100));
+    for (int i = 0; i < n; ++i) {
+        good += try_at(t, i).valence > 0 ? 1 : 0;
+        bad += try_at(t, i).valence < 0 ? 1 : 0;
+    }
+    ImGui::SameLine();
+    ImGui::TextColored(DIM, "  last %d:", n);
+    ImGui::SameLine();
+    ImGui::TextColored(GREEN, "%d", good);
+    ImGui::SameLine();
+    ImGui::TextColored(ALARM, "%d", bad);
+    ImGui::SameLine();
+    ImGui::TextColored(DIM, "%d still", n - good - bad);
 }
 
 void task_panel(State& s) {
@@ -243,57 +272,42 @@ void task_panel(State& s) {
     ImGui::TextColored(t.learning_on ? GREEN : ALARM,
                        t.learning_on ? "learning on" : "learning off");
     ImGui::SameLine();
-    ImGui::Text("  step %lld  (tick %d of %d)", static_cast<long long>(t.step), t.tick_in_step,
+    ImGui::Text(" step %lld (tick %d of %d)", static_cast<long long>(t.step), t.tick_in_step,
                 t.ticks_per_step);
-    ImGui::PushStyleColor(ImGuiCol_Text, DIM);
-    ImGui::TextWrapped("%s", t.settings);
-    ImGui::PopStyleColor();
-
-    // the last try in words, and the share of the last 100
-    if (t.tries_total > 0) {
-        const TaskTry& last = try_at(t, 0);
-        int good = 0, bad = 0;
-        const int n = static_cast<int>(std::min<int64_t>(t.tries_total, 100));
-        for (int i = 0; i < n; ++i) {
-            good += try_at(t, i).valence > 0 ? 1 : 0;
-            bad += try_at(t, i).valence < 0 ? 1 : 0;
-        }
-        char did[16], right[16];
-        move_name(last.move, did, sizeof did);
-        move_name(last.right, right, sizeof right);
-        if (t.has_cue) {
-            ImGui::Text("last: cue %d, answered %s:", last.cue, did);
-        } else {
-            ImGui::Text("last: wanted %s, did %s:", right, did);
-        }
+    if (s.frame.reading >= 0) {
         ImGui::SameLine();
-        ImGui::TextColored(last.valence > 0   ? GREEN
-                           : last.valence < 0 ? ALARM
-                                              : DIM,
-                           "%s", answer_word(last.valence));
-        ImGui::SameLine();
-        ImGui::TextColored(DIM, "  last %d:", n);
-        ImGui::SameLine();
-        ImGui::TextColored(GREEN, "%d", good);
-        ImGui::SameLine();
-        ImGui::TextColored(ALARM, "%d", bad);
-        ImGui::SameLine();
-        ImGui::TextColored(DIM, "%d still", n - good - bad);
-    } else {
-        ImGui::TextColored(DIM, "no answer yet");
+        ImGui::TextColored(AMBER, " paused: readability");
     }
-    ImGui::TextColored(DIM, "tries, newest right: wanted / did / good or bad   key:");
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(0.29f, 0.64f, 1.0f, 1), "0");
-    ImGui::SameLine();
-    ImGui::TextColored(AMBER, "1");
-    ImGui::SameLine();
-    ImGui::TextColored(DIM, "still");
-    tries_strip(t);
+    // the settings only when there is room for them; always on hover
+    const bool roomy = r.h >= 300;
+    ImGui::PushStyleColor(ImGuiCol_Text, DIM);
+    if (roomy) {
+        ImGui::TextWrapped("%s", t.settings);
+    }
+    ImGui::PopStyleColor();
+    if (!roomy && ImGui::IsWindowHovered()) {
+        ImGui::SetTooltip("%s", t.settings);
+    }
+    last_try(t);
 
+    // the world (bitmap or numbers) down the left; the strip of the last steps, the score
+    // plot and its legend in the rest
+    const float below = ImGui::GetContentRegionAvail().y;
+    const float strip_h = std::clamp(r.h * 0.28f, 40.0f, 30.0f + 9.0f * std::min(t.singles, 16));
+    const float world_w = world_picture_width(t, std::min(below, 2.0f * strip_h + 40.0f));
+    if (world_w > 0) {
+        ImGui::BeginChild("world", ImVec2(world_w, below), ImGuiChildFlags_None,
+                          ImGuiWindowFlags_NoScrollbar);
+        world_picture(t, world_w - 4, below);
+        ImGui::EndChild();
+        ImGui::SameLine();
+    }
+    ImGui::BeginGroup();
+    line_strip(t, strip_h);
     const float room = ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeightWithSpacing() - 6;
-    score_plot(t, s.frame.scores, std::max(40.0f, room));
+    score_plot(t, s.frame.scores, std::max(30.0f, room));
     legend(t, s.frame.scores);
+    ImGui::EndGroup();
     ImGui::End();
 }
 
@@ -311,8 +325,8 @@ void task_labels(State& s) {
     dl->PushClipRect(ImVec2(r.x, r.y), ImVec2(r.x + r.w, r.y + r.h), true);
     std::vector<ImVec4> drawn; // x0, y0, x1, y1 of each name drawn
     for (const TaskLine& l : f.task.lines) {
-        if (l.label[0] == '\0') {
-            continue;
+        if (l.label[0] == '\0' || l.spread) {
+            continue; // spread buttons are named in the readout panel, by colour
         }
         const ImVec4 c = l.kind == TASK_LINE_GOOD    ? GREEN
                          : l.kind == TASK_LINE_BAD   ? ALARM

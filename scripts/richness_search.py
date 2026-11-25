@@ -54,6 +54,21 @@ RANGES = {
     "pacemakers_per_1024": (0, 16),
     "strong_log": (1, 2),
     "fan_in_max": (48, 128),
+    # wiring at birth (docs/results-2026-11-25-family-wiring.md). wire_slots 9 is all of
+    # them; wire_two_sheets at 0 or below is off, so about half the sheets have it
+    "wire_layers": (0, 4),
+    "wire_fine": (0, 6),
+    "wire_slots": (3, 9),
+    "wire_mirror_percent": (0, 100),
+    "wire_hub_per_1024": (0, 60),
+    "wire_hub_shift": (1, 3),
+    "wire_stream": (0, 4),
+    "wire_stream_dir": (0, 15),
+    "wire_stream_turn": (0, 16),
+    "wire_far_topo": (0, 2),
+    "wire_far_jitter": (0, 2),
+    "wire_inhib_reach": (-3, 3),
+    "wire_two_sheets": (-100, 100),
 }
 DEFAULTS = {
     "inhibitory_percent": 25, "inhibit_gain": 5, "threshold_min": 4, "threshold_max": 12,
@@ -62,6 +77,10 @@ DEFAULTS = {
     "local_delay_min": 1, "local_delay_max": 4, "branch_threshold": 3, "branch_bonus": 2,
     "noise_shift": 10, "sector_target_per_1024": 32, "sector_smooth_shift": 4,
     "pacemakers_per_1024": 4, "strong_log": 2, "fan_in_max": 96,
+    "wire_layers": 0, "wire_fine": 0, "wire_slots": 0, "wire_mirror_percent": 0,
+    "wire_hub_per_1024": 0, "wire_hub_shift": 2, "wire_stream": 0, "wire_stream_dir": 0,
+    "wire_stream_turn": 0, "wire_far_topo": 0, "wire_far_jitter": 0, "wire_inhib_reach": 0,
+    "wire_two_sheets": 0,
 }
 
 

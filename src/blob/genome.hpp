@@ -126,6 +126,39 @@ struct Genome {
     int noise_learn_sign = 1;
     int noise_learn_pair = 0;
 
+    // wiring at birth (ideas 19-21, 77-80, 83; birth_shape.cpp). all 0 is today's wiring and
+    // draws exactly what it drew before. a shaped neuron keeps today's expected count of local
+    // connections; only where they come from changes. "doubling": 2x likelier.
+    // 19: in, middle, out groups by bit; the favoured flows are 2^this likelier
+    int wire_layers = 0;
+    // 21: halvings of the chance per 4 cells of distance
+    int wire_fine = 0;
+    // 20: listen to this many of the 9 local tiles (own tile always)
+    int wire_slots = 0;
+    // 77: where A listens to B, B adds A with this chance (count kept)
+    int wire_mirror_percent = 0;
+    // 78: share of hub neurons; a hub has 2^shift times the connections in, and is 2^shift
+    // times likelier to be picked as a source
+    int wire_hub_per_1024 = 0;
+    int wire_hub_shift = 2;
+    // 79: doublings per 8 cells upstream; direction 0..15 in sixteenths of a turn (0 flows
+    // toward +x, 4 toward +y); turn: sixteenths of a turn the flow turns across the width
+    int wire_stream = 0;
+    int wire_stream_dir = 0;
+    int wire_stream_turn = 0;
+    // 83: 1 a tile's far links land on one tile per slot; 2 a map, one shift per sector, so
+    // neighbouring tiles land near each other. jitter: tiles of scatter around the landing
+    int wire_far_topo = 0;
+    int wire_far_jitter = 0;
+    // kinds by place. >0: inhibitory neurons listen wider (own tile 2^-this as likely). <0:
+    // inhibition stays local (inhibitory neurons favour their own tile, and are 2^this less
+    // likely as sources in the neighbours)
+    int wire_inhib_reach = 0;
+    // 80: no local wiring across the middle row; this percent of the far half's far slots are
+    // fed from the same place on the near half; the far half sends back to 1 in 8 of the near
+    // half's far links
+    int wire_two_sheets = 0;
+
     // actor and critic (learn_critic.cpp, learn_actor.cpp; Barto, Sutton and Anderson 1983).
     // the world calls blob_reward every step; a group of critic cells beside the motor
     // lattice learns to fire more where things go well, and the change in their spike

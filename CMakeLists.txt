@@ -119,3 +119,15 @@ if(minimal_sources)
         target_link_libraries(minimalprobe PRIVATE blobminimal blobworld blobcore)
     endif()
 endif()
+
+# blobnn: the fixed reference networks (mlp, gru) behind the same shell, picked with
+# blobrun --engine mlp|gru. floats, no fused multiply-add, so runs match across machines
+file(GLOB nn_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/nn/*.cpp)
+if(nn_sources AND TARGET blobworld AND TARGET blobrun)
+    add_library(blobnn STATIC ${nn_sources})
+    target_include_directories(blobnn PUBLIC src)
+    target_compile_options(blobnn PRIVATE ${warnings} ${speed} -ffp-contract=off)
+    target_link_libraries(blobnn PUBLIC blobworld)
+    target_link_libraries(blobrun PRIVATE blobnn)
+    target_compile_definitions(blobrun PRIVATE BLOB_HAS_NN=1)
+endif()
