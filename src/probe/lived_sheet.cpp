@@ -149,6 +149,8 @@ static void fresh_readout(Blob& blob, uint64_t seed) {
     blob.genome.learn_mode = 5;
     blob.genome.tag_mode = 0;
     blob.genome.margin_percent = 0;
+    blob.genome.replay_depth = 0; // the backward walk is inner learning too
+
 }
 
 int probe_transfer(int argc, char** argv) {

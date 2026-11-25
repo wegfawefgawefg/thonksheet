@@ -257,7 +257,8 @@ void learn_replay(Blob& blob, int valence) {
         stop(blob, *r);
         return;
     }
-    if (g.replay_depth <= 0 || valence == 0 || (valence > 0 && !g.readout_good)) {
+    bool good_walks = g.readout_good && !g.replay_bad_only;
+    if (g.replay_depth <= 0 || valence == 0 || (valence > 0 && !good_walks)) {
         return;
     }
     if (!blob.motor_attached || !blob.motor_acted) {
