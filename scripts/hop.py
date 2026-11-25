@@ -68,8 +68,11 @@ def toy_jobs(outdir, tasks, settings, seeds, extra):
 def toy_score(path):
     if not os.path.exists(path):
         return None
-    m = re.search(r"first quarter ([0-9.]+) late ([0-9.]+)", open(path).read())
-    return (float(m.group(1)), float(m.group(2))) if m else None
+    text = open(path).read()
+    m = re.search(r"first quarter ([0-9.]+) late ([0-9.]+)", text)
+    life = re.search(r"life: late ([0-9.]+)", text)
+    return ((float(m.group(1)), float(m.group(2)), float(life.group(1)) if life else None)
+            if m else None)
 
 
 def toy_table(outdir, tasks, settings, seeds):
@@ -86,6 +89,8 @@ def toy_table(outdir, tasks, settings, seeds):
             cells = " ".join("%.3f " % x[1] if x else "  -   " for x in v)
             mean = ("%.3f (%.3f)" % (sum(x[1] for x in got) / len(got),
                                      sum(x[0] for x in got) / len(got))) if got else "-"
+            lived = [x[2] for x in got if x[2] is not None]
+            mean += "   life's own readout, late %.3f" % (sum(lived) / len(lived)) if lived else ""
             lines.append("%-8s %-8s %s   %s" % ("", name, cells, mean))
     return "\n".join(lines)
 

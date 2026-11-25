@@ -109,3 +109,74 @@ float DFA needs a full error vector on every example and many epochs to reach 0.
   the coin control to the MNIST part.
 - `scripts/hop.sh toy|calc NAME ...`: the toys through `blobprobe transfer` (a fresh output
   on the lived sheet; tags doc) and the calc battery, born against lived against coin.
+
+## Step 1: toys (a fresh output on the lived sheet)
+
+`scripts/hop.sh toy toys` (and the variant lines below). A 40,000-step life on the task with
+the tags job's readout (`--g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4
+--g.readout_balance 1`, 128 motor cells a button) and the rule; then `blobprobe transfer`
+freezes the inside, puts every motor cell back as born, wipes the readout's counters, and a
+fresh readout learns the same task for 20,000 steps. The number is that fresh readout's late
+score (last tenth); in brackets its first quarter. "off" is the same life with the readout
+learning and the rule off: the check that the output's own learning does not reach the
+reader. "coin": the rule on, every error sent to a random line. Seeds 5-8; one setting, not
+tuned (the defaults above). Rule numbers per life on xor: about 500 verdicts reach the rule
+(the live readout is right almost at once), about 940 cells taught per verdict, 10 counter
+steps per taught cell, 400 re-picks per verdict.
+
+| task (fresh output, late) | born | off | **told the right button (m2)** | told good or bad (m1) | m1, and good teaches | coin (m2's errors on random lines) |
+|---|---|---|---|---|---|---|
+| both-not-either (xor) | 0.857 (0.698) | 0.876 (0.735) | **0.998 (0.960)** | 0.982 (0.829) | 0.915 | 0.933 (0.770) |
+| parity of 3 | 0.542 (0.525) | 0.550 (0.532) | **0.824 (0.711)** | 0.681 (0.596) | 0.608 | 0.589 (0.544) |
+| parity of 4 | 0.473 | 0.488 | 0.494 | 0.473 | | 0.475 |
+
+Per seed (5, 6, 7, 8): xor m2 0.999, 0.997, 0.998, 0.998 against born 0.839, 0.895, 0.856,
+0.836 and coin 0.933, 0.934, 0.933, 0.931; parity 3 m2 0.826, 0.855, 0.816, 0.800 against
+born 0.528, 0.561, 0.561, 0.518 and coin 0.582, 0.588, 0.575, 0.609. Every seed is above its
+coin control on xor and parity 3 in both teaching modes.
+
+- **Yes on the toys: the inside comes to carry the product.** A readout that has never seen
+  the task reads exclusive-or from the lived sheet at 0.96 in its first quarter and 0.998 at
+  the end (born 0.70 and 0.86): the same as tags (0.961 / 0.998) on the same test, reached
+  by a different route (tags follow the button's own wiring back one hop; this reaches
+  every hidden cell through random wires). Parity of 3, which only the richest sheet
+  carried (finding 33), goes 0.54 to 0.82.
+- **Told the right button teaches more than good or bad** (parity 3: 0.82 against 0.68), as
+  expected: on a two-button task "the pressed one was wrong" already names the right one,
+  so the gap is in how many cells move (a +1 line and a -1 line reach more cells than one),
+  not in what they are told.
+- **Good should teach nothing.** Letting good say "the pressed button should have been
+  higher" costs both tasks (xor 0.98 to 0.92, parity 3 0.68 to 0.61). Finding 39 again.
+- **The coin control moves the toys too** (xor 0.86 to 0.93, parity 3 0.54 to 0.59): churn
+  of the wiring with no information is worth something, as the shuffled control was for
+  competitive learning and the unsigned half was for reverse replay. The errors are worth
+  far more (+0.065 and +0.235 over the coin).
+- **Parity of 4: no**, also with a four times longer life (`scripts/hop.sh toy toys-long
+  --settings off,m2,m2coin --tasks parity4 --seeds 5,6 --steps 160000 --window 4000`: off
+  0.475, m2 0.478, coin 0.498). The live readout stays at chance through the life too.
+
+**Which cells should count as near** (m2, seeds 5-8; `scripts/hop.sh toy toys-near0
+--settings m2 --tasks xor,parity3 --g.hop_near 0`, and `toys-nofired ... --g.hop_fired 0`):
+
+| marks from | xor | parity 3 |
+|---|---|---|
+| cells at or over the bar only (fired, or over it but held back): Hebbian with a sign | 0.997 | 0.849 |
+| fired, or within a quarter of the bar under it (the default) | 0.998 | 0.824 |
+| **within a quarter of the bar under it, not fired** | 0.997 | **0.893** |
+
+On parity 3 the cells that came near and did not fire are the better teachers (0.893, every
+seed 0.886 to 0.903, against 0.80 to 0.86 for the default): "fire more" has the most to say
+to a cell that almost fired, as the float rule's pseudo-derivative says. On xor everything
+reaches 0.997.
+
+## Step 3: MNIST (`scripts/inside.sh NAME --teach 1|2 ...`)
+
+All numbers: test set, fresh linear reader of the non-sensor cells fit on 60,000 training
+digits, after a 60,000-digit taught life (the readout of `scripts/mnist.sh online` learning
+from good and bad, the rule hearing the errors), motor cells put back as born before the
+read. "rate": hidden spikes per 1,000 cell-ticks at the end of the life (born 31 to 33).
+
+**The output's own learning does not reach the reader.** The same taught life with the rule
+off (`scripts/inside.sh teachoff --teach 2 --only mnist --kinds lived`; the readout gets
+0.68 and 0.70 right in its life): lived 0.9245 and 0.9246 against born 0.9255 and 0.9243
+(seeds 1, 2). Equal within a thousandth; wiring and rate as born.
