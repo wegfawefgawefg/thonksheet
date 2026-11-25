@@ -162,6 +162,8 @@ def sentence(rule, cube):
                                      " recently"))
     elif fired == 0:
         quals.append("that did not fire" + ("" if reward == 1 else " recently"))
+    elif reward != 0:
+        quals.append("(at a reward, one chance per tick a source fired, one for a quiet one)")
     causal = _one(care, value, "src_causal", "that fired exactly one delay before its last spike",
                   "that did not fire at its delay before its last spike")
     if causal:

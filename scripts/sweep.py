@@ -38,8 +38,10 @@ LEARNING_ONLY = {
     "readout_good", "readout_new", "readout_budget", "readout_far",
     "readout_center", "readout_evidence", "readout_evidence_bits", "readout_evidence_strong",
     "readout_balance",
-    "lose_shift_steps", "win_stay_steps", "lose_shift_fires", "bad_cut_on",
+    "lose_shift_steps", "win_stay_steps", "lose_shift_fires", "bad_cut_on", "rule_on",
 }
+# flags with a value that only matter while learning is on (the rule table, idea 120)
+LEARNING_FLAGS = {"--rule-file", "--rule-hex"}
 
 
 def set_out(path):
@@ -83,7 +85,7 @@ def twin_args(args):
     # plug and task flags (not genome numbers) stay as they are
     out = []
     for i in range(0, len(args) - 1, 2):
-        if not args[i].startswith("--g."):
+        if not args[i].startswith("--g.") and args[i] not in LEARNING_FLAGS:
             out += [args[i], args[i + 1]]
     for k in sorted(pairs):
         out += ["--g." + k, pairs[k]]
