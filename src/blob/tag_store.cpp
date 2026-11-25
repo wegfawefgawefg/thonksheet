@@ -44,7 +44,7 @@ static uint64_t slot_kind(const Blob& blob, int n, int k) {
 // strength of its connection (0, 1, 4 or 5). the counts it keeps are those it has now,
 // connections and strong ones, separately for excitatory and inhibitory sources, so its
 // balance of excitation and inhibition is the one it was born with
-static int8_t* tag_row(Blob& blob, int n) {
+int8_t* tag_row(Blob& blob, int n) {
     int8_t* c = blob.tag_evidence + (size_t)n * TAG_ROW;
     if (blob.tag_made[n]) {
         return c;
@@ -208,4 +208,7 @@ void tag_rewire(Blob& blob, int n) {
         blob.w0[w] = (on & ~four) | five;
     }
     blob.fan_in[n] = (uint16_t)count_fan_in(blob, n);
+    if (blob.hop) {
+        hop_stale(blob, n); // the one-hop rule keeps bounds on this neuron's counters
+    }
 }

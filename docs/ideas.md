@@ -697,7 +697,11 @@ co-activity runs ties the held units together and loses their order.
      2016; e-prop, Bellec 2020; in bits] Fixed random wires from the output's error lines
      to each hidden cell, a fading mark on each connection that just helped its cell
      fire, a hidden counter moved by the sign on the wire when the error arrives. The
-     owner's "hyper truncated bit backprop". *queued, next slot*
+     owner's "hyper truncated bit backprop". *done 2026-11-25: `--g.hop_on 1
+     --g.hop_teach 1|2`, `scripts/hop.sh`, docs/results-2026-11-25-hop.md. Teaches the
+     inside products on the toys (parity of 3 0.55 to 0.82, coin 0.59) and on held-out
+     calculation cases (xor4 0.63 to 0.87, coin 0.67). On MNIST its coin control gets
+     nearly all of its gain. Next: idea 163.*
 160. **The shuffled-input control.** Any life that claims to teach the inside is repeated
      on inputs shuffled afresh each time and read on real inputs. *done, part of
      `scripts/inside.sh`; a rate-matched control is still to add.*
@@ -718,3 +722,10 @@ co-activity runs ties the held units together and loses their order.
      errors go to the inside (as lines, and one hop to every hidden cell once idea 159 is
      in). The critic is then just the predictor of the reward line. Takes in queue item 3
      and idea 137. *building*
+163. **What stops the one-hop error on real data.** Three suspects from idea 159's MNIST
+     result: one cell hears about 6 pixels and cannot become what the error asks for
+     (try wider cells, and a second set of cells that hear the taught ones, each still
+     one hop from the error); MNIST is nearly solved by a straight-line reader, so it
+     cannot show a product being learned (score on a real-data task a straight line
+     fails); the errors come from a readout that is mostly right and has dead buttons.
+     Also parity of 4, and shuffled-input controls for the toys. *building*
