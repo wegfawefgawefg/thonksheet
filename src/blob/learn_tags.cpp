@@ -181,12 +181,16 @@ void learn_tags(Blob& blob, int valence) {
         }
     }
 
-    // how far from expected is the chance anything moves
+    // how far from expected is the chance anything moves. tag_verdict 1: an error rule
+    // instead, as the readout's: every bad moves, no good does
     int32_t size = gap < 0 ? -gap : gap;
-    if ((int32_t)rng_below(blob.rng, 512) >= size) {
+    if (g.tag_verdict == 1 && valence > 0) {
         return;
     }
-    bool better = gap > 0;
+    if (g.tag_verdict == 0 && (int32_t)rng_below(blob.rng, 512) >= size) {
+        return;
+    }
+    bool better = g.tag_verdict == 1 ? false : gap > 0;
     uint32_t moved = 0;
     for (int t = 0; t < blob.tile_count; t++) {
         for (int s = 0; s < 2; s++) {

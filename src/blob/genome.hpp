@@ -156,6 +156,7 @@ struct Genome {
     int tag_inh = 1;     // 1: inhibitory neurons are tagged (opposite sign) and learn; 0: never
     int tag_avg_shift = 5; // the running mean of rewards spans about 2^this verdicts
     int tag_bits = 6;    // counter size, signed (2..8)
+    int tag_verdict = 0; // 0 against the running mean, as above; 1 every bad moves, no good does
     // wiring at birth (ideas 19-21, 77-80, 83; birth_shape.cpp). all 0 is today's wiring and
     // draws exactly what it drew before. a shaped neuron keeps today's expected count of local
     // connections; only where they come from changes. "doubling": 2x likelier.

@@ -115,6 +115,7 @@ static const GenomeField fields[] = {
     {"tag_inh", &Genome::tag_inh},
     {"tag_avg_shift", &Genome::tag_avg_shift},
     {"tag_bits", &Genome::tag_bits},
+    {"tag_verdict", &Genome::tag_verdict},
     {"wire_layers", &Genome::wire_layers},
     {"wire_fine", &Genome::wire_fine},
     {"wire_slots", &Genome::wire_slots},

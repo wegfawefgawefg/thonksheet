@@ -41,7 +41,7 @@ LEARNING_ONLY = {
     "lose_shift_steps", "win_stay_steps", "lose_shift_fires", "bad_cut_on",
     "margin_percent", "margin_win", "margin_rival", "margin_rival_shift",
     "tag_mode", "tag_hops", "tag_thin", "tag_min", "tag_shift", "tag_far", "tag_inh",
-    "tag_avg_shift", "tag_bits",
+    "tag_avg_shift", "tag_bits", "tag_verdict",
 }
 
 
