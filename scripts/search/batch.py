@@ -11,8 +11,9 @@ name, so its scores never mix with blobrun's.
 
     --batch serial                    runs its batch one life at a time through the runner
                                       (to exercise the seam; no speed gain)
-    --batch program:PATH[:ENGINES]    an external program: PATH --in A.csv --out B.csv
-                                      (ENGINES a + list, default minimal)
+    --batch program:PATH[:ENGINES[:SIZE]]   an external program: PATH --in A.csv --out B.csv
+                                      (ENGINES a + list, default minimal; SIZE lives per
+                                      batch, default 1024)
 
 The csv a program gets: header `key,args`, then one line per life, args being blobrun's
 flags after the program name, space-separated, with rule files as paths. The csv it gives
@@ -69,10 +70,21 @@ class ProgramBatch:
                 real = runner.real_command(cmd, root, rule_file)[4:]
                 w.writerow([" ".join(cmd), " ".join(real)])
         started = time.time()
-        proc = subprocess.run(["nice", "-n", "19", self.path, "--in", stem + "-in.csv",
-                               "--out", stem + "-out.csv"], cwd=root,
-                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                              universal_newlines=True)
+        if runner.stopping.is_set():
+            return [None] * len(jobs)
+        proc = subprocess.Popen(["nice", "-n", "19", self.path, "--in", stem + "-in.csv",
+                                 "--out", stem + "-out.csv"], cwd=root,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                stdin=subprocess.DEVNULL, universal_newlines=True)
+        with runner.running_lock:
+            runner.running.add(proc)
+        try:
+            proc.stdout_text = proc.communicate()[0]
+        finally:
+            with runner.running_lock:
+                runner.running.discard(proc)
+        if runner.stopping.is_set():
+            return [None] * len(jobs)
         seconds = (time.time() - started) / max(1, len(jobs))
         got = {}
         if proc.returncode == 0 and os.path.exists(stem + "-out.csv"):
@@ -95,7 +107,7 @@ class ProgramBatch:
             rows.append(row)
         if proc.returncode != 0:
             print("batch %s failed (exit %d): %s" % (self.name, proc.returncode,
-                                                     proc.stdout[-300:]), flush=True)
+                                                     proc.stdout_text[-300:]), flush=True)
         for suffix in ("-in.csv", "-out.csv"):
             if os.path.exists(stem + suffix):
                 os.remove(stem + suffix)
@@ -111,5 +123,6 @@ def make(spec):
     if spec.startswith("program:"):
         parts = spec.split(":")
         engines = parts[2].split("+") if len(parts) > 2 else ["minimal"]
-        return ProgramBatch(parts[1], engines)
-    raise ValueError("--batch is serial or program:PATH[:ENGINES]")
+        size = int(parts[3]) if len(parts) > 3 else 1024
+        return ProgramBatch(parts[1], engines, size)
+    raise ValueError("--batch is serial or program:PATH[:ENGINES[:SIZE]]")
