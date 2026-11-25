@@ -169,6 +169,7 @@ static void grade(MinimalBlob& m, bool better, int shift) {
             if (!pick) {
                 continue;
             }
+            min_site(m, MIN_DRAW_GRADE, (uint32_t)t, (uint32_t)a);
             pick &= sparse_word(m.rng, shift);
             if (m.ev_tiles) {
                 pick &= ~m.ev_tiles[t]; // counter neurons learn through their counters
@@ -177,6 +178,7 @@ static void grade(MinimalBlob& m, bool better, int shift) {
                 int n = t * TILE_NEURONS + __builtin_ctzll(pick);
                 pick &= pick - 1;
                 m.stats.graded++;
+                min_site(m, MIN_DRAW_GRADE_PICK, (uint32_t)n, (uint32_t)a);
                 if (better) {
                     min_gain_active(m, n, a);
                 } else {

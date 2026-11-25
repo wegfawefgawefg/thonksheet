@@ -182,6 +182,7 @@ Blob* minimal_birth(const Genome& genome, const MinimalGenome& mg, uint64_t seed
     sanitize(m->mg);
     m->mg.learning_on = genome.learning_on && mg.learning_on;
     rng_seed(m->rng, seed ^ 0x4d696e696d616c00ull); // "Minimal"
+    m->rng_key = seed ^ 0x4d696e696d616c00ull;
 
     b.tiles_w = genome.tiles_w;
     b.tiles_h = genome.tiles_h;
@@ -332,6 +333,7 @@ static const MinimalField fields[] = {
     {"ev_shift", &MinimalGenome::ev_shift},
     {"ev_inh", &MinimalGenome::ev_inh},
     {"ev_cowire", &MinimalGenome::ev_cowire},
+    {"rng_mode", &MinimalGenome::rng_mode},
 };
 
 void apply_minimal_args(int argc, char** argv, MinimalGenome& mg) {

@@ -80,6 +80,9 @@ struct MinimalGenome {
     // the other way, which takes the mean out of the rule.
     int noise_sign = 1;
     int noise_pair = 0;
+    // where random words come from (minimal_keyed.hpp): 0 the life's one stream in a fixed
+    // order, 1 a stream per draw site keyed by tick and place, which the GPU port can match
+    int rng_mode = 0;
 };
 
 struct MinimalStats {
@@ -129,6 +132,7 @@ struct MinimalBlob {
 
     int32_t reward_avg = 0; // running average of reward, x256
     uint64_t rng[4] = {};
+    uint64_t rng_key = 0; // rng_mode 1: the life's part of every draw key
     MinimalStats stats;
 };
 

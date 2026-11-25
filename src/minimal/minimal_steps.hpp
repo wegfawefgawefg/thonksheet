@@ -1,6 +1,7 @@
 #pragma once
 
 #include "minimal/minimal.hpp"
+#include "minimal/minimal_keyed.hpp"
 
 #include <cstdint>
 
@@ -9,6 +10,11 @@
 // learning names a spike by its age (0 = the newest map). "the sources active just before
 // it" are, for slot k, the map `delay` ticks older than the spike, at the slot's source tile:
 // exactly what the neuron read when it fired.
+
+// rng_mode 1: the next words come from this draw site's own stream (minimal_keyed.hpp)
+inline void min_site(MinimalBlob& m, uint32_t site, uint32_t where, uint32_t age) {
+    min_reseed(m.rng, m.mg.rng_mode, m.rng_key, m.shell.stats.tick, site, where, age);
+}
 
 // the mask (and delay) word of neuron n, slot k
 inline int64_t min_index(const MinimalBlob& m, int n, int k) {

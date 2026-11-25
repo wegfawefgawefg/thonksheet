@@ -140,6 +140,7 @@ static void regulate(MinimalBlob& m, const uint64_t* fired) {
     const MinimalGenome& mg = m.mg;
     for (int t = 0; t < m.shell.tile_count; t++) {
         uint64_t fixed = m.shell.sensor[t];
+        min_site(m, MIN_DRAW_REGULATE, (uint32_t)t, 0);
         uint64_t up = fired[t] & ~fixed & sparse_word(m.rng, mg.up_shift);
         uint64_t down = ~fixed & ~up & sparse_word(m.rng, mg.down_shift);
         uint8_t* thr = m.threshold + (int64_t)t * TILE_NEURONS;
@@ -159,10 +160,12 @@ static void regulate(MinimalBlob& m, const uint64_t* fired) {
 // a firing neuron, by chance, swaps one connection for a source it just heard
 static void cowire(MinimalBlob& m, const uint64_t* fired) {
     for (int t = 0; t < m.shell.tile_count; t++) {
+        min_site(m, MIN_DRAW_COWIRE, (uint32_t)t, 0);
         uint64_t pick = fired[t] & ~m.shell.sensor[t] & sparse_word(m.rng, m.mg.cowire_shift);
         while (pick) {
             int n = t * TILE_NEURONS + __builtin_ctzll(pick);
             pick &= pick - 1;
+            min_site(m, MIN_DRAW_COWIRE_PICK, (uint32_t)n, 0);
             if (m.ev_tiles && m.mg.ev_cowire && m.ev_row[n] >= 0) {
                 min_evidence_cowire(m, n); // evidence: a counter goes up, the mask follows
                 continue;
@@ -194,6 +197,7 @@ void minimal_tick(Blob& blob) {
     for (int t = 0; t < blob.tile_count; t++) {
         uint64_t would = plain ? would_fire_plain(m, prev, t) : would_fire(m, next, t);
         uint64_t sensor = blob.sensor[t];
+        min_site(m, MIN_DRAW_NOISE, (uint32_t)t, 0);
         uint64_t noise = sparse_word(m.rng, mg.noise_shift) & ~sensor;
         uint64_t fired = ((would | noise) & ~sensor) | (blob.sense_in[t] & sensor);
         out[t] = fired;
