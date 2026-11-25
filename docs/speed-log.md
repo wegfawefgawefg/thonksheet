@@ -13,3 +13,5 @@ fast" in `docs/bench.md`. One row per audit. Say what else was running on the ma
 | 2026-11-24 | full suite, table neurons | 63 min | this PC, 2 jobs, shared | |
 | 2026-11-25 | richness screen, one sheet, four features | 1.8 s | this PC, 2 jobs | no learning rule involved |
 | 2026-11-25 | echo life, 20,000 steps: full / minimal / table | 34 s / 2.5 s / 7.9 s | stevejobs, one core | here: 9.4 s / 1.8 s / 10.2 s |
+| 2026-11-25 | audit: machine load with 21 agents running | this PC load 32 on 32 threads; stevejobs load 36 to 48 on 14 cores (26 busy runs, all ours: 7 agents at up to 4 jobs each) | both | Compute, not ideas or usage, is the limit. On stevejobs every run is going at about half speed. More agents now only slow each other; new compute-heavy jobs wait until some finish, and the GPU port is the next real gain. |
+

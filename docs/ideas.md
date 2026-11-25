@@ -414,7 +414,14 @@ not known to do it.
      freely. The sectors already exist; the numbers are global today. *idea*
 113. **Screen the neuron and synapse family.** Ideas 66 to 76, each at several strengths,
      through the feature and hold probes, then a combined search. *building*
-114. **Screen the wiring family.** Ideas 19 to 21 and 77 to 83, likewise. *building*
+114. **Screen the wiring family.** Ideas 19 to 21 and 77 to 83, likewise. *screen done on the
+     sheet as born (4 seeds, ideal reader); the combined search and the readout runs are
+     still going. Movers: inhibition kept local (exclusive-or 1.76 to 2.84, gap 1.60 to
+     4.62, at a cost to which-cue and order) and mirror links (small steady gains, carry
+     +0.34). Reach only: two sheets (reach 3.25 to 5.0 tiles) and gentle streams. Harmful:
+     layers (19), fine locality (21), fewer slots (20). Nothing: hubs (78), far-link
+     topography (83). One early sign that growth and pruning erase birth wiring within
+     100,000 ticks. docs/results-2026-11-25-family-wiring.md on its branch*
 115. **MNIST.** The owner: "wed be cool as fuck if we beat mnist." Digits onto the sensor
      sheet, ten buttons, good and bad only. Three numbers: what a linear reader gets from a
      never-taught sheet, what the evidence readout learns, and how long it takes. Targets: a
@@ -434,3 +441,79 @@ not known to do it.
      for the whole map. Today the readout runs use flags chosen per task (long delays for
      the time tasks, more motor cells here, smaller line groups there). *idea: the combined
      engine is the first to be held to it*
+
+### Outside the sheet (added 2026-11-25)
+
+The owner: "are we limiting ourselves with this sheet of connections idea or no". In some
+ways yes. A sheet commits us to learning as rewiring, to locality in two dimensions, to one
+rule everywhere, and to doing only what a brain could do, on a machine that can also copy
+exactly, hash and look things up in one step.
+
+123. **A memory, not a sheet.** [known: sparse distributed memory, hyperdimensional
+     computing; new here] An engine whose learning is storing and recalling bit patterns by
+     content: long random bit vectors, bound with XOR, compared with popcount, kept in a
+     table found by hashing. One-shot, no wiring to change, nothing to saturate. A brain has
+     an organ like this beside its sheets. *building*
+124. **Organs.** [known] Not one sheet with one rule: a sheet that mixes, a memory that
+     stores at once, a selector that picks actions and explores, a bank of clocks for time.
+     Each cheap, each with its own rule, behind one plug. *idea, after 123*
+125. **Use what the machine can do and a brain cannot.** [ours] Exact copying of what one
+     patch learned to all the others, hashing, sorting by evidence, global lookup. The
+     hardware rule was "even if it is a strange version of the biological equivalent".
+     Idea 100 is the first of these. *idea*
+126. **Worlds the search never sees.** [method] A held-out set of worlds used only to
+     confirm a design, never to choose one, so "works on any task" is tested on tasks the
+     design was not fitted to. *idea: split the map once the batteries land*
+127. **Someone to argue the other side.** [method] Now and then an agent whose only job is
+     to find the cheapest thing that beats our best design on the map, by any means, and to
+     say what that implies. *idea*
+
+### Long memory and calculation (added 2026-11-25)
+
+The owner: "idk how the brain locks in patterns from 20 years ago and keeps them ... i
+imagined a sort of pattern freezer ... we probably need envs for patterns across long time
+horizons ... holographic log time memory ... content addressable bank." And: "should we add
+various alu, multiplication compute style tasks? executing programs, 3d transforms etc.
+would be cool if we can arbitrarily learn calculations."
+
+129. **Long-horizon worlds.** A stream of new cue-answer pairs for a whole life with old
+     ones re-asked at ages of a hundred to a million steps (a forgetting curve); a thing
+     shown once and asked for much later; rare events. *building*
+130. **A pattern freezer.** [known: consolidation, cascade synapses] A connection whose
+     evidence has stayed strong for a long time gets locked: it stops decaying and takes
+     much stronger contrary evidence to move. *building*
+131. **A timeline with log spacing.** [known in theory; cheap here] Beside the ring of the
+     last 16 ticks, keep a few slower maps: what fired in the last 32, 64, ... 4,096 ticks,
+     each refreshed half as often as the one before. Twelve small maps reach back thousands
+     of ticks, and a slot can listen to any of them. *building*
+132. **The owner's earlier machines.** `binary-brain-v1` (June 2025: an always-on one-bit
+     substrate with three-factor local rules and four broadcast bits; the direct ancestor of
+     this project) and `vvm` (a state vector that looks up its next operation by content).
+     Read them for ideas not yet tried here, above all vvm's "the state is the address of
+     the next operation". *idea*
+133. **The calculation battery.** Adding and multiplying in binary with the answer given as
+     bits, comparing, sorting three numbers, an ALU (an operation code and two operands),
+     running a short program on a register, turning and moving points in 2D and 3D. Needs
+     an answer that is several bits at once, not one of a few buttons. *building*
+134. **An answer that is a pattern.** Several independent yes/no outputs read at once, each
+     graded. Fills the "whole pattern out" hole in the task map; needed for calculation,
+     for copying, and later for generating sound or text. *building, with 133*
+135. **The state is the address of what to do next.** [the owner's vvm, 2026; kin to
+     Kanerva's memory and to production systems] A different route to a general learner,
+     not a sheet: one state (a long bit vector) and a bank of operations found by content.
+     Each step the state looks up the few operations nearest to it, one is chosen and
+     applied to the state, and the result is the next state and the next address. No
+     program counter, no separate memory: thinking is the state walking through the bank.
+     His version was trained by gradient descent and never learned. Here the bank would
+     learn by local rules: evidence on which operation helped from which state, and new
+     operations written in one go. Aimed at holding, at multi-step calculation, at acting.
+     The owner: "i suspect it can actually work. but idk how. its a whole other route to a
+     general learner i think." *building*
+136. **Seeing battery.** The owner: "shape identification. square. triangle. lines. dot.
+     object tracking." Name the shape (dot, line, square, triangle, cross, ring) wherever
+     it is and whatever its size; which way a line points; how many things there are; where
+     a moving thing is now (which part of the sheet), and where it will be in a few steps;
+     follow one thing among others that look the same; a thing that passes behind a cover
+     and comes out the other side. Answers by button, by pointing (a motor line per region),
+     and by moving a marker onto it. *queued: starts when the invariance battery lands,
+     since it reuses that battery's shape drawing*

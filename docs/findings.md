@@ -132,8 +132,11 @@ cartpole (below a coin), and a shape in a place it was never rewarded (0.25, bel
     read order and gap three to four times better than the default and exclusive-or up to
     twice as well, on fresh seeds. No single number does it (best rank correlation 0.3):
     longer delays for time, denser local wiring, the dendrite-branch bonus for
-    exclusive-or, more inhibitory neurons. Whether richer sheets learn better through the
-    readout is being tested.
+    exclusive-or, more inhibitory neurons. Richer sheets do learn better through the
+    readout, some of them by a lot: the gap task, which nothing had learned (0.52), reaches
+    0.93 on one of them, and that same sheet gets order 0.85 and exclusive-or 0.94 with
+    nothing changed between the three. The fast screen is a rough guide only: two sheets
+    that read better in the probe learned worse in the task.
 21. **A mechanism can only be judged on a task that needs it, through a readout that can
     read.** [solid] Delays, far links and the branch bonus all measured as doing nothing on
     Echo. Delays turned out to carry time, far links reach, and the branch bonus
