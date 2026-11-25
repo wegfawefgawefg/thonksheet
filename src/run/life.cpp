@@ -95,11 +95,22 @@ bool life_run(Driver driver, const RunFlags& flags, const LifePhase* phases, int
             }
             step++;
             if (step % flags.window == 0) {
+                if (babble_on(flags.babble)) {
+                    out.clean.push_back(
+                        babble_window_clean(tt.babble, tt.task.tally[0], tt.task.tally[1]));
+                }
                 out.scores.push_back(task_window_score(tt.task));
             }
         }
         out.episodes += tt.task.episodes;
         out.wins += tt.task.wins;
+        // no cell stays urged past the phase
+        babble_step_end(tt.babble, tt.plug, *blob);
+        const Babble& bb = tt.babble;
+        out.steps += bb.steps, out.babbled += bb.babbled, out.obeyed += bb.obeyed;
+        out.still += bb.still;
+        out.good_raw += bb.good_raw, out.bad_raw += bb.bad_raw;
+        out.good_sent += bb.good_sent, out.bad_sent += bb.bad_sent;
     }
     out.first_window[count] = (int)out.scores.size();
     out.seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();

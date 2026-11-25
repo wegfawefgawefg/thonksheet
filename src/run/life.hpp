@@ -35,6 +35,12 @@ struct LifeResult {
     int64_t episodes = 0, wins = 0; // the tasks' own count (task_episode_name), all phases
     double seconds = 0;
     LifeEnd end; // room and aliveness, for real blobs only
+
+    // ideas 60 and 61, only filled when babbling, balance or the report is on: window scores
+    // without babbled steps, and whole-life counts of steps and signals
+    std::vector<double> clean;
+    int64_t steps = 0, babbled = 0, obeyed = 0, still = 0, good_raw = 0, bad_raw = 0, good_sent = 0,
+            bad_sent = 0;
 };
 
 // --task for --steps, as blobrun has always run

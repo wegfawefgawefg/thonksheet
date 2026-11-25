@@ -144,6 +144,10 @@ struct Blob {
     // map (tile_count + 1 words) made on first use
     int rule_last_valence = 0;
     uint64_t* rule_words = nullptr;
+    // written by the world before each tick (idea 60): cells it urges to fire this tick, on
+    // top of what their inputs say. one word per tile (tile_count + 1), zero when unused;
+    // every engine allocates it. a stand-in may leave it null.
+    uint64_t* urge = nullptr;
 };
 
 // birth and death

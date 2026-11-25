@@ -204,6 +204,9 @@ void minimal_tick(Blob& blob) {
         inner &= blob.silenced ? ~blob.silenced[t] : ~0ull;
         inner |= blob.forced ? blob.forced[t] & ~sensor : 0;
         uint64_t fired = inner | (blob.sense_in[t] & sensor);
+        // an urged cell (idea 60) counts as a noise spike: an experiment the rule grades
+        uint64_t noise = (sparse_word(m.rng, mg.noise_shift) | blob.urge[t]) & ~sensor;
+        uint64_t fired = ((would | noise) & ~sensor) | (blob.sense_in[t] & sensor);
         out[t] = fired;
         noise_out[t] = noise & ~would & inner;
         fired_count += (uint32_t)__builtin_popcountll(fired);

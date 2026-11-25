@@ -111,6 +111,7 @@ void table_tick(Blob& blob) {
         inner &= b.silenced ? ~b.silenced[t] : ~0ull;
         inner |= b.forced ? b.forced[t] & ~sensor : 0;
         uint64_t spikes = inner | sensed;
+        uint64_t spikes = (((out ^ flip) | b.urge[t]) & ~sensor) | sensed; // urge: idea 60
         map[t] = spikes;
         flips[t] = flip;
         fired += std::popcount(spikes);

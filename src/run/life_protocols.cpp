@@ -126,6 +126,37 @@ static void life_episodes(TaskKind kind, const bool* ran, FILE* sum) {
         return;
     }
     const char* win = task_win_name(kind);
+// ideas 60 and 61: scores without babbled steps (also as <stem>-clean.csv) and how often
+// each signal came, per step, before and after balance
+static bool life_signal_report(const RunFlags& flags, const std::string& csv, FILE* sum,
+                               const std::string& key, const bool* ran, size_t edge) {
+    std::string path = stem_of(csv) + "-clean.csv";
+    FILE* f = std::fopen(path.c_str(), "w");
+    if (!f) {
+        std::fprintf(stderr, "blobrun: cannot write %s\n", path.c_str());
+        return false;
+    }
+    std::fprintf(f, "window,end_step");
+    for (int d = 0; d < (int)Driver::count; d++) {
+        if (ran[d]) {
+            std::fprintf(f, ",%s", driver_names[d]);
+        }
+    }
+    std::fprintf(f, "\n");
+    size_t windows = (size_t)(flags.steps / flags.window);
+    for (size_t w = 0; w < windows; w++) {
+        std::fprintf(f, "%zu,%lld", w, (long long)((w + 1) * flags.window));
+        for (int d = 0; d < (int)Driver::count; d++) {
+            if (ran[d]) {
+                std::fprintf(f, ",%.6f", w < results[d].clean.size() ? results[d].clean[w] : 0.0);
+            }
+        }
+        std::fprintf(f, "\n");
+    }
+    std::fclose(f);
+
+    std::printf("%-10s %10s %10s %9s %19s %19s\n", "", "early*", "late*", "babbled",
+                "good raw/sent", "bad raw/sent");
     for (int d = 0; d < (int)Driver::count; d++) {
         if (!ran[d]) {
             continue;
@@ -139,6 +170,27 @@ static void life_episodes(TaskKind kind, const bool* ran, FILE* sum) {
         put(sum, d, "episodes", (double)r.episodes);
         put(sum, d, "wins", (double)r.wins);
     }
+        double steps = r.steps > 0 ? (double)r.steps : 1.0;
+        double early = mean(r.clean, 0, edge);
+        double late = mean(r.clean, windows - edge, windows);
+        std::printf("%-10s %10.4f %10.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n", driver_names[d], early,
+                    late, (double)r.babbled / steps, (double)r.good_raw / steps,
+                    (double)r.good_sent / steps, (double)r.bad_raw / steps,
+                    (double)r.bad_sent / steps);
+        put(sum, d, (key + "early_clean").c_str(), early);
+        put(sum, d, (key + "late_clean").c_str(), late);
+        put(sum, d, (key + "babbled_per_step").c_str(), (double)r.babbled / steps);
+        put(sum, d, (key + "babble_obeyed").c_str(),
+            r.babbled > 0 ? (double)r.obeyed / (double)r.babbled : 0.0);
+        put(sum, d, (key + "no_move_unbabbled").c_str(),
+            r.steps > r.babbled ? (double)r.still / (double)(r.steps - r.babbled) : 0.0);
+        put(sum, d, (key + "good_raw_per_step").c_str(), (double)r.good_raw / steps);
+        put(sum, d, (key + "bad_raw_per_step").c_str(), (double)r.bad_raw / steps);
+        put(sum, d, (key + "good_sent_per_step").c_str(), (double)r.good_sent / steps);
+        put(sum, d, (key + "bad_sent_per_step").c_str(), (double)r.bad_sent / steps);
+    }
+    std::printf("* without babbled steps (right / tries tasks only)\n");
+    return true;
 }
 
 // --task for the whole life. writes `csv`, and early/late under `prefix` in the summary.
@@ -171,6 +223,9 @@ static bool life_plain(const RunFlags& flags, const std::string& csv, FILE* sum,
         }
     }
     life_episodes(flags.task, ran, sum);
+    if (babble_on(flags.babble) && !life_signal_report(flags, csv, sum, key, ran, edge)) {
+        return false;
+    }
     for (int d = 0; d < (int)Driver::count; d++) {
         if (ran[d] && results[d].end.measured) {
             life_end_print(results[d].end, driver_names[d], stdout);

@@ -202,6 +202,7 @@ Blob* minimal_birth(const Genome& genome, const MinimalGenome& mg, uint64_t seed
     b.sense_in = (uint64_t*)alloc_lines(map_bytes);
     b.sense_attached = (uint64_t*)alloc_lines(map_bytes);
     b.predicted = (uint64_t*)alloc_lines(map_bytes);
+    b.urge = (uint64_t*)alloc_lines(map_bytes);
 
     // the engine
     m->stride = (b.tile_count + 1 + 7) & ~7;
@@ -252,6 +253,7 @@ void minimal_free(Blob* blob) {
     for (int h = 0; h < HISTORY; h++) {
         std::free(blob->spikes[h]);
     }
+    std::free(blob->urge);
     void* arrays[] = {blob->recent,   blob->inhibitory,     blob->sensor,    blob->motor,
                       blob->sense_in, blob->sense_attached, blob->predicted, m->spikes,
                       m->noise,       m->local_tile,        m->mask,         m->used,

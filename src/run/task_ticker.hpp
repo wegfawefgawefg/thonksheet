@@ -2,6 +2,7 @@
 
 #include "run/run_flags.hpp"
 #include "world/plug.hpp"
+#include "world/plug_babble.hpp"
 #include "world/task.hpp"
 
 #include <cstdint>
@@ -39,6 +40,9 @@ struct TaskTicker {
     // given (valence 0, the good/bad line stays quiet); what the task said is kept here
     bool withhold = false;
     int scored_valence = 0;
+    int valence = 0;     // as the blob gets it (balance may have dropped it)
+
+    Babble babble; // ideas 60 and 61; does nothing when off
 };
 
 // a fresh task on a blob that is already born. false if the plug does not fit.

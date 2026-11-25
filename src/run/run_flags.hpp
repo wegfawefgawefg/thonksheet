@@ -2,6 +2,7 @@
 
 #include "blob/genome.hpp"
 #include "world/plug.hpp"
+#include "world/plug_babble.hpp"
 #include "world/task.hpp"
 
 #include <cstdint>
@@ -51,6 +52,8 @@ struct RunFlags {
     int shown_ticks = 0;              // shown: last ticks of an answer step made to fire
     int damage_pct = 0;               // damage: share of non-sensor neurons silenced, in 100
     int damage_tile = 0;              // damage: 1 silences the tile of the first cue line
+
+    BabbleSettings babble; // ideas 60 and 61: babbling and balanced good/bad, off by default
 };
 
 // false after printing a message (or the usage) to stderr
