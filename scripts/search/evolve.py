@@ -47,6 +47,7 @@ class Search:
         self.pool = {}
         self.signatures = {}  # (engine, rung) -> {raw scores: id}, filled as needed
         self.decided_since_pool = 0
+        self.turn = 0
         self.seconds = {e: 0.0 for e in engines}
         for row in store.results.values():
             if row.get("engine") in self.seconds:
@@ -142,6 +143,18 @@ class Search:
                     taken.add(k)
                     out.append((cid, kind, cmd, world))
 
+        # turn about: the oldest candidate first (so confirmations finish), then the lowest
+        # rung first (so new candidates race), so neither waits for the other
+        self.turn += 1
+        if self.turn % 2:
+            for cid, rung in list(self.active.items()):
+                if rung <= 1:
+                    take(cid, rung)
+            while len(out) < count and len(self.active) < max_active:
+                cid = self.new_candidate(accept)
+                if cid is None:
+                    break
+                take(cid, 0)
         for cid, rung in list(self.active.items()):
             take(cid, rung)
         while len(out) < count and len(self.active) < max_active:
