@@ -19,8 +19,9 @@
 #   scripts/task.sh pendulum                     swing it up and hold it; energy, then upright
 #   scripts/task.sh cartpole --cart-start wide   starts drawn from a wider range
 #   scripts/task.sh cartpole --cart-reward relative   good when nearer upright than of late
-#   scripts/task.sh cartpole --cart-integrator semi   a push moves the pole the same step, so a
-#                                                     step's reward judges its own press
+#   scripts/task.sh cartpole --cart-integrator euler  the old step (before 2026-11-25): a push
+#                                                     moves the pole only next step, so a step's
+#                                                     reward grades the press before it
 # Any engine or rule: --engine minimal, --table, or genome numbers (--g.name value).
 # A long life: --million is 1,000,000 steps in 100 windows (the csv stays 100 lines):
 #   scripts/task.sh cartpole --million --engine minimal

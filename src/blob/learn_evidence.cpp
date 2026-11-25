@@ -1,6 +1,7 @@
 #include "blob/blob.hpp"
 #include "blob/learn_rule.hpp"
 #include "blob/long_memory.hpp"
+#include "blob/critic.hpp"
 #include "blob/tick_steps.hpp"
 
 #include <cstdlib>
@@ -27,6 +28,7 @@ int8_t* evidence_row(Blob& blob, int n) {
         for (int m = 0; m < blob.neuron_count; m++) {
             bool motor = (blob.motor[m / TILE_NEURONS] >> (m % TILE_NEURONS)) & 1;
             bool sensor = (blob.sensor[m / TILE_NEURONS] >> (m % TILE_NEURONS)) & 1;
+            motor = motor || critic_cell(blob, m); // the critic's cells read the same way
             blob.readout_row[m] = motor || (every && !sensor) ? rows++ : -1;
         }
         blob.readout_evidence = (int8_t*)std::calloc((size_t)rows * EVIDENCE_ROW, 1);

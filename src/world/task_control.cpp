@@ -191,14 +191,17 @@ int cartpole_step(Task& task, const TaskStepIn& in) {
     int64_t cart_acc = temp - fdiv(fmul(CP_POLE_MASS_LENGTH, fmul(pole_acc, cos_a)), CP_MASS_TOTAL);
 
     if (task.settings.cart_semi) {
-        // gym's semi-implicit option: speeds first, so this step's push already moves the
-        // cart and pole, and a reward on where they ended judges this press
+        // semi-implicit Euler, the default (gym's other option): speeds first, so this
+        // step's push already moves the cart and pole, and a reward on where they ended
+        // judges this press, not the one before
         task.cart_v += fmul(CP_TAU, cart_acc);
         task.cart_x += fmul(CP_TAU, task.cart_v);
         task.pole_w += fmul(CP_TAU, pole_acc);
         task.pole_a += fmul(CP_TAU, task.pole_w);
     } else {
-        // positions move by the speeds from before the push: a push shows only next step
+        // --cart-integrator euler, the old step (gym's default), kept to reproduce old
+        // numbers: positions move by the speeds from before the push, so a push shows only
+        // next step and a step's reward grades the press before it
         task.cart_x += fmul(CP_TAU, task.cart_v);
         task.cart_v += fmul(CP_TAU, cart_acc);
         task.pole_a += fmul(CP_TAU, task.pole_w);

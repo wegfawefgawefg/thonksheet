@@ -2,6 +2,7 @@
 #include "blob/blob.hpp"
 #include "blob/fire_dynamics.hpp"
 #include "blob/long_memory.hpp"
+#include "blob/critic.hpp"
 #include "blob/random_words.hpp"
 #include "blob/tick_steps.hpp"
 #include "blob/weight_levels.hpp"
@@ -311,6 +312,7 @@ void blob_free(Blob* blob) {
     if (!blob) {
         return;
     }
+    critic_free(*blob);
     std::free(blob->spikes[0]); // the whole ring
     void* arrays[] = {
         blob->recent,      blob->inhibitory,      blob->sensor,          blob->motor,
@@ -336,6 +338,10 @@ void blob_free(Blob* blob) {
 }
 
 void blob_reward(Blob& blob, int valence) {
+    // critic_on: every step lands here, and the critic's surprise replaces the valence
+    if (critic_step(blob, valence)) {
+        return;
+    }
     if (valence > 0) {
         blob.good_ticks = blob.genome.reward_ticks;
     } else if (valence < 0) {

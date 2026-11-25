@@ -152,7 +152,9 @@ struct TaskSettings {
     FnSettings fn; // the function battery (task_function.hpp)
     // cart_reward 3, relative: good when nearer upright than the recent average
     int cart_start = 0;  // cartpole starts: 0 near upright (+-0.05), 1 wide (task_control.cpp)
-    int cart_semi = 0;   // cartpole: 1 semi-implicit Euler (a push moves the pole this step)
+    // cartpole: 1 semi-implicit Euler, the default (a push moves the pole this step, so a
+    // step's reward judges its own press); 0 the old Euler step (--cart-integrator euler)
+    int cart_semi = 1;
     // more worlds (task_bandit.cpp, task_move.cpp, task_classic.cpp)
     int bandit_good = 80, bandit_poor = 20; // percent chance a press pays: best arm, the rest
     int chain_cue = 1;                      // chain: a line shows the stage (0: nothing does)

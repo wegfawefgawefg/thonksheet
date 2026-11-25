@@ -63,6 +63,8 @@ MORE_WORLDS = [
                        "wide"] + PLACE2, "cartpole, lean reward, wide starts (steps per fall)"),
     ("cartpole-rel", ["--task", "cartpole", "--cart-reward", "relative"] + PLACE2,
      "cartpole, relative reward (steps per fall)"),
+    # semi is cartpole's default since 2026-11-25, so this row now repeats the plain lean one;
+    # kept so older scorecards line up
     ("cartpole-semi", ["--task", "cartpole", "--cart-reward", "lean", "--cart-integrator",
                        "semi"] + PLACE2,
      "cartpole, lean reward, semi-implicit: a step's reward judges its press (steps per fall)"),

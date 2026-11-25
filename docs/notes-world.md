@@ -239,7 +239,7 @@ scripts/task.sh track --track-reward arrive
 scripts/task.sh forage --forage-warmer 0
 scripts/task.sh mountain-car --classic-reward goal
 scripts/task.sh pendulum
-scripts/task.sh cartpole --cart-start wide | --cart-reward relative | --cart-integrator semi
+scripts/task.sh cartpole --cart-start wide | --cart-reward relative | --cart-integrator euler
 scripts/task.sh cartpole --million                  1,000,000 steps in 100 windows
 python3 scripts/ladder.py run --rules minimal [--long]; python3 scripts/ladder.py table
 ```
@@ -248,9 +248,10 @@ python3 scripts/ladder.py run --rules minimal [--long]; python3 scripts/ladder.p
   cartpole and the new worlds: `blob 1162 falls`, `coin 6666 dots, 1633 caught`. The
   summary gets `episodes` and `wins` keys; the window csv is unchanged.
 - `--windows N` makes the window steps / N, so a long life keeps a small csv.
-- Cartpole's step is gym's Euler step: a push moves the pole only on the next step, so a
-  step's reward does not judge its own press. `--cart-integrator semi` changes that; the
-  default is unchanged (curriculum, notes on cartpole).
+- Cartpole's step was gym's Euler step: a push moves the pole only on the next step, so a
+  step's reward does not judge its own press. `--cart-integrator semi` changes that, and
+  since the critic merge (2026-11-25) it is the default; `--cart-integrator euler` keeps the
+  old step for reproducing older cartpole numbers (curriculum, notes on cartpole).
 
 Life protocols (one per call; without them a call is one task for the whole life, as
 before, with byte-identical csvs). Definitions: `docs/curriculum.md`, stage 4. Easiest

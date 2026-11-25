@@ -58,6 +58,7 @@ WORLDS = {
     "cartpole-wide": (CART + ["--cart-reward", "lean", "--cart-start", "wide"],
                       "cartpole, lean reward, wide starts"),
     "cartpole-rel": (CART + ["--cart-reward", "relative"], "cartpole, relative reward"),
+    # semi is cartpole's default since 2026-11-25: this row now repeats "cartpole"
     "cartpole-semi": (CART + ["--cart-reward", "lean", "--cart-integrator", "semi"],
                       "cartpole, lean reward, semi-implicit (a step's reward judges its press)"),
 }

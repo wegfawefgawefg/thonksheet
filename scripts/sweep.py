@@ -46,6 +46,9 @@ LEARNING_ONLY = {
     "lose_shift_steps", "win_stay_steps", "lose_shift_fires", "bad_cut_on",
     "replay_depth", "replay_shift", "replay_thin", "replay_new", "replay_quiet",
     "replay_until", "replay_reset", "replay_shuffle", "replay_strong_budget", "rule_on",
+    "critic_on", "critic_reward", "critic_margin", "critic_center", "critic_average_shift",
+    "critic_shift", "critic_trace_steps", "critic_fade", "actor_form", "actor_trace_steps",
+    "actor_fade", "explore_shift", "explore_scale", "critic_opponent", "critic_wide",
 }
 # flags with a value that only matter while learning is on (the rule table, idea 120)
 LEARNING_FLAGS = {"--rule-file", "--rule-hex"}

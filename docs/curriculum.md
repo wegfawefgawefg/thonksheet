@@ -305,8 +305,9 @@ move), "scripted" the perfect player. Results: `docs/results-2026-11-25-more-wor
   speed and spin within 0.5, lean within 0.1 rad (half way to a fall); the scripted player
   still never falls. `--cart-reward relative`: good when the step ended nearer upright and
   centred than the running mean (1/16 per step) of recent steps, bad when further, so good
-  and bad come about equally often (0.53 / 0.47 for a coin). `--cart-integrator semi`:
-  see the notes on cartpole below; it is what makes a step's reward judge that step's push.
+  and bad come about equally often (0.53 / 0.47 for a coin). `--cart-integrator`: semi,
+  the default since 2026-11-25, makes a step's reward judge that step's push; euler is the
+  old step (see the notes on cartpole below).
 
 Checked scores, 200,000 steps straight on the task (uniform random press, no ties) and
 through the plug (coin, 20,000 steps, ties are no move):
@@ -371,7 +372,9 @@ lean is good 0.322 of the time, after the other press 0.321; by the previous pre
 0.42 against 0.22. A rule that credits what was active just before the reward is graded
 on noise. `--cart-integrator semi` (gym's other option: speeds first, then positions by
 the new speeds) fixes that: lean then judges this press (0.40 against 0.20). Mountain car
-and the pendulum use the semi-implicit step already.
+and the pendulum use the semi-implicit step already. Since the critic merge (2026-11-25)
+semi is cartpole's default too, for every engine and script; `--cart-integrator euler`
+keeps the old lagged step, for reproducing cartpole numbers from before then.
 
 ## The rest of the map (tiers 9 and 10, being shown, damage; 2026-11-25)
 
