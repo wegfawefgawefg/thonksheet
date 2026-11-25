@@ -102,6 +102,19 @@ static const GenomeField fields[] = {
     {"bad_cut_on", &Genome::bad_cut_on},
     {"noise_learn_sign", &Genome::noise_learn_sign},
     {"noise_learn_pair", &Genome::noise_learn_pair},
+    {"wire_layers", &Genome::wire_layers},
+    {"wire_fine", &Genome::wire_fine},
+    {"wire_slots", &Genome::wire_slots},
+    {"wire_mirror_percent", &Genome::wire_mirror_percent},
+    {"wire_hub_per_1024", &Genome::wire_hub_per_1024},
+    {"wire_hub_shift", &Genome::wire_hub_shift},
+    {"wire_stream", &Genome::wire_stream},
+    {"wire_stream_dir", &Genome::wire_stream_dir},
+    {"wire_stream_turn", &Genome::wire_stream_turn},
+    {"wire_far_topo", &Genome::wire_far_topo},
+    {"wire_far_jitter", &Genome::wire_far_jitter},
+    {"wire_inhib_reach", &Genome::wire_inhib_reach},
+    {"wire_two_sheets", &Genome::wire_two_sheets},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

@@ -76,6 +76,19 @@ struct Link {
 
 enum Kind { KIND_EXCITATORY, KIND_INHIBITORY, KIND_SENSOR, KIND_MOTOR };
 
+// what a readout cell keeps about one possible source: its evidence counter (or, for an
+// engine without counters, its connection strength), whether it is wired, and how much the
+// last change moved it
+struct EvidenceCell {
+    int16_t x = 0, y = 0;
+    int8_t value = 0;
+    int8_t moved = 0; // at the readout's last change (ReadoutView::change_step)
+    uint8_t wired = 0;
+    uint8_t far = 0;
+};
+
+enum KeepKind { KEEP_NONE, KEEP_COUNTERS, KEEP_STRENGTHS };
+
 struct Selected {
     int neuron = -1;
     int x = 0, y = 0, tile = 0, bit = 0, kind = 0, sector = 0;
@@ -84,6 +97,62 @@ struct Selected {
     int far_tile[2] = {-1, -1};
     int far_delay[2] = {0, 0};
     std::vector<Link> sources, targets;
+    bool targets_known = true;
+
+    // table neurons: the inputs address a table of counters; the entry used on the newest
+    // tick, and the bar a counter must reach to fire
+    int table_inputs = 0, table_bits = 0, table_entry = -1, table_bar = 0;
+    std::vector<uint8_t> table;
+    std::vector<uint8_t> table_input_on; // per input: was it on for the newest tick's entry
+
+    // a cell of a button: what it keeps per possible source (KeepKind), the picture
+    int button = -1;
+    int keep = KEEP_NONE;
+    int keep_top = 1;    // the largest value either way
+    int keep_budget = 0; // sources it may wire at once (counter engines), 0 unknown
+    std::vector<EvidenceCell> evidence;
+};
+
+// the buttons' cells (the readout), and what the last change did to them. Filled for any
+// engine with a task; the evidence is KEEP_NONE for engines that keep nothing per source.
+struct ReadoutButton {
+    int cells = 0;
+    int spikes = 0;           // the buttons' cells' spikes so far this step
+    int last_spikes = 0;      // over the last answered step
+    bool won = false;         // pressed on the last answered step
+    int gained = 0, lost = 0; // cells that gained / lost at the last change
+    int up = 0, down = 0;     // counter steps up / down at the last change
+};
+
+struct ReadoutCell {
+    int16_t x = 0, y = 0;
+    uint8_t button = 0;
+    int16_t up = 0, down = 0; // steps at the last change
+};
+
+struct ReadoutView {
+    bool on = false;
+    int keep = KEEP_NONE;
+    std::vector<ReadoutButton> buttons;
+    std::vector<ReadoutCell> cells;
+    int64_t change_step = -1; // the task step of the last change, -1 none yet
+    int change_valence = 0;
+    int change_pressed = -1;
+    int changes = 0; // steps that changed something, over the life
+};
+
+// how readable a feature is from each tile (probe/feature_measure.hpp), measured on this
+// sheet with no reward
+constexpr int READ_FEATURES = 5; // which, order, xor, gap, hold
+constexpr int READ_DISTANCES = 8;
+struct Readability {
+    int tries = 0, want = 0; // tries measured, and how many the run takes
+    bool running = false;
+    uint64_t tick = 0; // the blob tick it finished (or reached)
+    int cue_tile = 0;
+    std::vector<float> tile; // per tile
+    float by_distance[READ_DISTANCES] = {};
+    int distances = 0;
 };
 
 // a task's line on the sheet: the cells of its group, what it is, whether it is on
@@ -93,16 +162,22 @@ struct TaskLine {
     int16_t x0 = 0, y0 = 0, x1 = 0, y1 = 0; // cells, x1 and y1 one past the group
     uint8_t kind = TASK_LINE_SENSE;
     uint8_t on = 0;      // sensor: firing this tick. motor: the last answer
+    uint8_t spread = 0;  // motor: its cells are spread over the region (no ring)
     int16_t count = 0;   // motor: spikes so far this step
     char label[24] = {}; // empty for all but the first line of a bitmap or number
 };
 
-// one answered step: what would have been right and what the blob did (-1: hold still)
+// one answered step: what would have been right and what the blob did (-1: hold still),
+// and which of the task's on/off lines were on while it was sensed
 struct TaskTry {
     int8_t cue = 0, right = -1, move = -1, valence = 0;
+    uint32_t lines = 0;
 };
 
 constexpr int TASK_TRIES = 256; // answered steps kept
+constexpr int TASK_NAMES = 32;  // on/off lines and buttons named, at most
+constexpr int TASK_NAME = 16;
+constexpr int TASK_WORLD_NUMBERS = 4;
 
 struct TaskView {
     bool on = false;
@@ -110,9 +185,21 @@ struct TaskView {
     char name[32] = {};
     char settings[160] = {};
     bool learning_on = true;
-    bool ratio_score = true; // score is a share (0..1); cartpole's is steps per fall
-    bool has_cue = false;    // echo family and go/no-go: a try answers a cue
-    int window = 0;          // steps per score window
+    bool ratio_score = true; // score is a share (0..1); otherwise scaled to the highest seen
+
+    // the lines, named by the task (world/task_names.hpp) or by kind and number
+    int singles = 0, motors = 0;
+    char single_names[TASK_NAMES][TASK_NAME] = {};
+    char motor_names[TASK_NAMES][TASK_NAME] = {};
+    // the world as the task shows it this step: its bitmap and its numbers
+    int sheet_w = 0, sheet_h = 0;
+    std::vector<uint8_t> sheet; // sheet_w * sheet_h, row by row
+    int numbers = 0, number_lines = 0;
+    int32_t number[TASK_WORLD_NUMBERS] = {}, number_lo[TASK_WORLD_NUMBERS] = {},
+            number_hi[TASK_WORLD_NUMBERS] = {};
+    uint32_t number_on[TASK_WORLD_NUMBERS] = {}; // the number's lines that are lit
+    char number_names[TASK_WORLD_NUMBERS][TASK_NAME] = {};
+    int window = 0; // steps per score window
     int ticks_per_step = 0;
     int tick_in_step = 0;
     int64_t step = 0;
@@ -132,9 +219,20 @@ struct TaskScores {
 };
 void task_scores_copy(TaskScores& to, const TaskScores& from);
 
+// what the engine behind a frame fills; the panels say so where it does not
+enum FrameHas : uint32_t {
+    HAS_SECTORS = 1,    // sector activity, targets and biases
+    HAS_WEIGHTS = 2,    // weight levels and connection lengths
+    HAS_THRESHOLDS = 4, // the threshold histogram
+    HAS_FAN_IN = 8,     // the fan-in histogram
+};
+
 struct ViewFrame {
     // the shape, fixed at birth
-    bool real = false; // from the core, not the fake
+    bool real = false;          // from an engine, not the fake
+    int engine = 0;             // Engine (engine.hpp)
+    uint32_t has = 0;           // FrameHas
+    uint32_t lines_known = ~0u; // a bit per Line the engine counts
     int tiles_w = 0, tiles_h = 0, tile_count = 0, neuron_count = 0;
     int sector_count = 0, sector_tiles = 1;
     uint64_t tick = 0;
@@ -158,6 +256,9 @@ struct ViewFrame {
 
     TaskView task; // the task plugged in, if any
     TaskScores scores;
+    ReadoutView readout;                 // the buttons' cells, with a task
+    Readability readable[READ_FEATURES]; // per probe feature, once measured
+    int reading = -1;                    // the feature being measured, -1 none
 
     // worked out by the viewer from the tape (frame_derive)
     Histogram rate;                     // spikes per neuron over the tape
@@ -174,13 +275,24 @@ struct ViewFrame {
 
 // tape.cpp
 void tape_init(Tape& tape, int row_words);
-void tape_record(Tape& tape, const Blob& blob); // after every tick
+// after every tick: the newest spike map, and the tick's counts (the engine's and the
+// reward lines, filled by the caller)
+void tape_record(Tape& tape, const Blob& blob, const LinePoint& p);
 void tape_copy_new(Tape& to, const Tape& from); // only the rows `to` does not have
 void frame_copy(ViewFrame& to, const ViewFrame& from);
 bool tape_fired(const Tape& tape, int age, int neuron); // age 0 is the newest tick
 
-// frame_fill.cpp: everything but the tape. heavy: also the whole-blob histograms
-void frame_fill(ViewFrame& frame, const Blob& blob, int selected, bool heavy, bool real);
+// frame_fill.cpp: everything but the tape, the task and the readout. heavy: also the
+// whole-blob histograms. engine: Engine (engine.hpp)
+void frame_fill(ViewFrame& frame, const Blob& blob, int selected, bool heavy, int engine);
+// frame_fill_engines.cpp: the picked neuron and the histograms of the minimal engine and
+// of table neurons, which keep their wiring in their own arrays
+void fill_selected_minimal(Selected& s, const Blob& blob, int n);
+void fill_selected_table(Selected& s, const Blob& blob, int n);
+void fill_histograms_minimal(ViewFrame& f, const Blob& blob);
+// shared by the fills
+void fill_selected_place(Selected& s, const Blob& blob, int n);
+Link make_link(const Blob& b, int neuron, int strength, bool far);
 
 // frame_derive.cpp
 void frame_derive(ViewFrame& frame);

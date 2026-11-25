@@ -49,6 +49,19 @@ if(TARGET blobcore)
     target_link_libraries(blobview PRIVATE blobcore)
     target_compile_definitions(blobview PRIVATE BLOB_HAS_CORE=1)
 endif()
+# the other engines behind the same Blob shell (--engine minimal, --table). Their targets
+# are made after this file is included, so they are found by their folders and linked by
+# name, which CMake resolves at the end.
+file(GLOB view_minimal_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/minimal/*.cpp)
+file(GLOB view_table_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/table/*.cpp)
+if(view_minimal_sources)
+    target_link_libraries(blobview PRIVATE blobminimal)
+    target_compile_definitions(blobview PRIVATE BLOB_HAS_MINIMAL=1)
+endif()
+if(view_table_sources AND TARGET blobcore)
+    target_link_libraries(blobview PRIVATE blobtable)
+    target_compile_definitions(blobview PRIVATE BLOB_HAS_TABLE=1)
+endif()
 
 # shaders: GLSL to SPIR-V in build/shaders, next to the binary
 file(GLOB view_shader_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/shaders/*.vert
