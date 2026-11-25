@@ -671,7 +671,13 @@ co-activity runs ties the held units together and loses their order.
      growable reach, with the tags' contrast between buttons, their threshold, no learning
      by inhibitory neurons and fixed counts per neuron. Scored on the rows where each one
      alone loses (order, echo at 2 tiles, long lives), on MNIST's ceiling, and on held-out
-     rows. *building*
+     rows. *done 2026-11-25: `--g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1`,
+     `scripts/inner.sh`, docs/results-2026-11-25-inner-rule.md. It ties the plain tags and
+     gains none of the walk's reach, so the merge is not kept as the default. Its tests
+     gave more than the rule: transfer to related tasks (parity of 3 after exclusive-or
+     0.856 against 0.552), a random-neuron control, and MNIST 0.938 that coin rewards
+     match. Left: pieces on report seeds, long lives, a form of the walk's reach at fixed
+     counts.*
 156. **The vm's four walls.** Time (give the state a clock: a counter field in the address,
      or the time cells of idea 131 as input); credit one step back (the critic's surprise
      as the verdict); several items in order (marks that do not halve each other: a slot

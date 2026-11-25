@@ -48,8 +48,29 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   0.998 against 0.855 as born; the sheet stays at its target rate through 160,000 steps.
   Two independent rules now pass the inside-learning test, and they are the same idea:
   one step of signed credit from the action's cells into hidden counters under a budget.
-  Neither transfers to a task it was not rewarded on, and neither helps MNIST (the
+  Neither transfers to an unrelated task, and neither helps MNIST by its credit (the
   reward-free rule below does).
+- **Merging the two gives the tags again, and the first clear transfer** (idea 155,
+  docs/results-2026-11-25-inner-rule.md, `scripts/inner.sh`). The tags with the walk's
+  spike-exact credit tie the tags on 11 rows (exclusive-or 0.991, eight cues 0.952) and
+  take none of the walk's reach (echo at 5 tiles 0.757 against the walk's 0.876); on the
+  tuning seeds the plain tags scored a little higher. What is new is in the tests around
+  it, seeds 5 to 12, fresh output on the frozen sheet:
+  - Related tasks transfer: after a life of exclusive-or, parity of 3 reads 0.856
+    against 0.552 as born (better than after a parity-of-3 life, 0.693); after eight
+    cues, other pairings of the same cues read 0.950 against 0.796. A new line the life
+    never showed gains little (0.760 against 0.712).
+  - A random-neuron control (the same amount of rewiring given to random cells that
+    fired) shows where credit matters: it is the whole gain on eight cues and on echo at
+    5 tiles (control 0.809 and 0.579, no gain), and only a quarter of it on exclusive-or
+    (control 0.961 of 0.993).
+  - On MNIST after 20,000 rewarded digits a linear reader gets 0.938 against 0.926 as
+    born, but coin rewards give 0.936 and random neurons 0.939. So the gain is rewiring
+    of busy cells at fixed counts, not credit: the same thing competitive learning does
+    on purpose and better (0.952).
+  - A life that alternates two tasks every 1,000 steps keeps both (exclusive-or 0.994,
+    eight cues 0.883) and lifts a third it never saw (parity of 3, 0.726).
+  Not run: the piece-by-piece table on report seeds, 160,000-step lives, a second hop.
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -352,7 +373,11 @@ docs/results-2026-11-25-mnist.md
 29. **Credit one step back reaches the inside; further back does not.** [likely: one
     engine, 8 seeds, with a fresh-output check] See "Where it stands". The step back must
     use evidence counters on inner neurons (principle 14 again) and only walk from spikes.
-    Open: the runaway on long lives; the half that unsigned rewiring explains; transfer.
+    Open: the runaway on long lives; the half that unsigned rewiring explains.
+    Transfer (idea 155): clear to related tasks on the same lines, none shown to
+    unrelated ones. A random-neuron control says credit is the whole gain on reach and
+    on eight cues and a quarter of it on exclusive-or. The walk's reach does not come
+    from spike-exact credit: the tags given it do not gain it.
 30. **Holding needs a slow variable inside the neuron, not a ringing sheet.** [likely: two
     independent mechanisms, 8 seeds each for the first] Tiring neurons, a slow second
     potential, or non-leaking cells each make delayed echo learnable. The ringing sheet
@@ -413,11 +438,16 @@ docs/results-2026-11-25-mnist.md
     one data set] Competition in the tile, hidden counters, and rewiring at the born
     counts: lived 0.952 against born 0.926 on MNIST. The same idea without a budget or
     counters (co-activity wiring) gets half the gain. Second result for finding 38.
+    Third result (idea 155): a reward-driven rule lifts the MNIST reader by the same
+    route whatever the reward says (0.938 real rewards, 0.936 coin, 0.939 random
+    neurons). Rewiring busy cells at fixed counts is the active part.
 44. **Every inside-learning claim needs a shuffled-input control and a rate-matched one.**
     [likely] A life on shuffled digits lifts the reader by 0.014 with nothing to learn
     (cells drift toward being a random projection of the input), and a rule that leaves
     cells firing faster changes what a reader sees. Only what is left after both is
-    learned structure.
+    learned structure. For a reward-driven rule add two more: coin rewards, and the
+    same rewiring given to random cells that fired (idea 155 built both: `tag_random`,
+    `tag_shuffle`, `--live-coin`).
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 
