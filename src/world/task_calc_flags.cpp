@@ -29,7 +29,11 @@ const char* const calc_flags_usage =
     "  --calc-list N      kth: numbers in the list (default 4)\n"
     "  --calc-hold N      cases held out, never rewarded, in sixteenths (default 4)\n"
     "  --calc-grade G     whole (one good or bad for the answer, default) or bit (a verdict\n"
-    "                     per output bit, delivered to that bit's motor cells)\n";
+    "                     per output bit, delivered to that bit's motor cells)\n"
+    "  --calc-form F      bits (two motor lines per output bit, default) or buttons (one\n"
+    "                     button per possible answer, at most 16; for one-button engines)\n"
+    "  --calc-ball R      held-out cases bring every case within R line flips along\n"
+    "                     (default 0), so no seen case is that near one\n";
 
 static bool whole_number(const char* text, int& out) {
     char* end = nullptr;
@@ -57,6 +61,17 @@ int calc_parse_flag(const char* flag, const char* value, TaskSettings& settings)
         std::fprintf(stderr, "blobrun: no calc op '%s'\n%s", value, calc_flags_usage);
         return -1;
     }
+    if (std::strcmp(flag, "--calc-form") == 0) {
+        if (std::strcmp(value, "bits") == 0) {
+            c.form = 0;
+        } else if (std::strcmp(value, "buttons") == 0) {
+            c.form = 1;
+        } else {
+            std::fprintf(stderr, "blobrun: --calc-form is bits or buttons\n");
+            return -1;
+        }
+        return 1;
+    }
     if (std::strcmp(flag, "--calc-grade") == 0) {
         if (std::strcmp(value, "whole") == 0) {
             c.grade = 0;
@@ -73,6 +88,7 @@ int calc_parse_flag(const char* flag, const char* value, TaskSettings& settings)
                   : std::strcmp(flag, "--calc-size") == 0 ? &c.size
                   : std::strcmp(flag, "--calc-list") == 0 ? &c.list
                   : std::strcmp(flag, "--calc-hold") == 0 ? &c.hold
+                  : std::strcmp(flag, "--calc-ball") == 0 ? &c.ball
                                                           : nullptr;
     if (!target) {
         return 0;

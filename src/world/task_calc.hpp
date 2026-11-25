@@ -57,6 +57,12 @@ struct CalcSettings {
     int length = 3;   // program: instructions
     int size = 4;     // geometry: grid side (angle: radius)
     int list = 4;     // kth: numbers in the list
+    // 0: the answer as bits, two motor lines per bit. 1: one button per possible answer
+    // (at most 16), for engines that press one button (memory, mlp, gru)
+    int form = 0;
+    // held-out cases come in balls: a held case's input lines within this many flips are
+    // held too, so the nearest seen case is further away (exact case sets only)
+    int ball = 0;
 };
 
 struct CalcState {
@@ -71,6 +77,10 @@ struct CalcState {
     uint64_t answer = 0;
     uint64_t case_id = 0;
     bool held = false;
+    // the button form: the possible answers in rising order, and the one wanted now
+    int buttons = 0;
+    uint64_t answer_of[16] = {};
+    int button = -1;
     // tallies for the window: [0] seen, [1] held out
     int64_t trials[2] = {}, whole[2] = {}, bits[2] = {};
     int64_t bit_right[2][CALC_MAX_OUT] = {};

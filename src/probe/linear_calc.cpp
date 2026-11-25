@@ -161,6 +161,78 @@ static CalcScore fit_bits(const CalcRows& rows, const std::vector<uint64_t>& ans
     return out;
 }
 
+// a lookup of the nearest seen trial: every seen trial before the test part is stored with
+// its answer; a test trial takes the answer of the stored trials whose input lines differ
+// from its own in the fewest places (each bit by majority among them). what storing what
+// was seen gets on held-out cases
+static CalcScore nearest_bits(const CalcRows& rows, const std::vector<uint64_t>& answer,
+                              int out_bits) {
+    std::vector<int> seen, held;
+    for (size_t r = 0; r < rows.held.size(); r++) {
+        (rows.held[r] ? held : seen).push_back((int)r);
+    }
+    int train = (int)seen.size() * 3 / 4, words = (rows.d + 63) / 64;
+    std::vector<uint64_t> packed(rows.held.size() * (size_t)words, 0);
+    for (size_t r = 0; r < rows.held.size(); r++) {
+        for (int j = 0; j < rows.d; j++) {
+            packed[r * words + j / 64] |= (uint64_t)(rows.x[r * rows.d + j] > 0.5) << (j % 64);
+        }
+    }
+    auto score = [&](const std::vector<int>& which, int from, std::vector<double>& per_bit,
+                     double& whole) {
+        per_bit.assign((size_t)out_bits, 0.0);
+        whole = 0;
+        int count = 0;
+        for (size_t w = (size_t)from; w < which.size(); w++) {
+            int r = which[w], best = 1 << 30;
+            std::vector<int> votes((size_t)out_bits, 0);
+            int tied = 0;
+            for (int i = 0; i < train; i++) {
+                int t = seen[(size_t)i], d = 0;
+                for (int k = 0; k < words; k++) {
+                    d += __builtin_popcountll(packed[(size_t)r * words + k] ^
+                                              packed[(size_t)t * words + k]);
+                }
+                if (d > best) {
+                    continue;
+                }
+                if (d < best) {
+                    best = d;
+                    tied = 0;
+                    std::fill(votes.begin(), votes.end(), 0);
+                }
+                tied++;
+                for (int b = 0; b < out_bits; b++) {
+                    votes[(size_t)b] += (int)((answer[(size_t)t] >> b) & 1);
+                }
+            }
+            bool all = true;
+            for (int b = 0; b < out_bits; b++) {
+                bool on = 2 * votes[(size_t)b] > tied;
+                bool right = on == (bool)((answer[(size_t)r] >> b) & 1);
+                per_bit[(size_t)b] += right;
+                all = all && right;
+            }
+            whole += all;
+            count++;
+        }
+        for (double& v : per_bit) {
+            v = count > 0 ? v / count : 0.0;
+        }
+        whole = count > 0 ? whole / count : 0.0;
+        return count;
+    };
+    CalcScore out;
+    out.n[0] = score(seen, train, out.bit[0], out.whole[0]);
+    out.n[1] = score(held, 0, out.bit[1], out.whole[1]);
+    for (int h = 0; h < 2; h++) {
+        for (double v : out.bit[h]) {
+            out.bits[h] += v / out_bits;
+        }
+    }
+    return out;
+}
+
 static void report(FILE* csv, const char* label, const char* reader, const CalcScore& s,
                    int out_bits) {
     std::printf("%-20s %-12s bits seen %.3f held %.3f   whole seen %.3f held %.3f   (%d, %d "
@@ -288,6 +360,7 @@ int probe_calc(int argc, char** argv) {
     if (csv) {
         std::fprintf(csv, "reader,key,value\n");
     }
+    report(csv, label, "nearest", nearest_bits(inputs, answers, out_bits), out_bits);
     report(csv, label, "inputs", fit_bits(inputs, answers, out_bits), out_bits);
     report(csv, label, "sheet", fit_bits(sheet, answers, out_bits), out_bits);
     if (steps > 2) {

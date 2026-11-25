@@ -33,8 +33,9 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BLOBRUN = os.path.join(ROOT, "build", "blobrun")
-BLOBPROBE = os.path.join(ROOT, "build", "blobprobe")
+BUILD = os.path.join(ROOT, os.environ.get("CALC_BUILD", "build"))
+BLOBRUN = os.path.join(BUILD, "blobrun")
+BLOBPROBE = os.path.join(BUILD, "blobprobe")
 
 BASE = ["--ticks", "20", "--sensor-side", "3", "--motor-side", "3", "--motor-spread", "128"]
 WORKING = ["--g.learn_mode", "5", "--g.readout_evidence", "1", "--g.readout_shift", "4",
@@ -71,7 +72,7 @@ def members():
     ladder("bitops", "parity", [2, 4, 8])
     ladder("alu", "alu4", [2, 4])
     ladder("alu", "alu8", [2, 4])
-    for i, n in enumerate([1, 2, 3, 4, 6]):
+    for i, n in enumerate([1, 2, 3, 4, 5, 6, 7]):
         m.append(member("program", "program3x%d" % n, ["--calc", "program", "--calc-bits", "3",
                                                          "--calc-len", str(n)], i == 0))
     ladder("lookup", "max", [2, 4])
@@ -96,8 +97,15 @@ CONFIGS = {
                    "4", "--g.readout_balance", "1", "--calc-grade", "bit"], False),
     "minimal": ("run", ["--engine", "minimal", "--calc-grade", "whole"], True),
     "table": ("run", ["--table", "--calc-grade", "whole"], True),
+    # one button per possible answer (members with at most 16 answers), whole answer graded:
+    # the engines that press one button, and the working rule in the same form
+    "btn": ("run", WORKING + ["--calc-form", "buttons"], True),
+    "memory": ("run", ["--engine", "memory", "--calc-form", "buttons"], True),
+    "gru": ("run", ["--engine", "gru", "--calc-form", "buttons"], True),
+    "mlp": ("run", ["--engine", "mlp", "--calc-form", "buttons"], True),
 }
 FIRST_ONLY = {"whole", "good", "m6", "minimal", "table"}
+BUTTON_ONLY = {"btn", "memory", "gru", "mlp"}
 
 
 def read_sum(path):
@@ -132,6 +140,16 @@ def done_path(config, stem):
     return stem + ("-probe.csv" if config == "probe" else "-sum.csv")
 
 
+def finished(config, stem):
+    """a run that was cut off leaves a summary without its scores"""
+    path = done_path(config, stem)
+    if not os.path.exists(path):
+        return False
+    with open(path) as f:
+        text = f.read()
+    return ("bits_seen" in text) if config == "probe" else (",late," in text)
+
+
 def mean(v):
     return statistics.mean(v) if v else None
 
@@ -146,8 +164,9 @@ def collect(mems, configs, seeds, outdir):
                 stem = os.path.join(outdir, "%s-%s-s%d" % (mem["name"], config, seed))
                 if config == "probe":
                     d = read_sum(done_path(config, stem))
-                    rows = {"sheet." + k: v for k, v in d.get("sheet", {}).items()}
-                    rows.update({"inputs." + k: v for k, v in d.get("inputs", {}).items()})
+                    rows = {}
+                    for reader, keys in d.items():
+                        rows.update({reader + "." + k: v for k, v in keys.items()})
                 else:
                     d = read_sum(done_path(config, stem))
                     rows = {}
@@ -167,9 +186,12 @@ def cell(d, key, width=5):
 
 
 def print_table(mems, res, configs, out):
-    head = ("member      in/out | probe inputs  | probe sheet   |  bit: seen held whole twin "
-            "coin | whole good |  m6 seen held | minimal twin | table twin")
-    lines = [head, "-" * len(head)]
+    """A: every member, bits right, seen | held side by side. B: the one-button engines,
+    whole answers right, seen | held. C: each output bit on seen cases."""
+    head = ("member      in/out | nearest | inputs    | sheet     | rule bit  whole twin coin"
+            " | whole good | m6        | minimal twin | table twin")
+    lines = ["A. share of output bits right, seen | held-out cases (late; probe columns: the "
+             "offline readers on the frozen sheet as born)", head, "-" * len(head)]
     fam = None
     for mem in mems:
         r = res[mem["name"]]
@@ -177,23 +199,51 @@ def print_table(mems, res, configs, out):
             fam = mem["fam"]
             lines.append("-- " + fam)
         pr, b = r.get("probe", {}), r.get("bit", {})
-        shape = layout_of(mem)
+        two = lambda d, k1, k2: cell(d, k1, 4) + cell(d, k2, 5)
         lines.append(
-            "%-11s %6s | %s %s | %s %s | %s %s %s %s %s | %s %s | %s %s | %s %s | %s %s   %s" % (
-                mem["name"] + ("*" if mem["first"] else ""), shape,
-                cell(pr, "inputs.bits_seen"), cell(pr, "inputs.bits_held"),
-                cell(pr, "sheet.bits_seen"), cell(pr, "sheet.bits_held"),
-                cell(b, "blob.late"), cell(b, "blob.bits_held_late"),
-                cell(b, "blob.whole_seen_late"), cell(b, "learn_off.late"),
-                cell(b, "coin.late"),
-                cell(r.get("whole", {}), "blob.late"), cell(r.get("good", {}), "blob.late"),
-                cell(r.get("m6", {}), "blob.late"), cell(r.get("m6", {}), "blob.bits_held_late"),
-                cell(r.get("minimal", {}), "blob.late"),
+            "%-11s %6s | %s | %s | %s | %s %s %s %s | %s %s | %s | %s %s | %s %s   n=%d" % (
+                mem["name"] + ("*" if mem["first"] else ""), layout_of(mem),
+                cell(pr, "nearest.bits_held", 7),
+                two(pr, "inputs.bits_seen", "inputs.bits_held"),
+                two(pr, "sheet.bits_seen", "sheet.bits_held"),
+                two(b, "blob.late", "blob.bits_held_late"), cell(b, "blob.whole_seen_late"),
+                cell(b, "learn_off.late", 4), cell(b, "coin.late", 4),
+                cell(r.get("whole", {}), "blob.late"), cell(r.get("good", {}), "blob.late", 4),
+                two(r.get("m6", {}), "blob.late", "blob.bits_held_late"),
+                cell(r.get("minimal", {}), "blob.late", 7),
                 cell(r.get("minimal", {}), "learn_off.late"),
                 cell(r.get("table", {}), "table.late"), cell(r.get("table", {}), "table_off.late"),
-                "n=%d" % b.get("n", 0)))
-    lines.append("")
-    lines.append("each output bit, seen cases: probe sheet / working rule (bit grading) / twin")
+                b.get("n", 0)))
+    lines += ["", "B. one button per answer: whole answers right, seen | held-out (nearest: the "
+              "stored nearest seen trial)",
+              "member      | nearest    | rule btn   | memory     | gru        | mlp        | "
+              "twins: rule memory gru mlp | coin"]
+    for mem in mems:
+        r = res[mem["name"]]
+        if not any(r.get(c, {}).get("n") for c in BUTTON_ONLY):
+            continue
+        pr = r.get("probe", {})
+        cols = [cell(pr, "nearest.whole_seen", 4) + cell(pr, "nearest.whole_held")]
+        for c in ("btn", "memory", "gru", "mlp"):
+            d = r.get(c, {})
+            cols.append(cell(d, "blob.whole_seen_late", 4) + cell(d, "blob.whole_held_late"))
+        twins = " ".join(cell(r.get(c, {}), "learn_off.whole_seen_late", 5)
+                         for c in ("btn", "memory", "gru", "mlp"))
+        coin = cell(r.get("memory", r.get("btn", {})), "coin.whole_seen_late")
+        lines.append("%-11s | %s |  %s | %s" % (mem["name"], " | ".join(cols), twins, coin))
+    lines += ["", "B2. the same, share of bits right, seen | held-out",
+              "member      | nearest    | rule btn   | memory     | gru        | mlp"]
+    for mem in mems:
+        r = res[mem["name"]]
+        if not any(r.get(c, {}).get("n") for c in BUTTON_ONLY):
+            continue
+        pr = r.get("probe", {})
+        cols = [cell(pr, "nearest.bits_seen", 4) + cell(pr, "nearest.bits_held")]
+        for c in ("btn", "memory", "gru", "mlp"):
+            d = r.get(c, {})
+            cols.append(cell(d, "blob.late", 4) + cell(d, "blob.bits_held_late"))
+        lines.append("%-11s | %s" % (mem["name"], " | ".join(cols)))
+    lines += ["", "C. each output bit, seen cases: probe sheet / working rule (bit grading) / twin"]
     for mem in mems:
         r = res[mem["name"]]
         pr, b = r.get("probe", {}), r.get("bit", {})
@@ -211,6 +261,21 @@ def print_table(mems, res, configs, out):
     if out:
         with open(out, "w") as f:
             f.write(text + "\n")
+
+
+BUTTONS = {}
+
+
+def has_buttons(mem):
+    """whether the member has a one-button-per-answer form (at most 16 answers)"""
+    if mem["name"] in BUTTONS:
+        return BUTTONS[mem["name"]]
+    r = subprocess.run([BLOBRUN] + BASE + mem["args"] + ["--calc-form", "buttons", "--steps",
+                       "1", "--window", "1", "--no-baselines", "--out",
+                       os.path.join(ROOT, "out", "calc", "form-check.csv")],
+                       capture_output=True, text=True)
+    BUTTONS[mem["name"]] = r.returncode == 0
+    return BUTTONS[mem["name"]]
 
 
 LAYOUTS = {}
@@ -274,7 +339,8 @@ def main():
     seeds = seeds or life["seeds"]
     mems = [m for m in members() if not only or m["fam"] in only or m["name"] in only]
     explicit = "--all-sizes" in rest
-    configs = configs or ["probe", "bit", "whole", "good", "m6", "minimal", "table"]
+    configs = configs or ["probe", "bit", "whole", "good", "m6", "minimal", "table", "btn",
+                          "memory", "gru", "mlp"]
     outdir = os.path.join(ROOT, "out", "calc", name + ("-quick" if quick else ""))
     os.makedirs(outdir, exist_ok=True)
 
@@ -283,9 +349,11 @@ def main():
         for config in configs:
             if config in FIRST_ONLY and not mem["first"] and not explicit:
                 continue
+            if config in BUTTON_ONLY and not has_buttons(mem):
+                continue
             for seed in seeds:
                 stem = os.path.join(outdir, "%s-%s-s%d" % (mem["name"], config, seed))
-                if not os.path.exists(done_path(config, stem)):
+                if not finished(config, stem):
                     todo.append((mem, config, seed, stem))
     if not table_only and todo:
         print("calc %s: %d runs, %d at a time, seeds %s" % (name, len(todo), jobs, seeds),

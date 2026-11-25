@@ -5,6 +5,9 @@
 #include <cstdio>
 #include <vector>
 
+// more motor lines than the plug takes: it refuses the task
+constexpr int PLUG_REFUSED_MOTORS = 1000;
+
 // the calculation battery as a task (task_calc.hpp). the answer is read off the ask step
 // as one bit per output pair. grading: whole (one good or bad for the whole answer, every
 // output's cells marked) or per bit (bad when any bit is wrong, and only the wrong bits'
@@ -29,7 +32,17 @@ static bool is_held(const Task& task, uint64_t id) {
 }
 
 // a small case set holds out exactly cases * hold / 16 of its valid cases (at least one,
-// never all), the ones whose hash with the life's salt is lowest
+// never all), the ones whose hash with the life's salt is lowest. with `ball`, each case
+// taken in that order brings every valid case within `ball` line flips of it along, so a
+// held case's nearest seen case is at least ball + 1 flips away
+static int flips(const CalcTrial& a, const CalcTrial& b) {
+    int d = 0;
+    for (int i = 0; i <= CALC_MAX_STEPS; i++) {
+        d += __builtin_popcount(a.lines[i] ^ b.lines[i]);
+    }
+    return d;
+}
+
 static void choose_held(Task& task) {
     CalcState& c = task.calc;
     const CalcSettings& s = task.settings.calc;
@@ -37,9 +50,9 @@ static void choose_held(Task& task) {
         return;
     }
     std::vector<std::pair<uint64_t, uint64_t>> valid;
-    CalcTrial t;
+    std::vector<CalcTrial> trial((size_t)c.cases);
     for (uint64_t id = 0; id < c.cases; id++) {
-        if (calc_case(s, id, t)) {
+        if (calc_case(s, id, trial[id])) {
             valid.push_back({mix(id ^ c.salt), id});
         }
     }
@@ -47,9 +60,51 @@ static void choose_held(Task& task) {
     want = want < 1 ? 1 : want;
     want = want >= valid.size() ? valid.size() - 1 : want;
     std::sort(valid.begin(), valid.end());
-    for (size_t i = 0; i < want; i++) {
-        c.held_exact[valid[i].second / 64] |= 1ull << (valid[i].second % 64);
+    size_t held = 0;
+    for (size_t i = 0; i < valid.size() && held < want; i++) {
+        uint64_t centre = valid[i].second;
+        for (size_t j = 0; j < valid.size() && held < valid.size() - 1; j++) {
+            uint64_t id = valid[j].second;
+            bool near = id == centre || flips(trial[centre], trial[id]) <= s.ball;
+            if (near && !((c.held_exact[id / 64] >> (id % 64)) & 1)) {
+                c.held_exact[id / 64] |= 1ull << (id % 64);
+                held++;
+            }
+        }
     }
+}
+
+// the button form: one button per possible answer. every pattern of up to 4 bits, or the
+// answers a small case set can give (place-coded geometry); false if more than 16
+static bool choose_buttons(Task& task) {
+    CalcState& c = task.calc;
+    if (c.out_bits <= 4) {
+        c.buttons = 1 << c.out_bits;
+        for (int i = 0; i < c.buttons; i++) {
+            c.answer_of[i] = (uint64_t)i;
+        }
+        return true;
+    }
+    if (c.cases > CALC_EXACT_CASES) {
+        return false;
+    }
+    std::vector<uint64_t> seen;
+    CalcTrial t;
+    for (uint64_t id = 0; id < c.cases; id++) {
+        if (calc_case(task.settings.calc, id, t)) {
+            seen.push_back(t.answer);
+        }
+    }
+    std::sort(seen.begin(), seen.end());
+    seen.erase(std::unique(seen.begin(), seen.end()), seen.end());
+    if (seen.size() > 16) {
+        return false;
+    }
+    c.buttons = (int)seen.size();
+    for (int i = 0; i < c.buttons; i++) {
+        c.answer_of[i] = seen[(size_t)i];
+    }
+    return true;
 }
 
 static void new_trial(Task& task) {
@@ -67,6 +122,10 @@ static void new_trial(Task& task) {
     c.answer = t.answer;
     c.case_id = id;
     c.held = is_held(task, id);
+    c.button = -1;
+    for (int i = 0; i < c.buttons; i++) {
+        c.button = c.answer_of[i] == c.answer ? i : c.button;
+    }
     task.phase = 0;
 }
 
@@ -89,7 +148,13 @@ void calc_reset(Task& task) {
         c.out_bits = c.out_bits > CALC_MAX_OUT ? CALC_MAX_OUT : (c.out_bits < 1 ? 1 : c.out_bits);
     }
     c.salt = world_random_word(task.random);
+    s.ball = s.ball < 0 ? 0 : s.ball;
     choose_held(task);
+    if (s.form == 1 && !choose_buttons(task)) {
+        std::fprintf(stderr, "calc: %s has more than 16 possible answers; no button form\n",
+                     calc_op_name(s.op));
+        c.buttons = 0;
+    }
     new_trial(task);
 }
 
@@ -98,6 +163,11 @@ TaskShape calc_shape(const Task& task) {
     shape.singles = task.calc.lines;
     shape.pattern_bits = task.calc.out_bits;
     shape.motors = 2 * task.calc.out_bits;
+    if (task.settings.calc.form == 1) {
+        // one button per answer; too many for the plug (it refuses) when there is no form
+        shape.pattern_bits = 0;
+        shape.motors = task.calc.buttons > 0 ? task.calc.buttons : PLUG_REFUSED_MOTORS;
+    }
     return shape;
 }
 
@@ -109,7 +179,10 @@ void calc_sense(const Task& task, TaskSense& sense) {
 }
 
 int calc_perfect_move(const Task& task) {
-    return task.phase == task.calc.steps - 1 ? (int)task.calc.answer : -1;
+    if (task.phase != task.calc.steps - 1) {
+        return -1;
+    }
+    return task.settings.calc.form == 1 ? task.calc.button : (int)task.calc.answer;
 }
 
 int calc_step(Task& task, const TaskStepIn& in) {
@@ -121,6 +194,12 @@ int calc_step(Task& task, const TaskStepIn& in) {
     }
     uint64_t all = (1ull << c.out_bits) - 1;
     uint64_t wrong = ((in.pattern ^ c.answer) | in.pattern_tied) & all;
+    bool buttons = task.settings.calc.form == 1;
+    if (buttons) {
+        // the pressed button's answer, bit by bit; no press is every bit wrong
+        bool pressed = in.move >= 0 && in.move < c.buttons;
+        wrong = pressed ? (c.answer_of[in.move] ^ c.answer) & all : all;
+    }
     int h = c.held ? 1 : 0;
     c.trials[h]++;
     c.whole[h] += wrong == 0;
@@ -129,6 +208,7 @@ int calc_step(Task& task, const TaskStepIn& in) {
         c.bit_right[h][b] += !((wrong >> b) & 1);
     }
     int valence = wrong ? -1 : 1;
+    valence = buttons && in.move < 0 ? 0 : valence; // no press is a miss, as with buttons
     // per bit: the verdict goes to the wrong bits only (all of them when all are right)
     task.pattern_graded = task.settings.calc.grade == 1 && wrong ? wrong : all;
     if (c.held) {
