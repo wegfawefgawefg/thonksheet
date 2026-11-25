@@ -131,3 +131,13 @@ if(nn_sources AND TARGET blobworld AND TARGET blobrun)
     target_link_libraries(blobrun PRIVATE blobnn)
     target_compile_definitions(blobrun PRIVATE BLOB_HAS_NN=1)
 endif()
+
+# blobmnist: MNIST through the sheet, and the plain learners it is measured against (src/mnist/)
+file(GLOB mnist_sources CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/mnist/*.cpp)
+if(mnist_sources AND TARGET blobcore AND TARGET blobworld)
+    add_executable(blobmnist ${mnist_sources} ${CMAKE_SOURCE_DIR}/src/run/task_ticker.cpp
+                   ${CMAKE_SOURCE_DIR}/src/run/run_flags.cpp)
+    target_include_directories(blobmnist PRIVATE src)
+    target_compile_options(blobmnist PRIVATE ${warnings} ${speed})
+    target_link_libraries(blobmnist PRIVATE blobworld blobcore)
+endif()

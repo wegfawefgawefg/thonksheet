@@ -1,5 +1,7 @@
 #include "run/run_flags.hpp"
 
+#include "world/mnist_data.hpp"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -7,7 +9,8 @@
 static const char* usage =
     "usage: blobrun [flags]\n"
     "  --task NAME        echo, shuffled-echo, delayed-echo, go-no-go, beat, sequence,\n"
-    "                     catch, cartpole, order, both-not-either, gap, place (default echo)\n"
+    "                     catch, cartpole, order, both-not-either, gap, place, mnist\n"
+    "                     (default echo)\n"
     "  --seed N           blob seed (default 1)\n"
     "  --task-seed N      task seed (default: same as --seed)\n"
     "  --steps N          life length in task steps (default 20000)\n"
@@ -40,6 +43,9 @@ static const char* usage =
     "  --gap-long N       gap: blank steps between blinks, long (default 3)\n"
     "  --place-size N     place: the sheet is N x N (default 4)\n"
     "  --place-hold N     place: places never rewarded, the scored ones (default 3)\n"
+    "  --mnist-code C     mnist: t14 (default), g14 or t28 (src/world/mnist_data.hpp)\n"
+    "  --mnist-first N    mnist: first training digit used (default 0)\n"
+    "  --mnist-count N    mnist: training digits used from there (default 0: the rest)\n"
     "  --distance N       plug: cue lines and motor lines N tiles apart (default: packed,\n"
     "                     1 tile with the default genome)\n"
     "  --motor-spread N   plug: N motor cells per button, dealt like a checkerboard over\n"
@@ -147,6 +153,13 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             }
             continue;
         }
+        if (std::strcmp(flag, "--mnist-code") == 0) {
+            if (!mnist_code_from_name(value, flags.task_settings.mnist_code)) {
+                std::fprintf(stderr, "blobrun: --mnist-code is t14, g14 or t28\n");
+                return false;
+            }
+            continue;
+        }
         if (std::strcmp(flag, "--task") == 0) {
             if (!task_from_name(value, flags.task)) {
                 std::fprintf(stderr, "blobrun: no task '%s'\n%s", value, usage);
@@ -220,6 +233,10 @@ bool run_flags_parse(int argc, char** argv, RunFlags& flags) {
             flags.task_settings.place_size = (int)v;
         } else if (std::strcmp(flag, "--place-hold") == 0) {
             flags.task_settings.place_hold = (int)v;
+        } else if (std::strcmp(flag, "--mnist-first") == 0) {
+            flags.task_settings.mnist_first = (int)v;
+        } else if (std::strcmp(flag, "--mnist-count") == 0) {
+            flags.task_settings.mnist_count = (int)v;
         } else if (std::strcmp(flag, "--distance") == 0) {
             flags.plug.distance = (int)v;
         } else if (std::strcmp(flag, "--motor-spread") == 0) {
