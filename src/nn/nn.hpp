@@ -38,7 +38,7 @@ enum class NnKind { mlp, gru };
 // 1-4 of echo, exclusive-or and delayed echo, docs/results-2026-11-25-fixed-net-reference.md)
 struct NnSettings {
     int adam = 1;                // 1 Adam, 0 plain SGD
-    float lr = 0.001f;           // step size
+    float lr = 0.0001f;          // step size
     float temperature = 1.0f;    // softmax over the scores
     float baseline_rate = 0.01f; // running average of reward follows over about 1/this
     int window = 8;              // gru: steps of backprop through time
