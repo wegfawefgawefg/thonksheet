@@ -1,0 +1,13 @@
+# idea 155, each piece of the merged rule switched off in turn, and the two controls, seeds
+# 5-12, 128 motor cells per button (8 cues: inner-pieces-many.txt). first line is the rule.
+inner: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1
+no contrast: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 1 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1
+not spike-exact: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4
+no growth: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1 --g.tag_grow 0
+strength free: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1 --g.tag_counts 1
+no fixed counts: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1 --g.tag_counts 2
+no threshold: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 1 --g.tag_exact 1
+inhibitory learn: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 1 --g.tag_min 4 --g.tag_exact 1
+error verdict, strength free: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1 --g.tag_verdict 1 --g.tag_counts 1
+shuffled signs: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1 --g.tag_shuffle 1
+random neurons: --g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g.readout_balance 1 --motor-spread 128 --g.tag_mode 2 --g.tag_inh 0 --g.tag_min 4 --g.tag_exact 1 --g.tag_random 1

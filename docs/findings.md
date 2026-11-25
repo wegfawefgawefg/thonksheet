@@ -20,9 +20,16 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   fades over about a hundred ticks takes delayed echo 0.55 to 0.91, order to 0.88, gap to
   0.68. Cells that hold without leaking, beside cells that mark time since an input came
   on, take delayed echo, gap and order to 0.98 or better and hold a cue 5,000 ticks.
-- **Acting yields to a critic.** A second group of cells that learns how well things are
-  going, and teaches the buttons by its surprise: bandit 1.00, two-step chain 0.97 (the
-  GRU reference: 0.01), cartpole 20 to 89 steps per fall and rising (the GRU: 798).
+- **Acting yields to a critic, up to a point.** A second group of cells that learns how
+  well things are going, and teaches the buttons by its surprise. One setting, 17 worlds,
+  seeds 5 to 12 (docs/results-2026-11-25-critic.md): above its learning-off twin on 15,
+  above the readout alone on 15. Bandits 1.00, switching bandit 0.98, the two-step chain
+  0.99 (GRU 0.01, memory 0.00), track 0.88, forage 0.84, arrival-only track and forage
+  0.78 (credit one step back, reached), mountain car 0.97, catch 0.39 (GRU 0.72).
+  **Cartpole does not balance:** 109 steps per fall at 40,000 steps and still about 110 at
+  400,000 (coin 21, memory 307, GRU 895). The sheet can represent balancing: told the
+  right press its buttons reach 865 to 1000. The limit is how little the critic's
+  surprise says about each press. It costs 2 to 4 times the readout alone per tick.
 - **Cartpole was broken.** Its reward judged the press before the one it followed, so no
   rule that credits the current press could learn it. Fixed (semi-implicit step). Every
   earlier cartpole number, the references' included, is on the faulty world.
@@ -41,8 +48,29 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   0.998 against 0.855 as born; the sheet stays at its target rate through 160,000 steps.
   Two independent rules now pass the inside-learning test, and they are the same idea:
   one step of signed credit from the action's cells into hidden counters under a budget.
-  Neither transfers to a task it was not rewarded on, and neither helps MNIST (the
+  Neither transfers to an unrelated task, and neither helps MNIST by its credit (the
   reward-free rule below does).
+- **Merging the two gives the tags again, and the first clear transfer** (idea 155,
+  docs/results-2026-11-25-inner-rule.md, `scripts/inner.sh`). The tags with the walk's
+  spike-exact credit tie the tags on 11 rows (exclusive-or 0.991, eight cues 0.952) and
+  take none of the walk's reach (echo at 5 tiles 0.757 against the walk's 0.876); on the
+  tuning seeds the plain tags scored a little higher. What is new is in the tests around
+  it, seeds 5 to 12, fresh output on the frozen sheet:
+  - Related tasks transfer: after a life of exclusive-or, parity of 3 reads 0.856
+    against 0.552 as born (better than after a parity-of-3 life, 0.693); after eight
+    cues, other pairings of the same cues read 0.950 against 0.796. A new line the life
+    never showed gains little (0.760 against 0.712).
+  - A random-neuron control (the same amount of rewiring given to random cells that
+    fired) shows where credit matters: it is the whole gain on eight cues and on echo at
+    5 tiles (control 0.809 and 0.579, no gain), and only a quarter of it on exclusive-or
+    (control 0.961 of 0.993).
+  - On MNIST after 20,000 rewarded digits a linear reader gets 0.938 against 0.926 as
+    born, but coin rewards give 0.936 and random neurons 0.939. So the gain is rewiring
+    of busy cells at fixed counts, not credit: the same thing competitive learning does
+    on purpose and better (0.952).
+  - A life that alternates two tasks every 1,000 steps keeps both (exclusive-or 0.994,
+    eight cues 0.883) and lifts a third it never saw (parity of 3, 0.726).
+  Not run: the piece-by-piece table on report seeds, 160,000-step lives, a second hop.
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -345,14 +373,21 @@ docs/results-2026-11-25-mnist.md
 29. **Credit one step back reaches the inside; further back does not.** [likely: one
     engine, 8 seeds, with a fresh-output check] See "Where it stands". The step back must
     use evidence counters on inner neurons (principle 14 again) and only walk from spikes.
-    Open: the runaway on long lives; the half that unsigned rewiring explains; transfer.
+    Open: the runaway on long lives; the half that unsigned rewiring explains.
+    Transfer (idea 155): clear to related tasks on the same lines, none shown to
+    unrelated ones. A random-neuron control says credit is the whole gain on reach and
+    on eight cues and a quarter of it on exclusive-or. The walk's reach does not come
+    from spike-exact credit: the tags given it do not gain it.
 30. **Holding needs a slow variable inside the neuron, not a ringing sheet.** [likely: two
     independent mechanisms, 8 seeds each for the first] Tiring neurons, a slow second
     potential, or non-leaking cells each make delayed echo learnable. The ringing sheet
     from finding 22 holds too but the output reads it worse. Each costs exclusive-or about
     0.1; a winner-in-the-tile rule lifts exclusive-or to 0.98 and may pay that back.
 31. **An actor needs a critic, and the critic's surprise must teach on good as well as
-    bad.** [hint: 4 tuning seeds] Finding 17 holds only when the world's own verdict is the
+    bad.** [likely: 17 worlds, seeds 5 to 12; a slower actor helps (cartpole 89 to 107,
+    chain 0.97 to 0.99); a wider critic costs (chain 0.84, cartpole 33); the close-vote
+    gate that helps raw good does not carry over to a critic's good (bandit 0.84, chain
+    0.79); an actor trace shorter than 4 steps costs] Finding 17 holds only when the world's own verdict is the
     teacher. A critic made of spiking cells needs an opponent half so common swings cancel.
 32. **Wiring by co-activity is the inner rule that pays beside an error-rule output.**
     [likely: third result for principle 3] In the minimal engine it adds 0.05 to 0.25 on
@@ -403,11 +438,16 @@ docs/results-2026-11-25-mnist.md
     one data set] Competition in the tile, hidden counters, and rewiring at the born
     counts: lived 0.952 against born 0.926 on MNIST. The same idea without a budget or
     counters (co-activity wiring) gets half the gain. Second result for finding 38.
+    Third result (idea 155): a reward-driven rule lifts the MNIST reader by the same
+    route whatever the reward says (0.938 real rewards, 0.936 coin, 0.939 random
+    neurons). Rewiring busy cells at fixed counts is the active part.
 44. **Every inside-learning claim needs a shuffled-input control and a rate-matched one.**
     [likely] A life on shuffled digits lifts the reader by 0.014 with nothing to learn
     (cells drift toward being a random projection of the input), and a rule that leaves
     cells firing faster changes what a reader sees. Only what is left after both is
-    learned structure.
+    learned structure. For a reward-driven rule add two more: coin rewards, and the
+    same rewiring given to random cells that fired (idea 155 built both: `tag_random`,
+    `tag_shuffle`, `--live-coin`).
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 
@@ -464,7 +504,15 @@ it.*
   to 0.60, two-layer net 0.96 to 0.65, sheet ceiling 0.92 to 0.66). Nothing in the sheet shares what one patch learned
   with another. This is the missing prior the owner started from on day one (a convolution
   shares; this sheet does not).
-- **Acting in a world.** Nothing of ours learns catch or cartpole. On cartpole learning
+- **Acting in a world (updated 2026-11-25, late).** With the critic: cartpole is learned
+  to about 110 steps per fall and stops there, though the sheet's buttons reach 865 to
+  1000 when told the right press, so the wall is the teaching signal per press, not what
+  the sheet can represent. Credit one step back is reached on the cued chain and on
+  arrival-only track and forage. Goal-only mountain car (0.00) is an exploration problem:
+  the critic never sees a reward. Upright-only pendulum (0.08) is a reader problem: even
+  told the right press the buttons get 0.08 to 0.14. The chain with no stage cue (0.09) is
+  a memory problem: nothing holds the last press. Before the critic:
+  Nothing of ours learns catch or cartpole. On cartpole learning
   makes the full engine worse than a coin, and the reference networks too: the "lean"
   reward grades the press before the one it follows (a fault in the world, being fixed),
   and the sparse reward needs credit carried 25 steps back. The GRU learns catch (0.72).

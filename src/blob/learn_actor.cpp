@@ -11,6 +11,7 @@
 //   sources and the other buttons' cells gain them (balanced); on good nothing, unless
 //   readout_good, when the pressed gain and the others lose.
 // 1 reinforce: the pressed button's cells alone, gaining after good and losing after bad.
+// with margin_percent, either form's good half skips a kept step whose vote was not close.
 
 static int clamp_int(int v, int lo, int hi) {
     return v < lo ? lo : (v > hi ? hi : v);
@@ -37,7 +38,14 @@ void actor_learn(Blob& blob, CriticState& c, int sign) {
     int ages = clamp_int(g.actor_trace_steps, 1, CRITIC_STEPS - 1);
     ages = ages < c.steps ? ages : (int)c.steps;
     for (int a = 1; a <= ages; a++) {
-        const uint64_t* acted = c.acted + (std::size_t)critic_slot(c, a) * words;
+        int slot = critic_slot(c, a);
+        // the margin gate: a good surprise moves a step's press only if its vote was close
+        int64_t pressed_votes = c.vote[slot][0], lead = pressed_votes - c.vote[slot][1];
+        if (sign > 0 && g.margin_percent && pressed_votes > 0 &&
+            lead * 100 >= (int64_t)g.margin_percent * pressed_votes) {
+            continue;
+        }
+        const uint64_t* acted = c.acted + (std::size_t)slot * words;
         int shift = g.readout_shift + (a - 1) * g.actor_fade;
         int64_t pressed_cells = 0, other_cells = 0;
         for (int t = 0; t < blob.tile_count; t++) {

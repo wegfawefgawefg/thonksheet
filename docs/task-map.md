@@ -104,8 +104,13 @@ seeds and, above all, together under one setting):
   slow variable in the neuron or with time and hold cells. Beat and sequence unrun.
 - tier 5 and 6 (what stays the same): the invariance battery exists; every engine and both
   references fail the held-out rows. The old place row is retired as a trap.
-- tier 7 (acting): with a critic, bandit 1.00, chain 0.97, cartpole 89 steps per fall;
-  cartpole now uses the fixed step by default.
+- tier 7 (acting): with a critic, one setting on seeds 5 to 12 (the table is in
+  docs/results-2026-11-25-critic.md, `scripts/critic.sh tables`): bandits 1.00, switching
+  0.98, chain 0.99, track 0.88, forage 0.84, arrival-only track and forage 0.78, mountain
+  car 0.97, catch 0.39, cartpole 109 steps per fall on the lean reward (30 alive, 28
+  sparse) and no higher at 400,000 steps. Not learned: goal-only mountain car, the
+  pendulum, the chain with no stage cue. The readout alone is still our best on the
+  pendulum with the energy reward (0.23). Cartpole uses the fixed step by default.
 - tier 2 and 3: and, or, majority to 8 lines; parity to 2.
 - tier 9 and 10: 21 worlds built; association under noise and context learned, the rest
   at chance.

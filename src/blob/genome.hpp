@@ -274,6 +274,22 @@ struct Genome {
     int critic_wide = 0;           // 1: every non-motor cell of the motor region is a critic
                                    // cell (768 by default), not only those between (256)
 
+    // one inner rule (idea 155; learn_tags.cpp, tag_store.cpp): the tags above with the
+    // pieces of reverse replay, each behind its own number. the defaults are the tags as
+    // they were, and change nothing.
+    int tag_exact = 0;   // 1: spike-exact (the walk's credit): a button cell's feedback goes
+                         // only along an edge whose source fired one slot delay before one of
+                         // the cell's spikes in the step, and a tagged neuron moves counters
+                         // only for sources that fired one delay before its own spikes
+    int tag_grow = 1;    // 0: only wired sources' counters move, so nothing new is wired in
+    int tag_counts = 0;  // 0: born counts of excitatory, inhibitory and strong connections
+                         // kept; 1: the two kinds' counts kept, strength from the counter
+                         // (drive can grow); 2: one count for both kinds, strength from the
+                         // counter, nothing at zero wired (the walk's read-off)
+    int tag_shuffle = 0; // control: each button cell sends feedback with a random role
+                         // (pressed or other), as many pressed roles expected as real
+    int tag_random = 0;  // control: as many neurons as were tagged, drawn at random among the
+                         // learners that fired in the step, carry the tags instead
     // competitive learning (learn_compete.cpp, docs/results-2026-11-25-compete.md), any learn
     // mode, no reward anywhere. a hidden cell (not sensor, motor or pacemaker; excitatory
     // unless compete_inh) that fires moves its hidden counters (the tag store) toward what

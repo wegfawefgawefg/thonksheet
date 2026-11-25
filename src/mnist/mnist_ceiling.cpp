@@ -25,6 +25,10 @@
 //   --shift 1      the reader also scored on test digits moved 1 and 2 pixels
 //   --val 1        validation slice instead of the test set
 //   --scale M      how the reader scales features (mnist_learn.hpp; default 0)
+//   --live N       first a life of N training digits with rewards and the genome's own
+//                  learning (idea 155), then the motor cells put back to their born wiring,
+//                  so the reader sees the lived inside with the born output cells
+//   --live-coin 1  in that life good and bad come from a coin, not the answer (a control)
 // the rest are blobrun's flags.
 
 #include "mnist/mnist_run.hpp"
@@ -35,6 +39,7 @@
 static const char* const ceiling_own[] = {"--fit",     "--settle",   "--test-count", "--passes",
                                           "--lr-1000", "--pretrain", "--shift",      "--val",
                                           "--gap",     "--views",    "--scale",
+                                          "--live",    "--live-coin",
                                           "--life",    "--life-shuffle", "--life-teach"};
 
 // a copy of rows with only the given columns
@@ -92,6 +97,42 @@ static void make_views(const Sheet& s, std::vector<View>& views) {
     views = {inner, sense, heard, all};
 }
 
+// the motor cells back to the wiring they were born with (after --live)
+static void born_motor_cells(Sheet& s) {
+    Blob& b = *s.blob;
+    Blob* born = blob_birth(b.genome, s.flags.seed);
+    int64_t moved = 0;
+    for (int n = 0; n < b.neuron_count; n++) {
+        if (!bit_of(b.motor, n)) {
+            continue;
+        }
+        for (int k = 0; k < SLOTS; k++) {
+            int64_t w = blob_weight_index(n, k);
+            moved += b.w0[w] != born->w0[w] || b.w1[w] != born->w1[w];
+            b.w0[w] = born->w0[w];
+            b.w1[w] = born->w1[w];
+        }
+        for (int k = 0; k < FAR_SLOTS; k++) {
+            b.far_tile[n * FAR_SLOTS + k] = born->far_tile[n * FAR_SLOTS + k];
+        }
+        b.fan_in[n] = born->fan_in[n];
+    }
+    // the inside: connections of other neurons that differ from birth
+    int64_t inner = 0;
+    for (int n = 0; n < b.neuron_count; n++) {
+        if (bit_of(b.motor, n) || bit_of(b.sensor, n)) {
+            continue;
+        }
+        for (int k = 0; k < SLOTS; k++) {
+            int64_t w = blob_weight_index(n, k);
+            inner += __builtin_popcountll((b.w0[w] ^ born->w0[w]) | (b.w1[w] ^ born->w1[w]));
+        }
+    }
+    blob_free(born);
+    std::printf("live: motor cell slots put back %lld; inner connection bits changed %lld\n",
+                (long long)moved, (long long)inner);
+}
+
 int mnist_ceiling(int argc, char** argv) {
     Sheet s;
     if (!sheet_start(s, argc, argv, ceiling_own, (int)(sizeof ceiling_own / sizeof *ceiling_own))) {
@@ -123,6 +164,15 @@ int mnist_ceiling(int argc, char** argv) {
     }
     if (s.teach > 0) {
         blob_motor_reborn(*s.blob, s.flags.seed);
+    }
+    int64_t live = int_flag(argc, argv, "--live", 0);
+    if (live > 0) {
+        s.coin_reward = int_flag(argc, argv, "--live-coin", 0);
+        int64_t right = sheet_train(s, live, true, nullptr);
+        s.coin_reward = 0;
+        std::printf("live: %lld digits, %.4f right on the stream\n", (long long)live,
+                    (double)right / (double)live);
+        born_motor_cells(s);
     }
     s.blob->genome.learning_on = 0; // frozen from here on
     sheet_train(s, settle, false, nullptr);
