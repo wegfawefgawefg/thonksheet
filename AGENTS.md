@@ -87,8 +87,9 @@ program or experiment, add or extend a script, and give him the script line in y
   change in someone else's, write it at the bottom of the current effort doc.
 - `src/blob/blob.hpp` and `src/blob/genome.hpp` are the contract between areas. Only the
   core owner edits them.
-- Commit finished, verified chunks often, with focused messages. Do not push; there is no
-  remote.
+- Commit finished, verified chunks often, with focused messages. The remote is a private
+  GitHub repo (since the project was tabled, 2026-11-26); agents do not push, the owner or
+  the coordinator does.
 - Keep helper scripts and raw outputs in your own worktree under `out/<your job>/` (git
   ignores `out/`). The session scratchpad folder is shared by every agent: one agent's
   `sweep.sh` there overwrote another's and wasted its runs.
