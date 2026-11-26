@@ -97,7 +97,15 @@ scripts/figures.py                    the plots in docs/img/ (`cells` runs two l
 ```
 
 Every experiment has a script named after it in `scripts/` with its recipe in the header,
-and a dated write-up `docs/results-*.md` that quotes the exact lines. Needs CMake, a C++20
+and a dated write-up `docs/results-*.md` that quotes the exact lines.
+
+No data and no raw run outputs are kept, here or in git. `scripts/get_mnist.sh` and
+`scripts/get_data.sh NAME` fetch the data sets into `data/`. Each script writes its runs
+into `out/` and keeps finished ones, so a rerun only runs what is missing. The docs name
+folders under `out/from-agents/` and caches under `out/oneset/`: those were the archives of
+finished jobs and were deleted when the project was tabled; the tables in the write-ups are
+what is left of them, and the scripts remake any of them (the full set is many days of
+machine time, a single table minutes to hours). Needs CMake, a C++20
 compiler, SDL3 and Vulkan for the viewer, python3 with matplotlib for the plots, and torch
 only for the measuring-stick models (`scripts/ladder2.sh` and after).
 
