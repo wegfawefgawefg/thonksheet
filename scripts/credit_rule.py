@@ -32,8 +32,9 @@ the digit (more, less, or nothing) and every marked input's counter moves one co
   tuned   difference targets with learned back wires: each cell keeps an up/down counter per
           answer line (did I fire when this was the answer), and the sign of that counter is
           its wire from that line; then as hop
-  time    hop with the error arriving `delay` showings late and a mark on each input that
-          lasts `last` showings (last 1: no trace)
+  time    hop with the error arriving `delay` showings late and a mark on each input (it
+          was on while the cell was near its bar or fired) that lasts `last` showings (last
+          1: no trace); every live mark counts when the late bit arrives
 
 coin: the teaching signal comes from another digit (hop, tuned, time: the ladder's ring of the
 last 256 errors; the rest: another digit of the same block of 64).
@@ -211,7 +212,11 @@ def signals(t, lf, cfg, x, y, f, o, cp):
                 k = int(y[j])
                 lf.U[:, k] = (lf.U[:, k] + torch.where(fired[j] > 0, 3.0, -1.0)).clamp(-127, 127)
         if fam == "time":
-            return [time_steps(lf, cfg, on, gate, d)], None
+            # the late bit is the wires' sum alone: the cell cannot know whether it was near
+            # its bar on the digit the error belongs to, only which marks are still live
+            # (twice: the first version, which also asked for that; kept to re-run it)
+            late = d if cfg.get("twice") else torch.sign(o["E"] @ wires.t()) * t.learn
+            return [time_steps(lf, cfg, on, gate, late)], None
         steps = [(on, d)]
     elif fam == "phase":
         P, T = o["P"], torch.nn.functional.one_hot(y, t.K).float()
@@ -231,7 +236,7 @@ def signals(t, lf, cfg, x, y, f, o, cp):
         steps = [(on, d)]
     elif fam == "pay":
         hv = roll(t.g, o["Hv"])[0] if coin else o["Hv"]
-        d = torch.sign(hv) * fired * t.learn
+        d = torch.sign(hv) * (t.gate(f) if cfg.get("paygate") == "near" else fired) * t.learn
         steps = [(on, d)]
     elif fam == "target":
         tg = t.B[:, roll(t.g, y)[0] if coin else y].t()

@@ -35,11 +35,22 @@ ARMS = {
     "dtp": dict(family="tuned"),
     "dtpb": dict(family="tuned", back="all"),
     # time: the error `delay` showings late, a mark that lasts `last` showings
-    "d1n": dict(family="time", delay=1, last=1),
-    "d1t2": dict(family="time", delay=1, last=2),
-    "d1t4": dict(family="time", delay=1, last=4),
-    "d3t4": dict(family="time", delay=3, last=4),
-    "d0t4": dict(family="time", delay=0, last=4),
+    "e1n": dict(family="time", delay=1, last=1),
+    "e1t2": dict(family="time", delay=1, last=2),
+    "e1t4": dict(family="time", delay=1, last=4),
+    "e3t4": dict(family="time", delay=3, last=4),
+    "e0t4": dict(family="time", delay=0, last=4),
+    # the first version of the time arms: a live mark counted only if the cell had also been
+    # near its bar or fired on the digit the error belongs to, which a cell cannot know
+    "d1n": dict(family="time", delay=1, last=1, twice=True),
+    "d1t2": dict(family="time", delay=1, last=2, twice=True),
+    "d1t4": dict(family="time", delay=1, last=4, twice=True),
+    "d3t4": dict(family="time", delay=3, last=4, twice=True),
+    "d0t4": dict(family="time", delay=0, last=4, twice=True),
+    # what payment's lead is made of (added after the seeds 5-7 table): T7x gated by "fired"
+    # alone, and the read wires' signs gated as T7x is (near the bar or fired)
+    "hopf": dict(family="hop", gate="fired"),
+    "payn": dict(family="pay", paygate="near"),
 }
 TUNABLE = {"phase": "gain"}  # what NAME@V sets
 

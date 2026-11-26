@@ -26,11 +26,18 @@ NAMES = {
     "tgt": "tgt  a target for each cell from the answer",
     "dtp": "dtp  targets on wires the cell tuned itself",
     "dtpb": "dtpb dtp, then passed back along real wires",
-    "d1n": "d1n  error 1 showing late, no trace",
-    "d1t2": "d1t2 error 1 late, marks last 2 showings",
-    "d1t4": "d1t4 error 1 late, marks last 4 showings",
-    "d3t4": "d3t4 error 3 late, marks last 4 showings",
-    "d0t4": "d0t4 error on time, marks last 4 showings",
+    "hopf": "hopf T7x gated by fired alone",
+    "payn": "payn the read wires' signs, gated near or fired",
+    "e1n": "e1n  error 1 showing late, no trace",
+    "e1t2": "e1t2 error 1 late, marks last 2 showings",
+    "e1t4": "e1t4 error 1 late, marks last 4 showings",
+    "e3t4": "e3t4 error 3 late, marks last 4 showings",
+    "e0t4": "e0t4 error on time, marks last 4 showings",
+    "d1n": "d1n  (first version) error 1 late, no trace",
+    "d1t2": "d1t2 (first version) error 1 late, marks last 2 showings",
+    "d1t4": "d1t4 (first version) error 1 late, marks last 4 showings",
+    "d3t4": "d3t4 (first version) error 3 late, marks last 4 showings",
+    "d0t4": "d0t4 (first version) error on time, marks last 4 showings",
 }
 ORDER = list(NAMES)
 

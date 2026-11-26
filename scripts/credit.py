@@ -29,10 +29,12 @@ ROOT = L2.ROOT
 PY = sys.executable
 LADDER_ARMS = ("T7x", "born")
 DEFAULT = ["born", "still", "T7x", "P2", "P2s", "C2", "C1", "C2n192", "C2n12", "pay1", "pay",
-           "payc", "tgt", "dtp", "hopb", "dtpb", "d1n", "d1t2", "d1t4", "d3t4", "d0t4"]
-# no coin arm: the scaling arms, the conserved payment, and the time arms (the no-trace arm
-# d1n is their control: an error from another digit on this digit's marks)
-NOCOIN = {"born", "still", "C2n192", "C2n12", "payc", "d1n", "d1t2", "d1t4", "d3t4", "d0t4"}
+           "payc", "tgt", "dtp", "hopb", "dtpb", "e1n", "e1t2", "e1t4", "e3t4", "e0t4"]
+# no coin arm: the conserved payment, the two arms that take payment's lead apart, and the
+# time arms (the no-trace arm e1n is their control: another digit's error on this digit's
+# marks)
+NOCOIN = {"born", "still", "payc", "hopf", "payn", "e1n", "e1t2", "e1t4", "e3t4", "e0t4",
+          "d1n", "d1t2", "d1t4", "d3t4", "d0t4"}
 # the two-phase gain (drive a tick that an output line at full rate adds to a cell), picked
 # on the validation slice by the real sheet's read (the doc's "Picking")
 PICKS = {"mnist": {"P2s": 0.0625, "P2": 0.0625}, "pair": {"P2s": 0.0625, "P2": 0.0625}}
@@ -135,8 +137,8 @@ def main():
            "read_tag": "", "read_flags": []}
     if "--quick" in args:
         opt.update(seeds=[5], limit=10000, digits=10000, settle=500, quick=True, coins=False,
-                   arms=["born", "T7x", "hop", "P2", "P2s", "C2", "C1", "pay", "payc", "tgt",
-                         "dtp", "hopb", "d1t2", "paycoin"])
+                   arms=["born", "still", "T7x", "hop", "P2", "P2s", "C2", "C1", "pay1", "pay",
+                         "payc", "tgt", "dtp", "hopb", "e1t2", "pay1coin"])
     i = 0
     while i < len(args):
         a = args[i]
