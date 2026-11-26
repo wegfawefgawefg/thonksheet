@@ -1,17 +1,14 @@
 
 
-## The blob's own output and the closed loop (idea 182)
+## Added on the last day (ideas 174, 184, 185, 188)
 
-`scripts/outputinside.sh ladder*|loop*|report|report2|reportcells|recheck|cap|toys|toys2|map|
-speed|smoke` (arms in the script's header; `intope` is the closed loop, `intopeallw10` the
-setting picked on validation). Genome: `out_on`, `out_top`, `out_bits`, `out_margin`,
-`out_window`, `out_fine`, `out_hidden`, `out_pay` (`src/blob/learn_output.cpp`,
-`output_state.hpp`); `hop_teach 6` (the output's two stepped lines are the cells' errors);
-`readout_good 3|4` (the same rule on the spiking motor cells). `--motor-spread-even 1`
-spreads a button's cells over the sheet (the pair test needs it). `blobmnist ceiling
---outside-form 4` with `--outside-read|act|bits|step-shift|vote|rule|zone-32|window|top` is
-the ladder's outside output (`src/mnist/mnist_outside_cells.cpp`); `--life-teach 6`; the
-line "own answer on the test digits, frozen". After an `out_on` life the toy probe's fresh
-output is of the new kind unless `--after "out_on 0"`. On tasks with no verdict for "no
-move" a tie goes to the lowest line.
+`scripts/steady.sh` (`blobmnist ceiling --life-ticks N --life-settle N --life-set "name value
+..." --life-target PCT`: a life shown, settled or regulated differently from its read;
+genome `compete_window`, `compete_window_on`). `scripts/motorapart.sh` (genome `motor_apart
+1|2|3`, `motor_target_per_1024`, `motor_bias_max`, `threshold_cap_motor`,
+`threshold_down_shift_motor`, `motor_winners`; `--task chain --k 4 --chain-first 1`, the map
+row `chainfirst`). `scripts/get_data.sh NAME` and `scripts/harderdata.sh` (`blobmnist --data
+DIR`; sets `kmnist`, `fashion`, `kannada` under `data/`, not in git; Fashion-MNIST is MIT,
+Kuzushiji-MNIST CC BY-SA 4.0, Kannada-MNIST's license unchecked). `scripts/loopmap.sh`
+(genome `out_judge`, `out_tell`, `out_cells`, `hop_deaf`, `compete_store`).
 

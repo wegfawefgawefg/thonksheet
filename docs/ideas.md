@@ -884,7 +884,7 @@ co-activity runs ties the held units together and loses their order.
      the same number of ticks); regulation slowed or acting on the sector only after an
      early settling; counter moves decided on a digit's whole count, not a spike; each
      with its shuffled-digit and churn controls at matched rate. The number to move is
-     lived less shuffled, which is +0.003 for competitive learning today. *building*
+     lived less shuffled, which is +0.003 for competitive learning today. *stopped at tabling 2026-11-26: docs/results-2026-11-26-steady.md; a steadier sheet does little; a counted form of competitive learning holds the rate at 31 and gains about +0.004 / +0.007 pixel-matched.*
 175. **A rate control that does not fight the rest.** Per-cell thresholds that rise on
      every spike keep the sheet alive, and today they also jitter a cell's answer
      during a read, take back a loop that stays lit, pin a third of one sheet's cells
@@ -993,14 +993,14 @@ co-activity runs ties the held units together and loses their order.
      and the two-button chain is passed by a coin first press. Give motor cells
      their own rate control (or leave them out of the sector's count), re-run the
      quick map and the inside test, and replace the chain row with one a coin cannot
-     pass (three or four buttons, or the first press scored). *building*
+     pass (three or four buttons, or the first press scored). *stopped at tabling 2026-11-26: docs/results-2026-11-26-motor-apart.md; a bias per kind frees the shared bias but hidden cells are starved by the shared winner cut; nothing becomes a default; the `chainfirst` row added.*
 185. **A harder real-data test with more room.** MNIST leaves 0.04 between born and
      the teacher and the pair test 0.11, so every comparison needs 8 seeds. Add
      same-format sets where a straight line does much worse than a small net
      (Fashion-MNIST, Kuzushiji-MNIST), find born, the teacher's bound, competitive
      learning and the live every-event rule on each, and pick the one where rules
      separate on 2 or 3 seeds. Also the first check that the rule is not an MNIST
-     rule. *building*
+     rule. *stopped at tabling 2026-11-26: docs/results-2026-11-26-harder-data.md; Kuzushiji-MNIST has 0.098 of room and the live rule gains +0.043 over born there; the closed loop not run on it.*
 186. **One counter store for every rule that re-picks a cell's inputs.** The plane
      store of idea 178 fights competitive learning, the tags and the backward walk
      because each keeps its own evidence and re-picks from it. One store, or one
@@ -1014,7 +1014,7 @@ co-activity runs ties the held units together and loses their order.
      map. Run the whole quick map under it as one setting, looking inside each new
      pass; give the output a rule for good-or-bad-only verdicts that keeps one line
      up, one line down; find why parity of 3 fell; and say what one counter store
-     for all re-picking rules needs (idea 186). *building*
+     for all re-picking rules needs (idea 186). *stopped at tabling 2026-11-26: docs/results-2026-11-26-loop-everywhere.md; 12 of 18 rows on 3 seeds, the cells making the pass only on parity of 3; `out_judge 2` teaches the cells from good and bad on MNIST; parity of 3 did not fall.*
 189. **The error carried in timing, as the brain may do it.** The owner, 2026-11-26: do
      real neurons use timing to get a kind of backprop. Three known forms, none tried
      here: (a) a burst as the error (idea 29; Payeur 2021): feedback from above lands

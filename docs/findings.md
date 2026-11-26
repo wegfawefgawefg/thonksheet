@@ -6,6 +6,34 @@ behind each. A finding moves up a grade only when a second, different experiment
 Grades: **solid** (two or more independent results), **likely** (one clean result),
 **hint** (one result, few seeds or one engine).
 
+## Where it stopped (2026-11-26: tabled)
+
+The owner tabled the project on 2026-11-26. This is the state it was left in.
+
+- **The question** was "can local rules make the inside learn features". **The answer
+  is yes, on one family of data**: the blob's own output (one line up, one line down)
+  teaching its own hidden cells through one-hop error wires and every-event integer
+  counters reads 0.956 to 0.961 on MNIST and 0.759 to 0.776 on the pair test with a
+  fresh reader (born 0.925 / 0.677; a backprop teacher inside the same constraints
+  0.966 / 0.785), with coin, shuffled and rate-held controls, and answers MNIST 0.925
+  to 0.936 right online. Findings 56, 59, 63, 64 and the blocks below.
+- **What it is in the literature's words**: random-feedback learning (direct feedback
+  alignment) with sign-only errors and integer counters, plus a perceptron with a
+  margin, on one layer of features. Known science in a cheap form, not a new principle.
+- **What stayed null**: label-free rules past competitive learning; a learned latch;
+  any replacement for the rate control; credit deeper than one hop (never needed by
+  these tests, so never shown).
+- **What was never reached**: depth, learned memory past about two steps, predictors
+  inside the blob as the teacher (the outside-predictor version works on delayed
+  echo), acting from good and bad (cartpole and catch still fail), the sheet beside a
+  plain GRU on the task map, and the cut-down to the smallest machine that keeps the
+  result.
+- **Stopped part way on the last day** (each merged, each doc says "not finished at
+  tabling"; none re-run by the coordinator beyond the build, the reference lives and
+  the closed loop's seed-5 number): ideas 174, 184, 185 and 188, the four blocks
+  just before "The owner's vvm converges" below.
+- **Where to start again**: docs/plan.md, "If this is picked up again".
+
 ## Where it stands (2026-11-25, night, after eleven jobs were wound up)
 
 Each line is one job's result; most are on few seeds or unfinished, and are graded below.
@@ -571,6 +599,46 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   and 0.7649 on pairs (coin 0.6821 and 0.6752, shuffled 0.6763 and 0.6742), the
   second setting 0.9607 and 0.9615 / 0.7798 and 0.7797: the agent's numbers to the
   digit.
+- **Stopped at tabling: the closed loop on the rest of the map** (idea 188, queue
+  item 9b, docs/results-2026-11-26-loop-everywhere.md, `scripts/loopmap.sh`; 3-seed
+  screens for the most part). With two buttons, told the right line and told good or
+  bad are the same rule (78 of 78 lives identical). Told the right line the loop
+  passes 12 of 18 rows as one setting on seeds 1-3; the cells' learning makes the
+  pass only on parity of 3 (0.721 with the output alone, 0.841 with the loop), the
+  rest is the output's read. A rule for good or bad only (`out_judge 2`: on bad the
+  pressed line down and a line drawn by chance up; the runner-up as the second line
+  locks): MNIST online 0.864 to 0.874 against 0.893 to 0.903 told, and the fresh
+  reader 0.9546 against 0.9554 told on 2 validation seeds, so cells can be taught
+  from good and bad alone with this output. Bandit passes; cartpole, catch and chain
+  do not. Parity of 3 did not fall: a sheet is read best by the kind of output that
+  taught it (the loop's sheet 0.879 by a fresh new output, 0.965 at the setting
+  picked for MNIST). `compete_store` compiles and has never run a life.
+- **Stopped at tabling: Kuzushiji-MNIST is the better second data set, and the rule
+  is not an MNIST rule** (idea 185, queue item 11c,
+  docs/results-2026-11-26-harder-data.md, `scripts/harderdata.sh full --sets kmnist
+  --tests class`; 3 seeds). Room between born and the teacher's wiring: MNIST 0.042,
+  Kuzushiji 0.098, Fashion 0.023. On Kuzushiji classes: born 0.733, the live
+  every-event rule with an outside output 0.776 (coin 0.735), competitive learning
+  0.792, teacher 0.830. Rules that tie on MNIST separate there. The closed loop was
+  not run on it. Data in `data/kmnist`, `data/fashion`, `data/kannada` (not in git;
+  `scripts/get_data.sh`).
+- **Stopped at tabling: motor cells apart** (idea 184, queue item 2n,
+  docs/results-2026-11-26-motor-apart.md, `scripts/motorapart.sh`; 3-seed screens).
+  A second bias per sector for motor cells (`motor_apart 3`) frees the shared bias
+  without costing the output, but the hidden cells are starved by the tile's shared
+  winner cut, not by the bias (13 to 21 per 1,024). Splitting the winner cut by kind
+  brings them back and costs MNIST online 0.05 to 0.11 under the one setting.
+  Nothing should become a default. A chain row a coin cannot pass is in the map as
+  `chainfirst` (four buttons, the opening press scored): the critic 0.958, the three
+  settings 0.02 to 0.06 at cap 64; a coin 0.25.
+- **Stopped at tabling: a steadier sheet does little for the inner rules** (idea 174,
+  queue item 2j, docs/results-2026-11-26-steady.md, `scripts/steady.sh`). Longer
+  showings, slower or frozen regulation and longer lives move competitive learning's
+  MNIST margin over a shuffled life by -0.001 to +0.004. A counted form of
+  competitive learning (`compete_window`: a tile's most active cells over a digit
+  move once) holds the rate at 31 and reads 0.938 / 0.705, but most of its larger
+  margin is a weaker control; pixel-matched the real gain is about +0.004 / +0.007.
+  Read the quiet way the lived sheets are almost the same as born.
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),

@@ -3,6 +3,37 @@
 The work queue, in order. Status is updated as things land. Detail for the current effort is
 in its own dated doc.
 
+## Tabled 2026-11-26
+
+The owner tabled the project. Nothing is running. The state it stopped in is at the top of
+docs/findings.md ("Where it stopped"); the README has the short version and the pictures.
+
+### If this is picked up again
+
+The narrow question is answered on MNIST-like data with the right answer told. What the
+rule has not shown, each wanting a task built to force it and with room to see a difference
+(Kuzushiji-MNIST for real data: `scripts/harderdata.sh full --sets kmnist --tests class`):
+
+1. Depth: features of features, on a task one layer of cells cannot do.
+2. Time: memory that is learned, and credit over more than two steps (the model says a mark
+   that lasts as long as the error is late is enough; never run in the engine).
+3. No labels: the predictor cells given the new output (`out_on`) so prediction errors
+   teach with nothing outside the blob (idea 187; the outside-predictor version works on
+   delayed echo, idea 183).
+4. Action: good or bad only. `out_judge 2` teaches the cells on MNIST from good and bad
+   (2 validation seeds); cartpole, catch and the chain still fail (idea 188).
+5. The cut: remove mechanisms until the closed loop's result breaks, to find the smallest
+   machine that keeps it, and say what the spiking sheet is for.
+6. Loose: finish the 8-seed map under the closed loop; the closed loop on Kuzushiji; one
+   counter store for every re-picking rule (`compete_store`, never run); the error carried
+   in timing (idea 189).
+
+Unfinished code left in the tree, all off by default: `compete_store`, `motor_apart`,
+`motor_winners`, `out_judge`, `compete_window`, and the knobs each results doc lists as
+"did not help". A fresh start should run `bash out/from-agents/outputinside/refcheck.sh`
+style checks from its own copy first; the reference lives are in `out/merge-ref/` (not in
+git; `scripts/` can remake them from the flags in the check script).
+
 ## Where we stand and the one question (2026-11-25, late)
 
 The owner: "are we shooting in the dark. are we actually making any progress? that shifted
@@ -43,22 +74,7 @@ when one hands back, its result is merged and recorded and the next item starts.
 are ordered by the one question above. An item is struck when done, with where the result
 is.
 
-Running (four), as of 2026-11-26:
-- Queued item 9b (idea 188): the closed loop on every row; good-or-bad only; parity of 3.
-- Queued item 2n (idea 184): motor cells regulated apart; a chain row a coin cannot pass.
-- Queued item 11c (idea 185): a harder real-data test with more room.
-- Queued item 2j (idea 174): do the inner rules learn more from a steadier sheet.
-- Queued item 2m (idea 180): the threshold cap lifted, decide the default.
-Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
-153, 154), both merged; their slots went to items B and C. The calculation battery
-(ideas 133, 134; docs/results-2026-11-25-calculation.md), merged; its slot went to
-queued items 1 and 2. Those are done and merged too (`scripts/inside.sh`; competitive
-learning lifts the lived sheet to 0.952 on MNIST against 0.926 as born, idea 158,
-docs/results-2026-11-25-compete.md); their slot went to item 2b.
-Also running unattended, not an agent: the readout suite on stevejobs (`thonk-ref`, log
-`out/readout.log` there; pull with `MINI_DIR=thonk-ref scripts/mini.sh pull`). The memory,
-GRU and plain-net suites on the integrated code are done and on the scoreboard. The search
-is stopped on both machines (resumable).
+Running: nothing. Tabled 2026-11-26 (see the top of this file).
 
 Done since the queue was written: the GPU (any world, evidence counters, the memory
 engine, one call per table of designs); the integration of all eleven wound-up branches
@@ -109,7 +125,7 @@ Queued, in order:
    and on the held-out columns. Every item below is scored with it.
 2. *(done, passes: 0.952 against 0.926 born and 0.939 shuffled, 8 seeds; idea 158)* Competitive learning with local inhibition, no reward: units that win on an input
    move toward it (in bits: gain the input's bits, lose others, under a budget).
-2n. *(running, idea 184)* Motor cells regulated apart from hidden cells; the chain row
+2n. *(stopped at tabling, merged: docs/results-2026-11-26-motor-apart.md)* Motor cells regulated apart from hidden cells; the chain row
    replaced by one a coin cannot pass. Behind it: idea 176 (short delays first), idea
    181 (a loop lit at twice its share).
 2m. *(done, merged: docs/results-2026-11-26-cap-default.md, `scripts/capdefault.sh`; keep
@@ -147,7 +163,7 @@ Queued, in order:
    linear reader gets 0.95 from the lived sheet, the sheet's own readout 0.72 and falling.
    Takes in item 9 (the weighted vote, the drift). This gap is now the largest number on
    the board.
-9b. *(running, idea 188)* The closed loop on the whole quick map as one setting, an
+9b. *(stopped at tabling, merged: docs/results-2026-11-26-loop-everywhere.md)* The closed loop on the whole quick map as one setting, an
    output rule for good-or-bad-only verdicts, why parity of 3 fell, one counter store.
    Behind it: idea 187 (the predictor cells given the same output, so the prediction
    loop closes inside the blob with no labels), then the closed loop on the delayed
@@ -161,7 +177,7 @@ Queued, in order:
    `scripts/predevent.sh`; on delayed echo the cells learn the future from an outside
    predictor's errors; the sheet's own predictor cells are too poor; ideas 186 and 187
    queued behind 9a)*
-11c. *(running, idea 185)* A harder real-data test with more room than MNIST and the
+11c. *(stopped at tabling, merged: docs/results-2026-11-26-harder-data.md)* A harder real-data test with more room than MNIST and the
    pair test, so rules separate on 2 or 3 seeds.
 2l. *(done, merged: docs/results-2026-11-26-every-event.md, `scripts/everyevent.sh`;
    live 0.951 / 0.770 with an outside output's error; the sheet's own output is the
@@ -173,7 +189,7 @@ Queued, in order:
    one at a time, random fixed feedback wires, a few wires a cell, sign only, good or
    bad only, counter steps on marked inputs, the sheet's own output). The rung where the
    score falls is what our rule is missing.
-2j. *(running, idea 174)* The inner rules on a steadier sheet: longer showings during the
+2j. *(stopped at tabling, merged: docs/results-2026-11-26-steady.md)* The inner rules on a steadier sheet: longer showings during the
    life, regulation slowed or by sector only, counter moves on a digit's whole count;
    scored by lived less shuffled at matched rate, read the standard way and the quiet way.
 2h. *(done, merged: docs/results-2026-11-26-repeatable.md, `scripts/repeat.sh`; the cause
