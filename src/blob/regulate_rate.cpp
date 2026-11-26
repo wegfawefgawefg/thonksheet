@@ -10,6 +10,10 @@
 //   rate_band_shift   the dead band (this file)
 //   threshold_reg_until, threshold_late_shift   a critical period (regulate.cpp, no state)
 //   sector_gain       inhibition in proportion to the sector's own activity (this file)
+// idea 184 (docs/results-2026-11-26-motor-apart.md): motor cells regulated apart from the
+// rest (motor_apart; the end of this file). the output's motor cells share a sector's bias
+// with the hidden cells, fire at several times their share under the output rules, pin the
+// bias, and starve the hidden cells.
 
 constexpr int THRESHOLD_FLOOR = 1;
 constexpr int COUNT_MAX = 65535;
@@ -18,6 +22,10 @@ struct RateState {
     uint16_t* count = nullptr; // per neuron: spikes in its window so far (dead band)
     int16_t* slow = nullptr;   // per sector: the slow part of the bias (sector_gain)
     uint32_t* recip = nullptr; // per sector: 2^20 / target, so the gain needs no divide
+    // motor_apart, per sector: the motor cells' own bias (3), smoothed count and target
+    int16_t* motor_bias = nullptr;
+    uint32_t* motor_activity = nullptr;
+    uint32_t* motor_target = nullptr;
 };
 
 static RateState& rate_of(Blob& blob) {
@@ -118,10 +126,102 @@ void regulate_sector_gain(Blob& blob, int sector, int act, int step) {
     blob.sector_bias[sector] = (int16_t)(slow + (int)p);
 }
 
+void motor_apart_start(Blob& blob) {
+    RateState& r = rate_of(blob);
+    if (r.motor_target) {
+        return;
+    }
+    const Genome& g = blob.genome;
+    size_t sectors = (size_t)blob.sector_count;
+    r.motor_bias = (int16_t*)std::calloc(sectors, sizeof(int16_t));
+    r.motor_activity = (uint32_t*)std::calloc(sectors, sizeof(uint32_t));
+    r.motor_target = (uint32_t*)std::calloc(sectors, sizeof(uint32_t));
+    int motor_rate =
+        g.motor_target_per_1024 > 0 ? g.motor_target_per_1024 : g.sector_target_per_1024;
+    for (int s = 0; s < blob.sector_count; s++) {
+        blob.sector_target[s] = 0;
+    }
+    // as birth counts a sector's target, with the motor cells in a count of their own
+    for (int t = 0; t < blob.tile_count; t++) {
+        uint32_t s = blob.tile_sector[t];
+        uint64_t motor = blob.motor[t] & ~blob.sensor[t];
+        int rest = TILE_NEURONS - __builtin_popcountll(blob.sensor[t] | motor);
+        blob.sector_target[s] += (uint32_t)(rest * g.sector_target_per_1024 * 256 / 1024);
+        r.motor_target[s] += (uint32_t)(__builtin_popcountll(motor) * motor_rate * 256 / 1024);
+    }
+    for (int s = 0; s < blob.sector_count; s++) {
+        blob.sector_activity[s] = blob.sector_target[s];
+        r.motor_activity[s] = r.motor_target[s];
+    }
+}
+
+void regulate_motor_bias(Blob& blob, int sector, int spikes, int step) {
+    const Genome& g = blob.genome;
+    RateState& r = *blob.rate;
+    int act = (int)r.motor_activity[sector];
+    act += ((spikes << 8) - act) >> g.sector_smooth_shift;
+    r.motor_activity[sector] = (uint32_t)(act < 0 ? 0 : act);
+    if (!g.sector_reg_on || !step) {
+        return;
+    }
+    // the sector's own rule: a dead band of an eighth of the target, then one step
+    int target = (int)r.motor_target[sector];
+    int band = target / 8;
+    int top = g.motor_bias_max > 0 ? g.motor_bias_max : g.sector_bias_max;
+    int bias = r.motor_bias[sector];
+    if (act > target + band && bias < top) {
+        bias++;
+    } else if (act < target - band && bias > -top) {
+        bias--;
+    }
+    r.motor_bias[sector] = (int16_t)bias;
+}
+
+uint64_t motor_apart_compare(const Blob& blob, int t, uint64_t would, int bias, int32_t* margin) {
+    uint64_t motor = blob.motor[t];
+    const RateState* r = blob.rate;
+    int own = blob.genome.motor_apart == 3 && r && r->motor_bias
+                  ? r->motor_bias[blob.tile_sector[t]]
+                  : 0;
+    int shift = bias - own;
+    if (!motor || !shift) {
+        return would;
+    }
+    // every cell of the tile compared again and the motor cells' answers kept: no branch
+    // per cell
+    alignas(64) int32_t flag[TILE_NEURONS];
+    if (margin) {
+        for (int b = 0; b < TILE_NEURONS; b++) {
+            margin[b] += (int32_t)((motor >> b) & 1) * shift;
+            flag[b] = margin[b] >= 0;
+        }
+    } else {
+        const int16_t* __restrict pot = blob.potential + t * TILE_NEURONS;
+        const int16_t* __restrict thr = blob.threshold + t * TILE_NEURONS;
+        for (int b = 0; b < TILE_NEURONS; b++) {
+            flag[b] = pot[b] >= thr[b] + own;
+        }
+    }
+    uint64_t over = 0;
+    for (int b = 0; b < TILE_NEURONS; b++) {
+        over |= (uint64_t)flag[b] << b;
+    }
+    return (would & ~motor) | (over & motor);
+}
+
+// the motor cells' own bias in a sector (motor_apart 3), for probes; 0 while there is none
+int motor_apart_bias(const Blob& blob, int sector) {
+    const RateState* r = blob.rate;
+    return r && r->motor_bias ? r->motor_bias[sector] : 0;
+}
+
 void rate_free(Blob& blob) {
     if (!blob.rate) {
         return;
     }
+    std::free(blob.rate->motor_bias);
+    std::free(blob.rate->motor_activity);
+    std::free(blob.rate->motor_target);
     std::free(blob.rate->count);
     std::free(blob.rate->slow);
     std::free(blob.rate->recip);

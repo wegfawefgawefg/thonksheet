@@ -50,20 +50,27 @@ static void regulate_sectors(Blob& blob) {
     uint32_t total_fired = 0, total_wrong = 0, attached = 0;
     // idea 172: a slow bias steps only on a drawn tick, one bit per sector (no draw while off)
     uint64_t steps = ~0ull;
+    // idea 184: motor cells counted apart from the rest (regulate_rate.cpp)
+    bool apart = g.motor_apart > 0;
+    if (apart) {
+        motor_apart_start(blob);
+    }
 
     for (int s = 0; s < blob.sector_count; s++) {
         if (g.sector_step_shift > 0 && (s & 63) == 0) {
             steps = sparse_word(blob.rng, g.sector_step_shift);
         }
         int x0 = (s % sectors_w) * st, y0 = (s / sectors_w) * st;
-        int spikes = 0, wrong = 0;
+        int spikes = 0, wrong = 0, motor_spikes = 0;
         for (int y = y0; y < y0 + st && y < blob.tiles_h; y++) {
             for (int x = x0; x < x0 + st && x < blob.tiles_w; x++) {
                 int t = y * blob.tiles_w + x;
                 uint64_t sensor = blob.sensor[t];
                 uint64_t lines = sensor & blob.sense_attached[t];
                 int w = __builtin_popcountll((blob.predicted[t] ^ blob.sense_in[t]) & lines);
-                spikes += __builtin_popcountll(fired[t] & ~sensor);
+                uint64_t motor = apart ? blob.motor[t] & ~sensor : 0;
+                spikes += __builtin_popcountll(fired[t] & ~sensor & ~motor);
+                motor_spikes += __builtin_popcountll(fired[t] & motor);
                 wrong += w;
                 total_fired += (uint32_t)__builtin_popcountll(fired[t]);
                 total_wrong += (uint32_t)w;
@@ -71,6 +78,9 @@ static void regulate_sectors(Blob& blob) {
             }
         }
         regulate_one_sector(blob, s, spikes, wrong, (int)((steps >> (s & 63)) & 1));
+        if (g.motor_apart == 3) {
+            regulate_motor_bias(blob, s, motor_spikes, (int)((steps >> (s & 63)) & 1));
+        }
     }
 
     blob.stats.fired = total_fired;
@@ -85,18 +95,27 @@ static void regulate_sectors(Blob& blob) {
 
 // a neuron that fires gets a little harder to fire (chance 2^-up_shift); every neuron slowly
 // gets easier (2^-down_shift a tick). sensors and pacemakers keep theirs. motor_only: only
-// motor cells walk (the same draws)
+// motor cells walk (the same draws). idea 184: motor cells may have a cap and a down chance
+// of their own (threshold_cap_motor, threshold_down_shift_motor: one more draw, only while
+// that number is on and only for a tile with motor cells)
 static void regulate_thresholds(Blob& blob, int up_shift, int down_shift, bool motor_only) {
     const Genome& g = blob.genome;
     const uint64_t* fired = blob.spikes[blob.now];
+    int motor_cap = g.threshold_cap_motor > 0 ? g.threshold_cap_motor : g.threshold_cap;
     for (int t = 0; t < blob.tile_count; t++) {
         uint64_t fixed = blob.sensor[t] | blob.pacemaker[t] | (motor_only ? ~blob.motor[t] : 0);
         uint64_t up = fired[t] & ~fixed & sparse_word(blob.rng, up_shift);
         uint64_t down = ~fixed & sparse_word(blob.rng, down_shift) & ~up;
+        uint64_t motor = blob.motor[t];
+        if (g.threshold_down_shift_motor > 0 && motor) {
+            uint64_t own = sparse_word(blob.rng, g.threshold_down_shift_motor);
+            down = (down & ~motor) | (own & motor & ~fixed & ~up);
+        }
         while (up) {
-            int n = t * TILE_NEURONS + __builtin_ctzll(up);
+            int b = __builtin_ctzll(up);
+            int n = t * TILE_NEURONS + b;
             up &= up - 1;
-            if (blob.threshold[n] < g.threshold_cap) {
+            if (blob.threshold[n] < (((motor >> b) & 1) ? motor_cap : g.threshold_cap)) {
                 blob.threshold[n]++;
             }
         }

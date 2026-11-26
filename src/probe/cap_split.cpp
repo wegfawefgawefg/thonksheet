@@ -22,6 +22,7 @@
 
 #include "blob/blob.hpp"
 #include "blob/long_memory.hpp"
+#include "blob/regulate_rate.hpp"
 #include "run/run_flags.hpp"
 #include "run/task_ticker.hpp"
 
@@ -63,6 +64,10 @@ struct Look {
     int64_t pressed[LINES + 1][LINES + 1] = {}; // [right + 1][move + 1]
     int64_t spikes[LINES + 1][LINES] = {};      // [right + 1][line], the step's vote
     int64_t row_steps[LINES + 1] = {};
+    // the chain (idea 184): the stage-0 steps that open a chain (after a stage-1 step), by
+    // what was pressed on them: A, B, another button, nothing; and the chains paid
+    int64_t opened[4] = {};
+    int64_t paid = 0;
 };
 
 static void count_tick(const Blob& blob, std::vector<uint32_t>& into) {
@@ -106,16 +111,23 @@ static void print_health(const Blob& blob, const std::vector<int>& kind, const L
                     (double)silent / cells, (double)stuck / cells, thr / cells, top,
                     (double)high / cells);
     }
-    double bias = 0;
-    int plus = 0;
+    double bias = 0, own = 0;
+    int plus = 0, minus = 0, own_plus = 0;
+    int own_max = blob.genome.motor_bias_max > 0 ? blob.genome.motor_bias_max
+                                                 : blob.genome.sector_bias_max;
     for (int s = 0; s < blob.sector_count; s++) {
         bias += blob.sector_bias[s];
         plus += blob.sector_bias[s] >= blob.genome.sector_bias_max;
+        minus += blob.sector_bias[s] <= -blob.genome.sector_bias_max;
+        own += motor_apart_bias(blob, s);
+        own_plus += motor_apart_bias(blob, s) >= own_max;
     }
-    std::printf("sector bias mean %.2f, at +max %.3f (target %d per 1024)\n",
-                blob.sector_count ? bias / blob.sector_count : 0,
-                blob.sector_count ? (double)plus / blob.sector_count : 0,
-                blob.genome.sector_target_per_1024);
+    double sectors = blob.sector_count ? blob.sector_count : 1;
+    std::printf("sector bias mean %.2f, at +max %.3f (target %d per 1024)\n", bias / sectors,
+                plus / sectors, blob.genome.sector_target_per_1024);
+    // idea 184: the other limit, and the motor cells' own bias (motor_apart 3; else 0)
+    std::printf("sector bias at -max %.3f; motor bias mean %.2f, at +max %.3f\n",
+                minus / sectors, own / sectors, own_plus / sectors);
 }
 
 static void print_presses(const Look& look, int lines) {
@@ -219,6 +231,7 @@ int probe_capsplit(int argc, char** argv) {
 
     // the life, as blobrun's loop (run/life.cpp)
     int64_t step = 0;
+    int last_right = -2; // the step before's right answer (the chain: which stage it was)
     while (step < flags.steps) {
         ticker_before_tick(tt, *blob);
         blob_tick(*blob);
@@ -261,6 +274,14 @@ int probe_capsplit(int argc, char** argv) {
                            tt.in.pattern_tied, tt.task.pattern_graded);
             blob_reward(*blob, tt.valence);
         }
+        if (looking && tt.task.kind == TaskKind::chain) {
+            int a = tt.task.button_of[0], b = tt.task.button_of[1];
+            if (tt.right_move == a && last_right != a) {
+                look.opened[tt.move == a ? 0 : tt.move == b ? 1 : tt.move >= 0 ? 2 : 3]++;
+            }
+            look.paid += tt.valence > 0;
+        }
+        last_right = tt.right_move;
         if (looking) {
             int r = tt.right_move + 1, m = tt.move + 1;
             if (r >= 0 && r <= LINES && m >= 0 && m <= LINES) {
@@ -327,6 +348,12 @@ int probe_capsplit(int argc, char** argv) {
     }
     if (tt.task.kind == TaskKind::chain) {
         std::printf("chain: A %d B %d\n", tt.task.button_of[0], tt.task.button_of[1]);
+        int64_t n = look.opened[0] + look.opened[1] + look.opened[2] + look.opened[3];
+        double d = n ? (double)n : 1;
+        std::printf("chain opened %lld times: A at once %.4f, B %.4f, another button %.4f, "
+                    "nothing %.4f; chains paid x 2 / steps %.4f\n",
+                    (long long)n, look.opened[0] / d, look.opened[1] / d, look.opened[2] / d,
+                    look.opened[3] / d, look.steps ? 2.0 * look.paid / look.steps : 0);
     }
     print_presses(look, lines);
     print_inside(*blob, kind, look);

@@ -419,6 +419,22 @@ struct Genome {
     // 32nds: a line teaches, toward what it turned out to be, when the wrong answer group
     // had this share or more of the pair's spikes (16: wrong or tied; 3: the ladder's 0.1)
     int hop_pred_fine = 0;
+    // motor cells regulated apart from the rest (idea 184, regulate.cpp, regulate_rate.cpp,
+    // docs/results-2026-11-26-motor-apart.md). 0 is off and changes nothing. "motor cells":
+    // the cells of the motor mask, attached to a button or not.
+    // 1: motor cells are left out of the sector's count and of its target, so the sector's
+    //    bias follows the other cells alone; they still feel that bias
+    // 2: and out of the bias: nothing is added to a motor cell's threshold
+    // 3: and each sector keeps a second bias for its motor cells, stepped toward
+    //    motor_target_per_1024 as the sector's own is, within +-motor_bias_max
+    int motor_apart = 0;
+    int motor_target_per_1024 = 0; // motor_apart 3: 0 is sector_target_per_1024
+    int motor_bias_max = 0;        // motor_apart 3: 0 is sector_bias_max
+    // the per-cell walk's numbers for motor cells alone. >0: their own cap (threshold_cap is
+    // then the other cells'), and their own down chance, which is their own target rate (up
+    // chance over down chance: 9 is 32 per 1,024, 8 is 64, 7 is 128)
+    int threshold_cap_motor = 0;
+    int threshold_down_shift_motor = 0;
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

@@ -229,6 +229,11 @@ static const GenomeField fields[] = {
     {"hop_loose", &Genome::hop_loose},
     {"hop_balance", &Genome::hop_balance},
     {"hop_pred_fine", &Genome::hop_pred_fine},
+    {"motor_apart", &Genome::motor_apart},
+    {"motor_target_per_1024", &Genome::motor_target_per_1024},
+    {"motor_bias_max", &Genome::motor_bias_max},
+    {"threshold_cap_motor", &Genome::threshold_cap_motor},
+    {"threshold_down_shift_motor", &Genome::threshold_down_shift_motor},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

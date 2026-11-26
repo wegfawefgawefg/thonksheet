@@ -24,7 +24,14 @@ row delayed2: --task delayed-echo --delay 2
 row hold1000: --task delayed-echo --delay 50 --steps 40000
 # acting
 row bandit: --task bandit
+# chain as it stands is passable by a coin: with two buttons a coin on the first press beside
+# a learned second press scores 0.72, over its halfway line of 0.65 (idea 180,
+# docs/results-2026-11-26-cap-default.md). kept so that the old columns can still be read.
 row chain: --task chain
+# the row that asks for credit over one step (idea 184, docs/results-2026-11-26-motor-apart.md):
+# four buttons, scored on the opening press alone (the share of chains opened by pressing A at
+# once). a coin gets 0.25 and "anything but the paid button" 0.33; the halfway line is 0.62
+row chainfirst: --task chain --k 4 --chain-first 1
 row cartpole: --task cartpole --sensor-side 2 --cart-reward lean --number-code place
 row catch: --task catch --catch-size 4 4
 # the rest of the map: noise, holding one step

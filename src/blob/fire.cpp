@@ -7,6 +7,7 @@
 #include "blob/blob.hpp"
 #include "blob/fire_dynamics.hpp"
 #include "blob/random_words.hpp"
+#include "blob/regulate_rate.hpp"
 #include "blob/tick_steps.hpp"
 
 // integrate and fire. the hot loop: per neuron, 11 slots of AND + popcount. the extras of
@@ -168,6 +169,7 @@ void tick_fire(Blob& blob, uint64_t* out) {
     const Genome& g = blob.genome;
     const int noise_shift = g.noise_shift;
     const DynamicsOn dyn = dynamics_on(g);
+    const bool motor_own = g.motor_apart >= 2; // regulate_rate.cpp
 
     // where in the ring block each delay reads: delay d is d ticks before the new map.
     // tiring or warming synapses (66, 67) read what was sent instead of what fired
@@ -219,6 +221,10 @@ void tick_fire(Blob& blob, uint64_t* out) {
                 would_flags[b] = p >= thr[b] + bias ? 1 : 0;
             }
             would = pack_flags(would_flags);
+        }
+        if (motor_own) {
+            // idea 184: motor cells against their own bias, not the sector's
+            would = motor_apart_compare(blob, t, would, bias, dyn.neuron ? margin : nullptr);
         }
         would &= allowed;
         for (int b = 0; b < TILE_NEURONS; b++) {

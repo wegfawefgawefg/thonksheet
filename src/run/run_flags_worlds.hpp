@@ -46,7 +46,7 @@ inline bool parse_world_number(const char* flag, int64_t v, TaskSettings& s) {
         {"--bandit-good", &s.bandit_good},     {"--bandit-poor", &s.bandit_poor},
         {"--switch-every", &s.switch_every},   {"--chain-cue", &s.chain_cue},
         {"--track-size", &s.track_size},       {"--forage-size", &s.forage_size},
-        {"--forage-warmer", &s.forage_warmer},
+        {"--forage-warmer", &s.forage_warmer}, {"--chain-first", &s.chain_first},
     };
     for (const Number& n : numbers) {
         if (std::strcmp(flag, n.flag) == 0) {
