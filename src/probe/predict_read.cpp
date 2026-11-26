@@ -219,6 +219,17 @@ static void life_csv(FILE* csv, const char* label, const LifeNumbers& n, const P
         std::fprintf(csv, "%s,life,pred_h%d_balanced,%.6g\n", label, s.horizon[i], (on + off) / 2);
         std::fprintf(csv, "%s,life,pred_h%d_changed_right,%.6g\n", label, s.horizon[i],
                      t.changed ? (double)t.changed_right / (double)t.changed : 0.0);
+        const PredictOutsideTally& o = s.outside[i]; // --predict-outside
+        if (o.total > 0) {
+            double hit = o.on ? (double)o.on_right / (double)o.on : 0;
+            double rest = o.total > o.on ? (double)(o.right - o.on_right) / (double)(o.total - o.on)
+                                         : 0;
+            std::fprintf(csv, "%s,life,out_h%d_right,%.6g\n%s,life,out_h%d_balanced,%.6g\n", label,
+                         s.horizon[i], (double)o.right / (double)o.total, label, s.horizon[i],
+                         (hit + rest) / 2);
+            std::fprintf(csv, "%s,life,out_h%d_sent,%.6g\n", label, s.horizon[i],
+                         (double)o.sent / (double)o.total);
+        }
     }
 }
 

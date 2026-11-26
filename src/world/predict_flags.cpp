@@ -21,6 +21,9 @@ const char* const predict_flags_usage =
     "                       for no button errors). idea 183: a set of horizons, bit i for\n"
     "                       the i-th of --predict's list (15: all four, 14: the far three);\n"
     "                       --g.hop_pred_fine F is the zone in which a line teaches nothing\n"
+    "  --predict-outside M  idea 183's measuring stick: the errors --predict-hop sends come\n"
+    "                       from a whole-number predictor outside the sheet (a perceptron\n"
+    "                       per line and horizon over the cells' spike counts, margin M steps)\n"
     "  --predict-hop-reach R   those lines reach only cells within R cells of their sensor\n"
     "                       group (0: hashed random wires, default)\n";
 
@@ -73,6 +76,7 @@ int predict_parse_flag(const char* flag, const char* value, PredictSettings& s) 
                               {"--predict-cells", &s.cells},
                               {"--predict-shift", &s.shift},
                               {"--predict-hop", &s.hop},
+                              {"--predict-outside", &s.outside},
                               {"--predict-hop-reach", &s.hop_reach}};
     for (const Number& n : numbers) {
         if (std::strcmp(flag, n.flag) == 0) {

@@ -31,8 +31,20 @@
 //   predict_after_tick(p, tt, blob);    before ticker_after_tick
 //   if (ticker_after_tick(...)) predict_step_end(p, blob, tt.in.move);
 
+// --predict-outside (predict_outside.cpp): a predictor outside the sheet, a measuring stick
+struct OutsidePredictor {
+    bool on = false;
+    int margin = 0;
+    std::vector<int> cell;       // the non-sensor cells it reads
+    std::vector<uint8_t> count;  // their spikes this step
+    std::vector<uint8_t> kept;   // PREDICT_RING steps of counts
+    std::vector<int16_t> weight; // bits x cells
+    int8_t error[PREDICT_MAX_TARGETS] = {}; // the horizon just graded: +1 higher, -1 lower, 0 fine
+};
+
 struct Predictor {
     bool on = false; // anything asked (predict_wanted) and attached
+    OutsidePredictor outside;
     PredictSettings s;
     int targets = 0;
     int target_line[PREDICT_MAX_TARGETS] = {}; // plug line of each target
@@ -78,6 +90,15 @@ void predict_step_end(Predictor& p, Blob& blob, int move);
 // control in blobprobe predict). predict_step_begin wants the step's lines in the plug
 void predict_step_begin(Predictor& p, Plug& plug, Blob& blob);
 void predict_count(Predictor& p, const Blob& blob);
+
+// --predict-outside (predict_outside.cpp), called from the steps above: pick its cells;
+// count their spikes each tick; keep the step's counts in ring slot `slot`; grade horizon
+// i's votes of ring slot `from` against the lines now, step the weights, leave the errors
+// in p.outside.error
+void outside_start(Predictor& p, const Blob& blob);
+void outside_count(Predictor& p, const Blob& blob);
+void outside_step_end(Predictor& p, int slot);
+void outside_grade(Predictor& p, int i, int from, const uint8_t* now, bool scored);
 
 // the shortest horizon's signed errors (the idea 159 hook), PREDICT_MAX_TARGETS long
 inline const int8_t* predict_errors(const Predictor& p) {

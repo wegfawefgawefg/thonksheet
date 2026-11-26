@@ -152,6 +152,7 @@ static bool start(Predictor& p, const PredictSettings& s, const Plug& plug, Blob
     p.score.cells_per_group = p.cells_per_group;
     p.count.assign((size_t)2 * p.bits, 0);
     p.maps.assign((size_t)PREDICT_RING * HISTORY * p.words, 0);
+    outside_start(p, blob);
     return true;
 }
 
@@ -256,6 +257,13 @@ static void hop_send(const Predictor& p, Blob& blob, int i, int from, const uint
         int b = l * p.s.horizons + i;
         off[l] = votes[2 * b];
         on[l] = votes[2 * b + 1];
+        if (p.outside.on) {
+            // the outside predictor's verdict as a pair of counts: a line to be taught has
+            // every spike in the wrong group, a fine one in the right group
+            bool teach = p.outside.error[l] != 0;
+            on[l] = (now[l] != 0) != teach;
+            off[l] = !on[l];
+        }
     }
     blob_hop_predicted(blob, i, p.s.horizon[i], off, on, now, p.targets);
 }
@@ -290,6 +298,9 @@ void predict_step_begin(Predictor& p, Plug& plug, Blob& blob) {
         }
         if (any_wrong) {
             verdict(p, blob, i, from, wrong, -1);
+        }
+        if (p.outside.on) {
+            outside_grade(p, i, from, now, p.step >= p.score_from);
         }
         if ((p.s.hop >> i) & 1) {
             hop_send(p, blob, i, from, now); // ideas 164, 183
@@ -328,6 +339,9 @@ void predict_after_tick(Predictor& p, const TaskTicker& tt, const Blob& blob) {
 }
 
 void predict_count(Predictor& p, const Blob& blob) {
+    if (p.outside.on) {
+        outside_count(p, blob);
+    }
     int groups = 2 * p.bits;
     for (int g = 0; g < groups; g++) {
         const int* cells = &p.cell[(size_t)g * p.cells_per_group];
@@ -350,6 +364,9 @@ void predict_step_end(Predictor& p, Blob& blob, int move) {
     }
     if (p.hop_far) {
         blob_hop_keep_step(blob);
+    }
+    if (p.outside.on) {
+        outside_step_end(p, slot);
     }
     for (int i = 0; i < p.s.horizons; i++) {
         for (int l = 0; l < p.targets; l++) {

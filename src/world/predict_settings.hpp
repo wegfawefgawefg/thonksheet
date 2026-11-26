@@ -26,6 +26,10 @@ struct PredictSettings {
     // (1: the shortest alone, as idea 164; 15: all four; 14: the three far ones)
     int hop = 0;
     int hop_reach = 0;
+    // idea 183: --predict-outside M > 0: a whole-number predictor outside the sheet (a
+    // margin of M steps; run/predict_outside.cpp) makes the errors --predict-hop sends, in
+    // place of the predictor cells' (which still learn). a measuring stick
+    int outside = 0;
 };
 
 inline bool predict_wanted(const PredictSettings& s) {
@@ -43,10 +47,17 @@ struct PredictTally {
     int64_t line_on[PREDICT_MAX_TARGETS] = {}; // for the most-common-value baseline
 };
 
+// --predict-outside: the outside predictor's line-steps over the scored steps, and those on
+// which it took a step (and so sent an error)
+struct PredictOutsideTally {
+    int64_t total = 0, right = 0, on = 0, on_right = 0, sent = 0;
+};
+
 struct PredictScore {
     int horizons = 0, targets = 0, cells_per_group = 0;
     int horizon[PREDICT_MAX_HORIZONS] = {};
     PredictTally tally[PREDICT_MAX_HORIZONS];
+    PredictOutsideTally outside[PREDICT_MAX_HORIZONS];
     int64_t verdicts = 0; // verdict calls (one per horizon per step with a wrong bit)
 };
 

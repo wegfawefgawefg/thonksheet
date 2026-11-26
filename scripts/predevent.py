@@ -28,31 +28,35 @@ BASES = {"predhop": ph.GENOME, "onenw": ONE,
 WORLDS = dict(ph.WORLDS)
 WORLDS.update({"order": [], "gap": [], "delayed2": ["--delay", "2"]})
 TASK_OF = {"delayed2": "delayed-echo"}
-EV_ARM = re.compile(r"^ev(\d+)f(\d+)(n?)(b?)(c?)(s?)(k?)$")
+EV_ARM = re.compile(r"^ev(\d+)f(\d+)(o\d+)?(n?)(b?)(c?)(s?)(k?)$")
 
 
 def arm_flags(arm):
     """an arm's flags, whether it lives, whether its life is the shuffled-frame replay.
     born, pred (the rule off), old (idea 164's rule), then ev<set>f<fine> with letters:
     ev15f8 is every-event counters taught by all four horizons (the set is --predict-hop's
-    bits) with a fine zone of 8 32nds; n marks near-not-fired cells only (--g.hop_fired 0),
-    b adds the buttons' errors (hop_teach 2). endings for any lived arm: c its coin control,
-    s the shuffled-frame life, k the rate held at target (born too: bornk)."""
+    bits) with a fine zone of 8 32nds; o2 takes the errors from the outside predictor with
+    a margin of 2 steps (--predict-outside 2; predo2 runs it beside the rule-off life); n
+    marks near-not-fired cells only (--g.hop_fired 0), b adds the buttons' errors
+    (hop_teach 2). endings for any lived arm: c its coin control, s the shuffled-frame
+    life, k the rate held at target (born too: bornk)."""
     if arm in ("born", "bornk"):
         return (CAP if arm == "bornk" else []), False, False
-    m = re.match(r"^(pred|old)(c?)(s?)(k?)$", arm)
+    m = re.match(r"^(pred|old)(o\d+)?(c?)(s?)(k?)$", arm)
     if m:
         flags = [] if m.group(1) == "pred" else list(ph.FROM_PRED)
-        flags += ["--g.hop_coin", "1"] if m.group(2) else []
-        return flags + (CAP if m.group(4) else []), True, bool(m.group(3))
+        flags += ["--predict-outside", m.group(2)[1:]] if m.group(2) else []
+        flags += ["--g.hop_coin", "1"] if m.group(3) else []
+        return flags + (CAP if m.group(5) else []), True, bool(m.group(4))
     m = EV_ARM.match(arm)
     if not m:
         sys.exit("predevent: no arm '%s'" % arm)
     flags = EV + ["--predict-hop", m.group(1), "--g.hop_pred_fine", m.group(2)]
-    flags += ["--g.hop_fired", "0"] if m.group(3) else []
-    flags += ["--g.hop_teach", "2"] if m.group(4) else []
-    flags += ["--g.hop_coin", "3"] if m.group(5) else []
-    return flags + (CAP if m.group(7) else []), True, bool(m.group(6))
+    flags += ["--predict-outside", m.group(3)[1:]] if m.group(3) else []
+    flags += ["--g.hop_fired", "0"] if m.group(4) else []
+    flags += ["--g.hop_teach", "2"] if m.group(5) else []
+    flags += ["--g.hop_coin", "3"] if m.group(6) else []
+    return flags + (CAP if m.group(8) else []), True, bool(m.group(7))
 
 
 def parse(argv):
@@ -107,7 +111,7 @@ def job(world, arm, seed, opt, folder):
 
 def controls(arm, arms):
     """the arms an arm is set against: born, the rule off, its coin, its shuffled life"""
-    if arm in ("born", "bornk", "pred", "predk") or arm[-1] in "cs" or arm[-2:] in ("ck", "sk"):
+    if arm.startswith(("born", "pred")) or arm[-1] in "cs" or arm[-2:] in ("ck", "sk"):
         return []
     k = "k" if arm.endswith("k") else ""
     stem = arm[:-1] if k else arm
@@ -192,6 +196,10 @@ def tables(opt, folder):
         for key, name, d in (("task_late", "task, late score", 3),
                              ("pred_h1_balanced", "predictor h=1", 3),
                              ("pred_h8_balanced", "predictor h=8", 3),
+                             ("out_h1_balanced", "outside predictor h=1", 3),
+                             ("out_h8_balanced", "outside predictor h=8", 3),
+                             ("out_h1_sent", "its lines that taught, h=1", 3),
+                             ("out_h8_sent", "its lines that taught, h=8", 3),
                              ("ticks_per_s", "ticks a second", 0)):
             out.append(f"| {w} | {name} | " + " | ".join(cell(w, a, "life", key, d)
                                                          for a in lived) + " |")
