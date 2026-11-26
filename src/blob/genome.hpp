@@ -445,6 +445,13 @@ struct Genome {
     // cells of a wrong line whose spikes were within hop_fine 32nds of the right line's
     // lose their active inputs, the right line's cells then gain. needs hop_on.
     // readout_good 4: only the highest of those wrong lines (and hop_teach 5 names only it)
+    // counted competition (learn_compete.cpp, docs/results-2026-11-26-steady.md). >0, with
+    // compete_on: competitive learning decides once every this many ticks (a digit, when it
+    // equals the step's ticks) instead of on every spike: each tile's tile_winners (4 if 0)
+    // hidden cells that fired most over the window move, with chance 2^-compete_shift,
+    // toward every source that was on in it. 0 is off and changes nothing.
+    int compete_window = 0;
+    int compete_window_on = 1; // a source is on in a window if it fired this many times
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

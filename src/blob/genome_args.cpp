@@ -237,6 +237,8 @@ static const GenomeField fields[] = {
     {"out_pay", &Genome::out_pay},
     {"out_top", &Genome::out_top},
     {"out_hidden", &Genome::out_hidden},
+    {"compete_window", &Genome::compete_window},
+    {"compete_window_on", &Genome::compete_window_on},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

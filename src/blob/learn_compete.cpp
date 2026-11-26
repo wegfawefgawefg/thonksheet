@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 // competitive learning (Rumelhart and Zipser 1985) in bits, with no reward anywhere
 // (genome compete_on; docs/results-2026-11-25-compete.md). a hidden cell that fires is a
 // winner: it moves toward what made it fire. its hidden counters (the store the tags use,
@@ -39,6 +40,12 @@ struct CompeteState {
                               // changes nothing takes (STALE: the bounds are not made), and
                               // the last re-pick's lines (tag_rewire_hinted), as guesses
     uint64_t* sum = nullptr;  // per neuron: a hash of its wiring when the bounds were made
+    // counted competition (compete_window, at the end of this file): spikes per neuron in
+    // the window, and per tile which neurons fired in it (then which were on) and which
+    // learners fired
+    uint8_t* count = nullptr;
+    uint64_t* seen = nullptr;
+    uint64_t* pool = nullptr;
 };
 
 enum { LOW_WIRED = 0, HIGH_UNWIRED = 1, LOW_STRONG = 2, HIGH_WEAK = 3, DRAWS = 4, PICK = 5 };
@@ -65,6 +72,9 @@ void compete_free(Blob& blob) {
     }
     std::free(blob.compete->bounds);
     std::free(blob.compete->sum);
+    std::free(blob.compete->count);
+    std::free(blob.compete->seen);
+    std::free(blob.compete->pool);
     std::free(blob.compete);
     blob.compete = nullptr;
 }
@@ -179,8 +189,9 @@ static void churn_draw(Blob& blob, const uint64_t* u, int count, uint64_t* out) 
     }
 }
 
-// one cell moves toward (or, losing, away from) the sources that were active on this tick
-static void move_cell(Blob& blob, int n, int read_now, bool won) {
+// one cell moves toward (or, losing, away from) the sources that were active on this tick,
+// or with `window` set, those that fired in the window (one word per tile)
+static void move_cell(Blob& blob, int n, int read_now, bool won, const uint64_t* window) {
     const Genome& g = blob.genome;
     CompeteState& cs = *blob.compete;
     int8_t* bd = cs.bounds + (size_t)n * BOUNDS;
@@ -195,7 +206,7 @@ static void move_cell(Blob& blob, int n, int read_now, bool won) {
         uint32_t src = slot_source(blob, n, k);
         bool none = src == (uint32_t)blob.tile_count;
         use[k] = none ? 0 : usable(blob, n, k, src);
-        active[k] = none ? 0 : slot_read(blob, read_now, n, k) & use[k];
+        active[k] = none ? 0 : (window ? window[src] : slot_read(blob, read_now, n, k)) & use[k];
         on += __builtin_popcountll(active[k]);
     }
     if (won && g.compete_churn) {
@@ -260,10 +271,16 @@ static uint64_t losers(const Blob& blob, int t) {
     return over & ~blob.recent[t];
 }
 
+static void compete_counted(Blob& blob);
+
 void learn_compete(Blob& blob, int read_now) {
     const Genome& g = blob.genome;
     tag_store_make(blob);
     compete_make(blob);
+    if (g.compete_window > 0) {
+        compete_counted(blob);
+        return;
+    }
     const uint64_t* fired = blob.spikes[blob.now];
     bool lose = g.compete_on == 2 && g.tile_winners > 0;
     for (int t = 0; t < blob.tile_count; t++) {
@@ -276,12 +293,102 @@ void learn_compete(Blob& blob, int read_now) {
         while (won) {
             int b = __builtin_ctzll(won);
             won &= won - 1;
-            move_cell(blob, t * TILE_NEURONS + b, read_now, true);
+            move_cell(blob, t * TILE_NEURONS + b, read_now, true, nullptr);
         }
         while (lost) {
             int b = __builtin_ctzll(lost);
             lost &= lost - 1;
-            move_cell(blob, t * TILE_NEURONS + b, read_now, false);
+            move_cell(blob, t * TILE_NEURONS + b, read_now, false, nullptr);
         }
     }
+}
+
+// counted competition (genome compete_window; docs/results-2026-11-26-steady.md, idea 174).
+// the rule decides on a window's whole count instead of on single spikes: every tick each
+// neuron's spikes are counted (a byte; 5 bits hold a 20-tick digit, 6 an 80-tick one). on
+// the window's last tick a source is "on" if it fired at least compete_window_on times (1 if
+// 0) in the window, one bit per neuron; each tile's tile_winners (4 if 0) learners that
+// fired most, at least once, are its winners (ties by a rotation drawn once per tile); each
+// moves with chance 2^-compete_shift toward every usable source that was on, as a spike's
+// winner does toward those on at its spike. then the counts start again. windows are
+// counted on the blob's tick, so with the window equal to a step's ticks and no rest they
+// are the steps.
+
+static uint64_t rotate_right(uint64_t x, int r) {
+    return r == 0 ? x : (x >> r) | (x << (64 - r));
+}
+
+// the `want` cells of `pool` with the highest counts
+static uint64_t top_counts(Blob& blob, int t, uint64_t pool, int want) {
+    const uint8_t* count = blob.compete->count + (size_t)t * TILE_NEURONS;
+    uint64_t win = 0;
+    while (want > 0 && pool) {
+        int best = 0;
+        uint64_t at = 0;
+        for (uint64_t m = pool; m; m &= m - 1) {
+            int b = __builtin_ctzll(m);
+            if (count[b] > best) {
+                best = count[b];
+                at = 0;
+            }
+            at |= (uint64_t)(count[b] == best) << b;
+        }
+        if (__builtin_popcountll(at) <= want) {
+            win |= at;
+            want -= __builtin_popcountll(at);
+            pool &= ~at;
+            continue;
+        }
+        // more tied than wanted: the first `want` after a random rotation
+        int r = (int)(rng_next(blob.rng) & 63);
+        uint64_t rot = rotate_right(at, r), pick = 0;
+        for (; want > 0; want--) {
+            pick |= rot & (~rot + 1);
+            rot &= rot - 1;
+        }
+        win |= rotate_right(pick, (64 - r) & 63);
+    }
+    return win;
+}
+
+static void compete_counted(Blob& blob) {
+    const Genome& g = blob.genome;
+    CompeteState& cs = *blob.compete;
+    if (!cs.count) {
+        cs.count = (uint8_t*)std::calloc((size_t)blob.neuron_count, 1);
+        cs.seen = (uint64_t*)std::calloc((size_t)blob.tile_count + 1, sizeof(uint64_t));
+        cs.pool = (uint64_t*)std::calloc((size_t)blob.tile_count + 1, sizeof(uint64_t));
+    }
+    const uint64_t* fired = blob.spikes[blob.now];
+    for (int t = 0; t < blob.tile_count; t++) {
+        cs.seen[t] |= fired[t];
+        for (uint64_t m = fired[t]; m; m &= m - 1) {
+            uint8_t& c = cs.count[(size_t)t * TILE_NEURONS + __builtin_ctzll(m)];
+            c = c < 255 ? c + 1 : c;
+        }
+    }
+    if ((int)(blob.stats.tick % (uint64_t)g.compete_window) != g.compete_window - 1) {
+        return;
+    }
+    int want = g.tile_winners > 0 ? g.tile_winners : 4;
+    // the learners that fired at all are the pool; then "on" is the count at its minimum
+    int on_min = g.compete_window_on > 1 ? g.compete_window_on : 1;
+    for (int t = 0; t < blob.tile_count; t++) {
+        cs.pool[t] = cs.seen[t] & learners(blob, t);
+        uint64_t on = 0;
+        for (uint64_t m = cs.seen[t]; m; m &= m - 1) {
+            int b = __builtin_ctzll(m);
+            on |= (uint64_t)(cs.count[(size_t)t * TILE_NEURONS + b] >= on_min) << b;
+        }
+        cs.seen[t] = on;
+    }
+    for (int t = 0; t < blob.tile_count; t++) {
+        uint64_t won = top_counts(blob, t, cs.pool[t], want);
+        won &= sparse_word(blob.rng, g.compete_shift);
+        for (; won; won &= won - 1) {
+            move_cell(blob, t * TILE_NEURONS + __builtin_ctzll(won), blob.now, true, cs.seen);
+        }
+    }
+    std::memset(cs.count, 0, (size_t)blob.neuron_count);
+    std::memset(cs.seen, 0, sizeof(uint64_t) * ((size_t)blob.tile_count + 1));
 }

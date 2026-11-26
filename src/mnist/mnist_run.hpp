@@ -123,6 +123,11 @@ void repeat_input_off(Sheet& s);
 void repeat_inh_fast(Sheet& s);
 void repeat_twice(Sheet& s, const Rows& test, const std::vector<int>& cols, int test_count);
 
+// a reward-free (or taught) life with the life-only settings of mnist_steady.cpp: the
+// life's ticks per digit, settling digits before it, genome numbers for it alone
+void steady_life(Sheet& s, int argc, char** argv, int64_t digits,
+                 const std::vector<uint64_t>& born);
+
 int mnist_baselines(int argc, char** argv);
 int mnist_online(int argc, char** argv);
 int mnist_ceiling(int argc, char** argv);
