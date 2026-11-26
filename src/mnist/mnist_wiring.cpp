@@ -198,7 +198,10 @@ void life_run(Sheet& s, int64_t digits, int chunks, const std::vector<uint64_t>&
                       (double)(s.ticks - ticks0) / secs);
         activity_report(s, rows, label);
         wiring_report(s, born, label);
-        if (s.teach > 0) {
+        if (s.outside) {
+            std::printf("%-24s outside output right %.3f\n", label, outside_right(*s.outside));
+        }
+        if (s.teach > 0 || s.outside) {
             uint64_t c[7];
             blob_hop_counts(*s.blob, c);
             double cell_ticks = c[6] > 0 ? (double)c[6] : 1.0;

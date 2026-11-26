@@ -393,6 +393,26 @@ struct Genome {
     // 1: with the dead band or after the critical period, motor cells (the output's) keep the
     // per-spike walk; only the rest change rule
     int rate_band_motor = 0;
+    // every-event counters for the one-hop rule (idea 178,
+    // docs/results-2026-11-26-every-event.md). 0 is off and changes nothing. beside these,
+    // hop_teach 4 and 5 (the output's own signed error per line, by share or by margin) and
+    // hop_coin 3 (the errors of another verdict) are new values of the numbers above.
+    int hop_bits = 0;  // >0: the rule's counters are bit planes this many bits wide (4..16;
+                       // hop_planes.cpp) instead of the tag store's bytes, so hop_shift 0
+                       // (every marked input steps, no chance) has room. not for use beside
+                       // another rule that re-picks from the tag store
+    int hop_who = 0;   // who else learns by the rule, added: 1 inhibitory cells, 2 pacemaker
+                       // cells, 4 motor cells (then the readout's own rule is skipped)
+    int hop_fine = 3;  // hop_teach 4, 5: the "fine" zone, in 32nds (hop_lines.cpp)
+    int hop_rewire_every = 0; // hop_bits: >0, cells re-pick their wiring together every this
+                              // many verdicts, not as soon as their counters move
+    int hop_loose = 0; // 1: one mark a verdict: a source on at any tick of the window is
+                       // marked for a cell near at any tick of it, whatever the timing
+    int hop_balance = 0; // >0: each cell is taught "more" and "less" equally often: it keeps
+                         // a count of more less less, and a verdict that would take the
+                         // count past this bound is skipped (1..127). without it a sign
+                         // that comes more often than the other pushes every often-on
+                         // source one way, whatever it says about the answer
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

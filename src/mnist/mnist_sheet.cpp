@@ -133,6 +133,9 @@ static int one_digit(Sheet& s, bool learn, Rows* counts, std::vector<uint8_t>& c
     if (counts) {
         rows_add(*counts, c.data(), tt.right_move);
     }
+    if (counts && s.outside) {
+        outside_digit(s, c.data(), tt.right_move);
+    }
     tt.rest_left = 0;
     if (s.gap > 0) {
         plug_quiet_lines(tt.plug);
