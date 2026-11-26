@@ -11,7 +11,7 @@ void plug_pattern(Plug& plug, uint64_t& bits, uint64_t& tied) {
     for (int b = 0; 2 * b + 1 < plug.motor_lines; b++) {
         int off = plug.motor_count[2 * b], on = plug.motor_count[2 * b + 1];
         bits |= (uint64_t)(on > off) << b;
-        tied |= (uint64_t)(on == off) << b;
+        tied |= (uint64_t)(on == off && !plug.tie_low) << b;
     }
     plug_clear_counts(plug);
 }

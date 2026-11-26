@@ -437,7 +437,8 @@ struct Genome {
     // and readout_good 3, a new value of the number above: the motor cells as they are,
     // told the right line, learn as a perceptron with a margin (learn_readout.cpp): the
     // cells of a wrong line whose spikes were within hop_fine 32nds of the right line's
-    // lose their active inputs, the right line's cells then gain. needs hop_on
+    // lose their active inputs, the right line's cells then gain. needs hop_on.
+    // readout_good 4: only the highest of those wrong lines (and hop_teach 5 names only it)
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

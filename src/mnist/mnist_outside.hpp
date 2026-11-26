@@ -11,13 +11,13 @@
 struct OutsideCells; // --outside-form 4
 
 struct Outside {
-    std::vector<int> cols;  // the non-sensor cells
-    std::vector<float> v;   // lines x cols
+    std::vector<int> cols; // the non-sensor cells
+    std::vector<float> v;  // lines x cols
     std::vector<float> bias, x;
     int lines = 0;
     float lr = 0.3f, fine = 0.1f;
     int coin = 0, form = 0, margin = 8;
-    std::vector<int16_t> w; // form 3: lines x cols
+    std::vector<int16_t> w;   // form 3: lines x cols
     std::vector<int8_t> ring; // the last 256 digits' error signs
     int64_t ring_count = 0;
     uint64_t rng = 0x6f757473696465ull;

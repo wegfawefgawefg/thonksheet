@@ -88,6 +88,15 @@ static int vote_errors(const Blob& blob, const HopState& h, int teach, int* line
             sign[count++] = -1;
         }
     }
+    // readout_good 4: of the wrong lines that were too close, only the highest
+    if (g.readout_good == 4 && teach == 5 && count > 1) {
+        int top = 0;
+        for (int i = 1; i < count; i++) {
+            top = h.vote[line[i]] > h.vote[line[top]] ? i : top;
+        }
+        line[0] = line[top];
+        count = 1;
+    }
     for (int l = 0; l < lines; l++) {
         if (!((h.right >> l) & 1)) {
             continue;

@@ -17,13 +17,13 @@ import hop2  # noqa: E402  running one job, the toy tables
 import inside  # noqa: E402  the engine's readout as scripts/mnist.sh has it
 
 EV = ee.EV  # the one-hop rule on 12-bit planes, every marked input steps
-F4 = " --outside-form 4 --outside-margin 2"
+F4 = " --outside-form 4 --outside-margin %d"  # (the harness reads a flag's first value)
 GATE = " --g.margin_percent 20 --g.margin_win 2"
 
 
-def rung(flags):
+def rung(flags, margin=2):
     """a life whose error lines come from the ladder's outside output (form 4)"""
-    return ee.outside(EV + F4 + " " + flags)
+    return ee.outside(EV + F4 % margin + " " + flags)
 
 
 def engine(flags):
@@ -38,6 +38,8 @@ def loop(flags=""):
     return "--g.learn_mode 5 --life-teach 6 " + EV + " --g.out_on 1 " + flags
 
 
+TOPE = "--g.out_top 1 --motor-spread-even 1"
+TOY_OUT = " --g.hop_teach 6 --g.out_on 1 --g.out_top 1"  # the toys' life with the new output
 COIN_OUT = "--life-outside-coin 1"
 COIN_IN = "--g.hop_coin 3"
 ARMS = {
@@ -64,6 +66,46 @@ ARMS = {
     "intop2": (loop("--g.out_top 2"), COIN_IN),
     "inhtop": (loop("--g.out_hidden 1 --g.out_top 1"), COIN_IN),
     "inhtop2": (loop("--g.out_hidden 1 --g.out_top 2"), COIN_IN),
+    # knobs on the closed loop with only the top wrong line stepping
+    "alonetop": ("--g.learn_mode 5 --life-teach 6 --g.out_on 1 --g.out_top 1", None),
+    "intopm1": (loop("--g.out_top 1 --g.out_margin 1"), COIN_IN),
+    "intopm4": (loop("--g.out_top 1 --g.out_margin 4"), COIN_IN),
+    "intopm8": (loop("--g.out_top 1 --g.out_margin 8"), COIN_IN),
+    "intopf1": (loop("--g.out_top 1 --g.out_fine 1"), COIN_IN),
+    "intopf4": (loop("--g.out_top 1 --g.out_fine 4"), COIN_IN),
+    "intopf8": (loop("--g.out_top 1 --g.out_fine 8"), COIN_IN),
+    "intopw5": (loop("--g.out_top 1 --g.out_window 5"), COIN_IN),
+    "intopb8": (loop("--g.out_top 1 --g.out_bits 8"), COIN_IN),
+    "intopb16": (loop("--g.out_top 1 --g.out_bits 16"), COIN_IN),
+    "intop64": (loop("--g.out_top 1 --g.hop_rewire_every 64"), COIN_IN),
+    "intopall": (loop("--g.out_top 1 --g.hop_who 3"), COIN_IN),
+    "paytop": (loop("--g.out_top 1 --g.out_pay 1"), COIN_IN),
+    "paytop2": (loop("--g.out_top 2 --g.out_pay 1"), COIN_IN),
+    # the pair test has two buttons, and --motor-spread 102 gives them the 204 motor cells
+    # nearest the top edge: the same count spread evenly over the sheet, or all 512 a button
+    "alonee": ("--g.learn_mode 5 --life-teach 6 --g.out_on 1 --g.out_top 1 "
+               "--motor-spread-even 1", None),
+    "intope": (loop("--g.out_top 1 --motor-spread-even 1"), COIN_IN),
+    "inhtope": (loop("--g.out_top 1 --g.out_hidden 1 --motor-spread-even 1"), COIN_IN),
+    "intop512": (loop("--g.out_top 1 --motor-spread 512"), COIN_IN),
+    # knobs on that: the closed loop, top wrong line only, the buttons' cells spread evenly
+    "intopem1": (loop(TOPE + " --g.out_margin 1"), COIN_IN),
+    "intopem4": (loop(TOPE + " --g.out_margin 4"), COIN_IN),
+    "intopem8": (loop(TOPE + " --g.out_margin 8"), COIN_IN),
+    "intopef1": (loop(TOPE + " --g.out_fine 1"), COIN_IN),
+    "intopef4": (loop(TOPE + " --g.out_fine 4"), COIN_IN),
+    "intopew5": (loop(TOPE + " --g.out_window 5"), COIN_IN),
+    "intopew10": (loop(TOPE + " --g.out_window 10"), COIN_IN),
+    "intopeb8": (loop(TOPE + " --g.out_bits 8"), COIN_IN),
+    "intopeb16": (loop(TOPE + " --g.out_bits 16"), COIN_IN),
+    "intope64": (loop(TOPE + " --g.hop_rewire_every 64"), COIN_IN),
+    "intopeall": (loop(TOPE + " --g.hop_who 3"), COIN_IN),
+    "paytope": (loop(TOPE + " --g.out_pay 1"), COIN_IN),
+    # what the knobs liked, together: a 10-tick window, inhibitory and pacemaker learners
+    "intopeallw10": (loop(TOPE + " --g.hop_who 3 --g.out_window 10"), COIN_IN),
+    "paytopeall": (loop(TOPE + " --g.out_pay 1 --g.hop_who 3"), COIN_IN),
+    "paytopew10": (loop(TOPE + " --g.out_pay 1 --g.out_window 10"), COIN_IN),
+    "paytopeallw10": (loop(TOPE + " --g.out_pay 1 --g.hop_who 3 --g.out_window 10"), COIN_IN),
     # the errors back along the output's own sources instead of the hashed wires
     "pay": (loop("--g.out_pay 1"), COIN_IN),
     # the ladder, outside: one difference a rung from the whole-number output (outint2)
@@ -84,6 +126,22 @@ ARMS = {
                COIN_OUT),
     "fldhtop": (rung("--outside-read 2 --outside-act 1 --outside-bits 12 --outside-top 1"),
                 COIN_OUT),
+    # with only the top wrong line stepping: narrower counters, cells that vote one bit,
+    # one-bit wiring at the born count
+    "fld8top": (rung("--outside-read 1 --outside-act 1 --outside-bits 8 --outside-top 1"),
+                COIN_OUT),
+    "fld6top": (rung("--outside-read 1 --outside-act 1 --outside-bits 6 --outside-top 1"),
+                COIN_OUT),
+    "fld8s3top": (rung("--outside-read 1 --outside-act 1 --outside-bits 8 --outside-top 1 "
+                       "--outside-step-shift 3"), COIN_OUT),
+    "comtop": (rung("--outside-read 1 --outside-act 1 --outside-bits 12 --outside-vote 1 "
+                    "--outside-top 1"), COIN_OUT),
+    "comregtop": (rung("--outside-read 1 --outside-act 1 --outside-bits 12 --outside-vote 3 "
+                       "--outside-top 1"), COIN_OUT),
+    "bit1top": (rung("--outside-read 1 --outside-act 1 --outside-bits 12 --outside-vote 2 "
+                     "--outside-zone-32 8 --outside-top 1"), COIN_OUT),
+    "outtopm1": (rung("--outside-top 1", 1), COIN_OUT),
+    "outtopm8": (rung("--outside-top 1", 8), COIN_OUT),
     # the engine's rules in whole numbers on the same read (told good or bad only)
     "fldr1": (rung("--outside-read 1 --outside-bits 20 --outside-rule 1"), COIN_OUT),
     "fldr2": (rung("--outside-read 1 --outside-bits 20 --outside-rule 2"), COIN_OUT),
@@ -111,6 +169,13 @@ ARMS = {
     "engansstr": (engine("--g.readout_good 3 --g.readout_evidence_strong 2"), "--g.hop_coin 3"),
     "engans4": (engine("--g.readout_good 3 --g.readout_shift 4"), "--g.hop_coin 3"),
     "engansf4": (ee.judged(5, EV + " --g.hop_fine 4 --g.readout_good 3"), "--g.hop_coin 3"),
+    "enganstop": (engine("--g.readout_good 4"), "--g.hop_coin 3"),
+    "enganstop4": (engine("--g.readout_good 4 --g.readout_shift 4"), "--g.hop_coin 3"),
+    "enganstope": (engine("--g.readout_good 4 --motor-spread-even 1"), "--g.hop_coin 3"),
+    "enganstopf2": (ee.judged(5, EV + " --g.hop_fine 2 --g.readout_good 4"), "--g.hop_coin 3"),
+    "enganstopf4": (ee.judged(5, EV + " --g.hop_fine 4 --g.readout_good 4"), "--g.hop_coin 3"),
+    "enganstopf4s4": (ee.judged(5, EV + " --g.hop_fine 4 --g.readout_good 4 --g.readout_shift 4"),
+                      "--g.hop_coin 3"),
     # the runner-up rule's votes with a thinner zone, and as "told the right line on bad steps"
     "engrunf2": (ee.judged(5, EV + " --g.hop_fine 2 --g.readout_good 2" + GATE), "--g.hop_coin 3"),
     "engrun2": (ee.judged(2, EV + " --g.readout_good 2" + GATE), "--g.hop_coin 3"),
@@ -125,39 +190,76 @@ RECIPES = {
     "ladderengine": {"kind": "sheet", "val": True, "seeds": [1, 2], "folder": "ladder", "arms": [
         "eng", "enggate", "engrun", "engrunstr"], "coins": [], "shuffled": []},
     "ladderengine2": {"kind": "sheet", "val": True, "seeds": [1, 2], "folder": "ladder", "arms": [
-        "engans", "engansf4", "engans4", "engrunf2", "engrun2"], "coins": [], "shuffled": []},
+        "enganstop", "engans", "engrun2", "enganstop4", "engrunf2", "engansf4"], "coins": [],
+        "shuffled": []},
+    "ladderengine3": {"kind": "sheet", "val": True, "seeds": [1, 2], "folder": "ladder", "arms": [
+        "enganstopf4", "enganstopf2", "enganstopf4s4"], "coins": [], "shuffled": []},
     "ladder2": {"kind": "sheet", "val": True, "seeds": [1, 2], "folder": "ladder", "arms": [
         "fldh", "fldhbit", "fldh12", "outtop", "fldtop", "fldhtop", "comreg", "comregz8"],
         "coins": [], "shuffled": []},
+    "ladder3": {"kind": "sheet", "val": True, "seeds": [1, 2], "folder": "ladder", "arms": [
+        "fld8top", "fld6top", "fld8s3top", "comtop", "comregtop", "bit1top", "outtopm1",
+        "outtopm8"], "coins": [], "shuffled": [], "tests": ["mnist"]},
     # the blob's own output, validation, seeds 1 and 2: alone, the closed loop, its knobs
     "loop": {"kind": "sheet", "val": True, "seeds": [1, 2], "arms": [
         "born", "alone", "aloneh", "alonehb16", "in", "inh", "inb16", "inhb16", "intop",
         "intop2", "inhtop", "inhtop2"], "coins": [], "shuffled": []},
+    "looppair": {"kind": "sheet", "val": True, "seeds": [1, 2], "folder": "loop", "arms": [
+        "alonee", "intope", "inhtope", "intop512"], "coins": [], "shuffled": [],
+        "tests": ["pair"]},
     "loopknobs": {"kind": "sheet", "val": True, "seeds": [1, 2], "folder": "loop", "arms": [
-        "inm1", "inm4", "inm8", "inf1", "inf4", "inf8", "inw5", "inb8", "in64"],
-        "coins": [], "shuffled": []},
+        "alonee", "intope", "paytope", "intopem1", "intopem4", "intopem8", "intopef1",
+        "intopef4", "intopew5", "intopew10", "intopeb8", "intopeb16", "intope64", "intopeall"],
+        "coins": ["intope", "paytope"], "shuffled": []},
+    "loopcombo": {"kind": "sheet", "val": True, "seeds": [1, 2], "folder": "loop", "arms": [
+        "intopeallw10", "paytopeall", "paytopew10", "paytopeallw10"], "coins": [],
+        "shuffled": []},
+    "looppay": {"kind": "sheet", "val": True, "seeds": [1, 2], "folder": "loop", "arms": [
+        "paytop", "paytop2", "pay"], "coins": ["paytop"], "shuffled": []},
+    # the report: test digits, seeds 5-12. the closed loop beside born, its coin, a
+    # shuffled-digit life, the output alone on a sheet that does not learn, and the same
+    # rule as an outside output
+    "report": {"kind": "sheet", "val": False, "seeds": list(range(5, 13)), "arms": [
+        "born", "intope", "paytope", "alonee", "outtop"], "coins": ["intope", "paytope"],
+        "shuffled": ["intope"]},
+    # picked on validation after the first report: a 10-tick window and inhibitory and
+    # pacemaker learners too, with the hashed wires and with payment
+    "report2": {"kind": "sheet", "val": False, "seeds": list(range(5, 13)), "folder": "report",
+                "arms": ["intopeallw10", "paytopeallw10"],
+                "coins": ["intopeallw10"], "shuffled": []},
+    # the report's main arm again, after "a tie goes to the lowest line" went in (the
+    # report ran before it): the same eight lives a test, to compare line for line
+    "recheck": {"kind": "sheet", "val": False, "seeds": list(range(5, 13)), "arms": ["intope"],
+                "coins": [], "shuffled": []},
+    # the smaller change: the motor cells as they are under the same rule
+    "reportcells": {"kind": "sheet", "val": False, "seeds": list(range(5, 13)),
+                    "folder": "report", "arms": ["enganstope"], "coins": ["enganstope"],
+                    "shuffled": []},
+    # the rate held at target (threshold regulation uncapped), MNIST, seeds 5-8
+    "cap": {"kind": "sheet", "val": False, "seeds": [5, 6, 7, 8], "extra": ee.CAP,
+            "arms": ["born", "intope"], "coins": ["intope"], "shuffled": [], "tests": ["mnist"]},
     # the toys: a life with the blob's own output teaching the cells, then a fresh output
     # on the frozen sheet (the old readout, as the every-event doc scored them; "own": a
     # fresh output of the new kind instead)
     "toys": {"kind": "toy", "tasks": ["xor", "parity3"], "seeds": list(range(5, 13)), "settings": [
         ("born", None, ""), ("old", EV + " --g.hop_teach 2", ""),
-        ("in", EV + " --g.hop_teach 6 --g.out_on 1", ""),
-        ("incoin", EV + " --g.hop_teach 6 --g.out_on 1 --g.hop_coin 3", ""),
-        ("bornown", None, "--g.out_on 1"),
-        ("inown", EV + " --g.hop_teach 6 --g.out_on 1", "--g.out_on 1")]},
+        ("in", EV + TOY_OUT, ""), ("incoin", EV + TOY_OUT + " --g.hop_coin 3", ""),
+        ("bornown", None, "--g.out_on 1 --g.out_top 1"),
+        ("inown", EV + TOY_OUT, "--g.out_on 1 --g.out_top 1")]},
     # two rows of the quick map that lean on the output (scripts/oneset.sh), seeds 5-12
     "map": {"kind": "map", "rows": "echo16,mnist", "columns": [
         ("base", ""),
-        ("own", "--g.learn_mode 5 --motor-spread 128 --g.out_on 1"),
-        ("ownloop", "--g.learn_mode 5 --motor-spread 128 --g.out_on 1 " + EV +
+        ("own", "--g.learn_mode 5 --motor-spread 128 --g.out_on 1 --g.out_top 1"),
+        ("ownloop", "--g.learn_mode 5 --motor-spread 128 --g.out_on 1 --g.out_top 1 " + EV +
          " --g.hop_teach 6")]},
     # ticks a second of an MNIST life, one at a time (--jobs 1)
     "speed": {"kind": "sheet", "val": False, "seeds": [5], "arms": [
-        "eng", "engrun", "outint2", "alone", "in", "pay"], "coins": [], "shuffled": [],
+        "eng", "engrun", "enganstop", "outint2", "alonee", "intope", "paytope"], "coins": [],
+        "shuffled": [],
         "tests": ["mnist"], "life": (20000, 2000)},
     "smoke": {"kind": "sheet", "val": True, "seeds": [1], "arms": [
-        "born", "outint2", "fld12", "com", "bit1", "fldr3", "engrun"], "coins": ["fld12"],
-        "shuffled": ["fld12"]},
+        "born", "outint2", "fldtop", "bit1top", "fldr3", "enganstop", "alonee", "intope",
+        "paytope"], "coins": ["intope"], "shuffled": ["intope"], "then": ["toys", "map"]},
 }
 
 

@@ -51,10 +51,10 @@ struct OutsideCells {
     std::vector<int32_t> a;    // this digit's activity per neuron
     std::vector<uint8_t> inhibitory, skip; // skip: sources no cell may read
     std::vector<MotorCell> cells;
-    std::vector<int> first;                // line l's cells: cells[first[l] .. first[l + 1])
-    std::vector<std::vector<int>> wired;   // vote 2: each cell's wired sources
-    std::vector<uint8_t> stale;            // vote 2: the line's cells must re-pick
-    std::vector<int64_t> bar;              // vote 3: 64 times each cell's running mean sum
+    std::vector<int> first;              // line l's cells: cells[first[l] .. first[l + 1])
+    std::vector<std::vector<int>> wired; // vote 2: each cell's wired sources
+    std::vector<uint8_t> stale;          // vote 2: the line's cells must re-pick
+    std::vector<int64_t> bar;            // vote 3: 64 times each cell's running mean sum
     uint64_t rng = 0x6c6164646572ull;
 };
 
@@ -279,7 +279,8 @@ int outside_cells_digit(const Sheet& s, OutsideCells& o, const uint8_t* counts, 
     // too close: within the zone of the other line's vote
     auto close = [&](int low, int high) {
         if (o.zone > 0 && o.vote != 0) {
-            return vote[high] <= 0 || (vote[low] > 0 && 32 * vote[low] > (32 - o.zone) * vote[high]);
+            return vote[high] <= 0 ||
+                   (vote[low] > 0 && 32 * vote[low] > (32 - o.zone) * vote[high]);
         }
         int64_t unit = o.vote != 0 ? 1 : ((size[low] + size[high]) / 2 * gain) >> o.step_shift;
         return vote[low] + o.margin * unit > vote[high];

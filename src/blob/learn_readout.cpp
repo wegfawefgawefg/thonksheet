@@ -166,7 +166,8 @@ static void keep_window(Blob& blob, int ages) {
 // told the right line: the cells of each wrong line whose spikes were within hop_fine 32nds
 // of the right line's lose their active inputs, and then the right line's cells gain theirs;
 // a step won clear moves nothing. good and bad play no part. needs hop_on (the step's
-// votes) and the cells' lines (blob.motor_line)
+// votes) and the cells' lines (blob.motor_line). readout_good 4: of the wrong lines only
+// the highest loses, and hop_teach 5 names only that one too (hop_lines.cpp)
 static void learn_readout_margin(Blob& blob) {
     const Genome& g = blob.genome;
     int line[64], sign[64], dir[256] = {};
@@ -206,7 +207,7 @@ void learn_readout(Blob& blob, int valence) {
     if (valence == 0) {
         return;
     }
-    if (g.readout_good == 3) {
+    if (g.readout_good >= 3) {
         learn_readout_margin(blob);
         return;
     }

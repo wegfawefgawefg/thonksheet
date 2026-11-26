@@ -1,6 +1,5 @@
-#include "blob/output_state.hpp"
-
 #include "blob/hop_state.hpp"
+#include "blob/output_state.hpp"
 #include "blob/tick_steps.hpp"
 
 #include <cstdlib>
@@ -110,8 +109,8 @@ static void list_cells(Blob& blob, OutputState& o) {
     }
     o.planes = plane_count(blob.genome);
     std::free(o.counter);
-    o.counter = (uint64_t*)std::calloc((size_t)(o.cells + 1) * SLOTS * (size_t)o.planes,
-                                       sizeof(uint64_t));
+    o.counter =
+        (uint64_t*)std::calloc((size_t)(o.cells + 1) * SLOTS * (size_t)o.planes, sizeof(uint64_t));
 }
 
 void output_read(Blob& blob) {
@@ -172,7 +171,8 @@ static bool zone(const OutputState& o, uint64_t right, int pairs, int margin, bo
         // a pattern answer: each right line stands against the other line of its pair
         for (int l = 0; l < o.lines; l++) {
             int rival = l ^ 1;
-            if (((right >> l) & 1) && rival < o.lines && !((right >> rival) & 1) && close(rival, l)) {
+            if (((right >> l) & 1) && rival < o.lines && !((right >> rival) & 1) &&
+                close(rival, l)) {
                 out[rival] = -1;
                 out[l] = 1;
                 any = true;

@@ -302,7 +302,7 @@ Blob* blob_birth(const Genome& genome, uint64_t seed) {
     blob->active_trace = (uint64_t*)alloc_lines(map_bytes);
     blob->motor_attached = (uint64_t*)alloc_lines(map_bytes);
     blob->motor_acted = (uint64_t*)alloc_lines(map_bytes);
-    if (genome.out_on || genome.readout_good == 3) {
+    if (genome.out_on || genome.readout_good >= 3) {
         // the blob's own output: each motor cell's line, named by the world (255: none)
         blob->motor_line = (uint8_t*)std::malloc((size_t)blob->neuron_count);
         std::memset(blob->motor_line, 255, (size_t)blob->neuron_count);

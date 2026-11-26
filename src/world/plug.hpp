@@ -87,6 +87,9 @@ struct Plug {
     // genome readout_opponent (blob/opponent.hpp): the vote is the for cells' spikes less the
     // against cells', and may be negative; gross counts both, for the close-vote margin
     bool signed_vote = false;
+    // the blob's own output (genome out_on): a tie goes to the lowest line, so a newborn
+    // output, every vote zero, still answers and can be told it was wrong
+    bool tie_low = false;
     int motor_gross[PLUG_MAX_MOTOR_LINES] = {};
     int last_gross[PLUG_MAX_MOTOR_LINES] = {};
     // --bitmap-map logpolar: the task's own bitmap size, and for each mapped line the task
@@ -121,8 +124,8 @@ void plug_hop_lines(const Plug& plug, Blob& blob, int move, int right, uint64_t 
 // the blob's own output (genome out_on, src/blob/learn_output.cpp; nothing unless the genome
 // asks): each button's motor cells named to the blob (on) or un-named; at the end of a step
 // its vote a line put in place of the spike counts, before plug_choice or plug_pattern (a
-// vote may be negative, so the choice is the signed one). the caller sets blob.out_read
-// before the step's last tick
+// vote may be negative, so the choice is the signed one, and a tie goes to the lowest
+// line). the caller sets blob.out_read before the step's last tick
 void plug_output_lines(const Plug& plug, Blob& blob, bool on);
 void plug_output_votes(Plug& plug, const Blob& blob);
 

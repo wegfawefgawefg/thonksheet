@@ -418,6 +418,7 @@ void plug_write(Plug& plug, Blob& blob) {
 
 void plug_count(Plug& plug, const Blob& blob) {
     plug.signed_vote = blob.genome.readout_opponent != 0;
+    plug.tie_low = false;
     for (int line = 0; line < plug.motor_lines; line++) {
         const int* neurons = nullptr;
         int group = plug_motor_cells(plug, line, &neurons);
@@ -460,7 +461,7 @@ int plug_choice(Plug& plug) {
         }
     }
     plug_clear_counts(plug);
-    return tie ? -1 : best;
+    return tie && !plug.tie_low ? -1 : best;
 }
 
 void plug_reward(Plug& plug, int valence) {
