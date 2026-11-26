@@ -1,5 +1,6 @@
 #include "blob/hop_state.hpp"
 #include "blob/output_state.hpp"
+#include "blob/random_words.hpp"
 #include "blob/tick_steps.hpp"
 
 #include <cstdlib>
@@ -202,16 +203,83 @@ static bool zone(const OutputState& o, uint64_t right, int pairs, int margin, bo
     return any;
 }
 
-void blob_output_verdict(Blob& blob, uint64_t right, int pairs) {
+void blob_output_verdict(Blob& blob, uint64_t right, int pairs, uint64_t pressed) {
     const Genome& g = blob.genome;
     if (!g.out_on || !g.learning_on || !blob.output || blob.output->lines == 0) {
         return;
     }
     OutputState& o = *blob.output;
+    if (g.out_judge) {
+        // good or bad only: the move waits for the verdict's sign (output_judge). a pattern
+        // answer gets one verdict for several pairs of lines: not handled, nothing moves
+        o.pressed = pressed;
+        o.heard = pairs ? 0 : 1;
+        o.pending = 0;
+        std::memset(o.step, 0, OUT_MAX_LINES);
+        std::memset(o.teach, 0, OUT_MAX_LINES);
+        o.counts[0]++;
+        return;
+    }
     o.pending = zone(o, right, pairs, g.out_margin, g.out_top != 0, o.step);
     zone(o, right, pairs, g.out_fine > 0 ? g.out_fine : g.out_margin, g.out_top == 1, o.teach);
     o.counts[0]++;
     o.counts[1] += (uint64_t)o.pending;
+}
+
+// out_judge (idea 188). the verdict says good or bad for the pressed line and nothing of
+// the right one. the discipline stays: one line up for one line down, so what the lines
+// share cannot drift.
+//   good: the runner-up (the highest other line) was within out_margin steps' worth: the
+//         pressed line steps up, the runner-up down. won clear: nothing.
+//   bad:  the pressed line steps down and one other line up. which: 1 the runner-up, 2 a
+//         line drawn by chance, 3 the lowest line; 4 none.
+// a tie between other lines goes to the next line round from the pressed one. with two
+// lines every form but 4 is the told-the-right-line rule, move for move. cost: one more
+// pass over the lines' votes a verdict; form 2 draws one random number a bad verdict.
+void output_judge(Blob& blob) {
+    const Genome& g = blob.genome;
+    if (!blob.output || !blob.output->heard) {
+        return;
+    }
+    OutputState& o = *blob.output;
+    o.heard = 0;
+    int valence = blob.pending_valence;
+    int p = o.pressed ? __builtin_ctzll(o.pressed) : -1;
+    if (valence == 0 || p < 0 || p >= o.lines || o.lines < 2) {
+        return;
+    }
+    int runner = -1, low = -1;
+    for (int i = 1; i < o.lines; i++) {
+        int l = (p + i) % o.lines;
+        runner = runner < 0 || o.vote[l] > o.vote[runner] ? l : runner;
+        low = low < 0 || o.vote[l] < o.vote[low] ? l : low;
+    }
+    if (valence > 0) {
+        int64_t worth = (o.size[runner] + o.size[p]) / 2;
+        if (o.vote[runner] + g.out_margin * worth <= o.vote[p]) {
+            return; // won clear
+        }
+        o.step[p] = o.teach[p] = 1;
+        o.step[runner] = o.teach[runner] = -1;
+    } else {
+        int up = runner; // forms 1, and 2 and 3 with two lines: there is one other line
+        if (g.out_judge == 2 && o.lines > 2) {
+            up = (p + 1 + (int)rng_below(blob.rng, (uint32_t)o.lines - 1)) % o.lines;
+        }
+        up = g.out_judge == 3 ? low : (g.out_judge >= 4 ? -1 : up);
+        // nothing was on for either line and they stood level: there is nothing to step
+        if (up >= 0 && o.size[p] + o.size[up] < 2 && o.vote[p] == o.vote[up]) {
+            return;
+        }
+        o.step[p] = -1;
+        o.teach[p] = g.out_tell == 2 ? 0 : -1;
+        if (up >= 0) {
+            o.step[up] = 1;
+            o.teach[up] = g.out_tell ? 0 : 1;
+        }
+    }
+    o.pending = 1;
+    o.counts[1]++;
 }
 
 int output_errors(const Blob& blob, int* line, int* sign) {

@@ -1,3 +1,4 @@
+#include "blob/hop_state.hpp"
 #include "blob/random_words.hpp"
 #include "blob/tag_store.hpp"
 #include "blob/tick_steps.hpp"
@@ -189,6 +190,37 @@ static void churn_draw(Blob& blob, const uint64_t* u, int count, uint64_t* out) 
     }
 }
 
+// compete_store 1 (idea 188): the same move on the one-hop rule's bit planes, so the two
+// rules share one store and one re-pick. a winner's active sources step up a word at a
+// time; a silent source above zero (no sign bit, some bit on) steps down by chance
+static void move_cell_planes(Blob& blob, int n, const uint64_t* use, const uint64_t* active,
+                             bool won) {
+    const Genome& g = blob.genome;
+    HopState& h = *blob.hop;
+    int planes = hop_plane_count(g);
+    uint64_t* row = hop_plane_row(blob, h, n);
+    int moved = 0;
+    for (int k = 0; k < SLOTS; k++) {
+        if (slot_source(blob, n, k) == (uint32_t)blob.tile_count) {
+            continue;
+        }
+        uint64_t* p = row + k * planes;
+        if (!won) {
+            moved += hop_planes_step(p, planes, 0, active[k]);
+            continue;
+        }
+        uint64_t some = 0;
+        for (int j = 0; j < planes - 1; j++) {
+            some |= p[j];
+        }
+        uint64_t silent = use[k] & ~active[k] & sparse_word(blob.rng, g.compete_down_shift);
+        moved += hop_planes_step(p, planes, active[k], silent & some & ~p[planes - 1]);
+    }
+    if (moved) {
+        hop_planes_rewire(blob, h, n);
+    }
+}
+
 // one cell moves toward (or, losing, away from) the sources that were active on this tick,
 // or with `window` set, those that fired in the window (one word per tile)
 static void move_cell(Blob& blob, int n, int read_now, bool won, const uint64_t* window) {
@@ -211,6 +243,10 @@ static void move_cell(Blob& blob, int n, int read_now, bool won, const uint64_t*
     }
     if (won && g.compete_churn) {
         churn_draw(blob, use, on, active);
+    }
+    if (g.compete_store && g.hop_on && blob.hop && hop_plane_count(g) > 0) {
+        move_cell_planes(blob, n, use, active, won);
+        return;
     }
     bool cross = false;
     for (int k = 0; k < SLOTS; k++) {

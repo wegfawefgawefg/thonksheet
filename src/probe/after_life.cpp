@@ -14,6 +14,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -48,6 +49,12 @@ void after_life(int argc, char** argv, Blob& blob) {
     const char* after = text_arg(argc, argv, "--after", nullptr);
     if (after) {
         genome_words(after, blob.genome);
+        // the blob's own output asked for on a sheet born without it: the lines' names
+        // need their array (birth makes it only while out_on)
+        if (blob.genome.out_on && !blob.motor_line) {
+            blob.motor_line = (uint8_t*)std::malloc((size_t)blob.neuron_count);
+            std::memset(blob.motor_line, 255, (size_t)blob.neuron_count);
+        }
         if (blob.genome.tire_jump > 0 && !blob.tire) {
             std::fprintf(stderr, "after_life: tiring needs the sheet born with it\n");
             std::exit(1);

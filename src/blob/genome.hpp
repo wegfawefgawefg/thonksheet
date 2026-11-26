@@ -452,6 +452,23 @@ struct Genome {
     // toward every source that was on in it. 0 is off and changes nothing.
     int compete_window = 0;
     int compete_window_on = 1; // a source is on in a window if it fired this many times
+    // idea 188 (docs/results-2026-11-26-loop-everywhere.md), all off by default.
+    int out_judge = 0;   // >0: the output hears only good or bad for the line it pressed,
+                         // never the right line (learn_output.cpp). still one line up for
+                         // one down. good: if the runner-up was within out_margin the pressed
+                         // line steps up and the runner-up down; a good won clear moves
+                         // nothing. bad: the pressed line steps down and one other line up:
+                         // 1 the runner-up, 2 a line drawn by chance, 3 the lowest line,
+                         // 4 none (a control: it breaks the discipline)
+    int out_tell = 0;    // out_judge: 1: on bad the cells hear only of the pressed line
+                         // ("lower"); the line that stepped up was a guess. 2: on bad the
+                         // cells hear nothing; they are taught on close goods alone
+    int out_cells = 0;   // 1: with out_on the motor cells still learn by the readout's own
+                         // rule, so the sheet hears an answer in spikes (nothing reads them)
+    int hop_deaf = 0;    // 1: the one-hop rule's cells may not count or wire a motor cell
+    int compete_store = 0; // 1: competitive learning keeps its counts in the one-hop rule's
+                           // bit planes (needs hop_on and hop_bits): one store for both
+                           // rules and one re-pick, so they cannot fight over a cell's wiring
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

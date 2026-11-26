@@ -62,6 +62,7 @@ inline uint64_t hop_usable(const Blob& blob, int n, int k, uint32_t src) {
     u &= k == 4 ? ~(1ull << (n % TILE_NEURONS)) : ~0ull;
     u &= k >= LOCAL_SLOTS ? ~blob.inhibitory[src] : ~0ull;
     u &= ~deep_blocked(blob, n, src);
+    u &= blob.genome.hop_deaf ? ~blob.motor[src] : ~0ull;
     return u;
 }
 

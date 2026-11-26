@@ -29,7 +29,7 @@ void plug_hop_lines(const Plug& plug, Blob& blob, int move, int right, uint64_t 
         want = right >= 0 && right < 64 ? 1ull << right : 0;
     }
     // the blob's own output (genome out_on) hears which lines were right
-    blob_output_verdict(blob, want, plug.shape.pattern_bits > 0);
+    blob_output_verdict(blob, want, plug.shape.pattern_bits > 0, pressed);
     blob_hop_lines(blob, pressed, want, plug.motor_lines);
     if (plug.shape.pattern_bits == 0) {
         // each line's spikes in the step, for the rule's own-error forms (hop_teach 4, 5)

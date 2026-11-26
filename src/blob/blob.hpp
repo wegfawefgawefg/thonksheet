@@ -351,8 +351,10 @@ inline void blob_motor_line(Blob& blob, int neuron, int line) {
 }
 // the verdict on the step just read: the lines that were right, as a mask (pairs: a pattern
 // answer, each right line stands against the other line of its pair). written before
-// blob_reward; the counters move in the next tick's learning step
-void blob_output_verdict(Blob& blob, uint64_t right, int pairs);
+// blob_reward; the counters move in the next tick's learning step. pressed: the lines the
+// world took as the answer, an efference copy as for the readout; with out_judge it is all
+// the output uses, and the right lines are not looked at
+void blob_output_verdict(Blob& blob, uint64_t right, int pairs, uint64_t pressed);
 // verdicts heard, verdicts on which a line moved, lines moved
 void blob_output_counts(const Blob& blob, uint64_t out[4]);
 
