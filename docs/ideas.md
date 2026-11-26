@@ -845,7 +845,13 @@ co-activity runs ties the held units together and loses their order.
      a loop that inhibits its rivals), scored on delayed echo at 2 to 50 steps, n-back,
      recall, copy, with the frozen and shuffled controls, the rate held, and the rows
      that must not break (exclusive-or, 16 cues, MNIST read). Also why the rate runs to
-     50 on sensor side 2 with the wide lattice. *building*
+     50 on sensor side 2 with the wide lattice. *done: docs/results-2026-11-26-loops.md,
+     `scripts/loops.sh`. The loop is a fade set by the cells' leak, shortened a step by
+     the sector bias. A slower leak with the cap lifted holds three to four steps
+     (delayed echo at 4 steps 0.49 to 0.74) and costs every row that needs the old item
+     gone. A loop with all its own inputs strong latches and is replaced by the next
+     cue, but only as a hand edit; no learned route, and per-cell rate control takes it
+     back.*
 173. **Label-free rule families, tried in the model before the engine.** Idea 165 left
      a model of the cells with every constraint, a target (0.966 on MNIST and 0.785 on
      the pair test in the real sheet) and one label-free result (giving the pixels back:
@@ -870,3 +876,22 @@ co-activity runs ties the held units together and loses their order.
      early settling; counter moves decided on a digit's whole count, not a spike; each
      with its shuffled-digit and churn controls at matched rate. The number to move is
      lived less shuffled, which is +0.003 for competitive learning today. *building*
+175. **A rate control that does not fight the rest.** Per-cell thresholds that rise on
+     every spike keep the sheet alive, and today they also jitter a cell's answer
+     during a read, take back a loop that stays lit, pin a third of one sheet's cells
+     at the cap and leave 12 in 100 silent under the one setting. Candidates, each a
+     genome number or a word per tile: a dead band (a threshold moves only when the
+     cell's long-run rate is far from target, counted over thousands of ticks); a
+     critical period (per-cell thresholds settle early and then only the tile or sector
+     moves); control by inhibition in proportion to the tile's recent activity in place
+     of a drifting bias; winners per tile set from the rate error (idea 170); the cap
+     lifted. Scored on five things at once: alive on every stage-0 row and after
+     160,000 steps; the standard read of the born sheet moving toward the frozen read;
+     the hand-made latch surviving, then a learned one (a loop's own inputs allowed to
+     become strong); the prediction battery's sheet not running away; nothing lost on
+     the quick map. *building*
+176. **Why a life at a long delay builds weaker loops than a life at a short one.** A
+     2-step life read at 4 steps 0.66, a 4-step life 0.50 (idea 172). Guess: during
+     long blanks the rule moves loop cells toward what is on in the blanks. If so, a
+     life that starts with short delays and lengthens them, or a rule that only learns
+     while input is on, should carry further. *queued*

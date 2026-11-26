@@ -49,7 +49,7 @@ Running (four), as of 2026-11-25 afternoon:
 - Queued item 2g (idea 167): the rule's ladder, which step from backprop down to our
   one-hop rule loses the features.
 - Queued item 2j (idea 174): do the inner rules learn more from a steadier sheet.
-- Queued item 2i (idea 172): make the learned loops hold as long as the task needs.
+- Queued item 2k (idea 175): a rate control that does not fight the rest.
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
 153, 154), both merged; their slots went to items B and C. The calculation battery
 (ideas 133, 134; docs/results-2026-11-25-calculation.md), merged; its slot went to
@@ -110,9 +110,15 @@ Queued, in order:
    and on the held-out columns. Every item below is scored with it.
 2. *(done, passes: 0.952 against 0.926 born and 0.939 shuffled, 8 seeds; idea 158)* Competitive learning with local inhibition, no reward: units that win on an input
    move toward it (in bits: gain the input's bits, lose others, under a budget).
-2i. *(running, idea 172)* What ends the learned loop after two steps, and the smallest
-   change that lets it hold until the answer, without hold cells; why the rate runs up on
-   the prediction battery's sheet.
+2k. *(running, idea 175)* A rate control that keeps the sheet alive without jittering the
+   read, taking back a held loop, or pinning cells at the cap; then a learned latch under
+   it. Idea 176 (short delays first) is queued behind it.
+2i. *(done, merged: docs/results-2026-11-26-loops.md, `scripts/loops.sh`; the loop is a
+   fade set by the leak; a slower leak with the cap lifted holds three to four steps and
+   costs the rows that need the old item gone; a hand-made latch works and is replaced by
+   the next cue; no learned route. Left: rule off at cap 1000 on every row, the
+   runner-up's controls, why side 2 with the standard lattice holds)* What ends the
+   learned loop after two steps, and the smallest change that lets it hold.
 2f. *(done, merged: docs/results-2026-11-25-timerule.md, `scripts/timerule.sh`; the
    delay decides: +0.33 at 2 steps, +0.02 at 4; the rule builds a loop per cue from
    co-activity that lasts about two steps and is kept when frozen; 10 of 16 memory rows

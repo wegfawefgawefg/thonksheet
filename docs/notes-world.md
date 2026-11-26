@@ -668,3 +668,13 @@ and the spike ring cleared at each digit), `--pace-off 1`, `--rec-cut 1|2` (no r
 excitation, no recurrence), `--ticks N` (a digit shown N ticks). `scripts/repeat.sh arms
 --table-only` prints the table; the header of the script lists the modes. "The quiet
 read" in later docs means `--read-freeze 3 --ticks 80`.
+
+## Loop probes (idea 172)
+
+`blobprobe looptrace` (`src/probe/loop_trace.cpp`): after a delayed-echo life, the loop
+cells' vote for the cue, their firing, thresholds and the sector bias tick by tick
+through the blanks. `src/probe/after_life.cpp`: switches applied to a lived sheet with
+its wiring kept (leak, sector bias held, thresholds held, winners, inhibition gain, a
+loop's own inputs made strong), used by `looptrace` and `blobprobe transfer`. Genome:
+`sector_step_shift` (off; not recommended). `scripts/loops.sh trace|suspects|pred|best|
+runner|controls|long|mnist|all` (header of the script).

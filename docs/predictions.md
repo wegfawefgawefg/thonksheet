@@ -224,3 +224,9 @@ inner neurons measurably better for a task than unsupervised wiring already make
     dynamics arms move the reader under 0.01. The second, thresholds and sector bias
     moving during the read, is the cause, with small counts. I also expected a lower
     target rate to help the transplant; it does not.
+40. **What ends the learned loop** (its bot's six predictions are in
+    docs/results-2026-11-26-loops.md, committed before any scoring run and scored
+    there). Mine, written into the brief and told to the owner: the per-cell threshold
+    rising on every spike ends the loop. Wrong as the cause of the fade (the leak sets
+    it; the threshold moves 0.3 inside a trial), right in a second place: once a loop is
+    made to latch, per-cell regulation is what takes it back.

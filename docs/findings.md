@@ -368,6 +368,35 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
     and a pointer to where the noise is, not a setting for a life.
   - Open (idea 174): the inner rules count the same noisy spikes while they learn. Do
     they learn more from a steadier sheet?
+- **The learned loop is a fade, not a latch** (idea 172, queue item 2i,
+  docs/results-2026-11-26-loops.md, `scripts/loops.sh`). I re-ran delayed echo at 4
+  steps on two seeds from the merged build: 0.49 standard, 0.79 and 0.76 with the
+  change below.
+  - What sets its length (suspects switched on a lived sheet, wiring kept, seeds 5 to
+    8): the cells' leak. A cell forgets its input within 2 to 16 ticks, so the loop
+    must re-ignite itself every few ticks, and with a quarter of its inputs strong its
+    gain is under one. The sector bias ends it about a step sooner. The cell's own
+    threshold, the tile's winners, inhibition, cooldown, noise and pacemakers do not
+    set it (my first suspect, the per-cell threshold, moves 0.3 inside a trial).
+  - A slower leak with the threshold cap lifted (`--g.leak_shift_min 4 --g.leak_shift_max
+    6 --g.threshold_cap 1000`, seeds 5 to 12) holds three to four steps: delayed echo at
+    3 / 4 / 8 steps 0.85 / 0.74 / 0.54 (standard 0.66 / 0.49 / 0.48); nothing at 16 or
+    50. It costs the rows that need the old item gone, at matched rate: 16 cues -0.17,
+    recall past one -0.17, 1-back -0.11, gap -0.10, copy of 2 -0.08, exclusive-or -0.05,
+    the MNIST inside read -0.02. Not a default.
+  - A latch exists but was only made by hand: with every input a loop cell takes from
+    its own loop made strong, the cue is read at 0.99 after 16 blank steps on 3 of 4
+    seeds and the next cue replaces it cleanly. No learned route to it works: more
+    strong inputs from birth or from the counters run the rate to 60 to 68, and with
+    the rate held the loop fades again. A loop that stays lit and a rate target per
+    cell are at odds.
+  - Loops learned at a short delay carry further than loops learned at the long one: a
+    2-step life frozen and read at 4 steps 0.66, a 4-step life 0.50.
+  - The other sheet's runaway (sensor side 2, wide lattice): 29 in 100 hidden cells end
+    at the threshold cap of 64 firing five times the target, in clusters that hear
+    each other and few sensors, with the sector bias pinned at its limit. With the cap
+    at 1000 the rate holds at 32. The cap of 64 binds whenever gain rises (slow leak,
+    more strong inputs, that sheet, 1-back over 160,000 steps).
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -804,6 +833,9 @@ docs/results-2026-11-25-mnist.md
     the first reading, "a rule that turns cells toward the input costs them the recent
     past", which was one sheet shape at a 4-step delay where the rule drove the rate to
     50 and the loops barely formed; there the trace does get shorter than born.)
+    It fades because a cell's leak forgets within a few ticks and the loop's gain is
+    under one; a loop whose own inputs are all strong latches and is replaced by the
+    next cue, but per-cell rate control takes a held loop back (idea 172).
 51. **The one-hop error teaches a cell what a few of its inputs can jointly decide, and
     little else so far.** [likely: toys and calc 8 and 2 seeds with coin and shuffled
     controls; two real-data tests, 8 seeds] Products of 2 or 3 nearby lines: yes, far
@@ -832,6 +864,12 @@ docs/results-2026-11-25-mnist.md
     In the real sheet a lower target did not pay (idea 168, seed 5: the transplant
     unchanged at half and a quarter of the rate), so this stays a statement about the
     model.
+55. **Rate control per cell is in the way of three things at once.** [likely: three
+    separate jobs, 2026-11-26] It jitters a cell's answer while the sheet is read
+    (finding 53); it takes back a loop that stays lit (idea 172); and its cap of 64
+    leaves a third of the cells running away on one sheet shape while 12 in 100 fall
+    silent under another setting. The sheet needs something that keeps it alive, and
+    this is the only thing that does; what replaces or slows it is idea 175.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 
