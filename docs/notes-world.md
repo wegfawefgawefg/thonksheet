@@ -678,3 +678,18 @@ its wiring kept (leak, sector bias held, thresholds held, winners, inhibition ga
 loop's own inputs made strong), used by `looptrace` and `blobprobe transfer`. Genome:
 `sector_step_shift` (off; not recommended). `scripts/loops.sh trace|suspects|pred|best|
 runner|controls|long|mnist|all` (header of the script).
+
+## The rule's ladder and the label-free bench (ideas 167, 173)
+
+`scripts/ladder3.sh pick|full|key|smoke` (`ladder3.py`, `ladder3_rule.py`,
+`ladder3_train.py`, `ladder3_table.py`): idea 165's model at its bottom rung, taught by
+rungs T0 (backprop) down to T10 (the engine's rule), each with a coin control; `--transplant
+ARMS` writes a rung's wiring into the real sheet with `blobmnist ceiling --wiring-load`.
+`scripts/ladder4.sh main|smoke` (`ladder4*.py`): label-free families f0 to f5 lived in the
+same model, their backprop bounds (`B...` arms), shuffled and churn controls, and the
+transplant of every arm (`--read tw4 "--g.tile_winners 4"` reads with the tile's winners).
+Both need the venv (`LADDER_VENV`, main `out/ladder2/venv`). Wirings are kept in
+`out/from-agents/ladder3/key/` and `out/from-agents/ladder4/main/` as
+`wiring-TASK-ARM-SEED.txt.gz`. A model's own reader does not rank wirings the way the real
+sheet does: always write them in.
+

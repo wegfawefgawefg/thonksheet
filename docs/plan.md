@@ -43,11 +43,9 @@ when one hands back, its result is merged and recorded and the next item starts.
 are ordered by the one question above. An item is struck when done, with where the result
 is.
 
-Running (four), as of 2026-11-25 afternoon:
-- Queued item 4b (idea 173): label-free rule families at the model's bottom rung, the
-  best one written into the real sheet (takes in item 4).
-- Queued item 2g (idea 167): the rule's ladder, which step from backprop down to our
-  one-hop rule loses the features.
+Running (four), as of 2026-11-26:
+- Queued item 2l (idea 178): every-event counters in the engine's one-hop rule.
+- Queued item 6 (idea 177): the credit rules not yet tried, on idea 167's bench.
 - Queued item 2j (idea 174): do the inner rules learn more from a steadier sheet.
 - Queued item 2k (idea 175): a rate control that does not fight the rest.
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
@@ -142,7 +140,12 @@ Queued, in order:
    linear reader gets 0.95 from the lived sheet, the sheet's own readout 0.72 and falling.
    Takes in item 9 (the weighted vote, the drift). This gap is now the largest number on
    the board.
-2g. *(running, idea 167)* The rule's ladder: in idea 165's model at its bottom rung,
+2l. *(running, idea 178)* Every-event counters in the engine's one-hop rule: counters
+   of 9 to 12 bits stepped on every marked input, the output's own signed error per
+   line, every cell kind learning. Target: the written-in 0.961 / 0.761.
+2g. *(done, merged: docs/results-2026-11-25-rule-ladder.md, `scripts/ladder3.sh`; the
+   counter step's small chance loses the features, the rest of the way down from
+   backprop is nearly free; every-event wiring in the real sheet 0.961 / 0.761)* The rule's ladder: in idea 165's model at its bottom rung,
    swap the teacher one step at a time toward the engine's one-hop rule (fewer digits,
    one at a time, random fixed feedback wires, a few wires a cell, sign only, good or
    bad only, counter steps on marked inputs, the sheet's own output). The rung where the
@@ -186,7 +189,9 @@ Queued, in order:
    cells with a spike path into the action; this reaches every cell and carries a signed
    error per output. Run it both ways: told only good or bad, and told the right button.
    Scored by the inside-learning test, MNIST 0.924 to beat.
-4b. *(running, idea 173)* Label-free rule families tried in idea 165's model at its
+4b. *(done, merged: docs/results-2026-11-26-label-free.md, `scripts/ladder4.sh`; "is
+   this real" 0.952 / 0.738, level with competitive learning on MNIST and +0.011 on
+   pairs; the objectives are the limit; left as idea 179, queued behind 2l)* Label-free rule families tried in idea 165's model at its
    bottom rung before any is built in bits: competitive learning as calibration, the
    local "is this real" score (item 4), predicting a nearby pixel, two looks agreeing,
    pushing apart; the best written into the real sheet.
@@ -214,7 +219,7 @@ Queued, in order:
    come from predicting its input all the time, which is this item.
 4. A local "is this real" score per region: real input against shuffled or self-made
    input, each region raising its activity for one and lowering it for the other.
-6. The credit rules not yet tried, on idea 167's model bench (idea 177): two phases
+6. *(running, idea 177)* The credit rules not yet tried, on idea 167's model bench: two phases
    (91), credit by code (138), payment passed backward (139), a target for each cell,
    and a mark that lasts several steps for credit over time. Behind 2g, whose bench
    and whose answer (which step of our rule loses the features) it needs.

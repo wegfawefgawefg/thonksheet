@@ -230,3 +230,15 @@ inner neurons measurably better for a task than unsupervised wiring already make
     rising on every spike ends the loop. Wrong as the cause of the fade (the leak sets
     it; the threshold moves 0.3 inside a trial), right in a second place: once a loop is
     made to latch, per-cell regulation is what takes it back.
+41. **The rule's ladder** (its bot's guesses for every rung are in
+    docs/results-2026-11-25-rule-ladder.md, committed before any run and scored
+    there; it underrated every float rule below online backprop and gave the counter
+    step a quarter of the odds). Mine, told to the owner from the job's logs before
+    it finished: the loss is where the cell stores the change in a tiny counter.
+    Half right: it is the counter step, but the cause is the small chance of
+    stepping, not the counter's width; 8 bits at the small chance does not help.
+42. **Label-free rule families** (its bot's predictions are in
+    docs/results-2026-11-26-label-free.md, committed before any scoring run). Mine,
+    in the brief: only a family that beats competitive learning in the real sheet
+    gets built. None does on MNIST; one does on pairs by 0.011. I had expected "two
+    looks agree" to lead; it came third.

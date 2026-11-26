@@ -806,7 +806,11 @@ co-activity runs ties the held units together and loses their order.
      fired or came near the bar; the sheet's own online output in place of a trained
      one. Each rung read by a fresh reader, and the last few written into the real
      sheet. The rung where the score falls to competitive learning's is what our rule
-     is missing. Backprop is again a measuring stick, not the method. *building*
+     is missing. Backprop is again a measuring stick, not the method. *done: docs/results-2026-11-25-rule-ladder.md,
+     `scripts/ladder3.sh`. The counter step's small chance is the rung that loses the
+     features; everything above it is nearly free. Every-event counters of 9 to 12
+     bits written into the real sheet read 0.961 / 0.761 (competitive learning 0.952
+     / 0.726, the teacher 0.966 / 0.785). Next: idea 178.*
 168. **Why the sheet does not answer the same digit the same way.** A cell's spike
      counts on the same digits from two starting states correlate 0.61 (idea 165), and
      that costs a reader 0.04 on MNIST and 0.08 to 0.10 on the pair test before any
@@ -865,7 +869,11 @@ co-activity runs ties the held units together and loses their order.
      together push each other apart. Read by a fresh reader on MNIST, the pair test and
      moved digits, against born, churn and a shuffled-pixel life; the best one written
      into the real sheet. Only a family that beats competitive learning there gets
-     built in bits. *building*
+     built in bits. *done: docs/results-2026-11-26-label-free.md,
+     `scripts/ladder4.sh`. Best is "is this real": 0.952 / 0.738 written in, level
+     with competitive learning on MNIST and +0.011 on pairs. The backprop bounds of
+     the same objectives do not pass competitive learning either. The model's reader
+     cannot rank wirings. Left: idea 179.*
 174. **Do the inner rules learn more from a steadier sheet?** Idea 168: two fifths of a
      cell's spike count on a digit is the sheet's rate control moving, and a cell fires
      0.66 times a digit. Every inner rule (competitive learning, the one-hop error)
@@ -906,4 +914,21 @@ co-activity runs ties the held units together and loses their order.
      each cell made by sending the answer back through fixed wires, the cell moving
      toward its target (target propagation); and, for time, a mark on each input that
      fades over several steps, scored on the delayed rows. Only a family that beats
-     the one-hop rule's best rung there gets built in bits. *queued behind idea 167*
+     the one-hop rule's best rung there gets built in bits. Scored by writing each
+     wiring into the real sheet (idea 173: the model's reader cannot rank them).
+     *building*
+178. **Every-event counters in the engine's one-hop rule.** Idea 167's lever, in bits:
+     the hidden counters step on every marked input (no chance), 9 to 12 bits wide
+     as bit-planes (99 to 132 words a neuron against 88); the error is the output's
+     own signed error per line with a "fine" zone, not the answer alone; inhibitory
+     and motor cells learn too. Each piece behind a genome number, off by default.
+     Scored by the inside-learning test on MNIST and the pair test against coin,
+     born and competitive learning; the target is the written-in 0.961 / 0.761. Then
+     the toys it already taught (parity of 3, held-out calculation) and its cost in
+     speed. *building*
+179. **"Is this real" and the sliding threshold, in bits.** Idea 173's two label-free
+     leads: competitive learning on real input with the same step backwards on
+     made-up input (+0.011 on pairs over competitive learning; which made-up input
+     it needs is not known), and a per-cell sliding threshold on what counts as a
+     win (the only family that does not double the firing rate). In the engine, and
+     combined with idea 178's error rule. *queued*

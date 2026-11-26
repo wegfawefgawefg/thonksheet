@@ -397,6 +397,46 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
     each other and few sensors, with the sector bias pinned at its limit. With the cap
     at 1000 the rate holds at 32. The cap of 64 binds whenever gain rises (slow leak,
     more strong inputs, that sheet, 1-back over 160,000 steps).
+- **The step of our error rule that loses the features is the small chance in the
+  counter step** (idea 167, queue item 2g, docs/results-2026-11-25-rule-ladder.md,
+  `scripts/ladder3.sh`; merged 2026-11-26). In the model of the cells with every
+  constraint, backprop's error was cut down one step at a time toward the engine's
+  one-hop rule. One digit at a time, the error stopped at the cell, fixed random
+  feedback wires, a few +1 or -1 wires a cell, sign only, no derivative, inputs as
+  bits, the cell told only "more or less": together these cost 0.009 on MNIST and
+  0.050 on the pair test (0.980 / 0.860 down to 0.971 / 0.810), none over 0.005 /
+  0.017, each still above its coin control and born on every seed. Turning each step
+  into one count with a small chance into a 6-bit counter loses most of the rest
+  (0.966 / 0.791; its margin over the coin from +0.021 / +0.048 to +0.006 / +0.021).
+  Counting every marked input into 9 to 12-bit counters gets it back (0.970 / 0.813).
+  Written into the real sheet (8 seeds, every seed above born): the 6-bit rule's
+  wiring 0.948 / 0.723, the every-event wiring **0.961 / 0.761**, against born 0.924 /
+  0.673, competitive learning 0.952 / 0.726 and the perfect teacher 0.966 / 0.785. My
+  re-run from main: seeds 5 and 6 read 0.9589 / 0.7629 and 0.9605 / 0.7597, the
+  agent's numbers exactly. The engine's own choices cost the rest: errors made from
+  the answer alone in place of the output's signed errors (-0.013 / -0.027 alone),
+  and only hidden excitatory cells learning (MNIST back to born). Told only good or
+  bad for the pressed button teaches nothing. Not yet shown: the every-event rule
+  run inside the engine (the wiring was learned in the model and written in; idea
+  178), and it uses labels. On MNIST the written-in sheet fires at 43 per 1,000
+  cell-ticks against the born 33.
+- **No label-free rule beats competitive learning by much, and the limit is the
+  objective, not the local step** (idea 173, queue item 4b,
+  docs/results-2026-11-26-label-free.md, `scripts/ladder4.sh`; merged 2026-11-26).
+  Six label-free families lived in the model and every wiring was written into the
+  real sheet. Best: "is this real" (competitive learning on real digits, the same
+  step backwards on made-up ones), 0.952 / 0.738 with the tile's winners, against
+  competitive learning 0.952 / 0.726 the same way: level on MNIST, +0.011 on the
+  pair test on 8 of 8 seeds. A sliding threshold (BCM) is the only family that does
+  not double the firing rate (47 against 46) and beats its shuffled control by
+  +0.0035 / +0.012. Predicting a nearby pixel is worst (0.932 / 0.685). The same
+  objectives trained by backprop without labels and written in read 0.917 to 0.947 /
+  0.685 to 0.720: none passes competitive learning, so better local steps for these
+  objectives cannot either. The model's own reader ranks wirings in the reverse
+  order from the real sheet (every lived wiring under born), though the model's
+  competitive learning written in matches the engine's (0.950 / 0.727 against 0.952
+  / 0.728): score rules by writing them in, never by the model's reader. My re-run
+  from main, seed 5: 0.9501 / 0.7309, the agent's numbers exactly.
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -848,7 +888,9 @@ docs/results-2026-11-25-mnist.md
     pair test in the real sheet at the engine's own rate (born 0.924 and 0.673; the best
     local rule 0.952 and 0.726 at twice the rate). No change to the cell is needed to
     get there. The trained wiring is a concrete target for a rule; finding 47's
-    "rewiring at born counts" has +0.014 and +0.06 of room above it.
+    "rewiring at born counts" has +0.014 and +0.06 of room above it. A local rule now
+    gets most of the way when its wiring is written in: one hop, random wires, sign
+    only, integer counters stepped on every event, 0.961 and 0.761 (idea 167).
 53. **The sheet does not answer the same input the same way twice, and the cause is
     its own rate control moving while it is read, plus one spike or none a digit.**
     [likely: 8 seeds, two tests, born and transplanted wiring] Thresholds and sector
@@ -870,6 +912,21 @@ docs/results-2026-11-25-mnist.md
     leaves a third of the cells running away on one sheet shape while 12 in 100 fall
     silent under another setting. The sheet needs something that keeps it alive, and
     this is the only thing that does; what replaces or slows it is idea 175.
+56. **Sending the error one hop on random wires is nearly free; stepping a counter by
+    chance is what loses the features.** [likely: one model, 8 seeds on the key
+    rungs, the wirings written into the real sheet on 8 seeds; not yet run as a rule
+    in the engine] Every cut from backprop to a one-hop, sign-only, derivative-free
+    rule on bits keeps most of what backprop finds. A count taken with chance 1/8 to
+    1/32 into 6 bits loses it; a count on every event into 9 to 12 bits keeps it.
+    Wider counters at the small chance do not help. The error must be the output's
+    own signed error per line, and every cell kind must learn.
+57. **Without labels the objective is the limit.** [likely: six families, 3 to 8
+    seeds, every wiring written into the real sheet] Reconstruction, predicting a
+    pixel, two looks agreeing, pushing apart, real against made-up and a sliding
+    threshold all end within 0.011 of competitive learning on the pair test, and so
+    do their backprop-trained bounds. What labels buy (0.961 / 0.761 against 0.952 /
+    0.738) nothing label-free here buys. A model's own reader cannot rank wirings;
+    the real sheet must.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 
