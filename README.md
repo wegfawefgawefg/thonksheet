@@ -115,4 +115,4 @@ only for the measuring-stick models (`scripts/ladder2.sh` and after).
 - `src/blob`: the engine; `src/minimal`, `src/table`, `src/memory`, `src/vm` and the
   reference nets in `src/nn` sit behind the same shell; `src/world`: the tasks; `src/run`:
   the headless runner; `src/view`: the viewer; `src/probe`, `src/mnist`: the measuring
-  tools; `src/gpu`: the tick as a compute shader
+  tools; `src/gpu`: many blobs ticked at once on the GPU
