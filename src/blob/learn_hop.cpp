@@ -377,6 +377,7 @@ void learn_hop(Blob& blob) {
     if (buttons) {
         count = hop_button_errors(blob, h, valence, line, sign);
     }
+    int from_pred = count; // the lines before this are the buttons'
     count = hop_pred_errors(blob, h, line, sign, count); // hop_pred.cpp
     if (count == 0) {
         return;
