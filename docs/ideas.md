@@ -895,3 +895,15 @@ co-activity runs ties the held units together and loses their order.
      long blanks the rule moves loop cells toward what is on in the blanks. If so, a
      life that starts with short delays and lengthens them, or a rule that only learns
      while input is on, should carry further. *queued*
+177. **The credit rules not yet tried, on the model bench.** The owner, 2026-11-26:
+     "fundamentally we need mechanisms that do local credit assignment". Credit has
+     three parts: which cell (space), which input of that cell, and which past moment
+     (time). Idea 167's bench (the model of the cells with every constraint, rule
+     against coin control against born) has so far tried one family for the first
+     part, the error on fixed random wires. Try the rest there, each as a step a cell
+     could do in bits: the difference of two phases, answer shown and not shown (idea
+     91); credit by code (idea 138); payment passed backward (idea 139); a target for
+     each cell made by sending the answer back through fixed wires, the cell moving
+     toward its target (target propagation); and, for time, a mark on each input that
+     fades over several steps, scored on the delayed rows. Only a family that beats
+     the one-hop rule's best rung there gets built in bits. *queued behind idea 167*

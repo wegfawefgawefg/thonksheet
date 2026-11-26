@@ -214,8 +214,10 @@ Queued, in order:
    come from predicting its input all the time, which is this item.
 4. A local "is this real" score per region: real input against shuffled or self-made
    input, each region raising its activity for one and lowering it for the other.
-6. Credit by code (idea 138).
-7. Units pay the units that set them up (idea 139).
+6. The credit rules not yet tried, on idea 167's model bench (idea 177): two phases
+   (91), credit by code (138), payment passed backward (139), a target for each cell,
+   and a mark that lasts several steps for credit over time. Behind 2g, whose bench
+   and whose answer (which step of our rule loses the features) it needs.
 8. A memory that knows near from far (idea 152), scored on MNIST.
 9. The output, what idea 161 left: the runner-up rule (`readout_good 2`) on the whole
    suite and as the one default (it costs exclusive-or 0.09), on the critic's actor, on
