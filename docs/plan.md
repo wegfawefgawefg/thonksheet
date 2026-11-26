@@ -47,7 +47,7 @@ Running (four), as of 2026-11-26:
 - Queued item 2l (idea 178): every-event counters in the engine's one-hop rule.
 - Queued item 6 (idea 177): the credit rules not yet tried, on idea 167's bench.
 - Queued item 2j (idea 174): do the inner rules learn more from a steadier sheet.
-- Queued item 2k (idea 175): a rate control that does not fight the rest.
+- Queued item 2m (idea 180): the threshold cap lifted, decide the default.
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
 153, 154), both merged; their slots went to items B and C. The calculation battery
 (ideas 133, 134; docs/results-2026-11-25-calculation.md), merged; its slot went to
@@ -108,9 +108,13 @@ Queued, in order:
    and on the held-out columns. Every item below is scored with it.
 2. *(done, passes: 0.952 against 0.926 born and 0.939 shuffled, 8 seeds; idea 158)* Competitive learning with local inhibition, no reward: units that win on an input
    move toward it (in bits: gain the input's bits, lose others, under a budget).
-2k. *(running, idea 175)* A rate control that keeps the sheet alive without jittering the
-   read, taking back a held loop, or pinning cells at the cap; then a learned latch under
-   it. Idea 176 (short delays first) is queued behind it.
+2m. *(running, idea 180)* The threshold cap lifted: why the chain passes, what MNIST
+   online and reach were gaining from the runaway rate, the quick map and the inside
+   test both ways, and whether 1000 becomes the default. Behind it: idea 176 (short
+   delays first), idea 181 (a loop lit at twice its share).
+2k. *(done, merged: docs/results-2026-11-26-rate-control.md, `scripts/ratecontrol.sh`;
+   nothing passes more than 2 of 5 tests; the rate control is part of the learning
+   rule; the cap of 64 is a fault and lifting it passes the chain)*
 2i. *(done, merged: docs/results-2026-11-26-loops.md, `scripts/loops.sh`; the loop is a
    fade set by the leak; a slower leak with the cap lifted holds three to four steps and
    costs the rows that need the old item gone; a hand-made latch works and is replaced by

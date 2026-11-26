@@ -437,6 +437,28 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   competitive learning written in matches the engine's (0.950 / 0.727 against 0.952
   / 0.728): score rules by writing them in, never by the model's reader. My re-run
   from main, seed 5: 0.9501 / 0.7309, the agent's numbers exactly.
+- **No rate control tried does better than the one we have with its cap lifted**
+  (idea 175, queue item 2k, docs/results-2026-11-26-rate-control.md,
+  `scripts/ratecontrol.sh`; merged 2026-11-26). Fourteen candidates against five
+  tests (alive, the standard read, a hand-made latch kept, the other sheet's rate
+  held, the quick map): none passes more than two. What jitters the read and takes
+  back a latch is what competitive learning and the output lean on: the per-cell
+  threshold walk is competitive learning's conscience (a cell that wins too often
+  is held back, so every cell gets a share), and the fast sector bias is a clock
+  the output reads. Free the cells (dead band, critical period) or slow the bias and
+  delayed echo at 2 steps with competitive learning falls from 0.96 to 0.48 to 0.80.
+  The reads that reach the frozen level (0.936 to 0.939 on MNIST) do it with the
+  bias pinned at its limit and the rate at 42 to 58, which is frozen in effect.
+  The threshold cap of 64 is a fault: in long lives the MNIST world runs at 3.1
+  times the target and competitive learning at 1.5 to 2.6 times, with a fifth to a
+  quarter of thresholds at the cap; at cap 1000 every life holds at 0.99 to 1.02
+  with nothing silent or stuck. With the cap lifted the two-step chain passes under
+  the one setting (0.150 to 0.811, seeds 5-12; my re-run on seeds 5-8 from main:
+  0.298 to 0.926), a row only the critic passed before. It costs MNIST online 0.03
+  to 0.10 and reach with competitive learning (far5 0.841 to 0.600), rows that had
+  been running with the rate run away. The one setting's 12 in 100 silent cells are
+  time and integrator cells waiting on long time bins, not a rate fault. A learned
+  latch was not tried, since no candidate kept the hand-made one.
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -912,6 +934,9 @@ docs/results-2026-11-25-mnist.md
     leaves a third of the cells running away on one sheet shape while 12 in 100 fall
     silent under another setting. The sheet needs something that keeps it alive, and
     this is the only thing that does; what replaces or slows it is idea 175.
+    Idea 175 then tried fourteen replacements and none did better: the same control
+    is what competitive learning and the output lean on (finding 58). The "12 in 100
+    silent" are time and integrator cells, not this.
 56. **Sending the error one hop on random wires is nearly free; stepping a counter by
     chance is what loses the features.** [likely: one model, 8 seeds on the key
     rungs, the wirings written into the real sheet on 8 seeds; not yet run as a rule
@@ -927,6 +952,13 @@ docs/results-2026-11-25-mnist.md
     do their backprop-trained bounds. What labels buy (0.961 / 0.761 against 0.952 /
     0.738) nothing label-free here buys. A model's own reader cannot rank wirings;
     the real sheet must.
+
+58. **The rate control is part of the learning rule, not a housekeeping layer under
+    it.** [likely: 14 candidates, 4 to 8 seeds] The per-cell threshold walk gives
+    every cell a share of the wins, which competitive learning needs; the fast sector
+    bias gives the output a clock. A rule that needs a steady cell or a held loop has
+    to bring its own way of sharing wins. The cap of 64 on the threshold is the one
+    part that only does harm to the sheet's health.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 

@@ -834,7 +834,8 @@ co-activity runs ties the held units together and loses their order.
 170. **Winners per tile set from the rate target.** Two winners per tile caps firing at
      the target and may be why 12 in 100 neurons end silent in the one setting; let the
      count follow the sector's rate error instead of being fixed. First diagnose the
-     silent cells (`out/from-agents/oneset/health.sh`). *queued*
+     silent cells (`out/from-agents/oneset/health.sh`). *parked: idea 175 found the
+     silent cells are time and integrator cells, not a rate fault.*
 171. **A critic that speaks only when something is at stake.** The critic teaches every
      press by a surprise that is noise on cue and blank steps; teach only when its level
      moved by more than its own usual swing. Parked with the critic. *parked*
@@ -897,7 +898,12 @@ co-activity runs ties the held units together and loses their order.
      160,000 steps; the standard read of the born sheet moving toward the frozen read;
      the hand-made latch surviving, then a learned one (a loop's own inputs allowed to
      become strong); the prediction battery's sheet not running away; nothing lost on
-     the quick map. *building*
+     the quick map. *done: docs/results-2026-11-26-rate-control.md,
+     `scripts/ratecontrol.sh`. Nothing passes more than 2 of 5 tests; the per-cell
+     walk is competitive learning's conscience and the sector bias the output's
+     clock. The cap lifted keeps every long life at the target rate and passes the
+     chain under the one setting, at a cost to MNIST online and reach. Next: idea
+     180.*
 176. **Why a life at a long delay builds weaker loops than a life at a short one.** A
      2-step life read at 4 steps 0.66, a 4-step life 0.50 (idea 172). Guess: during
      long blanks the rule moves loop cells toward what is on in the blanks. If so, a
@@ -932,3 +938,15 @@ co-activity runs ties the held units together and loses their order.
      it needs is not known), and a per-cell sliding threshold on what counts as a
      win (the only family that does not double the firing rate). In the engine, and
      combined with idea 178's error rule. *queued*
+180. **The threshold cap lifted: decide the default.** Idea 175: at cap 64 long lives
+     run away (MNIST world 3.1 times the target); at 1000 they hold. Lifted, the
+     two-step chain passes under the one setting (0.15 to 0.81) and MNIST online and
+     reach with competitive learning lose. Find why the chain passes (a row paid one
+     step late), what MNIST online and reach were gaining from the runaway rate and
+     whether a higher target rate gives it back honestly, then run the whole quick
+     map and the inside-learning test both ways and say whether 1000 becomes the
+     default. *building*
+181. **A loop that is lit at twice its share.** Idea 175: a latch held up by strong
+     inputs is taken back by per-cell sharing. Try a loop whose lit rate is about
+     twice a cell's share, held by the tile's inhibition rather than by strong
+     inputs, so the conscience leaves it alone. *queued*
