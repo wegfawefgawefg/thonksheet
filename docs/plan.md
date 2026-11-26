@@ -30,9 +30,8 @@ rule has not shown, each wanting a task built to force it and with room to see a
 
 Unfinished code left in the tree, all off by default: `compete_store`, `motor_apart`,
 `motor_winners`, `out_judge`, `compete_window`, and the knobs each results doc lists as
-"did not help". A fresh start should run `bash out/from-agents/outputinside/refcheck.sh`
-style checks from its own copy first; the reference lives are in `out/merge-ref/` (not in
-git; `scripts/` can remake them from the flags in the check script).
+"did not help". After any change to the engine run `scripts/refcheck.sh`: four lives with
+every optional mechanism off must stay byte-identical to `tests/ref/`.
 
 ## Where we stand and the one question (2026-11-25, late)
 
