@@ -109,7 +109,7 @@ def long_life(opt):
     rows = [("delayed echo, 8 steps, 160,000 steps", delayed(8), dict(SUITE, steps=160000)),
             ("1-back, 160,000 steps", ["--task", "n-back", "--k", "4", "--back", "1"],
              dict(SUITE, steps=160000))]
-    arms = ["on", c + "-on"]
+    arms = ["on", c + "-on", "oncap", c + "-cap"]
     jobs, where = [], {}
     for label, args, st in rows:
         for arm in arms:
@@ -138,8 +138,11 @@ def mnist(opt):
     seeds = ",".join(map(str, opt["seeds"]))
     b5 = "--g.learn_mode 5 --g.compete_on 1 --g.tile_winners 4 --g.compete_shift 5".split()
     texts = []
-    for name, flags in (("loops-b5", b5), ("loops-b5-" + opt["change"],
-                                           b5 + CHANGES[opt["change"]].split())):
+    cap = ["--g.threshold_cap", "1000"]
+    change = CHANGES[opt["change"]].split()
+    for name, flags in (("loops-b5", b5), ("loops-b5-" + opt["change"], b5 + change),
+                        ("loops-b5cap", b5 + cap),
+                        ("loops-b5-" + opt["change"] + "cap", b5 + change + cap)):
         cmd = [os.path.join(ROOT, "scripts", "inside.sh"), name, "--seeds", seeds, "--only",
                "mnist", "--jobs", str(opt["jobs"])] + (["--table-only"] if opt["table_only"]
                                                        else []) + flags

@@ -23,6 +23,8 @@ AFTER = [
     ("cooldown 1", ["--set-cool", "1"]),
     ("leak shift 6 (was 1-4)", ["--set-leak", "6"]),
     ("loop inputs all strong", ["--loop-strong", "1"]),
+    # does the latch outlive regulation free to raise thresholds past the cap of 64?
+    ("loop inputs all strong, cap 1000", ["--loop-strong", "1", "--after", "threshold_cap 1000"]),
     ("no noise, no pacemakers", ["--after", "noise_on 0", "--quiet-pace", "1"]),
 ]
 # the rule living under the change: (name, life flags added to the rule-on arm)
@@ -38,6 +40,9 @@ UNDER = [
     ("life: leak shift 4-6, slow bias step", "--g.leak_shift_min 4 --g.leak_shift_max 6 "
      "--g.sector_step_shift 3"),
     ("life: slow bias step", "--g.sector_step_shift 3"),
+    ("life: strength from the counter, cap 1000", "--g.tag_counts 1 --g.threshold_cap 1000"),
+    ("life: leak shift 4-6, cap 1000", "--g.leak_shift_min 4 --g.leak_shift_max 6 "
+     "--g.threshold_cap 1000"),
 ]
 for _name, _flags in UNDER:
     tl.ARMS["u-" + label_key(_name)] = tl.ARMS["on"] + " " + _flags
@@ -45,7 +50,9 @@ DELAYS = [2, 3, 4, 8, 16]
 # the ones scored on delayed echo (the trace table has them all). the leak lives are part
 # B's own arms (loops.py CHANGES), so best reuses them
 SCORE_AFTER = ["as lived", "sector bias held at 0", "thresholds frozen", "no tile winners",
-               "inhibition 3 (was 5)", "leak shift 6 (was 1-4)", "loop inputs all strong"]
+               "inhibition 3 (was 5)", "leak shift 6 (was 1-4)"]
+LIVED_UNDER = "lived under leak 4-6, cap 1000"
+# (--loop-strong needs the loop cells, which only looptrace finds: not scored here)
 SCORE_UNDER = [("life: sector bias off", "u-life__sector_bias_off"),
                ("life: slow bias step", "u-life__slow_bias_step"),
                ("life: leak shift 4-6", "leak-on"), ("life: leak shift 5-6", "leak56-on")]
@@ -211,10 +218,14 @@ def transfer_late(path):
 def suspects(opt):
     folder = os.path.join(opt["out"], "suspects")
     jobs, where = [], {}
-    for name, flags in [a for a in AFTER if a[0] in SCORE_AFTER]:
+    # the after-life switches on a normal life; and a 2-step life lived under the change
+    # (leak 4-6, cap 1000), frozen and read at each delay
+    todo = [(n, "on", f) for n, f in AFTER if n in SCORE_AFTER]
+    todo.append((LIVED_UNDER, "leak-cap", []))
+    for name, arm, flags in todo:
         for d in DELAYS:
             for s in opt["seeds"]:
-                job, path = transfer_job(folder, name, d, SUITE, "on", flags, s, opt)
+                job, path = transfer_job(folder, name, d, SUITE, arm, flags, s, opt)
                 jobs.append(job)
                 where.setdefault((name, d), []).append(path)
     run_all(jobs, opt)
@@ -231,7 +242,7 @@ def suspects(opt):
              ",".join(map(str, opt["seeds"])), "",
              "| after a normal life | " + " | ".join("%d steps" % d for d in DELAYS) + " |",
              "|" + "---|" * (len(DELAYS) + 1)]
-    for name in SCORE_AFTER:
+    for name in SCORE_AFTER + [LIVED_UNDER]:
         lines.append("| %s | %s |" % (name, " | ".join(
             fmt(mean([transfer_late(p) for p in where[name, d]])) for d in DELAYS)))
     lines += ["", "| rule living under it | " + " | ".join("%d steps" % d for d in DELAYS) + " |",
@@ -291,7 +302,9 @@ def controls(opt):
     kinds = [("born", "off", ["--born", "1"]), ("lived", "on", []),
              ("born, change", c + "-off", ["--born", "1"]), ("lived, change", c + "-on", []),
              ("shuffled, change", c + "-on", ["--life-scramble", "1"]),
-             ("churn, change", c + "-churn", []), ("lived, change, cap", c + "-cap", [])]
+             ("churn, change", c + "-churn", []), ("lived, change, cap", c + "-cap", []),
+             ("born, change, cap", c + "-cap", ["--born", "1"]),
+             ("shuffled, change, cap", c + "-cap", ["--life-scramble", "1"])]
     jobs, where = [], {}
     for label, d in CONTROL_ROWS:
         for kind, arm, flags in kinds:
