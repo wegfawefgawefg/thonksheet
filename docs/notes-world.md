@@ -1,14 +1,15 @@
 
 
-## Rate-control candidates (idea 175)
+## Every-event counters and the credit bench (ideas 178, 177)
 
-`scripts/ratecontrol.sh NAMES --tests read,pred,latch,map,alive [--seeds]`, `table`,
-`learned NAME`, `smoke --quick` (`ratecontrol.py`, `ratecontrol_tests.py`,
-`ratecontrol_latch.py`). Candidates are genome numbers, all off by default
-(`src/blob/regulate_rate.cpp`): `rate_band_shift`, `rate_band_low`, `rate_band_high`,
-`rate_band_step` (a dead band in place of the per-spike walk), the critical period and
-`threshold_late_shift`, `sector_gain` (per-tile inhibition in proportion),
-`rate_band_motor`. `blobprobe ratehealth` (`src/probe/rate_health.cpp`): rate against
-target, silent, stuck and capped cells by kind after a life. None is recommended; the one
-change worth having is `--g.threshold_cap 1000`.
+`scripts/everyevent.sh pick|report|pieces|cap|online|toys|calc|speed|smoke` (arms listed in
+the script's header). Genome: `hop_bits` (plane counters this wide, 12 in the results;
+`src/blob/hop_planes.cpp`), `hop_who` (which cell kinds learn), `hop_fine`,
+`hop_rewire_every`, `hop_loose`, `hop_balance`, `hop_teach 4|5` (the sheet's own signed
+error per line), `hop_coin 3`. `blobmnist ceiling --life-outside 1|2|3` teaches the cells
+from an output outside the blob (`src/mnist/mnist_outside.cpp`; a measuring stick, not part
+of the blob); `--life-reborn 0`. The plane store is not for use beside competitive learning
+or the tags. `scripts/credit.sh pick|full|smoke` (`credit*.py`): other credit rules in the
+ladder's model (pay1, pay, two phases, target, code, time arms `e*`), every wiring written
+into the real sheet; `--read cap "--g.threshold_cap 1000"` is the matched-rate read.
 

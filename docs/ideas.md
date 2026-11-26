@@ -922,7 +922,11 @@ co-activity runs ties the held units together and loses their order.
      fades over several steps, scored on the delayed rows. Only a family that beats
      the one-hop rule's best rung there gets built in bits. Scored by writing each
      wiring into the real sheet (idea 173: the model's reader cannot rank them).
-     *building*
+     *done: docs/results-2026-11-26-credit-rules.md, `scripts/credit.sh`. The
+     output paying back along its own read wires beats the random wires (0.965 /
+     0.770 against 0.961 / 0.758 written in); two phases, a target per cell and
+     credit by code do not; a lasting mark carries credit a few showings back.
+     Next: part 4 of idea 182.*
 178. **Every-event counters in the engine's one-hop rule.** Idea 167's lever, in bits:
      the hidden counters step on every marked input (no chance), 9 to 12 bits wide
      as bit-planes (99 to 132 words a neuron against 88); the error is the output's
@@ -931,7 +935,11 @@ co-activity runs ties the held units together and loses their order.
      Scored by the inside-learning test on MNIST and the pair test against coin,
      born and competitive learning; the target is the written-in 0.961 / 0.761. Then
      the toys it already taught (parity of 3, held-out calculation) and its cost in
-     speed. *building*
+     speed. *done: docs/results-2026-11-26-every-event.md,
+     `scripts/everyevent.sh`, `--g.hop_bits 12`. Live in the sheet 0.951 on MNIST
+     and 0.770 on pairs with an outside output's error; with the sheet's own
+     readout's error 0.926 to 0.930. The output is now the missing piece: idea
+     182.*
 179. **"Is this real" and the sliding threshold, in bits.** Idea 173's two label-free
      leads: competitive learning on real input with the same step backwards on
      made-up input (+0.011 on pairs over competitive learning; which made-up input
@@ -950,3 +958,17 @@ co-activity runs ties the held units together and loses their order.
      inputs is taken back by per-cell sharing. Try a loop whose lit rate is about
      twice a cell's share, held by the tile's inhibition rather than by strong
      inputs, so the conscience leaves it alone. *queued*
+182. **The blob's own output, good enough to teach the inside.** Idea 178: the
+     one-hop rule works given an output that is right nine times in ten online and
+     says per line when it was wrong or too close; the sheet's readout is right two
+     times in three. Walk a ladder from the outside 16-bit perceptron down to the
+     engine's readout to find what it lacks, build that in bits, close the loop with
+     no outside part, then send the error back along the output's own wires (idea
+     177's payment). *building*
+183. **Prediction errors again, with the rule that works.** Idea 164 sent prediction
+     errors down the one-hop wires with the chance counters and found only "what
+     just changed". A predictor's error is always honest (the world gives the
+     answer), which is what idea 178 says the rule needs. Repeat on the acting
+     worlds with every-event counters and a fine zone: do hidden cells now learn the
+     future and the world's hidden state, and does the task move. The owner's
+     rich-signal steer. *building*

@@ -459,6 +459,44 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   been running with the rate run away. The one setting's 12 in 100 silent cells are
   time and integrator cells waiting on long time bins, not a rate fault. A learned
   latch was not tried, since no candidate kept the hand-made one.
+- **A local error rule now teaches the inside features live in the real sheet, given
+  a good output's error** (idea 178, queue item 2l,
+  docs/results-2026-11-26-every-event.md, `scripts/everyevent.sh`; merged
+  2026-11-26). The one-hop rule with every-event 12-bit plane counters (`hop_bits`),
+  learned in the engine over a 60,000-digit life, read by a fresh reader, 8 seeds:
+  MNIST 0.951 (born 0.925, the old rule 0.938, competitive learning 0.952 at a
+  higher rate, the written-in wiring 0.961); pair test 0.770 at a wider fine zone
+  (born 0.677, old rule 0.698, competitive learning 0.726, written-in 0.761). Every
+  seed above born, its coin control and a shuffled-digit life; with the rate held at
+  31 the MNIST gain is the same. My re-run from main, seed 5: 0.9504 and 0.7724
+  against born 0.9248 and 0.6924, the agent's numbers exactly. The catch: the error
+  comes from an output outside the blob (a softmax layer, or a perceptron with
+  16-bit weights and a margin, 0.942 / 0.768), right 0.91 of the time online. The
+  sheet's own readout is right 0.68 of the time and with its errors the rule reads
+  0.926 to 0.930. Neither piece works alone: every-event counters on the old
+  answer-alone error take MNIST under born (0.919; cells drop their pixels and
+  listen to each other), the outside error on the old counters reads 0.935 to
+  0.942. No one fine zone gets both tests (0.1 for MNIST, 0.3 for pairs). Every cell
+  kind learning gives +0.004 on MNIST and -0.026 on pairs, the reverse of the model.
+  On the toys the new counters gain: parity of 3 0.847 to 0.919, held-out xor4
+  0.871 to 0.933. Cost: 132 words a neuron against 88; 92% of the old rule's speed.
+- **Of the other credit rules, one beats random wires: the output paying back along
+  its own read wires** (idea 177, queue item 6,
+  docs/results-2026-11-26-credit-rules.md, `scripts/credit.sh`; merged 2026-11-26;
+  all in the model, wirings written into the real sheet). Each line in error pays or
+  charges the fired cells it reads, by the sign of its read weight: 0.965 / 0.770
+  against the random-wire rule's 0.961 / 0.758 (8 seeds; +0.004 on 8 of 8, +0.012 on
+  7 of 8; the same lead at matched rate). It is the wires: the paid bit has
+  backprop's sign 0.87 of the time, the random wire's 0.63. Passing the payment or
+  the bit one more step back buys firing, not credit (its coin gains as much). Two
+  phases 0.953 / 0.726; a target from the answer alone 0.916 / 0.610, under born;
+  credit by code 0.773 / 0.641 with all cells perturbed, and at 12 cells within
+  0.007 of its coin. Credit over time: an error arriving one showing late teaches
+  as well as on time if the marks last two showings (0.960 / 0.756), and nearly as
+  well three late with marks of four (0.954 / 0.749); with no lasting mark, born.
+  My re-run from main, seed 5 of the payment wiring: 0.9617 / 0.7717, the agent's
+  numbers exactly. Not shown: payment along the engine's own read, whose output is
+  wired motor cells, not a weight on every cell.
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -959,6 +997,20 @@ docs/results-2026-11-25-mnist.md
     bias gives the output a clock. A rule that needs a steady cell or a held loop has
     to bring its own way of sharing wins. The cap of 64 on the threshold is the one
     part that only does harm to the sheet's health.
+
+59. **The inside can be taught by a local rule; what it needs is an honest error per
+    output line.** [likely: live in the engine, 8 seeds, MNIST and the pair test,
+    coin, shuffled and rate-matched controls; the output still outside the blob]
+    Random one-hop wires, signs, every-event integer counters: 0.951 / 0.770 live.
+    The error has to name the right line and the lines confused with it, only on the
+    cases the output is unsure of. The answer alone on every case teaches nothing or
+    harm. The blob's own output is the missing part (idea 182).
+60. **Feedback that carries the sign of the forward read is worth more than a random
+    wire; depth and perturbation are not.** [hint to likely: the model, wirings
+    written into the sheet, 3 to 8 seeds] Payment along the read wires beats random
+    wires by 0.004 / 0.012; passing credit a second hop back adds firing, not
+    credit; perturbation credit drowns at 3,072 cells. A mark that lasts as long as
+    the error is late is enough for credit over a few steps of time.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 

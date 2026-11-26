@@ -44,8 +44,8 @@ are ordered by the one question above. An item is struck when done, with where t
 is.
 
 Running (four), as of 2026-11-26:
-- Queued item 2l (idea 178): every-event counters in the engine's one-hop rule.
-- Queued item 6 (idea 177): the credit rules not yet tried, on idea 167's bench.
+- Queued item 9a (idea 182): the blob's own output, good enough to teach the inside.
+- Queued item 3c (idea 183): prediction errors with every-event counters.
 - Queued item 2j (idea 174): do the inner rules learn more from a steadier sheet.
 - Queued item 2m (idea 180): the threshold cap lifted, decide the default.
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
@@ -144,9 +144,14 @@ Queued, in order:
    linear reader gets 0.95 from the lived sheet, the sheet's own readout 0.72 and falling.
    Takes in item 9 (the weighted vote, the drift). This gap is now the largest number on
    the board.
-2l. *(running, idea 178)* Every-event counters in the engine's one-hop rule: counters
-   of 9 to 12 bits stepped on every marked input, the output's own signed error per
-   line, every cell kind learning. Target: the written-in 0.961 / 0.761.
+9a. *(running, idea 182)* The blob's own output: a ladder from the outside 16-bit
+   perceptron down to the engine's readout, the missing piece built in bits, the
+   loop closed with no outside part, then payment along the output's own wires.
+3c. *(running, idea 183)* Prediction errors down the one-hop wires with every-event
+   counters and a fine zone, on the acting worlds.
+2l. *(done, merged: docs/results-2026-11-26-every-event.md, `scripts/everyevent.sh`;
+   live 0.951 / 0.770 with an outside output's error; the sheet's own output is the
+   missing piece)*
 2g. *(done, merged: docs/results-2026-11-25-rule-ladder.md, `scripts/ladder3.sh`; the
    counter step's small chance loses the features, the rest of the way down from
    backprop is nearly free; every-event wiring in the real sheet 0.961 / 0.761)* The rule's ladder: in idea 165's model at its bottom rung,
@@ -223,7 +228,8 @@ Queued, in order:
    come from predicting its input all the time, which is this item.
 4. A local "is this real" score per region: real input against shuffled or self-made
    input, each region raising its activity for one and lowering it for the other.
-6. *(running, idea 177)* The credit rules not yet tried, on idea 167's model bench: two phases
+6. *(done, merged: docs/results-2026-11-26-credit-rules.md, `scripts/credit.sh`; payment
+   along the read wires beats random wires; the rest do not)* The credit rules not yet tried, on idea 167's model bench: two phases
    (91), credit by code (138), payment passed backward (139), a target for each cell,
    and a mark that lasts several steps for credit over time. Behind 2g, whose bench
    and whose answer (which step of our rule loses the features) it needs.
