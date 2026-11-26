@@ -271,7 +271,8 @@ void output_judge(Blob& blob) {
         if (up >= 0 && o.size[p] + o.size[up] < 2 && o.vote[p] == o.vote[up]) {
             return;
         }
-        o.step[p] = o.teach[p] = -1;
+        o.step[p] = -1;
+        o.teach[p] = g.out_tell == 2 ? 0 : -1;
         if (up >= 0) {
             o.step[up] = 1;
             o.teach[up] = g.out_tell ? 0 : 1;
