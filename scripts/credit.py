@@ -4,7 +4,7 @@ credit.sh.
 
   credit.py NAME [--quick] [--seeds 5,6,7] [--tasks mnist,pair] [--arms P2,pay,...]
             [--coins 0|1] [--parts model,transplant] [--jobs 3] [--val] [--table-only]
-            [--digits N] [--limit N] [--settle 3000]
+            [--digits N] [--limit N] [--settle 3000] [--read TAG "FLAGS"]
   credit.py run TASK ARM SEED SHEET OUT [--val] [--limit N] [--digits N] [--wiring F]
 
 An arm is a rule (credit_train.ARMS), or one of the ladder's own: T7x (the one-hop rule with
@@ -13,7 +13,9 @@ two-phase arm at gain V instead of its pick (PICKS). Every arm but born and thos
 gets a coin arm (NAMEcoin: its teaching signal from another digit) unless --coins 0. Parts:
 model (the life in the offline model, its own reader, its wiring written out), transplant
 (every wiring written into the real sheet with `blobmnist ceiling --wiring-load`, beside the
-born sheet read the same way). The real sheet's number is the one to rank by.
+born sheet read the same way; --read TAG "FLAGS" reads with extra sheet flags into files
+tagged TAG, as --read cap "--g.threshold_cap 1000" for a read at the target firing rate).
+The real sheet's number is the one to rank by.
 """
 
 import os
@@ -26,11 +28,11 @@ import ladder3 as L3  # noqa: E402  the ladder's model and transplant jobs
 ROOT = L2.ROOT
 PY = sys.executable
 LADDER_ARMS = ("T7x", "born")
-DEFAULT = ["born", "T7x", "P2", "P2s", "C2", "C1", "C2n192", "C2n12", "pay1", "pay", "payc",
-           "tgt", "dtp", "hopb", "dtpb", "d1n", "d1t2", "d1t4", "d3t4", "d0t4"]
+DEFAULT = ["born", "still", "T7x", "P2", "P2s", "C2", "C1", "C2n192", "C2n12", "pay1", "pay",
+           "payc", "tgt", "dtp", "hopb", "dtpb", "d1n", "d1t2", "d1t4", "d3t4", "d0t4"]
 # no coin arm: the scaling arms, the conserved payment, and the time arms (the no-trace arm
 # d1n is their control: an error from another digit on this digit's marks)
-NOCOIN = {"born", "C2n192", "C2n12", "payc", "d1n", "d1t2", "d1t4", "d3t4", "d0t4"}
+NOCOIN = {"born", "still", "C2n192", "C2n12", "payc", "d1n", "d1t2", "d1t4", "d3t4", "d0t4"}
 # the two-phase gain (drive a tick that an output line at full rate adds to a cell), picked
 # on the validation slice by the real sheet's read (the doc's "Picking")
 PICKS = {"mnist": {"P2s": 0.0625, "P2": 0.0625}, "pair": {"P2s": 0.0625, "P2": 0.0625}}
@@ -68,6 +70,14 @@ def with_coins(opt):
     return out
 
 
+def retag(out, tag):
+    d, name = os.path.split(out)
+    for kind in ("transplant", "bornread"):
+        if name.startswith(kind + "-"):
+            name = kind + tag + name[len(kind):]
+    return os.path.join(d, name)
+
+
 def bench(name, opt):
     outdir = os.path.join(ROOT, "out", "credit", name)
     os.makedirs(outdir, exist_ok=True)
@@ -88,11 +98,16 @@ def bench(name, opt):
                         if a != "born" and os.path.exists(done) and os.path.exists(
                                 L3.wiring_file(outdir, task, a, s)):
                             tj += L3.transplant_jobs(outdir, task, a, s, opt)
+            if opt["read_tag"]:  # read with extra sheet flags, into files of their own
+                tj = [(cmd + opt["read_flags"], retag(out, opt["read_tag"])) for cmd, out in tj]
             L2.pool(list(dict((j[1], j) for j in tj).values()), opt["jobs"])
         L3.gz(outdir, unpack=False)
     import credit_table
     text = credit_table.table(outdir, opt)
-    with open(os.path.join(outdir, "table.txt"), "w") as f:
+    tag = "-" + opt["read_tag"] if opt["read_tag"] else ""
+    with open(os.path.join(outdir, "table%s.md" % tag), "w") as f:
+        f.write(credit_table.markdown(outdir, opt) + "\n")
+    with open(os.path.join(outdir, "table%s.txt" % tag), "w") as f:
         f.write(text + "\n")
     print(text)
 
@@ -116,7 +131,8 @@ def main():
     name = args.pop(0)
     opt = {"seeds": [5, 6, 7], "tasks": ["mnist", "pair"], "parts": ["model", "transplant"],
            "jobs": 3, "val": False, "table_only": False, "limit": 0, "digits": 0,
-           "arms": list(DEFAULT), "coins": True, "settle": 3000, "quick": False}
+           "arms": list(DEFAULT), "coins": True, "settle": 3000, "quick": False,
+           "read_tag": "", "read_flags": []}
     if "--quick" in args:
         opt.update(seeds=[5], limit=10000, digits=10000, settle=500, quick=True, coins=False,
                    arms=["born", "T7x", "hop", "P2", "P2s", "C2", "C1", "pay", "payc", "tgt",
@@ -132,6 +148,9 @@ def main():
             opt[a[2:]] = int(args[i + 1])
         elif a == "--coins":
             opt["coins"] = args[i + 1] != "0"
+        elif a == "--read":  # --read TAG "FLAGS"
+            opt["read_tag"], opt["read_flags"] = args[i + 1], args[i + 2].split()
+            i += 1
         elif a in ("--val", "--table-only", "--quick"):
             opt[a[2:].replace("-", "_")] = True
             i -= 1

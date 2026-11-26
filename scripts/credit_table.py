@@ -10,6 +10,7 @@ import ladder2_table as L2T
 
 NAMES = {
     "born": "born (nothing learned)",
+    "still": "still born, as this bench writes it out",
     "T7x": "T7x one hop, random wires (the ladder's code)",
     "hop": "hop  T7x through this bench's loop (check)",
     "hopb": "hopb T7x, then passed back along real wires",
@@ -39,20 +40,21 @@ def sort_key(arm):
     return (ORDER.index(name) if name in ORDER else 99, name, float(v) if v else 0.0)
 
 
-def load(outdir, seeds):
-    """model runs and real-sheet reads by (task, arm) and seed, of the seeds asked for"""
+def load(outdir, seeds, tag=""):
+    """model runs and real-sheet reads by (task, arm) and seed, of the seeds asked for; tag:
+    the reads made with extra sheet flags (credit.py --read TAG)"""
     runs, sheet, rate = {}, {}, {}
     for path in glob.glob(os.path.join(outdir, "*.json")):
         task, arm, seed = os.path.basename(path)[:-5].rsplit("-", 2)
         runs.setdefault((task, arm), {})[int(seed)] = json.load(open(path))
-    for path in glob.glob(os.path.join(outdir, "transplant-*.txt")):
-        task, arm, seed = os.path.basename(path)[11:-4].rsplit("-", 2)
+    for path in glob.glob(os.path.join(outdir, "transplant%s-*.txt" % tag)):
+        task, arm, seed = os.path.basename(path)[11 + len(tag):-4].rsplit("-", 2)
         score = L2T.ceiling_score(path)
         if score is not None:
             sheet.setdefault((task, arm), {})[int(seed)] = score
             rate.setdefault((task, arm), {})[int(seed)] = L2T.ceiling_rate(path)
-    for path in glob.glob(os.path.join(outdir, "bornread-*.txt")):
-        task, seed = os.path.basename(path)[9:-4].rsplit("-", 1)
+    for path in glob.glob(os.path.join(outdir, "bornread%s-*.txt" % tag)):
+        task, seed = os.path.basename(path)[9 + len(tag):-4].rsplit("-", 1)
         score = L2T.ceiling_score(path)
         if score is not None:
             sheet.setdefault((task, "born"), {})[int(seed)] = score
@@ -94,7 +96,7 @@ def field(rs, key, form="%.2f"):
 
 
 def table(outdir, opt):
-    runs, sheet, rate = load(outdir, opt["seeds"])
+    runs, sheet, rate = load(outdir, opt["seeds"], opt.get("read_tag", ""))
     lines = ["the credit rules: %s digits. sheet: the wiring written into the real sheet, the "
              "tree's reader, mean (lowest-highest, seeds); rate: its hidden spikes per 1,000 "
              "cell-ticks; coin: the same rule taught by another digit's signal, in the sheet, "
@@ -130,4 +132,41 @@ def table(outdir, opt):
                     field(rs, "agree") + "/" + field(rs, "agree_first"),
                     field(rs, "taught", "%.3f"), field(rs, "born_changed", "%.1f"),
                     field(rs, "pixels", "%.1f")))
+    return "\n".join(lines)
+
+
+def markdown(outdir, opt):
+    """the doc's table: one row a rule, both tests side by side (MNIST / pairs), the real
+    sheet's numbers first"""
+    runs, sheet, rate = load(outdir, opt["seeds"], opt.get("read_tag", ""))
+    arms = sorted({a for _, a in list(runs) + list(sheet)
+                   if not a.partition("@")[0].endswith("coin")}, key=sort_key)
+
+    def two(fn):
+        return " / ".join(fn(task) for task in ("mnist", "pair"))
+
+    def m(d, form="%.3f"):
+        return form % mean(d.values()) if d else "-"
+
+    lines = ["| rule | seeds | sheet | coin | minus coin | minus born | minus T7x | rate | "
+             "coin's rate | model's reader | agree | changed | px |",
+             "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    for arm in arms:
+        name, _, v = arm.partition("@")
+        coin = name + "coin" + ("@" + v if v else "")
+        sh = lambda t: sheet.get((t, arm), {})
+        csh = lambda t: sheet.get((t, coin), {})
+        rs = lambda t: runs.get((t, arm), {})
+        cells = [NAMES.get(name, name) + ("@" + v if v else ""),
+                 two(lambda t: str(len(sh(t)))), two(lambda t: m(sh(t))),
+                 two(lambda t: m(csh(t))), two(lambda t: diff(sh(t), csh(t))),
+                 two(lambda t: diff(sh(t), sheet.get((t, "born"), {}))) if arm != "born" else "",
+                 two(lambda t: diff(sh(t), sheet.get((t, "T7x"), {}))) if arm != "T7x" else "",
+                 two(lambda t: m(rate.get((t, arm), {}), "%.0f")),
+                 two(lambda t: m(rate.get((t, coin), {}), "%.0f")),
+                 two(lambda t: field(rs(t), "reader", "%.3f")),
+                 two(lambda t: field(rs(t), "agree")),
+                 two(lambda t: field(rs(t), "born_changed", "%.0f")),
+                 two(lambda t: field(rs(t), "pixels", "%.0f"))]
+        lines.append("| " + " | ".join(cells) + " |")
     return "\n".join(lines)

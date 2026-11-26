@@ -195,6 +195,8 @@ def signals(t, lf, cfg, x, y, f, o, cp):
     """the block's counter steps as (marks, d) pairs (d > 0: less, d < 0: more; a size
     above one is that many events), and the net teaching bit for the diagnostics"""
     fam, coin = cfg["family"], cfg.get("coin")
+    if fam == "still":  # nothing learns: the born wiring as this bench writes it out
+        return [], None
     c0, c1 = f["c0"], f["c1"]
     on = (torch.cat([x, c0], 1) > 0).float()
     fired = (c1 > 0).float()

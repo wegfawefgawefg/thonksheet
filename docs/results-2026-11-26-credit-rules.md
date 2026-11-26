@@ -115,3 +115,23 @@ is the time arms' control (a late error on this digit's marks).
 --wiring-load`, 3,000 digits of regulation with learning off, the inside-learning test's
 reader, fit on 60,000 and scored on the 10,000 test digits), MNIST and the pair test
 (`--pair 2 --pair-mix 1`). The model's own reader is given beside it and not used to rank.
+
+## What each rule needs in hardware
+
+All of them keep T7x's store: a signed counter per candidate source (704 a neuron, 11 slots
+of 64), counted on every event, 9 to 12 bits as bit-planes (99 to 132 words a neuron); a
+step adds a slot's marked-source word into the planes; no random word. What differs:
+
+| rule | wires | phases a taught digit | kept per cell | from the output | random words | work beyond T7x's |
+|---|---|---|---|---|---|---|
+| T7x one hop | none stored: a hash of cell and line gives each wire and its sign; used once a verdict | 1 | nothing (the "near" map, one word a tile a tick of the window) | each line's signed error with a "fine" zone, 2 bits a line | none | - |
+| P2s two phases, sign | the same hash wires, but carrying the lines' activity into the cell's drive on the tick's path (two ANDs and popcounts of a 10-bit word a cell a tick, at 1 tick in 16) | 2: the digit shown twice as long, the answer held on the lines the second time | its count from the free phase (3 bits) | nothing computed; the lines must be clampable | none (a tick counter for the 1 in 16) | twice the ticks; no "near" map |
+| P2 two phases, every spike | as P2s | 2 | nothing: one phase bit for the whole sheet | as P2s | none | a counter step for every spike of every cell in both phases (about nine times T7x's steps) |
+| C2 code, two runs | none | 2: a clean run and a run with the codes | a bit: my code took effect | one bit for the whole sheet: the answer's line rose or fell (the output keeps one level per line between the runs) | two a tile a digit (which cells, which way) | a forced or vetoed spike: an OR or AND-NOT on the fire word |
+| C1 code, one run | none | 1 | the same bit | one bit: good or bad | two a tile a digit | the same |
+| pay1 payment | the output's own read wires, used backward: for each line in error, "fired and read with a positive weight" and "fired and read with a negative weight" as whole words, tallied per cell over the lines (a bit-sliced count, about 4 planes) | 1 | nothing | each line's signed error (as T7x) and the sign of every read weight (the read's own store) | none | a tally per cell over the lines a verdict; no "near" map |
+| pay passed back | pay1's, and each cell's own input slots used backward: a paid cell writes into its fired sources' tally (a scatter: about 11 slot words a paying cell, some 200 cells a digit) | 1 | a small signed tally (about 4 planes a tile) | as pay1 | none | the scatter, a few thousand word operations a digit; a second counter step for the sources |
+| payc conserved | as pay | 1 | as pay | as pay1 | one a paying cell (pick the source) | as pay |
+| tgt target from the answer | hash wires from the answer's lines only | 1 | nothing | nothing: no output is needed | none | less than T7x |
+| dtp tuned wires | every line reaches every cell (2 bits a line broadcast); the wire's sign is the cell's own | 1 | an 8-bit up/down counter per line (10 bytes on MNIST), one stepped a digit; each wire's sign taken from them when the cell rewires | each line's signed error (as T7x), and the answer | none | four ANDs and popcounts of a 10-bit word a cell a verdict |
+| time, marks that last L showings | as T7x | 1 | - | as T7x, late | none | L mark words a slot instead of one (L = 4: 33 more words a neuron) and L steps a verdict; or a 2-bit count-down per source (22 words a neuron) |

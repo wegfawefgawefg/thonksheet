@@ -19,6 +19,7 @@ import ladder3_train as L3T
 # every arm is the ladder's T7x (sparse +-1 wires, signed line errors with a "fine" zone,
 # near or fired, every-event counters, every cell learns) with its teaching bit swapped
 ARMS = {
+    "still": dict(family="still"),                 # nothing learns: born as the bench writes it
     "hop": dict(family="hop", ladder_step=True),   # T7x again, through this file's loop
     "hopb": dict(family="hop", back="all"),        # T7x, then one pass back along real wires
     "P2": dict(family="phase", events="spike", gain=0.25, cap=(1 << 23) - 1),
