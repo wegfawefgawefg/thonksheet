@@ -1,4 +1,4 @@
-#include "mnist/mnist_run.hpp"
+#include "mnist/mnist_outside.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -28,20 +28,8 @@
 //                           loses the counts and is told "lower", and the right line then
 //                           gains them and is told "higher". a hint that the output the
 //                           rule needs can be built from integers
-
-struct Outside {
-    std::vector<int> cols;  // the non-sensor cells
-    std::vector<float> v;   // lines x cols
-    std::vector<float> bias, x;
-    int lines = 0;
-    float lr = 0.3f, fine = 0.1f;
-    int coin = 0, form = 0, margin = 8;
-    std::vector<int16_t> w; // form 3: lines x cols
-    std::vector<int8_t> ring; // the last 256 digits' error signs
-    int64_t ring_count = 0;
-    uint64_t rng = 0x6f757473696465ull;
-    int64_t right = 0, seen = 0;
-};
+//   --outside-form 4        form 3 taken down toward the engine's readout, one difference
+//                           an option (mnist_outside_cells.cpp)
 
 Outside* outside_make(const Sheet& s, int argc, char** argv) {
     const Blob& b = *s.blob;
@@ -62,10 +50,14 @@ Outside* outside_make(const Sheet& s, int argc, char** argv) {
     o->margin = int_flag(argc, argv, "--outside-margin", 8);
     o->w.assign(o->form == 3 ? (size_t)o->lines * o->cols.size() : 0, 0);
     o->ring.assign((size_t)256 * (size_t)o->lines, 0);
+    o->cells = o->form == 4 ? outside_cells_make(s, argc, argv) : nullptr;
     return o;
 }
 
 void outside_free(Outside* o) {
+    if (o) {
+        outside_cells_free(o->cells);
+    }
     delete o;
 }
 
@@ -124,6 +116,13 @@ static void send_signs(Sheet& s, Outside& o, int8_t* sign);
 void outside_digit(Sheet& s, const uint8_t* counts, int label) {
     Outside& o = *s.outside;
     size_t d = o.cols.size();
+    if (o.form == 4) {
+        int8_t sign[PLUG_MAX_MOTOR_LINES];
+        o.right += outside_cells_digit(s, *o.cells, counts, label, sign) == label;
+        o.seen++;
+        send_signs(s, o, sign);
+        return;
+    }
     if (o.form == 3) {
         int8_t sign[PLUG_MAX_MOTOR_LINES];
         whole_digit(o, counts, label, sign);
