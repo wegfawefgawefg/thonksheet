@@ -14,14 +14,18 @@
 #   ev<set>f<fine>   every-event counters taught by the horizons in <set> (bits over
 #                    1,2,4,8: 1 the next step alone, 15 all four, 14 the far three) with a
 #                    fine zone of <fine> 32nds (0: wrong answers only)
-#   letters after it: n near-not-fired marks (--g.hop_fired 0), b the buttons' errors too
+#   letters after it: o<M> the errors come from a whole-number predictor outside the sheet
+#            with a margin of M steps (a measuring stick; predo2: it learns beside the
+#            rule-off life), n near-not-fired marks (--g.hop_fired 0), b the buttons'
+#            errors too
 #   endings: c its coin control (the errors of another step), s the shuffled-frame life,
 #            k the rate held at target (--g.threshold_cap 1000; bornk, predk too)
 #   scripts/predevent.sh smoke --quick                    every part, 1 seed, short lives
-#   scripts/predevent.sh screen1 --arms born,pred,old,ev1f0,ev1f8,ev15f8 --seeds 1,2
-#   scripts/predevent.sh main --seeds 5-12 --worlds catch,forage --arms born,pred,old,ev15f8,ev15f8c,ev15f8s
-#   scripts/predevent.sh main --table-only                the tables from finished runs
-#   scripts/predevent.sh task --base one --worlds catch,forage,order,delayed2 --arms pred,ev15f8
+#   scripts/predevent.sh screen --seeds 1,2 --worlds catch,forage --arms born,pred,old,ev1f0,ev1f8
+#   scripts/predevent.sh time --seeds 5-12 --worlds delayed-echo,predict-next --arms born,predo2,ev15f0o2,ev15f0o2c,ev15f0o2s
+#   scripts/predevent.sh time --table-only --as time8 --seeds 5-12 ...   tables from finished runs, saved as time8.md
+#   scripts/predevent.sh task1 --base one --worlds catch,forage,order,delayed2 --arms predo2,ev14f0o2
+#   scripts/predevent.sh moved movedtest --test --seeds 5-12 --arms born,moved,movedc,moveds
 # --worlds all is idea 164's ten; order, gap, delayed2 are rows of the quick map with time in
 # them. --base predhop (default: idea 164's button rule), one (the one setting's button
 # rule), onenw (the same without the backward walk). --steps N (20000), --trials N (3000),
@@ -29,6 +33,11 @@
 # (the read's moves are the frozen sheet's own buttons, not a coin).
 # Writes out/predevent/NAME/ (a log and csv per run), NAME.md and NAME.csv. Finished runs are
 # kept: running a line again only runs what is missing.
+# moved NAME (scripts/predmoved.py, part 4): MNIST lives in which each digit is shown for 3
+# steps, a pixel further each step, and an outside predictor's next-frame errors teach the
+# cells; then the usual frozen read on the usual labels. Arms born, off (the rule off),
+# moved, movedc (coin), moveds (pixels shuffled every step), a k after any for the rate held
+# at target; --test for the test digits (default: the validation slice), --life N digits.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mnist_here() { [ -d data/mnist ] || [ -n "${THONK_MNIST:-}" ]; }

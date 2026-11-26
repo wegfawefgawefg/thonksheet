@@ -60,8 +60,11 @@ def main():
         for arm in opt["arms"]:
             cmd = ["nice", "-n", "19", inside.MNIST, "ceiling"] + inside.SHEET + inside.READER + [
                 "--fit", str(opt["fit"]), "--seed", str(s)]
-            if ARMS[arm] is not None:
-                cmd += ["--life", str(opt["life"])] + ARMS[arm].split()
+            # a k after the name: the rate held at target in the life and the read
+            flags = ARMS[arm[:-1] if arm.endswith("k") else arm]
+            if flags is not None:
+                cmd += ["--life", str(opt["life"])] + flags.split()
+            cmd += ["--g.threshold_cap", "1000"] if arm.endswith("k") else []
             cmd += ["--val", "1"] if opt["val"] else []
             cmd += ["--test-count", "2000"] if opt["quick"] else []
             jobs.append((cmd, os.path.join(folder, "%s-%d.txt" % (arm, s))))
