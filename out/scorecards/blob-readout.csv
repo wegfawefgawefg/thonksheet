@@ -4,8 +4,8 @@ about,flags,,,,,,--g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g
 about,life,,,,,,--ticks 20 --sensor-side 3 --motor-side 3 --steps 40000 --window 1000
 about,seeds,,,,,,5 6 7 8 9 10 11 12
 about,date,,,,,,2026-11-25
-about,commit,,,,,,e733173
-about,wall,,,,,,"55 min, 2 runs at a time"
+about,commit,,,,,,
+about,wall,,,,,,"1195 min, 2 runs at a time"
 about,speed,,,,,,"single core under nice -n 19, CPU clock capped at about 4.6 GHz, other agents' runs on the machine: not comparable with quiet runs"
 about,frozen readout,,,,,,yes
 learns at all,echo k=2,1,0,0.51875,0.498062,8,--capacity --steps 40000 --window 1000
@@ -17,8 +17,8 @@ a sense of time,"beat, every 4 steps",0.498458,0.0163123,0.507896,0.502521,8,--t
 a sense of time,"sequence, 8 lines x 4 (prediction)",0.570663,0.0187804,0.570663,0.500212,8,--task sequence --steps 40000 --window 1000
 a sense of time,"sequence, surprise falling (late - early)",0.00361849,0.00373183,0.00361849,0.000401909,8,--task sequence --steps 40000 --window 1000
 acting in a world,catch 4x4,0.317528,0.0133843,0.249066,0.251595,8,--task catch --catch-size 4 4 --steps 40000 --window 1000
-acting in a world,"cartpole, lean reward (steps per fall)",17.6048,0.436458,19.3685,22.2844,8,--task cartpole --sensor-side 2 --cart-reward lean --number-code place --steps 40000 --window 1000
-acting in a world,"cartpole, sparse reward (steps per fall)",14.187,1.5153,18.8822,22.2844,8,--task cartpole --sensor-side 2 --cart-reward sparse --number-code place --steps 40000 --window 1000
+acting in a world,"cartpole, lean reward (steps per fall)",19.955,0.574431,18.1766,20.6946,8,--task cartpole --sensor-side 2 --cart-reward lean --number-code place --steps 40000 --window 1000
+acting in a world,"cartpole, sparse reward (steps per fall)",22.2603,11.099,18.118,20.6946,8,--task cartpole --sensor-side 2 --cart-reward sparse --number-code place --steps 40000 --window 1000
 reach,cue readable how far (tiles),3.375,0.517549,3.375,,8,--reach --reach-settle 30000 --reach-blocks 4000
 reach,cue readable at 1 tiles,9.5423,0.40179,9.5423,,8,--reach --reach-settle 30000 --reach-blocks 4000
 reach,cue readable at 2 tiles,1.89529,0.13179,1.89529,,8,--reach --reach-settle 30000 --reach-blocks 4000
@@ -60,8 +60,123 @@ stays alive,"share of silent neurons, end of echo k=2 life",0,0,0,,8,--capacity 
 stays alive,"share of stuck neurons, end of echo k=2 life",0,0,0,,8,--capacity --steps 40000 --window 1000
 stays alive,"rhythm period (ticks, 0 none), end of echo k=2 life",24.75,0.886405,24.5,,8,--capacity --steps 40000 --window 1000
 stays alive,"rhythm strength, end of echo k=2 life",0.576294,0.0735137,0.560233,,8,--capacity --steps 40000 --window 1000
-fits the machine,ticks/s in the echo k=2 life,63337.1,1290.89,62607.4,,8,--capacity --steps 40000 --window 1000
-fits the machine,"ticks/s at 8x8 tiles, random input",64472.3,,,,1,--speed
-fits the machine,"ticks/s at 16x16 tiles, random input",14637.5,,,,1,--speed
-fits the machine,"ticks/s at 32x32 tiles, random input",3682.97,,,,1,--speed
-fits the machine,bytes per neuron (32x32 tiles),212.382,,,,1,--speed
+fits the machine,ticks/s in the echo k=2 life,11009,236.847,11067.3,,8,--capacity --steps 40000 --window 1000
+fits the machine,"ticks/s at 8x8 tiles, random input",10708,,,,1,--speed
+fits the machine,"ticks/s at 16x16 tiles, random input",2614.92,,,,1,--speed
+fits the machine,"ticks/s at 32x32 tiles, random input",638.954,,,,1,--speed
+fits the machine,bytes per neuron (32x32 tiles),213.695,,,,1,--speed
+map: relation,"same-easy: same or different, side by side, 4 one-line items",0.6625,0.0139027,0.48775,0.495875,8,--task same --item-lines 4 --item-on 1 --steps 40000 --window 1000
+map: relation,"same-hard: same or different, side by side, 3-of-6 items, 6 never taught",0.532988,0.030984,0.483689,0.496025,8,--task same --item-lines 6 --item-on 3 --hold 6 --steps 40000 --window 1000
+map: relation,"same-then-easy: same or different, one after the other, 4 items",0.53425,0.0132638,0.4835,0.485375,8,--task same-then --item-lines 4 --item-on 1 --steps 40000 --window 1000
+map: relation,"same-then-hard: same or different, one after the other, 6 never taught",0.513311,0.0272793,0.503212,0.485524,8,--task same-then --item-lines 6 --item-on 3 --hold 6 --steps 40000 --window 1000
+map: relation,"odd-easy: odd one out of 3, 4 one-line items",0.386062,0.0178914,0.310688,0.32175,8,--task odd-one --k 3 --item-lines 4 --item-on 1 --steps 40000 --window 1000
+map: relation,"odd-hard: odd one out of 4, 2-of-5 items, 4 never taught",0.210112,0.0230922,0.229419,0.235022,8,--task odd-one --k 4 --item-lines 5 --item-on 2 --hold 4 --steps 40000 --window 1000
+map: relation,"bigger-easy: which of two is bigger, 6 levels",0.974063,0.00700733,0.454937,0.497375,8,--task bigger --item-lines 6 --steps 40000 --window 1000
+map: relation,"bigger-hard: which of two is bigger, 10 levels, always neighbours",0.682688,0.041509,0.479125,0.485,8,--task bigger --item-lines 10 --diff-max 1 --steps 40000 --window 1000
+map: relation,"analogy-easy: A:B as C:which, shift or mirror, 2 candidates",0.47375,0.0167038,0.475781,0.490312,8,--task analogy --k 2 --item-lines 6 --steps 40000 --window 1000
+map: relation,"analogy-hard: A:B as C:which, shift, mirror or add, C never taught",0.317913,0.0402788,0.314227,0.299595,8,--task analogy --k 3 --item-lines 6 --hold 3 --steps 40000 --window 1000
+map: number,"how-many-easy: how many dots, 1 to 3",0.371437,0.01224,0.31825,0.326437,8,--task how-many --k 3 --sensor-side 2 --steps 40000 --window 1000
+map: number,"how-many-hard: how many items, 1 to 5, mixed sizes, area matched",0.184812,0.0076762,0.187125,0.196375,8,--task how-many --k 5 --varied 1 --sensor-side 2 --steps 40000 --window 1000
+map: number,"more-fewer-easy: more or fewer dots than last time, 1 to 5",0.70367,0.0285201,0.477113,0.483031,8,--task more-fewer --k 5 --sensor-side 2 --steps 40000 --window 1000
+map: number,"more-fewer-hard: more or fewer than last time, mixed sizes",0.560007,0.0102672,0.477122,0.496156,8,--task more-fewer --k 5 --varied 1 --sensor-side 2 --steps 40000 --window 1000
+map: parts,"grammar-easy: Reber string allowed or not, up to 8 symbols",0.481404,0.0286299,0.477859,0.499132,8,--task grammar --length 8 --steps 40000 --window 1000
+map: parts,"grammar-hard: Reber string allowed or not, up to 14 symbols",0.483489,0.0272194,0.475866,0.503236,8,--task grammar --length 14 --steps 40000 --window 1000
+map: parts,"brackets-easy: brackets balanced or not, 8 symbols",0.513437,0.0143264,0.480625,0.499375,8,--task brackets --length 8 --steps 40000 --window 1000
+map: parts,"brackets-hard: brackets balanced or not, 12 symbols",0.515167,0.0478121,0.475529,0.472124,8,--task brackets --length 12 --steps 40000 --window 1000
+map: parts,parts-easy: two parts of two kinds at fixed spots: the ordered pair,0.479312,0.114835,0.236063,0.242688,8,--task parts --k 2 --sensor-side 2 --steps 40000 --window 1000
+map: parts,"parts-hard: two parts of three kinds anywhere, touching: the pair",0.154812,0.0185356,0.151,0.154,8,--task parts --k 3 --varied 1 --sensor-side 2 --steps 40000 --window 1000
+map: chance,"noisy-echo-easy: echo, reward true 80 in 100",0.771344,0.00928126,0.524969,0.498563,8,--task noisy-echo --right-pct 80 --steps 40000 --window 1000
+map: chance,"noisy-echo-hard: echo, reward true 60 in 100",0.570063,0.00946304,0.522813,0.498563,8,--task noisy-echo --right-pct 60 --steps 40000 --window 1000
+map: chance,rare-cue-easy: a cue one try in 10 (balanced score),1,0,0.535769,0.485041,8,--task rare-cue --rare 10 --steps 40000 --window 1000
+map: chance,rare-cue-hard: a cue one try in 40 (balanced score),1,0,0.550553,0.487581,8,--task rare-cue --rare 40 --steps 40000 --window 1000
+map: chance,"noisy-lines-easy: 2 patterns on 8 lines, 10 in 100 flipped",0.99075,0.00202661,0.532813,0.496031,8,--task noisy-lines --k 2 --item-lines 8 --flip-pct 10 --steps 40000 --window 1000
+map: chance,"noisy-lines-hard: 4 patterns on 8 lines, 25 in 100 flipped",0.323281,0.0418598,0.235906,0.243188,8,--task noisy-lines --k 4 --item-lines 8 --flip-pct 25 --steps 40000 --window 1000
+map: context,"context-easy: context line flips the rule, shown with the cue",0.926875,0.0179826,0.488063,0.496031,8,--task context --k 2 --steps 40000 --window 1000
+map: context,"context-hard: 4 cues, the context a step before the cue",0.286625,0.0384185,0.237813,0.245938,8,--task context --k 4 --context-early 1 --steps 40000 --window 1000
+map: context,"switch-easy: rule changes every 500 tries, no signal",0.937969,0.00421188,0.486812,0.494594,8,--task switch-rule --switch-every 500 --steps 40000 --window 1000
+map: context,"switch-hard: rule changes every 50 tries, no signal",0.636219,0.0139049,0.486438,0.492969,8,--task switch-rule --switch-every 50 --steps 40000 --window 1000
+map: memory,copy-easy: copy 2 cues of 2 back in order,0.656406,0.0314134,0.469844,0.499453,8,--task copy --k 2 --length 2 --steps 40000 --window 1000
+map: memory,copy-hard: copy 2 to 6 cues of 4 back in order,0.206569,0.0134231,0.236088,0.238543,8,--task copy --k 4 --length 6 --steps 40000 --window 1000
+map: memory,"recall-easy: the marked cue of 2, one other between",0.6905,0.0535164,0.4695,0.49975,8,--task recall --k 2 --fill 1 --steps 40000 --window 1000
+map: memory,"recall-hard: the marked cue of 4, four others between",0.203453,0.015037,0.22465,0.25,8,--task recall --k 4 --fill 4 --steps 40000 --window 1000
+map: memory,"n-back-easy: same as 1 step ago, 4 symbols",0.71425,0.0203171,0.48025,0.496812,8,--task n-back --k 4 --back 1 --steps 40000 --window 1000
+map: memory,"n-back-hard: same as 2 steps ago, 4 symbols",0.495125,0.00776209,0.481438,0.494281,8,--task n-back --k 4 --back 2 --steps 40000 --window 1000
+map: no teacher,predict-easy: next of 4 symbols from the last one (7 in 8),0.522986,0.0486303,0.522986,0.499882,8,--task predict-next --k 4 --markov-order 1 --steps 40000 --window 1000
+map: no teacher,predict-hard: next of 4 symbols from the last two (7 in 8),0.464999,0.0738698,0.464999,0.500031,8,--task predict-next --k 4 --markov-order 2 --steps 40000 --window 1000
+map: no teacher,"fill-in-easy: 2 patterns on 8 lines, half blanked 1 step in 4",-0.0634868,0.0812172,-0.0634868,-0.000340221,8,--task fill-in --k 2 --item-lines 8 --steps 40000 --window 1000
+map: no teacher,"fill-in-hard: 6 patterns on 8 lines, half blanked 1 step in 4",-0.045309,0.0483063,-0.045309,-0.000751528,8,--task fill-in --k 6 --item-lines 8 --steps 40000 --window 1000
+map: no teacher,odd-event-easy: a cycle of 4 symbols broken 1 step in 8,0.0637244,0.0465456,0.0637244,0.000626287,8,--task odd-event --k 4 --rare 8 --steps 40000 --window 1000
+map: no teacher,odd-event-hard: a cycle of 6 symbols broken 1 step in 8,0.0404103,0.0564459,0.0404103,0.000694376,8,--task odd-event --k 6 --rare 8 --steps 40000 --window 1000
+map: shown,"shown-echo2: echo k=2: shown the answer, then tested (no reward), teach_end",1,0,1,0.498062,8,--task echo --shown 6 --steps 40000 --window 200 --retest 10000
+map: shown,"shown-echo2: echo k=2: shown the answer, then tested (no reward), test_start",0.509375,0.0235186,0.509375,0.503125,8,--task echo --shown 6 --steps 40000 --window 200 --retest 10000
+map: shown,"shown-echo2: echo k=2: shown the answer, then tested (no reward), test_mean",0.498038,0.00587171,0.498038,0.493525,8,--task echo --shown 6 --steps 40000 --window 200 --retest 10000
+map: shown,"shown-echo4: echo k=4: shown the answer, then tested (no reward), teach_end",1,0,1,0.242125,8,--task echo --k 4 --shown 6 --steps 40000 --window 200 --retest 10000
+map: shown,"shown-echo4: echo k=4: shown the answer, then tested (no reward), test_start",0.254375,0.0156838,0.254375,0.226875,8,--task echo --k 4 --shown 6 --steps 40000 --window 200 --retest 10000
+map: shown,"shown-echo4: echo k=4: shown the answer, then tested (no reward), test_mean",0.247388,0.00154313,0.247388,0.240613,8,--task echo --k 4 --shown 6 --steps 40000 --window 200 --retest 10000
+map: shown,"shown-xor: both-not-either: shown the answer, then tested (no reward), teach_end",1,0,1,0.49425,8,--task both-not-either --shown 6 --steps 40000 --window 200 --retest 10000
+map: shown,"shown-xor: both-not-either: shown the answer, then tested (no reward), test_start",0.50375,0.057802,0.50375,0.5,8,--task both-not-either --shown 6 --steps 40000 --window 200 --retest 10000
+map: shown,"shown-xor: both-not-either: shown the answer, then tested (no reward), test_mean",0.500225,0.00727771,0.500225,0.492725,8,--task both-not-either --shown 6 --steps 40000 --window 200 --retest 10000
+map: damage,"damage5: echo k=2, then 5 in 100 cells silenced, before",1,0,0.51875,0.498062,8,--task echo --damage 5 --steps 40000 --window 200 --retest 10000
+map: damage,"damage5: echo k=2, then 5 in 100 cells silenced, after_start",1,0,0.5375,0.503125,8,--task echo --damage 5 --steps 40000 --window 200 --retest 10000
+map: damage,"damage5: echo k=2, then 5 in 100 cells silenced, after_end",1,0,0.53975,0.49075,8,--task echo --damage 5 --steps 40000 --window 200 --retest 10000
+map: damage,"damage20: echo k=2, then 20 in 100 cells silenced, before",1,0,0.51875,0.498062,8,--task echo --damage 20 --steps 40000 --window 200 --retest 10000
+map: damage,"damage20: echo k=2, then 20 in 100 cells silenced, after_start",1,0,0.490625,0.503125,8,--task echo --damage 20 --steps 40000 --window 200 --retest 10000
+map: damage,"damage20: echo k=2, then 20 in 100 cells silenced, after_end",1,0,0.515625,0.49075,8,--task echo --damage 20 --steps 40000 --window 200 --retest 10000
+map: damage,"damage50: echo k=2, then 50 in 100 cells silenced, before",1,0,0.51875,0.498062,8,--task echo --damage 50 --steps 40000 --window 200 --retest 10000
+map: damage,"damage50: echo k=2, then 50 in 100 cells silenced, after_start",0.998125,0.0053033,0.49375,0.503125,8,--task echo --damage 50 --steps 40000 --window 200 --retest 10000
+map: damage,"damage50: echo k=2, then 50 in 100 cells silenced, after_end",1,0,0.501625,0.49075,8,--task echo --damage 50 --steps 40000 --window 200 --retest 10000
+map: damage,"damage-tile: echo k=2, then the cue tile silenced, before",1,0,0.51875,0.498062,8,--task echo --damage-tile 1 --steps 40000 --window 200 --retest 10000
+map: damage,"damage-tile: echo k=2, then the cue tile silenced, after_start",1,0,0.5325,0.503125,8,--task echo --damage-tile 1 --steps 40000 --window 200 --retest 10000
+map: damage,"damage-tile: echo k=2, then the cue tile silenced, after_end",1,0,0.5195,0.49075,8,--task echo --damage-tile 1 --steps 40000 --window 200 --retest 10000
+map: damage,"damage20-xor: both-not-either, then 20 in 100 cells silenced, before",0.883313,0.0396682,0.488687,0.49425,8,--task both-not-either --damage 20 --steps 40000 --window 200 --retest 10000
+map: damage,"damage20-xor: both-not-either, then 20 in 100 cells silenced, after_start",0.8125,0.064087,0.48125,0.5,8,--task both-not-either --damage 20 --steps 40000 --window 200 --retest 10000
+map: damage,"damage20-xor: both-not-either, then 20 in 100 cells silenced, after_end",0.8695,0.0314006,0.48,0.489,8,--task both-not-either --damage 20 --steps 40000 --window 200 --retest 10000
+fixed functions (the battery),points: parity of 3 lines,0.541312,0.0196831,0.490437,0.48775,8,--task points --fn parity --fn-lines 3 --steps 40000 --window 1000
+fixed functions (the battery),points: parity of 4 lines,0.475625,0.0127104,0.481687,0.494312,8,--task points --fn parity --fn-lines 4 --steps 40000 --window 1000
+fixed functions (the battery),points: majority of 5 lines,0.948187,0.00968038,0.479875,0.492875,8,--task points --fn majority --fn-lines 5 --steps 40000 --window 1000
+fixed functions (the battery),points: how many of 4 lines are on (5 buttons),0.3065,0.0168798,0.181375,0.195563,8,--task points --fn count --fn-lines 4 --steps 40000 --window 1000
+fixed functions (the battery),"number: band of sine(x), 16 lines, 4 bands, x never rewarded",0.211922,0.0453083,0.210427,0.248981,8,--task number --fn sine --fn-lines 16 --fn-bands 4 --fn-hold 3 --sensor-side 2 --steps 40000 --window 1000
+fixed functions (the battery),"two numbers: product above or below half, 8 lines each",0.939812,0.0111225,0.498875,0.500625,8,--task two-numbers --fn product --fn-lines 8 --fn-bands 2 --sensor-side 2 --steps 40000 --window 1000
+fixed functions (the battery),"past: the first of 2 items, 2 blank steps between",0.554531,0.0239227,0.473906,0.483125,8,--task past --fn recall --fn-gap 2 --steps 40000 --window 1000
+fixed functions (the battery),"past: the last 2 items the same, back to back",0.820799,0.0478603,0.483872,0.489212,8,--task past --fn same --fn-gap 0 --steps 40000 --window 1000
+more worlds (idea 63),"bandit, 2 buttons (share on the best)",0.773938,0.00754481,0.39375,0.490063,8,--task bandit --steps 40000 --window 1000
+more worlds (idea 63),"bandit, 4 buttons (share on the best)",0.467875,0.0201095,0.203656,0.240844,8,--task bandit --k 4 --steps 40000 --window 1000
+more worlds (idea 63),"switching bandit, every 1,000 steps (best share, late in each block)",0.766813,0.0114516,0.486687,0.493437,8,--task switch-bandit --steps 40000 --window 1000
+more worlds (idea 63),"chain A then B, stage shown (2 x chains / steps)",0.719875,0.0380561,0.239063,0.332125,8,--task chain --steps 40000 --window 1000
+more worlds (idea 63),"chain A then B, stage not shown (2 x chains / steps)",0.001375,0.00112599,0.283813,0.332125,8,--task chain --chain-cue 0 --steps 40000 --window 1000
+more worlds (idea 63),"track 5, nearer good (share of steps nearer)",0.308563,0.0841145,0.382344,0.493938,8,--task track --steps 40000 --window 1000
+more worlds (idea 63),"track 5, arrival only (share of steps nearer)",0.487563,0.0272376,0.402719,0.492156,8,--task track --track-reward arrive --steps 40000 --window 1000
+more worlds (idea 63),"forage 5x5, warmer (share of steps nearer)",0.642625,0.0596735,0.384281,0.411531,8,--task forage --sensor-side 2 --steps 40000 --window 1000
+more worlds (idea 63),"forage 5x5, arrival only (share of steps nearer)",0.410438,0.0220259,0.380469,0.409969,8,--task forage --forage-warmer 0 --sensor-side 2 --steps 40000 --window 1000
+more worlds (idea 63),"mountain car, energy reward (share of episodes at the goal)",0.940848,0.155066,0,0,8,--task mountain-car --sensor-side 2 --number-code place --steps 40000 --window 1000
+more worlds (idea 63),"pendulum swing-up, energy reward (share of steps upright)",0.227125,0.0104078,0.0644062,0.0521563,8,--task pendulum --sensor-side 2 --number-code place --steps 40000 --window 1000
+more worlds (idea 63),"cartpole, lean reward, wide starts (steps per fall)",17.921,0.564586,16.285,20.1008,8,--task cartpole --cart-reward lean --cart-start wide --sensor-side 2 --number-code place --steps 40000 --window 1000
+more worlds (idea 63),"cartpole, relative reward (steps per fall)",18.1552,0.711797,17.6741,20.6946,8,--task cartpole --cart-reward relative --sensor-side 2 --number-code place --steps 40000 --window 1000
+more worlds (idea 63),"cartpole, lean reward, semi-implicit: a step's reward judges its press (steps per fall)",19.955,0.574431,18.1766,20.6946,8,--task cartpole --cart-reward lean --cart-integrator semi --sensor-side 2 --number-code place --steps 40000 --window 1000
+invariance,position: a shape at a place never rewarded,0.48744,0.0626117,0.478893,0.499205,8,--task inv-position --sensor-side 1 --steps 40000 --window 1000
+invariance,position: on the rewarded versions,0.742373,0.0283018,0.47883,0.493307,8,--task inv-position --sensor-side 1 --steps 40000 --window 1000
+invariance,scale: a shape at a size never rewarded (1x),0.690265,0.085341,0.487643,0.50678,8,--task inv-scale --sensor-side 1 --steps 40000 --window 1000
+invariance,scale: on the rewarded versions,0.991152,0.00459733,0.471926,0.497593,8,--task inv-scale --sensor-side 1 --steps 40000 --window 1000
+invariance,rotation: a shape turned in a way never rewarded,0.359455,0.0375156,0.479389,0.498707,8,--task inv-rotation --sensor-side 1 --steps 40000 --window 1000
+invariance,rotation: on the rewarded versions,0.943359,0.0187082,0.487129,0.502872,8,--task inv-rotation --sensor-side 1 --steps 40000 --window 1000
+invariance,bright: a shape dimmer than ever rewarded (control),0.578899,0.0293455,0.48072,0.494381,8,--task inv-bright --sensor-side 1 --steps 40000 --window 1000
+invariance,bright: on the rewarded versions,0.976046,0.00757577,0.479593,0.503909,8,--task inv-bright --sensor-side 1 --steps 40000 --window 1000
+invariance,clutter: a shape in more clutter than ever rewarded,0.754561,0.0281673,0.477865,0.492235,8,--task inv-clutter --sensor-side 1 --steps 40000 --window 1000
+invariance,clutter: on the rewarded versions,0.948487,0.0185731,0.479273,0.492179,8,--task inv-clutter --sensor-side 1 --steps 40000 --window 1000
+invariance,mixed: a size at a place never rewarded together,0.71706,0.0314698,0.484179,0.505746,8,--task inv-mixed --sensor-side 1 --steps 40000 --window 1000
+invariance,mixed: on the rewarded versions,0.877936,0.0223433,0.489865,0.495355,8,--task inv-mixed --sensor-side 1 --steps 40000 --window 1000
+invariance,view: a 3D object from angles never rewarded,0.570525,0.104513,0.485832,0.506979,8,--task inv-view --sensor-side 1 --steps 40000 --window 1000
+invariance,view: on the rewarded versions,0.970938,0.0077679,0.481724,0.496948,8,--task inv-view --sensor-side 1 --steps 40000 --window 1000
+invariance,shift: a tune starting at a time never rewarded,0.586153,0.0407356,0.478834,0.489094,8,--task inv-shift --sensor-side 3 --steps 40000 --window 1000
+invariance,shift: on the rewarded versions,0.557757,0.0143185,0.47205,0.48786,8,--task inv-shift --sensor-side 3 --steps 40000 --window 1000
+invariance,tempo: a tune faster than ever rewarded,0.449907,0.0179738,0.461341,0.514169,8,--task inv-tempo --sensor-side 3 --steps 40000 --window 1000
+invariance,tempo: on the rewarded versions,0.712685,0.0370122,0.488237,0.495327,8,--task inv-tempo --sensor-side 3 --steps 40000 --window 1000
+invariance,pitch: a tune at a pitch never rewarded,0.468954,0.0282935,0.464786,0.497994,8,--task inv-pitch --sensor-side 1 --steps 40000 --window 1000
+invariance,pitch: on the rewarded versions,0.507712,0.0168211,0.49564,0.491734,8,--task inv-pitch --sensor-side 1 --steps 40000 --window 1000
+invariance,"position + motion (half the life drifting), held out",0.479002,0.0548532,0.494693,0.49669,8,--task inv-position --sensor-side 1 --inv-motion 50 --inv-motion-steps 8 --steps 40000 --window 1000
+invariance,"scale + motion (half the life drifting), held out",0.679563,0.0925393,0.488489,0.511625,8,--task inv-scale --sensor-side 1 --inv-motion 50 --inv-motion-steps 8 --steps 40000 --window 1000
+invariance,"rotation + motion (half the life drifting), held out",0.358681,0.0247341,0.496649,0.489408,8,--task inv-rotation --sensor-side 1 --inv-motion 50 --inv-motion-steps 8 --steps 40000 --window 1000
+invariance,"bright + motion (half the life drifting), held out",0.532663,0.0335992,0.477704,0.489528,8,--task inv-bright --sensor-side 1 --inv-motion 50 --inv-motion-steps 8 --steps 40000 --window 1000
+invariance,"clutter + motion (half the life drifting), held out",0.720936,0.0196103,0.485593,0.481,8,--task inv-clutter --sensor-side 1 --inv-motion 50 --inv-motion-steps 8 --steps 40000 --window 1000
+invariance,"mixed + motion (half the life drifting), held out",0.683065,0.0284008,0.471253,0.507535,8,--task inv-mixed --sensor-side 1 --inv-motion 50 --inv-motion-steps 8 --steps 40000 --window 1000
+invariance,"view + motion (half the life drifting), held out",0.556775,0.0846179,0.475859,0.480706,8,--task inv-view --sensor-side 1 --inv-motion 50 --inv-motion-steps 8 --steps 40000 --window 1000
