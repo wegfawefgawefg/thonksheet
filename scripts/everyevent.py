@@ -67,6 +67,8 @@ ARMS = {
     "outwhen": (outside(EV + " --outside-form 1"), "--life-outside-coin 1"),
     "outsigns": (outside(EV + " --outside-form 2"), "--life-outside-coin 1"),
     # the softmax output with a wider fine zone (the ladder's was 0.1, not tuned)
+    "outf05": (outside(EV + " --outside-fine-1000 50"), "--life-outside-coin 1"),
+    "outf2": (outside(EV + " --outside-fine-1000 200"), "--life-outside-coin 1"),
     "outf3": (outside(EV + " --outside-fine-1000 300"), "--life-outside-coin 1"),
     "outf5": (outside(EV + " --outside-fine-1000 500"), "--life-outside-coin 1"),
     # the outside output in whole numbers (a perceptron with a margin, no floats)
@@ -94,6 +96,12 @@ ARMS = {
                 " --outside-form 3 --outside-margin 2", "--life-outside-coin 1"),
     # the same errors and learners on the old counters (6-bit, chance 2^-3): the ladder's T7
     "out6all": (outside(HOP + " --g.hop_shift 3" + ALL), "--life-outside-coin 1"),
+    # out and outf3 on the old counters (6 bits, chance 2^-3 or 2^-5: the ladder's picks
+    # for MNIST and for the pair test): what the every-event step is worth beside them
+    "out6s3": (outside(HOP + " --g.hop_shift 3"), "--life-outside-coin 1"),
+    "out6s5": (outside(HOP + " --g.hop_shift 5"), "--life-outside-coin 1"),
+    "outf36s3": (outside(HOP + " --g.hop_shift 3 --outside-fine-1000 300"), "--life-outside-coin 1"),
+    "outf36s5": (outside(HOP + " --g.hop_shift 5 --outside-fine-1000 300"), "--life-outside-coin 1"),
     # piece 4: the model's other differences, on out and on outall
     "out64": (outside(EV + " --g.hop_rewire_every 64"), "--life-outside-coin 1"),
     "outloose": (outside(EV + " --g.hop_loose 1"), "--life-outside-coin 1"),
@@ -122,26 +130,28 @@ RECIPES = {
         "outint", "outint2", "outint32", "out16"], "coins": [], "shuffled": []},
     "pick5": {"kind": "sheet", "val": True, "seeds": [1, 2], "arms": [
         "outint0", "outint1"], "coins": [], "shuffled": []},
-    "pick6": {"kind": "sheet", "val": True, "seeds": [1, 2], "arms": ["outf3", "outf5"],
-              "coins": [], "shuffled": []},
+    "pick6": {"kind": "sheet", "val": True, "seeds": [1, 2], "arms": [
+        "outf05", "outf2", "outf3", "outf5"], "coins": [], "shuffled": []},
     # piece 4 on the validation slice (only if pieces 1 to 3 leave a gap)
     "pick4": {"kind": "sheet", "val": True, "seeds": [1, 2], "arms": [
         "out64", "outloose", "outboth", "out9", "outallboth"], "coins": [], "shuffled": []},
     # the report: test digits, seeds 5-12, the key arms beside born, coin and shuffled lives
+    # (out: the ladder's rule as it was, fine 0.1, best on MNIST on the validation slice;
+    # outf3: fine 0.3, best on the pair test there; outint2: the whole-number output)
     "report": {"kind": "sheet", "val": False, "seeds": list(range(5, 13)), "arms": [
-        "born", "out", "outall", "outint2"], "coins": ["out", "outall", "outint2"],
-        "shuffled": ["out", "outall", "outint2"]},
-    # the pieces beside them, seeds 5-8 (same folder as report: one table)
-    "pieces": {"kind": "sheet", "val": False, "seeds": [5, 6, 7, 8], "folder": "report", "arms": [
-        "born", "old", "ev3", "ev2", "ev5", "out6all", "outi", "out", "outall", "outint2"],
-        "coins": ["ev3", "ev5", "out", "outall", "outint2"], "shuffled": []},
+        "born", "out", "outf3", "outint2"], "coins": ["out", "outf3", "outint2"],
+        "shuffled": ["out", "outf3"]},
+    # the pieces beside them, seeds 5-7 (same folder as report: one table)
+    "pieces": {"kind": "sheet", "val": False, "seeds": [5, 6, 7], "folder": "report", "arms": [
+        "born", "old", "ev3", "ev2", "ev5", "out6s3", "out6s5", "outf36s3", "outf36s5",
+        "outall", "out", "outf3", "outint2"],
+        "coins": ["ev3", "ev5", "outall", "out", "outf3", "outint2"], "shuffled": []},
     # the rate held at target, MNIST, seeds 5-8
     "cap": {"kind": "sheet", "val": False, "seeds": [5, 6, 7, 8], "extra": CAP,
-            "arms": ["born", "out", "outall"], "coins": ["out", "outall"], "shuffled": [],
-            "tests": ["mnist"]},
+            "arms": ["born", "out"], "coins": ["out"], "shuffled": [], "tests": ["mnist"]},
     # the sheet's own readout during a judged MNIST life, seeds 5-8: the rule off, the old
     # rule, every-event from the answer and from the votes, and the outside errors
-    "online": {"kind": "sheet", "val": False, "seeds": [5, 6, 7, 8], "folder": "report",
+    "online": {"kind": "sheet", "val": False, "seeds": [5, 6, 7], "folder": "report",
                "arms": ["off", "old", "ev3", "ev2", "ev5", "outj", "outintj"], "coins": [],
                "shuffled": []},
     # the life's speed, one run at a time (--jobs 1): judged MNIST lives and unjudged ones
@@ -161,8 +171,8 @@ RECIPES = {
         ("evcoin", EV + " --g.hop_coin 1", ""), ("evshuffled", EV, "--life-scramble 1")]},
     # one seed, short lives, every part
     "smoke": {"kind": "sheet", "val": True, "seeds": [1], "arms": [
-        "born", "old", "ev3", "ev3all", "ev5", "outall"], "coins": ["ev5", "outall"],
-        "shuffled": ["outall"], "then": ["toys", "calc"]},
+        "born", "old", "ev3", "ev3all", "ev5", "out", "outall", "outint2", "outj"],
+        "coins": ["ev5", "out"], "shuffled": ["out"], "then": ["toys", "calc"]},
 }
 
 
