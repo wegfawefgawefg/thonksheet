@@ -135,7 +135,7 @@ def reuse_repeat(outdir):
     """the base and frozen reads of the repeatability job (the same code, the born sheet)"""
     src = os.path.join(MAIN, "repeat", "arms")
     for f in os.listdir(src) if os.path.isdir(src) else []:
-        if re.match(r"(base|freeze)-born-(mnist|pair)-\d+\.txt$", f) and not os.path.exists(
+        if re.match(r"(base|freeze|gap100)-born-(mnist|pair)-\d+\.txt$", f) and not os.path.exists(
                 os.path.join(outdir, f)):
             shutil.copyfile(os.path.join(src, f), os.path.join(outdir, f))
 
@@ -155,10 +155,19 @@ def read(name, cand, opt):
     ropt = {"seeds": opt["seeds"], "tasks": ["mnist", "pair"], "kinds": ["born"],
             "arms": [arm], "settle": 200 if q else 3000,
             "size": ["--fit", "3000", "--test-count", "1000"] if q else ["--fit", "60000"]}
+    # through a change: 100 quiet ticks after every digit (the standard: the gap100 arm)
+    gap = "gap100" if name == "std" else "rcg-" + name
+    if gap not in R.ARM:
+        R.ARMS.append((gap, "rate control %s, 100 quiet ticks after every digit" % name,
+                       cand + ["--gap", "100"]))
+        R.ARM[gap] = R.ARMS[-1]
+    gopt = dict(ropt, tasks=["mnist"], arms=[gap], seeds=opt["seeds"][:4])
     if not opt["table_only"]:
-        R.pool(R.jobs_for(outdir, ropt), opt["jobs"])
-    return {t: [R.parse(R.run_file(outdir, arm, "born", t, s)) for s in opt["seeds"]]
-            for t in ("mnist", "pair")}
+        R.pool(R.jobs_for(outdir, ropt) + R.jobs_for(outdir, gopt), opt["jobs"])
+    out = {t: [R.parse(R.run_file(outdir, arm, "born", t, s)) for s in opt["seeds"]]
+           for t in ("mnist", "pair")}
+    out["gap"] = [R.parse(R.run_file(outdir, gap, "born", "mnist", s)) for s in gopt["seeds"]]
+    return out
 
 
 # ---- 3. the latch ----

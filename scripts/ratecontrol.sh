@@ -18,6 +18,10 @@
 #   scripts/ratecontrol.sh table                 the five-test table of every candidate, from
 #                                                what has run (also: NAME --table-only)
 #   scripts/ratecontrol.sh smoke --quick         std and ac through every test, tiny, seed 5
+#   scripts/ratecontrol.sh learned ac            the learned latch under a candidate: competitive
+#                                                learning with strength from the counter
+#                                                (tag_counts 1); delayed echo 2-50, 1-back, copy;
+#                                                rule off, churn, frozen read, shuffled life
 # Options: --seeds 5-8, --jobs 3 (this PC: at most 3), --tests a,b, --quick, --table-only.
 # Runs in out/ratecontrol/ (out/ratecontrol-quick/ for --quick), quick-map lives in
 # out/oneset/cache*.jsonl; finished runs are kept and a line run again only runs what is

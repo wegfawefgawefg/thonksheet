@@ -78,10 +78,12 @@ def alive_row(res):
 def read_row(res):
     mn, pr = m(res["mnist"], "reader"), m(res["pair"], "reader")
     ok = mn is not None and pr is not None and mn >= HALF[0] and pr >= HALF[1]
-    return (mn, pr, m(res["mnist"], "corr"), m(res["mnist"], "rate")), ok
+    gap = res.get("gap", [])
+    return (mn, pr, m(res["mnist"], "corr"), m(res["mnist"], "rate"), m(gap, "rate"),
+            m(gap, "reader")), ok
 
 
-def latch_row(res, name):
+def latch_row(res, name, std_e2=None):
     traces = res["traces"]
     key = "loop inputs all strong, cap 1000" if name == "std" else list(traces)[-1]
     p = [x for x in traces[key] if x["vote"]]
@@ -93,7 +95,8 @@ def latch_row(res, name):
     ok = (v8 is not None and v8 >= 0.90 and v1 is not None and v1 >= 0.95 and rate is not None
           and rate <= 1.33 * 32 and (capped or 0) < 0.01)
     e2 = echo.get("delayed echo, 2 steps")
-    ok = ok and e2 is not None and e2 >= 0.913 - 0.03
+    # delayed echo at 2 steps against the standard control on the same seeds
+    ok = ok and e2 is not None and std_e2 is not None and e2 >= std_e2 - 0.03
     return (v1, vote(4), v8, v16, rate, echo), ok
 
 
@@ -139,11 +142,16 @@ def run_tests(name, opt, tests):
 
 def summary(names, opt, tests):
     head = ["| candidate | 1 alive: rate (lowest-highest of target), silent / stuck (i, ii), at "
-            "cap, gap jump, stage 0 | 2 read: MNIST / pairs (self-corr, rate) | 3 latch: vote "
+            "cap, gap jump, stage 0 | 2 read: MNIST / pairs (self-corr, rate); MNIST with 100 "
+            "quiet ticks a digit, at rate | 3 latch: vote "
             "b1 / b4 / b8 / b16, rate; delayed echo 2 / 3 / 4 / 8 | 4 pred: rate, at cap, bias "
             "at +max | 5 map: rows passed with (without) base / a2rucomp / best; worst of the "
             "four | passes |", "|---|---|---|---|---|---|---|"]
     detail = []
+    std_e2 = None
+    if "latch" in tests:
+        std = run_tests("std", dict(opt, table_only=True), ["latch"])["latch"]
+        std_e2 = mean([x[0] for x in std["echo"]["delayed echo, 2 steps"]])
     for name in names:
         r = run_tests(name, dict(opt, table_only=True), tests)
         cells, passes = [], 0
@@ -156,12 +164,13 @@ def summary(names, opt, tests):
                 " **pass**" if ok else ""))
             detail.append((name, d))
         if "read" in r:
-            (mn, pr, corr, rate), ok = read_row(r["read"])
+            (mn, pr, corr, rate, grate, gread), ok = read_row(r["read"])
             passes += ok
-            cells.append("%s / %s (%s, %s)%s" % (fmt(mn, 4), fmt(pr, 4), fmt(corr), fmt(rate, 0),
-                                                 " **pass**" if ok else ""))
+            cells.append("%s / %s (%s, %s); gap %s at %s%s" % (
+                fmt(mn, 4), fmt(pr, 4), fmt(corr), fmt(rate, 0), fmt(gread, 4), fmt(grate, 0),
+                " **pass**" if ok else ""))
         if "latch" in r:
-            (v1, v4, v8, v16, rate, echo), ok = latch_row(r["latch"], name)
+            (v1, v4, v8, v16, rate, echo), ok = latch_row(r["latch"], name, std_e2)
             passes += ok
             cells.append("%s / %s / %s / %s, %s; %s%s" % (
                 fmt(v1, 2), fmt(v4, 2), fmt(v8, 2), fmt(v16, 2), fmt(rate, 1),
@@ -197,6 +206,8 @@ def main():
     opt = {"seeds": None, "jobs": 3, "quick": False, "table_only": False, "extra": [],
            "tests": TESTS}
     what, i = argv[0], 1
+    if what == "learned" and len(argv) > 1:
+        what, i = "learned-" + argv[1], 2
     while i < len(argv):
         a = argv[i]
         if a in ("--quick", "--table-only"):
@@ -210,6 +221,17 @@ def main():
             return 1
         i += 1
     opt["out"] = os.path.join(ROOT, "out", "ratecontrol" + ("-quick" if opt["quick"] else ""))
+    if what.startswith("learned-"):
+        # the learned latch under one candidate (ratecontrol_latch.py)
+        import ratecontrol_latch as L
+        name = what[len("learned-"):]
+        o = dict(opt, seeds=opt["seeds"] or ([5] if opt["quick"] else list(range(5, 13))))
+        text = L.learned(name, CANDIDATES[name][1].split(), o)
+        os.makedirs(opt["out"], exist_ok=True)
+        with open(os.path.join(opt["out"], "%s.md" % what), "w") as f:
+            f.write(text + "\n")
+        print(text)
+        return 0
     if what == "smoke":
         names = ["std", "ac"]
     elif what in ("table", "all"):
