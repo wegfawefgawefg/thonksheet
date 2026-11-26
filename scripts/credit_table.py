@@ -39,8 +39,8 @@ def sort_key(arm):
     return (ORDER.index(name) if name in ORDER else 99, name, float(v) if v else 0.0)
 
 
-def load(outdir):
-    """model runs and real-sheet reads by (task, arm) and seed"""
+def load(outdir, seeds):
+    """model runs and real-sheet reads by (task, arm) and seed, of the seeds asked for"""
     runs, sheet, rate = {}, {}, {}
     for path in glob.glob(os.path.join(outdir, "*.json")):
         task, arm, seed = os.path.basename(path)[:-5].rsplit("-", 2)
@@ -57,6 +57,11 @@ def load(outdir):
         if score is not None:
             sheet.setdefault((task, "born"), {})[int(seed)] = score
             rate.setdefault((task, "born"), {})[int(seed)] = L2T.ceiling_rate(path)
+    for d in (runs, sheet, rate):
+        for key in list(d):
+            d[key] = {s: v for s, v in d[key].items() if s in seeds}
+            if not d[key]:
+                del d[key]
     return runs, sheet, rate
 
 
@@ -89,10 +94,11 @@ def field(rs, key, form="%.2f"):
 
 
 def table(outdir, opt):
-    runs, sheet, rate = load(outdir)
+    runs, sheet, rate = load(outdir, opt["seeds"])
     lines = ["the credit rules: %s digits. sheet: the wiring written into the real sheet, the "
              "tree's reader, mean (lowest-highest, seeds); rate: its hidden spikes per 1,000 "
-             "cell-ticks; coin: the same rule taught by another digit's signal, in the sheet; "
+             "cell-ticks; coin: the same rule taught by another digit's signal, in the sheet, "
+             "and its rate; "
              "- coin, - born, - T7x: seed by seed in the sheet (seeds above); model: the "
              "model's own reader (not to rank by); agree: share of teaching bits with "
              "backprop's sign (life / first 4,096 digits); taught: share of cell-digits "
@@ -103,8 +109,8 @@ def table(outdir, opt):
                        not a.partition("@")[0].endswith("coin")}, key=sort_key)
         born, hop = sheet.get((task, "born"), {}), sheet.get((task, "T7x"), {})
         lines += ["", "MNIST" if task == "mnist" else "pair test (same class, interleaved)",
-                  "%-50s %-28s %-5s %-7s %-15s %-15s %-15s %-7s %-7s %-11s %-6s %-7s %s" % (
-                      "arm", "sheet", "rate", "coin", "- coin", "- born", "- T7x", "model",
+                  "%-50s %-28s %-5s %-7s %-5s %-15s %-15s %-15s %-7s %-7s %-11s %-6s %-7s %s" % (
+                      "arm", "sheet", "rate", "coin", "rate", "- coin", "- born", "- T7x", "model",
                       "m.coin", "agree", "taught", "changed", "px")]
         for arm in arms:
             name, _, v = arm.partition("@")
@@ -112,10 +118,12 @@ def table(outdir, opt):
             rs, cs = runs.get((task, arm), {}), runs.get((task, coin), {})
             sh, csh = sheet.get((task, arm), {}), sheet.get((task, coin), {})
             lines.append(
-                "%-50s %-28s %-5s %-7s %-15s %-15s %-15s %-7s %-7s %-11s %-6s %-7s %s" % (
+                "%-50s %-28s %-5s %-7s %-5s %-15s %-15s %-15s %-7s %-7s %-11s %-6s %-7s %s" % (
                     NAMES.get(name, name) + ("@" + v if v else ""), spread(sh),
                     "%.1f" % mean(rate[(task, arm)].values()) if (task, arm) in rate else "-",
-                    "%.4f" % mean(csh.values()) if csh else "-", diff(sh, csh),
+                    "%.4f" % mean(csh.values()) if csh else "-",
+                    "%.1f" % mean(rate[(task, coin)].values()) if (task, coin) in rate else "-",
+                    diff(sh, csh),
                     diff(sh, born) if arm != "born" else "-",
                     diff(sh, hop) if arm != "T7x" else "-",
                     field(rs, "reader", "%.4f"), field(cs, "reader", "%.4f"),

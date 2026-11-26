@@ -61,3 +61,57 @@ Guesses, the wiring written into the real sheet, seeds 5-7, MNIST / pairs:
 
 Which arms get 8 seeds (5-12), fixed now: born, T7x and its coin, and every rule that on
 seeds 5-7 reads in the sheet within 0.005 of T7x or above it on either test, with its coin.
+
+## The bench and the rules as run
+
+The bench is the rule's ladder's (`scripts/ladder3_rule.py`, imported): idea 165's model of the
+sheet's 3,072 non-sensor cells at its bottom rung (about 33 inputs a cell from its own
+neighbourhood, strengths 1 and 4 at born counts, fixed signs, the engine's cell and
+regulation, two settle steps), a counter per candidate input per cell starting at the born
+strength, the cell wired to its top counters at its born counts, rewired and regulated every
+64 digits, one pass of 60,000 digits one at a time, and a softmax output layer that learns by
+its own delta rule. T7x on it is the one-hop rule: the output's signed error on each line
+(+1, -1, or 0 when under 0.1), sent to each cell on fixed random wires (each line reaches a
+cell with chance 1/2, as +1 or -1), the cell told "more" or "less" by the sign of the sum if
+it was near its bar or fired, and then **every input that was on moves its counter one
+count** (chance 1, 16-bit counters).
+
+Every rule here keeps that last step and the same marks (an input that was on in the
+digit), and changes only where the cell's "more / less / nothing" comes from. All integer,
+every event counted. `scripts/credit_rule.py`.
+
+| arm | where the cell's bit comes from |
+|---|---|
+| T7x | the ladder's own code, run again on the same seeds |
+| hop | T7x through this job's loop: the check that this bench is that bench |
+| **P2s** two phases, sign | The output lines reach the cells as plain inputs on the same fixed +-1 wires, at a gain g (drive a tick at full rate). Free phase: the lines carry the output's own answer (its ten rates). Clamped phase: they carry the right answer. Both phases settle twice (so the nudge also spreads one step through the cells' own wires). The cell compares its two counts: more in the clamped phase, "more"; less, "less". No error is computed anywhere and no gate is needed |
+| **P2** two phases, every spike | The same phases; every spike a cell makes in the clamped phase counts its marked inputs up, every spike in the free phase counts them down (contrastive Hebbian as written). The cell remembers nothing between phases |
+| **C2** code, two runs | Each cell has a code bit for the digit: force one more spike, or veto one. A clean run, then a run with every cell's code applied; the output says only whether the answer's line rose or fell. A cell whose code took effect and helped does more of it ("more" if it added a spike), one that hurt does the reverse. C2n192, C2n12: only 192 or 12 cells perturbed a digit |
+| **C1** code, one run | One run with the codes applied; the outcome is only whether the pressed button was right |
+| **pay1** payment, one step | The output pays backward along its own read wires: a line that should have been higher pays the fired cells it reads with a positive weight and charges those it reads with a negative one; a line that should have been lower the reverse. A cell that fired and was paid on balance is told "more", charged "less". Only the sign of each read weight is used |
+| **pay** payment, passed back | pay1, and each paid or charged cell passes its bit to the wired cells whose firing let it fire (those that fired in the first settle step; through an inhibitory wire the bit flips, a strong wire counts 4). Those cells step their pixel inputs |
+| **payc** conserved | pay, but a paying cell pays exactly one of those sources, drawn by chance |
+| **tgt** a target from the answer | The answer alone on the fixed wires: +1 the cell should fire for this answer, -1 it should be silent, no wire no target. Near the bar and silent with target "fire": "more"; fired with target "silent": "less". The output plays no part |
+| **dtp** tuned wires | Difference targets with a learned way back: each cell keeps an 8-bit up/down counter per answer line (+3 if it fired when that line was the answer, -1 if not). A line's wire into the cell is +1 if that counter is above the cell's mean counter, -1 if below. Then the output's signed errors arrive on those wires as in T7x |
+| hopb, dtpb | T7x or dtp, then the bit passed back once as in pay |
+| **d1n, d1t2, d1t4, d3t4, d0t4** time | T7x with the error arriving 1, 1, 1, 3, 0 showings late and a mark on each input (it was on while the cell was near or fired) that lasts 1, 2, 4, 4, 4 showings; every live mark counts when the error arrives |
+
+Why these and not others. With fixed wires and no threshold on the way back, difference
+target propagation is the one-hop rule (the target less the cell's activity is the wires
+times the error), so the fixed-wire form of family 4 is tgt (targets from the answer alone,
+no output) and the learned form is dtp. With a learned linear way back fitted to "what do I
+do when line k is the answer", the back wire is the cell's own tuning, which is what dtp
+keeps in its counters. Two phases with fixed wires differ from the one-hop rule in who does
+the subtraction: the cell's own count, through its own bar, after the nudge has also passed
+one step through the cells' wires.
+
+**Coin controls**: the same rule with the teaching signal of another digit: T7x, dtp and
+the time arms take another digit's line errors (the ladder's ring of 256); two phases take
+another digit's output and answer on the lines; code takes another digit's outcome; payment
+another digit's payments from the output; tgt another digit's answer. The no-trace arm d1n
+is the time arms' control (a late error on this digit's marks).
+
+**Scoring**: every wiring written into the real born sheet (`blobmnist ceiling
+--wiring-load`, 3,000 digits of regulation with learning off, the inside-learning test's
+reader, fit on 60,000 and scored on the 10,000 test digits), MNIST and the pair test
+(`--pair 2 --pair-mix 1`). The model's own reader is given beside it and not used to rank.

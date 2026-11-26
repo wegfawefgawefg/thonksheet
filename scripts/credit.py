@@ -33,7 +33,7 @@ DEFAULT = ["born", "T7x", "P2", "P2s", "C2", "C1", "C2n192", "C2n12", "pay1", "p
 NOCOIN = {"born", "C2n192", "C2n12", "payc", "d1n", "d1t2", "d1t4", "d3t4", "d0t4"}
 # the two-phase gain (drive a tick that an output line at full rate adds to a cell), picked
 # on the validation slice by the real sheet's read (the doc's "Picking")
-PICKS = {"mnist": {}, "pair": {}}
+PICKS = {"mnist": {"P2s": 0.0625, "P2": 0.0625}, "pair": {"P2s": 0.0625, "P2": 0.0625}}
 
 
 def split_arm(arm):
