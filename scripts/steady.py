@@ -88,6 +88,19 @@ ARMS = dict([
     arm("h11", "hop", "hop_shift 11", ["--g.hop_shift", "11"]),
     arm("h10l", "hop", "hop_shift 10, 120,000 digits", ["--g.hop_shift", "10"], 120000),
     arm("h11l", "hop", "hop_shift 11, 120,000 digits", ["--g.hop_shift", "11"], 120000),
+    # added after the standard-read search: the one-hop rule's frozen arm at a target that
+    # holds its rate (its sectors count busy motor cells), and the best two together
+    arm("hthf140", "hop", "thresholds frozen, bias to 128, targets 140%",
+        THFREEZE[:-1] + ["140"]),
+    arm("cslow", "compete", "counted (count5) and threshold regulation 8 times slower",
+        COUNT + ["--g.compete_window_on", "5"] + SLOWTH),
+    arm("c3", "compete", "counted (count5) at compete_shift 3: half the moves",
+        COUNT + ["--g.compete_window_on", "5", "--g.compete_shift", "3"]),
+    arm("c80d", "compete", "counted over 80-tick digits (window 80, on 20 ticks), same digits",
+        ["--life-ticks", "80", "--g.compete_window", "80", "--g.compete_shift", "2",
+         "--g.compete_window_on", "20"]),
+    arm("h9lslow", "hop", "120,000 digits and threshold regulation 8 times slower", SLOWTH,
+        120000),
 ])
 QUICK_ARMS = ["base", "count5", "thfreeze", "s80t", "hbase"]
 
@@ -208,6 +221,49 @@ def fmt_diff(d):
     return "    -          " if d is None else "%+.4f (%d of %d)" % d
 
 
+def structure_line(outdir, task, read, seed):
+    """score against pixel inputs over every sheet whose life had no digit structure (each
+    competitive arm's shuffled and churn lives, this task, read and seed): (a, b) of the
+    straight line a + b * pixels, or None"""
+    pts = []
+    for name, (rule, _, _, _) in ARMS.items():
+        for kind in ("shuffled", "churn"):
+            x = read_run(run_file(outdir, task, read, "%s-%s" % (name, kind), seed))
+            if rule == "compete" and x and x["pixels"] is not None:
+                pts.append((x["pixels"], x["score"]))
+    if len(pts) < 4:
+        return None
+    n = len(pts)
+    mx, my = sum(p[0] for p in pts) / n, sum(p[1] for p in pts) / n
+    sxx = sum((p[0] - mx) ** 2 for p in pts)
+    b = sum((p[0] - mx) * (p[1] - my) for p in pts) / sxx if sxx > 0 else 0.0
+    return my - b * mx, b
+
+
+def structure(opt, outdir, task, read):
+    """each lived sheet less the no-structure line at its own pixel count, paired by seed"""
+    lines = []
+    fits = {s: structure_line(outdir, task, read, s) for s in opt["seeds"]}
+    got = [f for f in fits.values() if f]
+    if not got:
+        return lines
+    lines.append("pixel-matched: lived less a no-structure sheet with as many pixel inputs (line "
+                 "over the shuffled and churn sheets, per seed; slope %+.5f a pixel input)" %
+                 mean([f[1] for f in got]))
+    for name in opt["arms"]:
+        if ARMS[name][0] != "compete":
+            continue
+        d = []
+        for s in opt["seeds"]:
+            x = read_run(run_file(outdir, task, read, "%s-lived" % name, s))
+            if x and fits[s] and x["pixels"] is not None:
+                d.append(x["score"] - (fits[s][0] + fits[s][1] * x["pixels"]))
+        if d:
+            lines.append("  %-10s %+.4f (%d of %d above)" % (name, sum(d) / len(d),
+                                                          sum(v > 0 for v in d), len(d)))
+    return lines
+
+
 def table(opt, outdir):
     seeds = opt["seeds"]
     lines = ["matched rate (--g.threshold_cap 1000 in life and read); a fresh linear reader of "
@@ -224,7 +280,7 @@ def table(opt, outdir):
                         fmt(mean([x["rate"] for x in v if x]), "%.1f"), sum(1 for x in v if x)))
             lines.append("%-10s %-7s %-7s %-7s %-17s %-17s %-17s %-5s %-11s %-11s %-10s" % (
                 "arm", "lived", "ctrl1", "ctrl2", "lived-ctrl1", "lived-ctrl2", "vs base",
-                "read", "life rate", "silent/stk", "px/like"))
+                "read", "life rate", "silent/stk", "px lived/c1, like"))
             for name in opt["arms"]:
                 rule = ARMS[name][0]
                 k = [kind for kind, _ in KINDS[rule]]
@@ -253,14 +309,16 @@ def table(opt, outdir):
                     fmt_diff(diff(v["lived"], v[other])), fmt_diff(d_ref), fmt(avg("rate"), "%.1f"),
                     "%s>%s" % (fmt(avg("life0"), "%.0f"), fmt(avg("life1"), "%.0f")),
                     "%s/%s" % (fmt(avg("lsilent"), "%.3f"), fmt(avg("lstuck"), "%.3f")),
-                    "%s/%s" % (fmt(avg("pixels"), "%.1f"), fmt(avg("like"), "%.2f"))))
+                    "%s/%s, %s" % (fmt(avg("pixels"), "%.1f"), fmt(mean(
+                        [x["pixels"] for x in v[main] if x]), "%.1f"), fmt(avg("like"), "%.2f"))))
+            lines += structure(opt, outdir, task, read)
     lines += ["", "ctrl1, ctrl2: shuffled and churn for competitive learning, coin and shuffled "
               "for the one-hop rule; lived-ctrl: paired by seed, mean (seeds above, of seeds); "
               "vs base: lived-ctrl1 of the arm less that of base (hbase), paired by seed; "
               "read: hidden spikes per 1,000 cell-ticks while read; life rate: the same in the "
               "life's first and last tenth; silent/stk: hidden cells silent and over 10 times the "
-              "mean rate in the life's last tenth; px/like: pixel inputs of a hidden excitatory "
-              "cell and their likeness at the end of the life",
+              "mean rate in the life's last tenth; px: pixel inputs of a hidden excitatory "
+              "cell at the end of the life, lived and ctrl1; like: the lived cells' pixel likeness",
               "arms: " + "; ".join("%s %s" % (a, ARMS[a][1]) for a in opt["arms"])]
     return "\n".join(lines)
 
