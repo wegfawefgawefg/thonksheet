@@ -314,15 +314,16 @@ def main():
             "set -")[0])
         return 1
     opt = {"seeds": None, "jobs": 3, "quick": False, "table_only": False, "arms": None,
-           "rows": None, "cols": None, "fixes": None}
+           "rows": None, "cols": None, "fixes": None, "skip_caps": False}
     what, i = argv[0], 1
     while i < len(argv):
         a = argv[i]
-        if a in ("--quick", "--table-only"):
+        if a in ("--quick", "--table-only", "--skip-caps"):
             opt[a[2:].replace("-", "_")] = True
         elif a in ("--seeds", "--jobs", "--arms", "--rows", "--cols", "--fixes"):
             v = argv[i + 1]
-            opt[a[2:]] = seeds_of(v) if a == "--seeds" else int(v) if a == "--jobs" else v.split(",")
+            opt[a[2:]] = (seeds_of(v) if a == "--seeds" else int(v) if a == "--jobs" else
+                          [x for x in v.split(",") if x])
             i += 1
         else:
             print("capdefault: unknown option %s" % a)

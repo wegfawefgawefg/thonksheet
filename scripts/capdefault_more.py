@@ -32,7 +32,7 @@ FIXES = {
     "m64": CAP + " --cap-motor 64",
 }
 # the ones the map runs when --fixes does not say
-MAP_FIXES = ["t64", "c128"]
+MAP_FIXES = ["c128"]
 MUST = ["xor", "echo16", "order", "mnist"]
 
 
@@ -151,9 +151,9 @@ def health(cache, rargs, flags, seeds, key):
     return mean(got)
 
 
-def map_block(cache, rows, cols, seeds, var, lines):
+def map_block(cache, rows, cols, seeds, var, lines, names=COLS):
     """one table per column (each variant beside cap 64), then what changed"""
-    for col in COLS:
+    for col in names:
         named = {("%s" % col if tag == "64" else "%s@%s" % (col, tag)): cols[col] + f.split()
                  for tag, f in var}
         buf = io.StringIO()
@@ -183,9 +183,11 @@ def quick_map(opt):
     only = ["echo2", "chain"] if opt["quick"] else opt.get("rows")
     # the tuning seeds: the chain and the other rows only a critic passed or lifted
     early, early_rows = [1, 2, 3, 4], ["chain", "cartpole", "noisy"]
+    names = opt.get("cols") or COLS
     if not opt["table_only"]:
-        for col in COLS:
-            for tag, f in var:
+        for col in names:
+            # --skip-caps: only the changes (a machine without the cap-64 and cap-1000 caches)
+            for tag, f in var[2:] if opt.get("skip_caps") else var:
                 run_column("cap-%s-%s" % (col, tag), cols[col] + f.split(), seeds, only, opt)
                 if not opt["quick"] and not opt["seeds"]:
                     run_column("cap-%s-%s" % (col, tag), cols[col] + f.split(), early,
@@ -194,15 +196,17 @@ def quick_map(opt):
     lines = ["The quick map, seeds %s, each column at cap 64 and beside it with the cap at 1000"
              " (`@1000`)%s." % (",".join(map(str, seeds)), "".join(
                  " and with `%s` (`@%s`)" % (FIXES[n], n) for n, _ in var[2:])), ""]
-    map_block(cache, O.pick_rows(rows, ",".join(only) if only else ""), cols, seeds, var, lines)
+    map_block(cache, O.pick_rows(rows, ",".join(only) if only else ""), cols, seeds, var, lines,
+              names)
     if not opt["quick"] and not opt["seeds"]:
         lines += ["Seeds 1-4, the rows only a critic passed or lifted:", ""]
-        map_block(cache, O.pick_rows(rows, ",".join(early_rows)), cols, early, var, lines)
+        map_block(cache, O.pick_rows(rows, ",".join(early_rows)), cols, early, var, lines,
+                  names)
     # the sheet's rate at the end of each life, as blobrun counts it (sensor cells included)
     lines += ["Rate over target at the end of the life (blobrun's count, sensor cells "
               "included; MNIST's is high for that reason) and share of thresholds at the cap, "
               "mean of the seeds, cap 64 / cap 1000:", ""]
-    for col in COLS:
+    for col in names:
         cells = []
         for rname, rargs in O.pick_rows(rows, ",".join(only) if only else ""):
             r = [health(cache, rargs, cols[col] + f.split(), seeds, "rate_over_target")
@@ -235,6 +239,7 @@ INSIDE = {
     ("pair", "hop"): ("the one-hop rule, told the answer", TAUGHT + " " + PAIR +
                       " --g.hop_on 1 --g.hop_shift 7 --g.hop_fired 0"),
 }
+INSIDE_CAPS = (64, 128, 1000)
 OLD = ["compete2/mnist/b5", "compete2/mnist/b5cap", "hop/inside/hop2s7-report",
        "hop/inside/hop2s7cap-report", "hop2/same"]
 
@@ -244,7 +249,7 @@ def inside_cmd(test, arm, cap, seed, opt):
     flags = INSIDE[test, arm][1]
     flags = flags % life if "%d" in flags else flags
     cmd = ["ceiling"] + I.SHEET + I.READER + ["--fit", str(fit), "--seed", str(seed)]
-    cmd += flags.split() + (CAP.split() if cap == 1000 else [])
+    cmd += flags.split() + ([] if cap == 64 else ["--g.threshold_cap", str(cap)])
     return cmd + (["--test-count", "1000"] if opt["quick"] else [])
 
 
@@ -286,7 +291,7 @@ def inside_test(opt):
     jobs, reused = [], {}
     from capdefault import pool
     for (test, arm) in INSIDE:
-        for cap in (64, 1000):
+        for cap in INSIDE_CAPS:
             for s in seeds:
                 cmd = inside_cmd(test, arm, cap, s, opt)
                 out = inside_file(opt, test, arm, cap, s)
@@ -307,18 +312,22 @@ def inside_test(opt):
     lines = ["The inside-learning test: a fresh linear reader of the non-sensor cells, fit on "
              "60,000 training digits, scored on test digits; seeds %s. rate: the hidden cells' "
              "spikes per 1,000 cell-ticks while the reader's digits are shown. lived - born: "
-             "paired by seed, with its standard error." % ",".join(map(str, seeds)), "",
+             "paired by seed, with its standard error (competitive learning on MNIST against "
+             "born-tw)." % ",".join(map(str, seeds)), "",
              "| test | sheet | cap | score | rate | lived - born | per seed |",
              "|---|---|---|---|---|---|---|"]
     for test in ("mnist", "pair"):
-        for cap in (64, 1000):
+        for cap in INSIDE_CAPS:
             born = [inside_read(inside_file(opt, test, "born", cap, s)) for s in seeds]
             for arm in [a for t, a in INSIDE if t == test]:
                 got = [inside_read(inside_file(opt, test, arm, cap, s)) for s in seeds]
                 if not any(got):
                     continue
-                d = [g["score"] - b["score"] for g, b in zip(got, born) if g and b]
-                diff = "" if arm == "born" or len(d) < 2 else "%+.4f ±%.4f" % (
+                # competitive learning on MNIST is read with the tile's winners: its own born
+                base = born if (test, arm) != ("mnist", "comp") else [inside_read(
+                    inside_file(opt, test, "born-tw", cap, s)) for s in seeds]
+                d = [g["score"] - b["score"] for g, b in zip(got, base) if g and b]
+                diff = "" if arm.startswith("born") or len(d) < 2 else "%+.4f ±%.4f" % (
                     statistics.mean(d), statistics.stdev(d) / len(d) ** 0.5)
                 lines.append("| %s | %s | %d | %s | %s | %s | %s |" % (
                     test, arm, cap, fmt(mean([g["score"] for g in got if g])),
@@ -327,7 +336,7 @@ def inside_test(opt):
     lines += ["", "Sheets: " + "; ".join("%s %s: %s" % (t, a, INSIDE[t, a][0]) for t, a in INSIDE)]
     checks = []
     for (test, arm) in INSIDE:
-        for cap in (64, 1000):
+        for cap in INSIDE_CAPS:
             a = inside_read(inside_file(opt, test, arm, cap, seeds[0]))
             b = inside_read(inside_file(opt, test, arm, cap, seeds[0], True))
             if b:
@@ -393,7 +402,7 @@ def first_press(opt):
 
 # ---- alive: long lives under a cap (the rate-control job's first test) ----
 
-ALIVE = {"std": "", "e": CAP, "c128": "--g.threshold_cap 128", "c256": "--g.threshold_cap 256"}
+ALIVE = {"std": "", "c128": "--g.threshold_cap 128", "c256": "--g.threshold_cap 256", "e": CAP}
 
 
 def alive(opt):
@@ -415,7 +424,7 @@ def alive(opt):
     for name in names:
         old = os.path.join(MAIN, "ratecontrol", "alive", name)
         copied = name in ("std", "e") and not opt["quick"]
-        if copied and os.path.isdir(old) and not opt["table_only"]:
+        if copied and os.path.isdir(old):
             folder = os.path.join(opt["out"], "alive", name)
             os.makedirs(folder, exist_ok=True)
             for f in os.listdir(old):
@@ -436,27 +445,28 @@ def alive(opt):
 def speed(opt):
     bench = os.path.join(ROOT, "build", "blobbench")
     rounds = 1 if opt["quick"] else 5
-    got = {"64": {"off": [], "on": []}, "1000": {"off": [], "on": []}}
+    confs = [("64", []), ("1000", CAP.split()), ("1000, target 64", FIXES["t64"].split())]
+    got = {tag: {"off": [], "on": []} for tag, _ in confs}
     log = os.path.join(opt["out"], "speed.txt")
     if not opt["table_only"]:
         with open(log, "w") as f:
             for r in range(rounds):
-                for tag, flags in (("64", []), ("1000", CAP.split())):
+                for tag, flags in confs:
                     done = subprocess.run(["nice", "-n", "19", bench, "speed", "--tiles", "8",
                                            "--seconds-ms", "200" if opt["quick"] else "1500"]
                                           + flags, capture_output=True, text=True, cwd=ROOT)
-                    f.write("round %d cap %s\n%s" % (r, tag, done.stdout))
+                    f.write("round %d cap %s\n%s" % (r, tag.replace(" ", "_"), done.stdout))
     tag = None
     for line in open(log) if os.path.exists(log) else []:
         p = line.split()
         if p and p[0] == "round":
-            tag = p[3]
+            tag = p[3].replace("_", " ")
         elif len(p) == 4 and p[1] in ("off", "on") and tag:
             got[tag][p[1]].append(float(p[2]))
     lines = ["`blobbench speed --tiles 8` (4,096 cells, one core, this PC under the temperature "
              "governor: rough), %d rounds taking turns, ticks a second, lowest to highest "
              "(median):" % rounds, "", "| cap | learning off | learning on |", "|---|---|---|"]
-    for tag in ("64", "1000"):
+    for tag, _ in confs:
         cells = []
         for k in ("off", "on"):
             v = got[tag][k]

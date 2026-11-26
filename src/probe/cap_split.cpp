@@ -58,8 +58,8 @@ static int cap_kind(const Blob& blob, int n) {
 
 struct Look {
     int64_t ticks = 0, steps = 0;
-    std::vector<uint32_t> count;      // per cell, spikes over the look
-    std::vector<uint32_t> row[ROWS];  // per cell, spikes on steps with this right answer
+    std::vector<uint32_t> count;                // per cell, spikes over the look
+    std::vector<uint32_t> row[ROWS];            // per cell, spikes on steps with this right answer
     int64_t pressed[LINES + 1][LINES + 1] = {}; // [right + 1][move + 1]
     int64_t spikes[LINES + 1][LINES] = {};      // [right + 1][line], the step's vote
     int64_t row_steps[LINES + 1] = {};
