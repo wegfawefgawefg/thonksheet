@@ -22,6 +22,7 @@
 #   scripts/harderdata.sh smoke --quick                  short lives: a check of the whole line
 # Options: --sets mnist,fashion,kmnist,kannada  --tests class,pair  --seeds 5-7  --jobs 3
 #   --parts bars,born,teacher,compete,rule,quiet  --life N  --coins 0|1  --quick
+#   --arms out,outf3,outint2 (the rule's arms: any arm of scripts/everyevent.py)
 #   --table-only  --reverse (the job list from its end, for a second machine).
 # Results in out/harderdata/run/SET/ (run-quick with --quick), one file a run; a finished run
 # is kept, so a line run again only runs what is missing. The tables go to

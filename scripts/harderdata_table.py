@@ -151,11 +151,13 @@ def room_row(opt, name, outdir, test):
             if spread(d) is not None:
                 dvar.append(spread(d) ** 2)
     pair = math.sqrt(sum(dvar) / len(dvar)) if dvar else None
-    need = None
+    need = shows = None
     if pair is not None and room > 0:
         need = max(2, math.ceil(4 * pair * pair / (TENTH * room) ** 2))
+        shows = 2 * pair / math.sqrt(3) / room  # the least difference 3 seeds show, of the room
     return {"set": name, "test": test, "born": mean(base), "top": mean(top), "room": room,
             "room_lo": min(gaps), "room_hi": max(gaps), "one": one, "pair": pair, "need": need,
+            "shows": shows,
             "arms": len(arms), "life": lives[-1] if lives else 0}
 
 
@@ -166,21 +168,23 @@ def tables(opt, sets):
             lines += block(opt, name, outdir, test)
     lines += ["", "the room: the teacher's wiring in the real sheet less the born sheet read "
               "the same way (after 3,000 digits of regulation)",
-              "%-8s %-6s %-7s %-7s %-7s %-17s %-7s %-7s %-5s %s" % (
+              "%-8s %-6s %-7s %-7s %-7s %-17s %-7s %-7s %-6s %-5s %s" % (
                   "set", "test", "born", "teacher", "room", "(lowest-highest)", "sd arm",
-                  "sd diff", "seeds", "for a tenth of the room")]
+                  "sd diff", "3 show", "seeds", "for a tenth of the room")]
     for name, outdir in sets:
         for test in opt["tests"]:
             r = room_row(opt, name, outdir, test)
             if r:
-                lines.append("%-8s %-6s %s  %s  %+.4f (%+.4f to %+.4f) %s  %s  %-5s %s" % (
+                lines.append("%-8s %-6s %s  %s  %+.4f (%+.4f to %+.4f) %s  %s  %s  %-5s %s" % (
                     r["set"], r["test"], fmt(r["born"]), fmt(r["top"]), r["room"], r["room_lo"],
-                    r["room_hi"], fmt(r["one"]), fmt(r["pair"]),
+                    r["room_hi"], fmt(r["one"]), fmt(r["pair"]), fmt(r["shows"], "%.3f"),
                     "-" if r["need"] is None else str(r["need"]),
                     "(%d runs a seed, lives of %d,000)" % (r["arms"], r["life"])))
     lines.append("(sd arm: a run's spread across seeds, pooled over born and the lived arms of "
                  "the longest life; sd diff: the spread across seeds of the difference between "
-                 "two of those runs on the same seed, pooled over every two; seeds: how many "
+                 "two of those runs on the same seed, pooled over every two; 3 show: the least "
+                 "difference three seeds show (twice its standard error) as a share of the "
+                 "room; seeds: how many "
                  "make twice the standard error of such a difference a tenth of the room. "
                  "rate: hidden spikes per 1,000 cell-ticks while read; pixels: pixel inputs a "
                  "hidden excitatory cell; kept: born inputs kept; outside: the outside output's "

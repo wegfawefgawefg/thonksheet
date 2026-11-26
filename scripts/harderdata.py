@@ -103,7 +103,7 @@ def lived_runs(opt):
     if "compete" in opt["parts"]:
         runs.append(("compete", COMPETE))
     if "rule" in opt["parts"]:
-        for arm in RULE:
+        for arm in opt["arms"]:
             flags, coin = EE.ARMS[arm]
             runs.append((arm, flags))
             if opt["coins"]:
@@ -197,14 +197,16 @@ def wirings(outdir, unpack):
 
 
 def folder(opt, name):
-    return os.path.join(ROOT, "out", "harderdata", "run-quick" if opt["quick"] else "run", name)
+    """out/harderdata/run/SET (run-quick with --quick; HARDERDATA_RUN names another folder)"""
+    run = os.environ.get("HARDERDATA_RUN", "run") + ("-quick" if opt["quick"] else "")
+    return os.path.join(ROOT, "out", "harderdata", run, name)
 
 
 def parse(args, r):
     opt = {"quick": False, "table_only": False, "jobs": 3, "reverse": False,
            "seeds": [5, 6, 7], "tests": list(TESTS), "sets": r.get("sets", SETS[:3]),
            "parts": list(r["parts"]), "life": r["life"], "coins": r["coins"], "fit": 60000,
-           "epochs": 12, "limit": 0, "settle": 3000}
+           "epochs": 12, "limit": 0, "settle": 3000, "arms": list(RULE)}
     i = 0
     while i < len(args):
         a = args[i]
@@ -220,7 +222,7 @@ def parse(args, r):
             lo_hi = v.split("-")
             opt["seeds"] = (list(range(int(lo_hi[0]), int(lo_hi[1]) + 1)) if len(lo_hi) == 2
                             else [int(x) for x in v.split(",")])
-        elif a in ("--sets", "--tests", "--parts"):
+        elif a in ("--sets", "--tests", "--parts", "--arms"):
             opt[a[2:]] = v.split(",")
         elif a in ("--jobs", "--life"):
             opt[a[2:]] = int(v)
