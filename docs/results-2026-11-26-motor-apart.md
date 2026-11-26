@@ -101,3 +101,21 @@ presses less the third button's; the cap doc: +0.19 ±0.09 over all stage-0 step
     without the margin gate: 0.3; the base rule with time and hold cells alone shows +0.10
     or more: 0.3. No single piece removes it: 0.3.
 17. That I can name where it comes from with a control that confirms it: 0.35.
+
+Added after the first screen was read and before the second ran. The first screen showed
+that under the one setting the bias is not what starves the hidden cells: with the motor
+cells out of the count the bias goes to its lower limit on 9 in 10 sectors and the hidden
+cells still fire at 16 to 21 per 1,024, and the motor cells fire at 104 whatever their
+thresholds do. The tile's winners (2 a tile, shared by every cell of the tile) are what the
+motor cells take. So a sixth number, `motor_winners` (the tile's cut by kind of cell), and
+five more arms: cut (motor cells out of the tile's cut), cut2 (a cut of their own, 2 a
+tile), own+cut, own+cut2, out1+cut2.
+
+18. Under the one setting in the MNIST world own+cut2 brings the hidden cells to 27 or more
+    per 1,024 with 0.03 or fewer silent: 0.7; its online score 0.73 or more: 0.5. cut and
+    cut2 alone (the bias still shared) leave the hidden cells under 22: 0.6.
+19. Motor cells out of the cut altogether (cut, own+cut) fire at over 150 per 1,024 there
+    and the online score falls under std's: 0.6.
+20. Under a2rucomp (4 winners a tile) the MNIST online score stays within 0.02 for all five
+    arms: 0.6; the toy rows within 0.02 for own+cut2 in both columns but one cell at most:
+    0.55.

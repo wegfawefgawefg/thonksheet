@@ -30,6 +30,11 @@ void regulate_motor_bias(Blob& blob, int sector, int spikes, int step);
 // each cell's potential less its bar under `bias`, moved here by the difference
 uint64_t motor_apart_compare(const Blob& blob, int t, uint64_t would, int bias, int32_t* margin);
 
+// motor_winners, from the fire step in place of the tile's one cut: the tile's winners are
+// picked among the spikes of cells that are not motor cells; the motor cells keep every
+// spike (-1) or the motor_winners most driven of theirs
+uint64_t motor_apart_winners(const Blob& blob, int t, uint64_t spikes, const int32_t* margin);
+
 // the motor cells' own bias in a sector (3), for probes; 0 while there is none
 int motor_apart_bias(const Blob& blob, int sector);
 

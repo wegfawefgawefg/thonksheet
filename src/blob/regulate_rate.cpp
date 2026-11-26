@@ -1,5 +1,7 @@
 #include "blob/regulate_rate.hpp"
 
+#include "blob/fire_dynamics.hpp"
+
 #include <cstdlib>
 
 // idea 175: a rate control that does not fight the rest (docs/results-2026-11-26-rate-control.md).
@@ -207,6 +209,13 @@ uint64_t motor_apart_compare(const Blob& blob, int t, uint64_t would, int bias, 
         over |= (uint64_t)flag[b] << b;
     }
     return (would & ~motor) | (over & motor);
+}
+
+uint64_t motor_apart_winners(const Blob& blob, int t, uint64_t spikes, const int32_t* margin) {
+    const Genome& g = blob.genome;
+    uint64_t motor = spikes & blob.motor[t];
+    uint64_t rest = dynamics_winners(spikes & ~motor, margin, g.tile_winners);
+    return rest | (g.motor_winners > 0 ? dynamics_winners(motor, margin, g.motor_winners) : motor);
 }
 
 // the motor cells' own bias in a sector (motor_apart 3), for probes; 0 while there is none

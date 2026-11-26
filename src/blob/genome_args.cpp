@@ -234,6 +234,7 @@ static const GenomeField fields[] = {
     {"motor_bias_max", &Genome::motor_bias_max},
     {"threshold_cap_motor", &Genome::threshold_cap_motor},
     {"threshold_down_shift_motor", &Genome::threshold_down_shift_motor},
+    {"motor_winners", &Genome::motor_winners},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

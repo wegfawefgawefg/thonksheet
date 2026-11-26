@@ -435,6 +435,12 @@ struct Genome {
     // chance over down chance: 9 is 32 per 1,024, 8 is 64, 7 is 128)
     int threshold_cap_motor = 0;
     int threshold_down_shift_motor = 0;
+    // the tile's winners (tile_winners) by kind of cell. the cut is shared as it stands: a
+    // tile's motor cells, driven hard by the output rule, take its few spikes and its hidden
+    // cells go quiet. -1: the tile's winners are picked among the cells that are not motor
+    // cells, and the motor cells keep every spike. k > 0: the same, and the tile's motor
+    // cells have a cut of their own, k winners
+    int motor_winners = 0;
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

@@ -243,7 +243,9 @@ void tick_fire(Blob& blob, uint64_t* out) {
         inner &= blob.silenced ? ~blob.silenced[t] : ~0ull;
         if (g.tile_winners > 0) {
             // 75: only the most driven few of the tile keep their spike
-            inner = dynamics_winners(inner, margin, g.tile_winners);
+            // idea 184, motor_winners: the cut by kind of cell (regulate_rate.cpp)
+            inner = g.motor_winners ? motor_apart_winners(blob, t, inner, margin)
+                                    : dynamics_winners(inner, margin, g.tile_winners);
         }
         // being shown the answer (null unless asked for): these fire whatever the tile does
         inner |= blob.forced ? blob.forced[t] & ~sensor : 0;
