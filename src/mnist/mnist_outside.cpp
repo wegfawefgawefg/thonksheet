@@ -17,6 +17,10 @@
 //   --outside-lr-1000 N     the layer's step, in thousandths (300; the model's 0.3,
 //                           divided by 1 + the squared size of its input)
 //   --outside-fine-1000 N   an error under this is fine and sends nothing (100)
+//   --outside-form 1        what the layer decides is only when: on a digit whose right
+//                           line it has under 1 - fine, the cells get the answer (the right
+//                           line higher, every other line lower); on the rest nothing
+//   --outside-form 2        no fine zone: the answer as signs on every digit
 
 struct Outside {
     std::vector<int> cols;  // the non-sensor cells
@@ -24,7 +28,7 @@ struct Outside {
     std::vector<float> bias, x;
     int lines = 0;
     float lr = 0.3f, fine = 0.1f;
-    int coin = 0;
+    int coin = 0, form = 0;
     std::vector<int8_t> ring; // the last 256 digits' error signs
     int64_t ring_count = 0;
     uint64_t rng = 0x6f757473696465ull;
@@ -46,6 +50,7 @@ Outside* outside_make(const Sheet& s, int argc, char** argv) {
     o->lr = (float)int_flag(argc, argv, "--outside-lr-1000", 300) / 1000.0f;
     o->fine = (float)int_flag(argc, argv, "--outside-fine-1000", 100) / 1000.0f;
     o->coin = int_flag(argc, argv, "--life-outside-coin", 0);
+    o->form = int_flag(argc, argv, "--outside-form", 0);
     o->ring.assign((size_t)256 * (size_t)o->lines, 0);
     return o;
 }
@@ -91,9 +96,13 @@ void outside_digit(Sheet& s, const uint8_t* counts, int label) {
     // +1 the line should have been higher, -1 lower, 0 fine
     int8_t sign[PLUG_MAX_MOTOR_LINES];
     float step = o.lr / (1.0f + size);
+    bool sure = label >= 0 && label < o.lines && out[label] / sum > 1.0f - o.fine;
     for (int l = 0; l < o.lines; l++) {
         float e = out[l] / sum - (l == label ? 1.0f : 0.0f);
         sign[l] = (int8_t)(e >= o.fine ? -1 : (e <= -o.fine ? 1 : 0));
+        if (o.form != 0) {
+            sign[l] = (int8_t)(o.form == 1 && sure ? 0 : (l == label ? 1 : -1));
+        }
         float* row = &o.v[(size_t)l * d];
         for (size_t j = 0; j < d; j++) {
             row[j] -= step * e * o.x[j];

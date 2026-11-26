@@ -25,7 +25,8 @@
 #   scripts/everyevent.sh pick --arms born,ev3,outall --coins outall --tests pair
 #   scripts/everyevent.sh report --table-only
 # Options: --seeds 5-8, --jobs 3, --arms a,b, --coins a,b|none, --shuffled a,b|none,
-# --tests mnist,pair, --quick, --table-only.
+# --tests mnist,pair, --quick, --table-only, --reverse (the job list from its end, for a
+# second machine working the same list).
 # Results in out/everyevent/NAME/ (NAME-quick for --quick); finished runs are kept. A judged
 # MNIST life with its read is about 6 minutes here, an outside-output life about 3.
 set -euo pipefail

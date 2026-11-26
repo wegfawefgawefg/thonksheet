@@ -55,7 +55,7 @@ static const char* const ceiling_own[] = {
     "--describe",  "--wiring-load", "--rows-out",     "--twice",      "--rec-cut", "--delays-one",
     "--pace-off",  "--read-freeze", "--reset-digit",  "--input-every", "--count-from", "--inh-fast",
     "--life-outside", "--life-outside-coin", "--life-reborn", "--outside-lr-1000",
-    "--outside-fine-1000"};
+    "--outside-fine-1000", "--outside-form"};
 
 // a copy of rows with only the given columns
 static void pick_columns(const Rows& in, const std::vector<int>& cols, Rows& out) {

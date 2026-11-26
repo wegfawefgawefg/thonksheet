@@ -73,6 +73,7 @@ void hop_free(Blob& blob) {
     std::free(blob.hop->fresh);
     std::free(blob.hop->ring_up);
     std::free(blob.hop->ring_down);
+    std::free(blob.hop->balance);
     hop_planes_free(*blob.hop);
     std::free(blob.hop);
     blob.hop = nullptr;
@@ -387,6 +388,10 @@ void learn_hop(Blob& blob) {
         return;
     }
     tag_store_make(blob);
+    if (g.hop_balance > 0 && !h.balance) {
+        h.balance = (int8_t*)std::calloc((size_t)blob.neuron_count, 1);
+    }
+    int bound = g.hop_balance < 127 ? g.hop_balance : 127;
     int window = g.hop_window < 1 ? 1 : (g.hop_window > HISTORY - 1 ? HISTORY - 1 : g.hop_window);
     int64_t stride = (int64_t)blob.tile_count + 1;
     uint32_t taught = 0;
@@ -409,6 +414,14 @@ void learn_hop(Blob& blob) {
             }
             if (sum == 0) {
                 continue;
+            }
+            // hop_balance: the sign this cell has had more of waits for the other
+            if (g.hop_balance > 0) {
+                int8_t& had = h.balance[n];
+                if (sum > 0 ? had >= bound : had <= -bound) {
+                    continue;
+                }
+                had = (int8_t)(had + (sum > 0 ? 1 : -1));
             }
             uint32_t ages = 0;
             for (int a = 1; a <= window; a++) {

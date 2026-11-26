@@ -37,6 +37,7 @@ struct HopState {
     uint64_t* planes = nullptr;
     uint8_t* plane_made = nullptr;
     uint64_t* dirty = nullptr;
+    int8_t* balance = nullptr; // hop_balance: per neuron, verdicts taught "more" less "less"
 };
 
 // which sources of slot k a neuron may wire (as tag_rewire), and which are inhibitory

@@ -49,6 +49,23 @@ ARMS = {
     "ev3b6": (judged(3, HOP + " --g.hop_shift 0"), "--g.hop_coin 1"),  # in the 6-bit bytes
     "ev3b8": (judged(3, HOP + " --g.hop_shift 0 --g.tag_bits 8"), "--g.hop_coin 1"),
     "ev3p9": (judged(3, HOP + " --g.hop_bits 9 --g.hop_shift 0"), "--g.hop_coin 1"),
+    # the same with each cell taught "more" and "less" equally often (hop_balance)
+    "ev3bal": (judged(3, EV + " --g.hop_balance 1"), "--g.hop_coin 1"),
+    "ev3bal8": (judged(3, EV + " --g.hop_balance 8"), "--g.hop_coin 1"),
+    "ev3ibal": (judged(3, EV + INH + " --g.hop_balance 1"), "--g.hop_coin 1"),
+    "ev3allbal": (judged(3, EV + ALL + " --life-reborn 0 --g.hop_balance 1"), "--g.hop_coin 1"),
+    "ev4bal": (judged(4, EV + " --g.hop_balance 1"), "--g.hop_coin 3"),
+    "ev5bal": (judged(5, EV + " --g.hop_fine 8 --g.hop_balance 1"), "--g.hop_coin 3"),
+    "oldbal": (judged(3, HOP + " --g.hop_shift 9 --g.hop_balance 1"), "--g.hop_coin 1"),
+    "outallbal": (outside(EV + ALL + " --g.hop_balance 1"), "--life-outside-coin 1"),
+    # told the right button on bad steps (hop_teach 2), every event; other margins
+    "ev2": (judged(2, EV), "--g.hop_coin 3"),
+    "ev5f4": (judged(5, EV + " --g.hop_fine 4"), "--g.hop_coin 3"),
+    "ev5f16": (judged(5, EV + " --g.hop_fine 16"), "--g.hop_coin 3"),
+    # what of the outside output's error matters: only when it teaches (form 1: the answer
+    # on the digits it is unsure of), or nothing of it (form 2: the answer as signs always)
+    "outwhen": (outside(EV + " --outside-form 1"), "--life-outside-coin 1"),
+    "outsigns": (outside(EV + " --outside-form 2"), "--life-outside-coin 1"),
     # piece 3 on it: who learns
     "ev3i": (judged(3, EV + INH), "--g.hop_coin 1"),
     "ev3all": (judged(3, EV + ALL + " --life-reborn 0"), "--g.hop_coin 1"),
@@ -63,7 +80,11 @@ ARMS = {
     "outall": (outside(EV + ALL), "--life-outside-coin 1"),
     # the same errors and learners on the old counters (6-bit, chance 2^-3): the ladder's T7
     "out6all": (outside(HOP + " --g.hop_shift 3" + ALL), "--life-outside-coin 1"),
-    # piece 4: the model's other differences, on outall
+    # piece 4: the model's other differences, on out and on outall
+    "out64": (outside(EV + " --g.hop_rewire_every 64"), "--life-outside-coin 1"),
+    "outloose": (outside(EV + " --g.hop_loose 1"), "--life-outside-coin 1"),
+    "outboth": (outside(EV + " --g.hop_rewire_every 64 --g.hop_loose 1"), "--life-outside-coin 1"),
+    "out9": (outside(HOP + " --g.hop_bits 9 --g.hop_shift 0"), "--life-outside-coin 1"),
     "outall64": (outside(EV + ALL + " --g.hop_rewire_every 64"), "--life-outside-coin 1"),
     "outallloose": (outside(EV + ALL + " --g.hop_loose 1"), "--life-outside-coin 1"),
     "outallboth": (outside(EV + ALL + " --g.hop_rewire_every 64 --g.hop_loose 1"),
@@ -78,9 +99,13 @@ RECIPES = {
     "pick": {"kind": "sheet", "val": True, "seeds": [1, 2], "arms": [
         "born", "old", "ev3", "ev3i", "ev3all", "ev4", "ev5", "out", "outi", "outall",
         "out6all", "ev3b8"], "coins": ["old", "ev3", "ev5", "outall"], "shuffled": []},
+    # after pick: why the answer alone and the sheet's own votes fail with every-event steps
+    "pick2": {"kind": "sheet", "val": True, "seeds": [1, 2], "arms": [
+        "ev3bal", "ev5bal", "ev2", "ev5f4", "ev5f16", "outwhen", "outsigns"],
+        "coins": [], "shuffled": []},
     # piece 4 on the validation slice (only if pieces 1 to 3 leave a gap)
     "pick4": {"kind": "sheet", "val": True, "seeds": [1, 2], "arms": [
-        "outall64", "outallloose", "outallboth", "outall9"], "coins": [], "shuffled": []},
+        "out64", "outloose", "outboth", "out9", "outallboth"], "coins": [], "shuffled": []},
     # the report: test digits, seeds 5-12, each beside born, its coin and its shuffled life
     "report": {"kind": "sheet", "val": False, "seeds": list(range(5, 13)), "arms": [
         "born", "old", "ev3", "outall"], "coins": ["old", "ev3", "outall"],
@@ -194,7 +219,7 @@ def sheet_table(r, outdir, name):
 
 
 def parse(args, r):
-    opt = {"quick": False, "table_only": False, "jobs": 3}
+    opt = {"quick": False, "table_only": False, "jobs": 3, "reverse": False}
     i = 0
     while i < len(args):
         a = args[i]
@@ -202,6 +227,8 @@ def parse(args, r):
             opt["quick"] = True
         elif a == "--table-only":
             opt["table_only"] = True
+        elif a == "--reverse":  # the job list from its end (a second machine on the same list)
+            opt["reverse"] = True
         elif a == "--jobs":
             opt["jobs"] = int(args[i + 1])
             i += 1
@@ -242,6 +269,7 @@ def one(name, r, opt):
     else:
         jobs, table = hop2.calc_jobs(r, outdir, quick), lambda: hop2.calc_table(r, outdir)
     if not opt["table_only"]:
+        jobs = jobs[::-1] if opt["reverse"] else jobs
         with ThreadPoolExecutor(max_workers=opt["jobs"]) as pool:
             list(pool.map(hop2.run, jobs))
     text = table()

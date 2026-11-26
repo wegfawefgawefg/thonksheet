@@ -385,6 +385,11 @@ struct Genome {
                               // many verdicts, not as soon as their counters move
     int hop_loose = 0; // 1: one mark a verdict: a source on at any tick of the window is
                        // marked for a cell near at any tick of it, whatever the timing
+    int hop_balance = 0; // >0: each cell is taught "more" and "less" equally often: it keeps
+                         // a count of more less less, and a verdict that would take the
+                         // count past this bound is skipped (1..127). without it a sign
+                         // that comes more often than the other pushes every often-on
+                         // source one way, whatever it says about the answer
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs
