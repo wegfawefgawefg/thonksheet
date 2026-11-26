@@ -413,6 +413,12 @@ struct Genome {
                          // count past this bound is skipped (1..127). without it a sign
                          // that comes more often than the other pushes every often-on
                          // source one way, whatever it says about the answer
+    // prediction errors through the every-event rule (idea 183,
+    // docs/results-2026-11-26-predict-every-event.md; hop_pred.cpp). 0 is off: a prediction
+    // line teaches only when its answer was wrong (idea 164's error). >0: the fine zone in
+    // 32nds: a line teaches, toward what it turned out to be, when the wrong answer group
+    // had this share or more of the pair's spikes (16: wrong or tied; 3: the ladder's 0.1)
+    int hop_pred_fine = 0;
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

@@ -64,8 +64,12 @@ FutureScore future_fit(const std::vector<uint8_t>& x, int d, const std::vector<u
         }
     }
     // share of line-steps right over rows [from, to) with weights w (d x count)
+    // idea 183, beside it: the mean of the shares right on on- and on off-line-steps
+    // (balanced: lines are mostly off), and the share right on line-steps whose value
+    // differs from h steps before (changed: what "same as now" always gets wrong)
+    double balanced = 0, changed = 0;
     auto share = [&](const std::vector<double>& w, int from, int to) {
-        int64_t right = 0;
+        int64_t right = 0, on = 0, on_right = 0, moved = 0, moved_right = 0;
         std::vector<double> p((size_t)count);
         for (int r = from; r < to; r++) {
             for (int l = 0; l < count; l++) {
@@ -78,10 +82,21 @@ FutureScore future_fit(const std::vector<uint8_t>& x, int d, const std::vector<u
                 }
             }
             for (int l = 0; l < count; l++) {
-                right += (p[(size_t)l] > 0.5) == (lines[(size_t)(r + h) * count + l] != 0);
+                bool later = lines[(size_t)(r + h) * count + l] != 0;
+                bool ok = (p[(size_t)l] > 0.5) == later;
+                bool differs = later != (lines[(size_t)r * count + l] != 0);
+                right += ok;
+                on += later;
+                on_right += later && ok;
+                moved += differs;
+                moved_right += differs && ok;
             }
         }
-        return to > from ? (double)right / ((double)(to - from) * count) : 0.0;
+        int64_t total = (int64_t)(to - from) * count, off = total - on;
+        balanced = ((on ? (double)on_right / (double)on : 0.0) +
+                    (off ? (double)(right - on_right) / (double)off : 0.0)) / 2;
+        changed = moved ? (double)moved_right / (double)moved : 0.0;
+        return to > from ? (double)right / (double)total : 0.0;
     };
     static const double scales[6] = {0.0003, 0.003, 0.03, 0.3, 3.0, 30.0};
     double best_val = -1;
@@ -103,6 +118,8 @@ FutureScore future_fit(const std::vector<uint8_t>& x, int d, const std::vector<u
         if (val > best_val) {
             best_val = val;
             out.right = share(w, train, n);
+            out.balanced = balanced;
+            out.changed = changed;
         }
     }
     // baselines on the same test rows: the line h steps before, the line's more common value

@@ -20,7 +20,10 @@
 // Moves in the read come from a fixed coin, not from the sheet, so every arm sees the same
 // world.
 
-constexpr int READ_MAX_LABELS = 2;
+// Idea 183 adds, for every world with buttons but predict-next: the right button of the
+// step ("right"; no button is a class).
+
+constexpr int READ_MAX_LABELS = 3;
 
 struct ReadLabels {
     int count = 0;

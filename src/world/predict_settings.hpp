@@ -21,7 +21,9 @@ struct PredictSettings {
     int64_t score_from = -1; // --predict-score-from: first step tallied; -1 the last quarter
     // idea 164: --predict-hop 1 sends the shortest horizon's errors (which must be 1) to every
     // hidden cell as error lines of the one-hop rule (needs --g.hop_on 1); --predict-hop-reach
-    // R > 0: each line's error reaches only cells within R cells of its sensor group
+    // R > 0: each line's error reaches only cells within R cells of its sensor group.
+    // idea 183: --predict-hop is a set of horizons, bit i for the i-th of --predict's list
+    // (1: the shortest alone, as idea 164; 15: all four; 14: the three far ones)
     int hop = 0;
     int hop_reach = 0;
 };

@@ -57,6 +57,10 @@ struct Predictor {
     int8_t error[PREDICT_MAX_TARGETS] = {};
     PredictScore score;
     std::vector<uint64_t> saved_attached, saved_acted; // the world's marks, kept round a verdict
+    // idea 183: each ring step's group counts (PREDICT_RING x 2 x bits), kept when the
+    // answers' errors teach the hidden cells (--predict-hop); hop_far: some horizon past 1 does
+    std::vector<uint16_t> votes;
+    bool hop_far = false;
 };
 
 // after ticker_start: lay the plug again with the extra lines, pick the predictor cells.
@@ -68,7 +72,7 @@ void predict_before_tick(Predictor& p, TaskTicker& tt, Blob& blob);
 // after each blob tick, before ticker_after_tick: count the groups' spikes
 void predict_after_tick(Predictor& p, const TaskTicker& tt, const Blob& blob);
 // when ticker_after_tick says the step is answered: read the answers, keep the maps
-void predict_step_end(Predictor& p, const Blob& blob, int move);
+void predict_step_end(Predictor& p, Blob& blob, int move);
 
 // the same steps for a caller that writes the plug's lines itself (no task: the shuffled
 // control in blobprobe predict). predict_step_begin wants the step's lines in the plug

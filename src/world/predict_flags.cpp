@@ -18,7 +18,9 @@ const char* const predict_flags_usage =
     "  --predict-score-from N   first step the skill is tallied over (default: last quarter)\n"
     "  --predict-hop 1      idea 164: the horizon-1 errors teach every hidden cell as error\n"
     "                       lines of the one-hop rule (with --g.hop_on 1; --g.hop_teach 0\n"
-    "                       for no button errors)\n"
+    "                       for no button errors). idea 183: a set of horizons, bit i for\n"
+    "                       the i-th of --predict's list (15: all four, 14: the far three);\n"
+    "                       --g.hop_pred_fine F is the zone in which a line teaches nothing\n"
     "  --predict-hop-reach R   those lines reach only cells within R cells of their sensor\n"
     "                       group (0: hashed random wires, default)\n";
 

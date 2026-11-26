@@ -311,6 +311,18 @@ void blob_hop_errors(Blob& blob, const int8_t* error, int count);
 // the same lines' places on the sheet (each line's sensor group, in cells): with reach > 0 a
 // prediction error line reaches only the cells within reach of it (--predict-hop-reach)
 void blob_hop_error_places(Blob& blob, const int16_t* x, const int16_t* y, int count, int reach);
+// hop_on, idea 183 (hop_pred.cpp): one horizon's answers graded, for the rule to make the
+// error lines itself (genome hop_pred_fine is the zone in which a line teaches nothing).
+// per predicted line: the spikes of its "off" and "on" answer groups in the step the answer
+// was made, and what the line turned out to be. index: which horizon (its own wire lines,
+// 0..3). back: how many steps ago that step ended: 1 is the step just ended (taught on the
+// next tick from the live rings, as blob_hop_errors); more needs blob_hop_keep_step called
+// at every step's end, and teaches at once from the kept step's rings
+void blob_hop_predicted(Blob& blob, int index, int back, const uint16_t* off, const uint16_t* on,
+                        const uint8_t* truth, int count);
+void blob_hop_keep_step(Blob& blob);
+// prediction lines graded so far, and those that taught (outside their fine zone)
+void blob_hop_pred_counts(const Blob& blob, uint64_t out[2]);
 // hop_on: what the rule has done so far: verdicts that taught, cells taught, counter steps,
 // rewires, and over the windows read, near cell-ticks and fired cell-ticks of the learners
 // against all learner cell-ticks (all zero while off)
