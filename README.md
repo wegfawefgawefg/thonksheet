@@ -2,7 +2,7 @@
 
 A brain made of bits that never stops ticking. Binary spiking neurons on a tiled sheet, wired
 locally, learning by local rules with no backprop, laid out to suit an ordinary CPU and GPU.
-Private.
+A research notebook as much as a codebase: every result, null and wrong guess is in `docs/`.
 
 **Tabled 2026-11-26.** Nothing is running. This page says what it is, what it found, what it
 did not, and where to start if it is picked up again.

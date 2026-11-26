@@ -87,7 +87,7 @@ program or experiment, add or extend a script, and give him the script line in y
   change in someone else's, write it at the bottom of the current effort doc.
 - `src/blob/blob.hpp` and `src/blob/genome.hpp` are the contract between areas. Only the
   core owner edits them.
-- Commit finished, verified chunks often, with focused messages. The remote is a private
+- Commit finished, verified chunks often, with focused messages. The remote is a public
   GitHub repo (since the project was tabled, 2026-11-26); agents do not push, the owner or
   the coordinator does.
 - Keep helper scripts and raw outputs in your own worktree under `out/<your job>/` (git
