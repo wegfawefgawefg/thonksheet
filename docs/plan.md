@@ -45,7 +45,8 @@ is.
 
 Running (four), as of 2026-11-26:
 - Queued item 9a (idea 182): the blob's own output, good enough to teach the inside.
-- Queued item 3c (idea 183): prediction errors with every-event counters.
+- Queued item 2n (idea 184): motor cells regulated apart; a chain row a coin cannot pass.
+- Queued item 11c (idea 185): a harder real-data test with more room.
 - Queued item 2j (idea 174): do the inner rules learn more from a steadier sheet.
 - Queued item 2m (idea 180): the threshold cap lifted, decide the default.
 Finished since: the vvm route (converges; idea 135) and tags with the margin gate (ideas
@@ -108,10 +109,12 @@ Queued, in order:
    and on the held-out columns. Every item below is scored with it.
 2. *(done, passes: 0.952 against 0.926 born and 0.939 shuffled, 8 seeds; idea 158)* Competitive learning with local inhibition, no reward: units that win on an input
    move toward it (in bits: gain the input's bits, lose others, under a budget).
-2m. *(running, idea 180)* The threshold cap lifted: why the chain passes, what MNIST
-   online and reach were gaining from the runaway rate, the quick map and the inside
-   test both ways, and whether 1000 becomes the default. Behind it: idea 176 (short
-   delays first), idea 181 (a loop lit at twice its share).
+2n. *(running, idea 184)* Motor cells regulated apart from hidden cells; the chain row
+   replaced by one a coin cannot pass. Behind it: idea 176 (short delays first), idea
+   181 (a loop lit at twice its share).
+2m. *(done, merged: docs/results-2026-11-26-cap-default.md, `scripts/capdefault.sh`; keep
+   64; the chain pass is a coin first press; motor cells starve hidden cells under the
+   one setting)*
 2k. *(done, merged: docs/results-2026-11-26-rate-control.md, `scripts/ratecontrol.sh`;
    nothing passes more than 2 of 5 tests; the rate control is part of the learning
    rule; the cap of 64 is a fault and lifting it passes the chain)*
@@ -147,8 +150,12 @@ Queued, in order:
 9a. *(running, idea 182)* The blob's own output: a ladder from the outside 16-bit
    perceptron down to the engine's readout, the missing piece built in bits, the
    loop closed with no outside part, then payment along the output's own wires.
-3c. *(running, idea 183)* Prediction errors down the one-hop wires with every-event
-   counters and a fine zone, on the acting worlds.
+3c. *(done, merged: docs/results-2026-11-26-predict-every-event.md,
+   `scripts/predevent.sh`; on delayed echo the cells learn the future from an outside
+   predictor's errors; the sheet's own predictor cells are too poor; ideas 186 and 187
+   queued behind 9a)*
+11c. *(running, idea 185)* A harder real-data test with more room than MNIST and the
+   pair test, so rules separate on 2 or 3 seeds.
 2l. *(done, merged: docs/results-2026-11-26-every-event.md, `scripts/everyevent.sh`;
    live 0.951 / 0.770 with an outside output's error; the sheet's own output is the
    missing piece)*

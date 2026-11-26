@@ -953,7 +953,11 @@ co-activity runs ties the held units together and loses their order.
      step late), what MNIST online and reach were gaining from the runaway rate and
      whether a higher target rate gives it back honestly, then run the whole quick
      map and the inside-learning test both ways and say whether 1000 becomes the
-     default. *building*
+     default. *done: docs/results-2026-11-26-cap-default.md,
+     `scripts/capdefault.sh`. Keep 64. The chain pass is the motor cells' cap and a
+     coin first press, not credit; MNIST online leaned on motor cells over their
+     share; under the one setting hidden cells are starved by the shared bias.
+     Next: idea 184.*
 181. **A loop that is lit at twice its share.** Idea 175: a latch held up by strong
      inputs is taken back by per-cell sharing. Try a loop whose lit rate is about
      twice a cell's share, held by the tile's inhibition rather than by strong
@@ -971,4 +975,34 @@ co-activity runs ties the held units together and loses their order.
      answer), which is what idea 178 says the rule needs. Repeat on the acting
      worlds with every-event counters and a fine zone: do hidden cells now learn the
      future and the world's hidden state, and does the task move. The owner's
-     rich-signal steer. *building*
+     rich-signal steer. *done:
+     docs/results-2026-11-26-predict-every-event.md, `scripts/predevent.sh`. On
+     delayed echo the cells learn the future and keep the cue (predictor at 8 steps
+     0.592 to 0.733, coin 0.609) when the error comes from an outside predictor at
+     several horizons; half that from the sheet's own predictor cells; nothing on
+     catch or forage beyond what just changed; the task barely moves. Waits on idea
+     182's output.*
+184. **Motor cells regulated apart, and a chain row that tests the chain.** Idea 180:
+     motor cells share the sector's bias with hidden cells, run at three to six
+     times their share under the working output rules, pin the bias and starve the
+     hidden cells (13 per 1,024, 19 in 100 silent under the one setting on MNIST);
+     and the two-button chain is passed by a coin first press. Give motor cells
+     their own rate control (or leave them out of the sector's count), re-run the
+     quick map and the inside test, and replace the chain row with one a coin cannot
+     pass (three or four buttons, or the first press scored). *building*
+185. **A harder real-data test with more room.** MNIST leaves 0.04 between born and
+     the teacher and the pair test 0.11, so every comparison needs 8 seeds. Add
+     same-format sets where a straight line does much worse than a small net
+     (Fashion-MNIST, Kuzushiji-MNIST), find born, the teacher's bound, competitive
+     learning and the live every-event rule on each, and pick the one where rules
+     separate on 2 or 3 seeds. Also the first check that the rule is not an MNIST
+     rule. *building*
+186. **One counter store for every rule that re-picks a cell's inputs.** The plane
+     store of idea 178 fights competitive learning, the tags and the backward walk
+     because each keeps its own evidence and re-picks from it. One store, or one
+     re-pick that reads them all, so the every-event rule can run under the one
+     setting; then the quick map with it. *queued behind idea 182*
+187. **A predictor inside the sheet good enough to teach.** Idea 183's working errors
+     come from an outside predictor; the sheet's predictor cells are a poor output.
+     Apply whatever idea 182 finds for the buttons to the predictor cells. *queued
+     behind idea 182*

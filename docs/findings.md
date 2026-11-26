@@ -497,6 +497,49 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   My re-run from main, seed 5 of the payment wiring: 0.9617 / 0.7717, the agent's
   numbers exactly. Not shown: payment along the engine's own read, whose output is
   wired motor cells, not a weight on every cell.
+- **The threshold cap stays at 64, and the chain pass was not credit** (idea 180,
+  queue item 2m, docs/results-2026-11-26-cap-default.md, `scripts/capdefault.sh`;
+  merged 2026-11-26). With the cap lifted the chain's second press was learned at
+  either cap; at 64 the first press is stuck on the paid button because its motor
+  cells sit at the cap and out-vote the other; lifted, the walk levels them and the
+  first press becomes a coin (the right button on 0.56 of first steps), which scores
+  0.72 against a pass line of 0.65. Motor cells alone lifted: 0.706; the rest alone:
+  0.325. With three buttons the right first press gets 0.37; the critic gets 0.95.
+  My re-run from main (base rule, seeds 5 and 6): 0.20 at cap 64, 0.69 at 1000, 0.66
+  with only motor cells lifted, 0.20 with only the rest, first press 0.53. So the
+  quick map's chain row with two buttons can be passed by a coin and does not test
+  what it says. What MNIST online gained at cap 64 was the motor cells firing over
+  their share (210 per 1,024 against the hidden cells' 34); reach under competitive
+  learning leaned on the cap itself, not on spikes. No one change beside the lifted
+  cap gives both back; a target of 64 gives back some MNIST and loses 8 cues and
+  exclusive-or. Rows passed at cap 64 / 128 / 1000: base 6 / 7 / 7, runner-up plus
+  compete 13 / 13 / 12, the one setting 15 / 15 / 16. A fault the score hides: under
+  the one setting on MNIST the motor cells run at 105, the shared sector bias pins,
+  and hidden cells are starved to 13 per 1,024 with 19 in 100 silent. With the rate
+  honestly held at 31, competitive learning reads 0.935 / 0.704 (not 0.952 / 0.726):
+  above born on every seed, level with the old one-hop rule on MNIST.
+- **Prediction errors teach the inside about the future, in a world with time in it
+  and with a good predictor** (idea 183, queue item 3c,
+  docs/results-2026-11-26-predict-every-event.md, `scripts/predevent.sh`; merged
+  2026-11-26; the owner's rich-signal steer with the rule that works). On delayed
+  echo, with an outside whole-number predictor's errors at four horizons sent down
+  the one-hop wires into every-event counters, the sheet's own predictor cells at 8
+  steps go from 0.592 to 0.733 (coin 0.609; 8 of 8 seeds), the cue is kept (0.723;
+  idea 164's rule 0.618), time since the cue reads 0.983 (born 0.859, coin 0.955).
+  My re-run from main, seeds 5 and 6: 0.589 to 0.730, coin 0.586. Several horizons
+  teach about twice what one does; the far three do as well as all four. With the
+  sheet's own predictor cells as the error source the gain is half (0.679); they
+  are a poor output (0.63 on catch where a perceptron on the same cells gets 0.84),
+  the same wall as idea 178. On catch the paddle's last move reads 0.799 (old rule
+  0.742, coin 0.618) but with the rate held the coin gets most of it. Catch, forage,
+  chain and echo gain nothing of the future. The task barely moves: delayed echo
+  +0.04 to +0.06 on idea 164's sheet; under the one setting's button rule order,
+  delayed echo and forage fall while a fresh reader of the same cells is level or
+  better (the output cannot follow the cells, again). MNIST with digits moved a
+  pixel a step and no labels: 0.944 against born 0.925, but only 0.005 beyond its
+  coin. Cost: four horizons run at about half speed. The plane store fights any
+  rule that re-picks hidden cells from another store (competitive learning, the
+  tags, the backward walk).
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -1011,6 +1054,17 @@ docs/results-2026-11-25-mnist.md
     wires by 0.004 / 0.012; passing credit a second hop back adds firing, not
     credit; perturbation credit drowns at 3,072 cells. A mark that lasts as long as
     the error is late is enough for credit over a few steps of time.
+
+61. **Every working teacher so far sits outside the blob; the blob's own outputs
+    are the wall.** [likely: two jobs, labels and predictions, 8 seeds] Button
+    lines and predictor cells alike are too poor (right 0.63 to 0.68 where a
+    whole-number perceptron on the same cells is right 0.84 to 0.91) to make the
+    error the one-hop rule needs, and they do not follow the cells once the cells
+    are taught. Fix the output and both kinds of teaching are in reach.
+62. **A row can be passed by a fault.** [real: the chain, seeds 1-12, looked inside]
+    The two-button chain is passed by a coin on the first press; cap 64 helped MNIST
+    online by letting motor cells fire six times their share. Look inside a pass
+    before calling it learning, and give motor cells their own regulation.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 

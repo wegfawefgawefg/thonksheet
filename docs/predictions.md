@@ -1,12 +1,12 @@
 
-44. **Every-event counters in the engine** (its bot's predictions are in
-    docs/results-2026-11-26-every-event.md, committed before any scoring run). Mine,
-    in the brief: the live rule would get near the written-in 0.961 / 0.761 once the
-    counters, the error and who learns were all changed. Right on the counters and
-    the error (0.951 / 0.770), wrong on who learns (all cell kinds cost the pair
-    test), and I did not foresee that the sheet's own output could not supply the
-    error at all.
-45. **The credit rules not yet tried** (its bot's predictions are in
-    docs/results-2026-11-26-credit-rules.md, committed before any scoring run; it
-    gave payment 0.3 to beat random wires on MNIST). Mine: none, beyond expecting
-    two phases to be the strongest; it came well under.
+46. **The cap default** (its bot's predictions are in
+    docs/results-2026-11-26-cap-default.md, committed before any run). Mine, told to
+    the owner: the chain passing with the cap lifted was "a surprise" worth
+    following and 1000 would likely become the default. Wrong twice: the pass is a
+    coin on the first press, and 64 stays.
+47. **Prediction errors with every-event counters** (its bot's predictions are in
+    docs/results-2026-11-26-predict-every-event.md, committed before any scoring
+    run). Mine, in the brief: a predictor's error is always honest, so this rule
+    should now teach the future. Half right: the target is honest but the sheet's
+    predictor cells are a poor output, so the full gain needed an outside predictor;
+    and only a world with time in it (delayed echo) shows it.
