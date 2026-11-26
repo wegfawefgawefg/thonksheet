@@ -18,10 +18,16 @@
 #   scripts/ladder4.sh NAME --parts bound --jobs 2 the upper bounds
 #   scripts/ladder4.sh NAME --parts transplant --transplant-arms f0,f3 --seeds 5-12
 #   scripts/ladder4.sh NAME --arms f0.cap4,f2.rate0.25 --ctrls life   settings after dots
+#   scripts/ladder4.sh NAME --parts transplant --transplant-arms f1.cap4 --read tw4 "--g.tile_winners 4"
+#                                                  read with extra sheet flags (files tagged @tw4)
+#   scripts/ladder4.sh NAME --parts transplant --transplant-arms Blooks --ctrls life   a bound's wiring
+#   scripts/ladder4.sh NAME --parts engine         the engine's own competitive lives, same reader
 #   scripts/ladder4.sh NAME --table-only           print what is there
 # Options: --seeds --tasks mnist,pair --arms --ctrls life,churn,shuffled --parts
-#   model,bound,transplant --jobs 3 --life 60000 --checkpoints 20000,60000 --epochs 6
-#   --objectives real,pixel,looks,apart,bcm --transplant-arms --settle 3000.
+#   model,bound,transplant,engine --jobs 3 --life 60000 --checkpoints 20000,60000 --epochs 6
+#   --objectives auto,real,pixel,looks,apart,bcm --transplant-arms --settle 3000 --read TAG FLAGS.
+# The model's own reader does not rank wirings as the real sheet does (the results doc,
+# calibration): judge a rule by its transplant.
 # Results in out/ladder4/NAME/ (table.txt; one json per run; wirings gzipped). A finished run
 # is kept, so running a line again only runs what is missing. Needs torch: set LADDER_VENV to
 # a venv that has it (default out/ladder2/venv, made by scripts/ladder2.sh). One thread a job.
