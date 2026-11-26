@@ -296,6 +296,7 @@ bool plug_attach(Plug& plug, Blob& blob, const TaskShape& shape, const PlugSetti
     }
     // the buttons' cells, for a readout rule that is told which button it is (idea 58)
     plug_mark_motors(plug, blob, true);
+    plug_output_lines(plug, blob, true);
     // attach the lines the task uses; the rest of the sensor region stays unattached
     int group = plug_sensor_group(plug);
     for (int line = 0; line < plug.sensor_lines; line++) {
@@ -337,6 +338,7 @@ void plug_mark_acted(const Plug& plug, Blob& blob, int move) {
 
 void plug_detach(Plug& plug, Blob& blob) {
     plug_mark_motors(plug, blob, false);
+    plug_output_lines(plug, blob, false);
     int group = plug_sensor_group(plug);
     for (int line = 0; line < plug.sensor_lines; line++) {
         if (!plug.attached[line]) {
@@ -416,6 +418,7 @@ void plug_write(Plug& plug, Blob& blob) {
 
 void plug_count(Plug& plug, const Blob& blob) {
     plug.signed_vote = blob.genome.readout_opponent != 0;
+    plug.tie_low = false;
     for (int line = 0; line < plug.motor_lines; line++) {
         const int* neurons = nullptr;
         int group = plug_motor_cells(plug, line, &neurons);
@@ -458,7 +461,7 @@ int plug_choice(Plug& plug) {
         }
     }
     plug_clear_counts(plug);
-    return tie ? -1 : best;
+    return tie && !plug.tie_low ? -1 : best;
 }
 
 void plug_reward(Plug& plug, int valence) {

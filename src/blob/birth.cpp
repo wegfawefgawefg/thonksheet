@@ -3,6 +3,7 @@
 #include "blob/fire_dynamics.hpp"
 #include "blob/long_memory.hpp"
 #include "blob/critic.hpp"
+#include "blob/output_state.hpp"
 #include "blob/random_words.hpp"
 #include "blob/regulate_rate.hpp"
 #include "blob/tag_store.hpp"
@@ -301,6 +302,11 @@ Blob* blob_birth(const Genome& genome, uint64_t seed) {
     blob->active_trace = (uint64_t*)alloc_lines(map_bytes);
     blob->motor_attached = (uint64_t*)alloc_lines(map_bytes);
     blob->motor_acted = (uint64_t*)alloc_lines(map_bytes);
+    if (genome.out_on || genome.readout_good >= 3) {
+        // the blob's own output: each motor cell's line, named by the world (255: none)
+        blob->motor_line = (uint8_t*)std::malloc((size_t)blob->neuron_count);
+        std::memset(blob->motor_line, 255, (size_t)blob->neuron_count);
+    }
     blob->readout_last = (uint64_t*)alloc_lines(map_bytes * HISTORY);
     blob->inhibitory = (uint64_t*)alloc_lines(map_bytes);
     blob->sensor = (uint64_t*)alloc_lines(map_bytes);
@@ -365,6 +371,7 @@ void blob_free(Blob* blob) {
     }
     std::free(blob->replay); // one block (blob/replay.hpp)
     hop_free(*blob);
+    output_free(*blob);
     compete_free(*blob);
     rate_free(*blob);
     long_memory_free(*blob);

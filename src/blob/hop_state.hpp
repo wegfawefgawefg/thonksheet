@@ -52,6 +52,8 @@ struct HopState {
     int8_t* pred_ring = nullptr;
     uint32_t pred_ring_count[HOP_PRED_HORIZONS] = {};
     uint64_t pred_seen = 0, pred_sent = 0; // lines graded, lines that taught
+    uint64_t* pay = nullptr;   // out_pay: 2 x (tile_count + 1) words, the cells the output's
+                               // payment told "more", then those it told "less"
 };
 
 // which sources of slot k a neuron may wire (as tag_rewire), and which are inhibitory
@@ -75,6 +77,10 @@ int hop_button_errors(Blob& blob, HopState& h, int valence, int* line, int* sign
 // first `count`, their coin controls applied; returns the new count
 int hop_pred_errors(Blob& blob, HopState& h, int* line, int* sign, int count);
 void hop_pred_free(HopState& h);
+// the lines of the verdict just given that the motor cells' own votes had too close, by
+// margin (hop_teach 5's form, whatever hop_teach is): wrong ones -1, the right one +1.
+// for the readout's told-the-answer rule (readout_good 3); needs hop_on for the votes
+int hop_margin_lines(const Blob& blob, int* line, int* sign);
 
 // hop_bits (hop_planes.cpp). how many planes the genome asks for (0: the byte counters)
 int hop_plane_count(const Genome& g);

@@ -58,7 +58,9 @@ static const char* const ceiling_own[] = {
     "--describe",  "--wiring-load", "--rows-out",     "--twice",      "--rec-cut", "--delays-one",
     "--pace-off",  "--read-freeze", "--reset-digit",  "--input-every", "--count-from", "--inh-fast",
     "--life-outside", "--life-outside-coin", "--life-reborn", "--outside-lr-1000",
-    "--outside-fine-1000", "--outside-form", "--outside-margin", "--life-moved", "--moved-margin"};
+    "--outside-fine-1000", "--outside-form", "--outside-margin", "--life-moved", "--moved-margin",
+    "--outside-read", "--outside-act", "--outside-bits", "--outside-step-shift", "--outside-vote",
+    "--outside-rule", "--outside-zone-32", "--outside-window", "--outside-top"};
 
 // a copy of rows with only the given columns
 static void pick_columns(const Rows& in, const std::vector<int>& cols, Rows& out) {
@@ -228,7 +230,10 @@ int mnist_ceiling(int argc, char** argv) {
     std::vector<int> test_images, test_partners;
     s.images = &test_images;
     s.partners = &test_partners;
-    sheet_eval(s, 0, 0, test_count, &test);
+    double own = sheet_eval(s, 0, 0, test_count, &test);
+    // what the blob itself answered on the scored digits, frozen (its own output if out_on;
+    // after a judged life without it the motor cells are as born, so this says nothing)
+    std::printf("own answer on the %s digits, frozen: %.4f\n", scored, own);
     s.images = nullptr;
     s.partners = nullptr;
     std::vector<View> views;

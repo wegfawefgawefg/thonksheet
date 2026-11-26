@@ -34,6 +34,8 @@ int ticker_before_tick(TaskTicker& tt, Blob& blob) {
     }
     plug_write(tt.plug, blob);
     babble_urge(tt.babble, tt.plug, blob);
+    // the step's last tick: the blob's own output, if it has one, is asked for its votes
+    blob.out_read = tt.tick_in_step == tt.ticks_per_step - 1;
     return tt.perfect_move;
 }
 
@@ -55,7 +57,9 @@ bool ticker_after_tick(TaskTicker& tt, const Blob& blob) {
     }
 
     // the answer: the motor line with the most spikes over the step, or for a pattern
-    // answer each output pair's vote (idea 134)
+    // answer each output pair's vote (idea 134); with the blob's own output (genome out_on)
+    // its votes stand in for the spike counts
+    plug_output_votes(tt.plug, blob);
     if (tt.plug.shape.pattern_bits > 0) {
         plug_pattern(tt.plug, tt.in.pattern, tt.in.pattern_tied);
         tt.in.move = -1;

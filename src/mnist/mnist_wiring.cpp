@@ -216,6 +216,13 @@ void life_run(Sheet& s, int64_t digits, int chunks, const std::vector<uint64_t>&
                         (unsigned long long)c[2], (unsigned long long)c[3], c[4] / cell_ticks,
                         c[5] / cell_ticks);
         }
+        if (s.blob->genome.out_on) {
+            uint64_t c[4];
+            blob_output_counts(*s.blob, c);
+            std::printf("%-24s own output: verdicts %llu, moved on %llu, lines moved %llu\n",
+                        label, (unsigned long long)c[0], (unsigned long long)c[1],
+                        (unsigned long long)c[2]);
+        }
         std::fflush(stdout);
     }
 }

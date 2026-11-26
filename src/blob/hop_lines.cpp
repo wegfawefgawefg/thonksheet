@@ -1,4 +1,5 @@
 #include "blob/hop_state.hpp"
+#include "blob/output_state.hpp"
 #include "blob/random_words.hpp"
 
 #include <cstdlib>
@@ -19,6 +20,8 @@
 //   5, by margin: a wrong line is told "lower" when its spikes are within hop_fine 32nds of
 //      the right line's, or above them; the right line "higher" when any wrong line is. a
 //      right line that wins by more than the margin teaches nothing.
+// hop_teach 6 (idea 182): the lines the blob's own output stepped at this verdict (out_on,
+// learn_output.cpp): the same form as 5, on votes that are sums of counters.
 // the rule's ladder (docs/results-2026-11-25-rule-ladder.md, rung T5) used the sign of a
 // softmax output less the answer, fine under 0.1. spikes have no softmax: 4 is that formula
 // on shares, 5 is what the formula does when the output is sharp.
@@ -60,7 +63,7 @@ static int target_errors(Blob& blob, HopState& h, int* line, int* sign) {
 }
 
 // hop_teach 4, 5: the output's own miss per line, from the step's spikes
-static int vote_errors(const Blob& blob, const HopState& h, int* line, int* sign) {
+static int vote_errors(const Blob& blob, const HopState& h, int teach, int* line, int* sign) {
     const Genome& g = blob.genome;
     int lines = h.votes < h.lines ? h.votes : h.lines;
     int fine = g.hop_fine < 0 ? 0 : (g.hop_fine > 32 ? 32 : g.hop_fine);
@@ -77,7 +80,7 @@ static int vote_errors(const Blob& blob, const HopState& h, int* line, int* sign
             continue;
         }
         int64_t v = h.vote[l] > 0 ? h.vote[l] : 0;
-        bool loud = g.hop_teach == 4 ? v > 0 && 32 * v >= fine * total
+        bool loud = teach == 4 ? v > 0 && 32 * v >= fine * total
                                      : v > 0 && 32 * v > (32 - fine) * best_right;
         close |= loud;
         if (loud) {
@@ -85,12 +88,21 @@ static int vote_errors(const Blob& blob, const HopState& h, int* line, int* sign
             sign[count++] = -1;
         }
     }
+    // readout_good 4: of the wrong lines that were too close, only the highest
+    if (g.readout_good == 4 && teach == 5 && count > 1) {
+        int top = 0;
+        for (int i = 1; i < count; i++) {
+            top = h.vote[line[i]] > h.vote[line[top]] ? i : top;
+        }
+        line[0] = line[top];
+        count = 1;
+    }
     for (int l = 0; l < lines; l++) {
         if (!((h.right >> l) & 1)) {
             continue;
         }
         int64_t v = h.vote[l] > 0 ? h.vote[l] : 0;
-        bool low = g.hop_teach == 4 ? total == 0 || 32 * (total - v) >= fine * total : close;
+        bool low = teach == 4 ? total == 0 || 32 * (total - v) >= fine * total : close;
         if (low) {
             line[count] = l;
             sign[count++] = 1;
@@ -130,6 +142,10 @@ static int ring_swap(Blob& blob, HopState& h, int* line, int* sign, int count) {
     return count;
 }
 
+int hop_margin_lines(const Blob& blob, int* line, int* sign) {
+    return blob.hop ? vote_errors(blob, *blob.hop, 5, line, sign) : 0;
+}
+
 int hop_button_errors(Blob& blob, HopState& h, int valence, int* line, int* sign) {
     const Genome& g = blob.genome;
     int count = 0;
@@ -137,7 +153,10 @@ int hop_button_errors(Blob& blob, HopState& h, int valence, int* line, int* sign
         return target_errors(blob, h, line, sign);
     }
     if (g.hop_teach == 4 || g.hop_teach == 5) {
-        count = vote_errors(blob, h, line, sign);
+        count = vote_errors(blob, h, g.hop_teach, line, sign);
+    }
+    if (g.hop_teach == 6) {
+        count = output_errors(blob, line, sign); // the blob's own output (learn_output.cpp)
     }
     for (int l = 0; (g.hop_teach == 1 || g.hop_teach == 2) && l < h.lines; l++) {
         bool pressed = (h.pressed >> l) & 1, right = (h.right >> l) & 1;

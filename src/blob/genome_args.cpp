@@ -229,6 +229,14 @@ static const GenomeField fields[] = {
     {"hop_loose", &Genome::hop_loose},
     {"hop_balance", &Genome::hop_balance},
     {"hop_pred_fine", &Genome::hop_pred_fine},
+    {"out_on", &Genome::out_on},
+    {"out_bits", &Genome::out_bits},
+    {"out_margin", &Genome::out_margin},
+    {"out_window", &Genome::out_window},
+    {"out_fine", &Genome::out_fine},
+    {"out_pay", &Genome::out_pay},
+    {"out_top", &Genome::out_top},
+    {"out_hidden", &Genome::out_hidden},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {
