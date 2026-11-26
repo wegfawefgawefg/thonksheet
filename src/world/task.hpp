@@ -176,6 +176,7 @@ struct TaskSettings {
     // more worlds (task_bandit.cpp, task_move.cpp, task_classic.cpp)
     int bandit_good = 80, bandit_poor = 20; // percent chance a press pays: best arm, the rest
     int chain_cue = 1;                      // chain: a line shows the stage (0: nothing does)
+    int chain_first = 0;                    // chain: 1 scores only the press that opens a chain
     int track_size = 5;                     // track: cells on the line
     int track_reward = 0;                   // track: 0 each step nearer/further, 1 arrival only
     int forage_size = 5;                    // forage: the wrapped grid is size x size (odd)

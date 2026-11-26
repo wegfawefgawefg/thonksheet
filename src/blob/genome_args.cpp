@@ -244,6 +244,12 @@ static const GenomeField fields[] = {
     {"out_cells", &Genome::out_cells},
     {"hop_deaf", &Genome::hop_deaf},
     {"compete_store", &Genome::compete_store},
+    {"motor_apart", &Genome::motor_apart},
+    {"motor_target_per_1024", &Genome::motor_target_per_1024},
+    {"motor_bias_max", &Genome::motor_bias_max},
+    {"threshold_cap_motor", &Genome::threshold_cap_motor},
+    {"threshold_down_shift_motor", &Genome::threshold_down_shift_motor},
+    {"motor_winners", &Genome::motor_winners},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

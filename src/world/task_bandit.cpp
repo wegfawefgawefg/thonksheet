@@ -14,7 +14,15 @@
 //                another button bad, no move nothing; then back to stage 0. so the first
 //                press is only ever paid one step later. chain_cue 1: two lines show the
 //                stage; 0: one line always on and the stage must be remembered. score:
-//                chains paid x 2 / steps (1.0 is A, B, A, B, ...).
+//                chains paid x 2 / steps (1.0 is A, B, A, B, ...). with two buttons a coin
+//                on the first press beside a learned second scores 0.72 of that, over the
+//                halfway line (docs/results-2026-11-26-cap-default.md). chain_first 1 scores
+//                the opening press alone: of the stage-0 steps that open a chain (the first
+//                step, and each step after a stage-1 step), the share on which A was pressed.
+//                a coin gets 1 / k there, and so does any player that does not know which
+//                press was paid for a step later: "anything but B" and "try each button in
+//                turn" both get 1 / (k - 1) at most
+//                (docs/results-2026-11-26-motor-apart.md).
 
 static int clamp(int v, int lo, int hi) {
     return v < lo ? lo : (v > hi ? hi : v);
@@ -87,18 +95,26 @@ static int pull(Task& task, int move) {
     return paid ? 1 : -1;
 }
 
+// task.timer: stage-0 steps since the chain was opened (0: this step opens it)
 static int chain_step(Task& task, int move) {
-    task.tally[1]++;
+    bool first = task.settings.chain_first != 0;
+    if (first && task.phase == 0 && task.timer == 0) {
+        task.tally[1]++;
+        task.tally[0] += move == task.button_of[0];
+    }
+    task.tally[1] += !first;
     if (task.phase == 0) {
+        task.timer = 1;
         task.phase = move == task.button_of[0] ? 1 : 0;
         return 0;
     }
     task.phase = 0;
+    task.timer = 0;
     if (move < 0) {
         return 0;
     }
     if (move == task.button_of[1]) {
-        task.tally[0] += 2;
+        task.tally[0] += first ? 0 : 2;
         task.episodes++;
         return 1;
     }

@@ -469,6 +469,28 @@ struct Genome {
     int compete_store = 0; // 1: competitive learning keeps its counts in the one-hop rule's
                            // bit planes (needs hop_on and hop_bits): one store for both
                            // rules and one re-pick, so they cannot fight over a cell's wiring
+    // motor cells regulated apart from the rest (idea 184, regulate.cpp, regulate_rate.cpp,
+    // docs/results-2026-11-26-motor-apart.md). 0 is off and changes nothing. "motor cells":
+    // the cells of the motor mask, attached to a button or not.
+    // 1: motor cells are left out of the sector's count and of its target, so the sector's
+    //    bias follows the other cells alone; they still feel that bias
+    // 2: and out of the bias: nothing is added to a motor cell's threshold
+    // 3: and each sector keeps a second bias for its motor cells, stepped toward
+    //    motor_target_per_1024 as the sector's own is, within +-motor_bias_max
+    int motor_apart = 0;
+    int motor_target_per_1024 = 0; // motor_apart 3: 0 is sector_target_per_1024
+    int motor_bias_max = 0;        // motor_apart 3: 0 is sector_bias_max
+    // the per-cell walk's numbers for motor cells alone. >0: their own cap (threshold_cap is
+    // then the other cells'), and their own down chance, which is their own target rate (up
+    // chance over down chance: 9 is 32 per 1,024, 8 is 64, 7 is 128)
+    int threshold_cap_motor = 0;
+    int threshold_down_shift_motor = 0;
+    // the tile's winners (tile_winners) by kind of cell. the cut is shared as it stands: a
+    // tile's motor cells, driven hard by the output rule, take its few spikes and its hidden
+    // cells go quiet. -1: the tile's winners are picked among the cells that are not motor
+    // cells, and the motor cells keep every spike. k > 0: the same, and the tile's motor
+    // cells have a cut of their own, k winners
+    int motor_winners = 0;
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

@@ -76,6 +76,8 @@ static const char* usage =
     "  --switch-every N   switch-bandit: steps before the paying button moves (default 1000);\n"
     "                     switch-rule: tries between changes (default 500)\n"
     "  --chain-cue 0|1    chain: a line shows the stage (default 1)\n"
+    "  --chain-first 1    chain: the score is the opening press alone: the share of chains\n"
+    "                     opened (the step after a stage-1 step) by pressing A at once\n"
     "  --track-size N     track: cells on the line (default 5)\n"
     "  --track-reward R   track: shaped (default; nearer good, further bad) or arrive\n"
     "  --forage-size N    forage: the wrapped grid's side, odd (default 5)\n"
