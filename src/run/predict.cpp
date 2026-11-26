@@ -57,15 +57,27 @@ static bool pick_cells(Predictor& p, const Plug& plug, const Blob& blob) {
 // idea 164: the errors go one hop to the hidden cells; their timing is horizon 1's (the
 // marks are the step the prediction was made in, still in the blob's rings at the next
 // step's start). with a reach, each line's place is the centre of its sensor group
-static bool hop_start(const Predictor& p, const Plug& plug, Blob& blob) {
+// idea 183: any of the horizons may teach (--predict-hop is a set of them). one past a
+// step has the blob keep each step's rings (hop_pred.cpp)
+static bool hop_start(Predictor& p, const Plug& plug, Blob& blob) {
     if (!p.s.hop) {
         return true;
     }
-    if (p.s.horizon[0] != 1 || p.targets > HOP_MAX_PRED) {
-        std::fprintf(stderr, "predict: --predict-hop needs horizon 1 and at most %d lines\n",
-                     HOP_MAX_PRED);
+    if (p.s.hop >> p.s.horizons || p.targets > HOP_MAX_PRED) {
+        std::fprintf(stderr,
+                     "predict: --predict-hop names %d horizons (bit i: the i-th of --predict), "
+                     "at most %d lines\n",
+                     p.s.horizons, HOP_MAX_PRED);
         return false;
     }
+    for (int i = 0; i < p.s.horizons; i++) {
+        p.hop_far = p.hop_far || (((p.s.hop >> i) & 1) && p.s.horizon[i] > 1);
+    }
+    if (p.hop_far && p.s.hop_reach > 0) {
+        std::fprintf(stderr, "predict: --predict-hop-reach only with the 1-step horizon\n");
+        return false;
+    }
+    p.votes.assign((size_t)PREDICT_RING * 2 * p.bits, 0);
     if (!blob.genome.hop_on) {
         std::fprintf(stderr, "predict: --predict-hop does nothing without --g.hop_on 1\n");
     }
@@ -140,6 +152,7 @@ static bool start(Predictor& p, const PredictSettings& s, const Plug& plug, Blob
     p.score.cells_per_group = p.cells_per_group;
     p.count.assign((size_t)2 * p.bits, 0);
     p.maps.assign((size_t)PREDICT_RING * HISTORY * p.words, 0);
+    outside_start(p, blob);
     return true;
 }
 
@@ -233,6 +246,28 @@ static void tally(PredictTally& t, const uint8_t* was, const uint8_t* now, const
     }
 }
 
+// horizon i's answers from ring slot `from`, graded by this step's lines, to the one-hop
+// rule: each line's two group counts and what the line is now. the rule makes the errors
+// (its fine zone) and teaches the hidden cells with the marks of the step the answers were
+// made in: on the next tick for the 1-step horizon, at once from the kept step for the rest
+static void hop_send(const Predictor& p, Blob& blob, int i, int from, const uint8_t* now) {
+    uint16_t off[PREDICT_MAX_TARGETS], on[PREDICT_MAX_TARGETS];
+    const uint16_t* votes = &p.votes[(size_t)from * 2 * p.bits];
+    for (int l = 0; l < p.targets; l++) {
+        int b = l * p.s.horizons + i;
+        off[l] = votes[2 * b];
+        on[l] = votes[2 * b + 1];
+        if (p.outside.on) {
+            // the outside predictor's verdict as a pair of counts: a line to be taught has
+            // every spike in the wrong group, a fine one in the right group
+            bool teach = p.outside.error[l] != 0;
+            on[l] = (now[l] != 0) != teach;
+            off[l] = !on[l];
+        }
+    }
+    blob_hop_predicted(blob, i, p.s.horizon[i], off, on, now, p.targets);
+}
+
 void predict_step_begin(Predictor& p, Plug& plug, Blob& blob) {
     int slot = (int)(p.step % PREDICT_RING);
     uint8_t* now = p.truth[slot];
@@ -264,8 +299,11 @@ void predict_step_begin(Predictor& p, Plug& plug, Blob& blob) {
         if (any_wrong) {
             verdict(p, blob, i, from, wrong, -1);
         }
-        if (i == 0 && p.s.hop) {
-            blob_hop_errors(blob, p.error, p.targets); // idea 164, taught on the next tick
+        if (p.outside.on) {
+            outside_grade(p, i, from, now, p.step >= p.score_from);
+        }
+        if ((p.s.hop >> i) & 1) {
+            hop_send(p, blob, i, from, now); // ideas 164, 183
         }
         if (any_right && blob.genome.readout_good) {
             verdict(p, blob, i, from, right, +1);
@@ -301,6 +339,9 @@ void predict_after_tick(Predictor& p, const TaskTicker& tt, const Blob& blob) {
 }
 
 void predict_count(Predictor& p, const Blob& blob) {
+    if (p.outside.on) {
+        outside_count(p, blob);
+    }
     int groups = 2 * p.bits;
     for (int g = 0; g < groups; g++) {
         const int* cells = &p.cell[(size_t)g * p.cells_per_group];
@@ -312,11 +353,21 @@ void predict_count(Predictor& p, const Blob& blob) {
     }
 }
 
-void predict_step_end(Predictor& p, const Blob& blob, int move) {
+void predict_step_end(Predictor& p, Blob& blob, int move) {
     if (!p.on) {
         return;
     }
     int slot = (int)(p.step % PREDICT_RING);
+    if (!p.votes.empty()) {
+        std::memcpy(&p.votes[(size_t)slot * 2 * p.bits], p.count.data(),
+                    (size_t)2 * p.bits * sizeof(uint16_t));
+    }
+    if (p.hop_far) {
+        blob_hop_keep_step(blob);
+    }
+    if (p.outside.on) {
+        outside_step_end(p, slot);
+    }
     for (int i = 0; i < p.s.horizons; i++) {
         for (int l = 0; l < p.targets; l++) {
             int b = l * p.s.horizons + i;

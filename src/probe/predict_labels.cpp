@@ -61,9 +61,16 @@ bool read_labels(const Task& task, const ReadMemory& m, ReadLabels& out) {
         add(out, "beat_phase", task.settings.period, (int)(task.steps % task.settings.period));
         break;
     default:
-        return false;
+        break;
     }
-    return true;
+    // idea 183: the right button of this step (none is a class), what the buttons need the
+    // inside to hold. predict-next's is its "next"
+    int motors = task_shape(task).motors;
+    if (motors > 0 && task.kind != TaskKind::predict_next) {
+        int right = task_perfect_move(task);
+        add(out, "right", motors + 1, right < 0 || right >= motors ? motors : right);
+    }
+    return out.count > 0;
 }
 
 void read_remember(const Task& task, ReadMemory& m, int move) {

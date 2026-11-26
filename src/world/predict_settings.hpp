@@ -21,9 +21,15 @@ struct PredictSettings {
     int64_t score_from = -1; // --predict-score-from: first step tallied; -1 the last quarter
     // idea 164: --predict-hop 1 sends the shortest horizon's errors (which must be 1) to every
     // hidden cell as error lines of the one-hop rule (needs --g.hop_on 1); --predict-hop-reach
-    // R > 0: each line's error reaches only cells within R cells of its sensor group
+    // R > 0: each line's error reaches only cells within R cells of its sensor group.
+    // idea 183: --predict-hop is a set of horizons, bit i for the i-th of --predict's list
+    // (1: the shortest alone, as idea 164; 15: all four; 14: the three far ones)
     int hop = 0;
     int hop_reach = 0;
+    // idea 183: --predict-outside M > 0: a whole-number predictor outside the sheet (a
+    // margin of M steps; run/predict_outside.cpp) makes the errors --predict-hop sends, in
+    // place of the predictor cells' (which still learn). a measuring stick
+    int outside = 0;
 };
 
 inline bool predict_wanted(const PredictSettings& s) {
@@ -41,10 +47,17 @@ struct PredictTally {
     int64_t line_on[PREDICT_MAX_TARGETS] = {}; // for the most-common-value baseline
 };
 
+// --predict-outside: the outside predictor's line-steps over the scored steps, and those on
+// which it took a step (and so sent an error)
+struct PredictOutsideTally {
+    int64_t total = 0, right = 0, on = 0, on_right = 0, sent = 0;
+};
+
 struct PredictScore {
     int horizons = 0, targets = 0, cells_per_group = 0;
     int horizon[PREDICT_MAX_HORIZONS] = {};
     PredictTally tally[PREDICT_MAX_HORIZONS];
+    PredictOutsideTally outside[PREDICT_MAX_HORIZONS];
     int64_t verdicts = 0; // verdict calls (one per horizon per step with a wrong bit)
 };
 

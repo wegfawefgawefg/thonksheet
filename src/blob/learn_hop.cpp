@@ -42,6 +42,7 @@
 // (or alone: hop_teach 0 sends no button errors). with places (blob_hop_error_places) a
 // prediction line reaches only the cells within `reach` cells of its sensor group, still with
 // a hashed sign (the predictive-coding form); without, the hashed wires as for the buttons.
+// idea 183: the prediction lines themselves (fine zone, far horizons, coins): hop_pred.cpp.
 //
 // idea 178 (docs/results-2026-11-26-every-event.md), each off by default: hop_bits keeps the
 // counters as bit planes wide enough to step on every marked input (hop_shift 0;
@@ -75,6 +76,7 @@ void hop_free(Blob& blob) {
     std::free(blob.hop->ring_down);
     std::free(blob.hop->balance);
     hop_planes_free(*blob.hop);
+    hop_pred_free(*blob.hop);
     std::free(blob.hop);
     blob.hop = nullptr;
 }
@@ -373,17 +375,7 @@ void learn_hop(Blob& blob) {
     if (buttons) {
         count = hop_button_errors(blob, h, valence, line, sign);
     }
-    int from_pred = count;
-    for (int l = 0; h.pred_pending && l < h.pred_lines; l++) {
-        if (h.pred_error[l] != 0) {
-            line[count] = HOP_PRED_FIRST + l;
-            sign[count++] = h.pred_error[l];
-        }
-    }
-    for (int i = from_pred; g.hop_coin && i < count; i++) {
-        line[i] = HOP_PRED_FIRST + (int)rng_below(blob.rng, (uint32_t)h.pred_lines);
-    }
-    h.pred_pending = 0;
+    count = hop_pred_errors(blob, h, line, sign, count); // hop_pred.cpp
     if (count == 0) {
         return;
     }

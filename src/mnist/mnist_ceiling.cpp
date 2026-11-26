@@ -25,6 +25,9 @@
 //   --life-outside 1   in that life the hop rule's error lines come from a softmax layer
 //                  outside the sheet (mnist_outside.cpp; idea 178), not from the buttons.
 //                  alone the life is not judged, so the sheet's readout does not learn
+//   --life-moved S     in that life every digit is shown for S steps, a pixel further each
+//                  step, and a predictor outside the sheet sends the hop rule its next-frame
+//                  errors (mnist_moved.cpp; idea 183); --moved-margin its margin in steps
 //   --life-reborn 0    after a judged life the motor cells keep what they learned (for
 //                  lives in which they learned by the hop rule, --g.hop_who 4)
 //   --shift 1      the reader also scored on test digits moved 1 and 2 pixels
@@ -55,7 +58,7 @@ static const char* const ceiling_own[] = {
     "--describe",  "--wiring-load", "--rows-out",     "--twice",      "--rec-cut", "--delays-one",
     "--pace-off",  "--read-freeze", "--reset-digit",  "--input-every", "--count-from", "--inh-fast",
     "--life-outside", "--life-outside-coin", "--life-reborn", "--outside-lr-1000",
-    "--outside-fine-1000", "--outside-form", "--outside-margin"};
+    "--outside-fine-1000", "--outside-form", "--outside-margin", "--life-moved", "--moved-margin"};
 
 // a copy of rows with only the given columns
 static void pick_columns(const Rows& in, const std::vector<int>& cols, Rows& out) {
@@ -187,10 +190,16 @@ int mnist_ceiling(int argc, char** argv) {
             s.outside = outside_make(s, argc, argv);
             s.blob->genome.hop_teach = 0; // the buttons send the rule nothing
         }
+        s.moved = moved_make(s, argc, argv); // idea 183; null unless --life-moved
+        if (s.moved) {
+            s.blob->genome.hop_teach = 0;
+        }
         life_run(s, pretrain, 10, born);
         s.shuffle = 0;
         outside_free(s.outside);
         s.outside = nullptr;
+        moved_free(s.moved);
+        s.moved = nullptr;
     }
     if (s.teach > 0 && int_flag(argc, argv, "--life-reborn", 1)) {
         blob_motor_reborn(*s.blob, s.flags.seed);

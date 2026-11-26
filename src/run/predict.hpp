@@ -31,8 +31,20 @@
 //   predict_after_tick(p, tt, blob);    before ticker_after_tick
 //   if (ticker_after_tick(...)) predict_step_end(p, blob, tt.in.move);
 
+// --predict-outside (predict_outside.cpp): a predictor outside the sheet, a measuring stick
+struct OutsidePredictor {
+    bool on = false;
+    int margin = 0;
+    std::vector<int> cell;                  // the non-sensor cells it reads
+    std::vector<uint8_t> count;             // their spikes this step
+    std::vector<uint8_t> kept;              // PREDICT_RING steps of counts
+    std::vector<int16_t> weight;            // bits x cells
+    int8_t error[PREDICT_MAX_TARGETS] = {}; // the horizon just graded: +1 higher, -1 lower, 0 fine
+};
+
 struct Predictor {
     bool on = false; // anything asked (predict_wanted) and attached
+    OutsidePredictor outside;
     PredictSettings s;
     int targets = 0;
     int target_line[PREDICT_MAX_TARGETS] = {}; // plug line of each target
@@ -57,6 +69,10 @@ struct Predictor {
     int8_t error[PREDICT_MAX_TARGETS] = {};
     PredictScore score;
     std::vector<uint64_t> saved_attached, saved_acted; // the world's marks, kept round a verdict
+    // idea 183: each ring step's group counts (PREDICT_RING x 2 x bits), kept when the
+    // answers' errors teach the hidden cells (--predict-hop); hop_far: some horizon past 1 does
+    std::vector<uint16_t> votes;
+    bool hop_far = false;
 };
 
 // after ticker_start: lay the plug again with the extra lines, pick the predictor cells.
@@ -68,12 +84,21 @@ void predict_before_tick(Predictor& p, TaskTicker& tt, Blob& blob);
 // after each blob tick, before ticker_after_tick: count the groups' spikes
 void predict_after_tick(Predictor& p, const TaskTicker& tt, const Blob& blob);
 // when ticker_after_tick says the step is answered: read the answers, keep the maps
-void predict_step_end(Predictor& p, const Blob& blob, int move);
+void predict_step_end(Predictor& p, Blob& blob, int move);
 
 // the same steps for a caller that writes the plug's lines itself (no task: the shuffled
 // control in blobprobe predict). predict_step_begin wants the step's lines in the plug
 void predict_step_begin(Predictor& p, Plug& plug, Blob& blob);
 void predict_count(Predictor& p, const Blob& blob);
+
+// --predict-outside (predict_outside.cpp), called from the steps above: pick its cells;
+// count their spikes each tick; keep the step's counts in ring slot `slot`; grade horizon
+// i's votes of ring slot `from` against the lines now, step the weights, leave the errors
+// in p.outside.error
+void outside_start(Predictor& p, const Blob& blob);
+void outside_count(Predictor& p, const Blob& blob);
+void outside_step_end(Predictor& p, int slot);
+void outside_grade(Predictor& p, int i, int from, const uint8_t* now, bool scored);
 
 // the shortest horizon's signed errors (the idea 159 hook), PREDICT_MAX_TARGETS long
 inline const int8_t* predict_errors(const Predictor& p) {

@@ -21,6 +21,13 @@
 //                  164) h<h>_hidden (the hidden cells only) and h<h>_both (hidden and lines)
 //   --lean 1       only the hidden cells' and the lines' readers (no whole sheet, no "both"):
 //                  the ridge fits are most of a run's time
+//   --read-own 1   idea 183: the read's moves are the frozen sheet's own buttons, not a coin
+//                  (each arm then sees its own world); the read's task score goes to the csv
+//                  (question "read", key own_score)
+// Idea 183 also adds: the future reader's balanced and changed scores (keys h<h>_hidden_bal,
+// _hidden_chg, _lines_bal, _lines_chg; predict_future.hpp), the question "right" (the right
+// button of the step, where the world has one), and the life's prediction lines graded and
+// taught (pred_seen, pred_sent).
 // With --out, the life's own numbers too (question "life"): the task's late score (the last
 // tenth of its windows), ticks per second, the predictor's skill per horizon, and the
 // one-hop rule's counts. The life hands the one-hop rule the buttons' lines as blobrun does.
@@ -44,8 +51,8 @@
 int int_arg(int argc, char** argv, const char* name, int fallback);
 const char* text_arg(int argc, char** argv, const char* name, const char* fallback);
 
-static const char* const own_flags[] = {"--life",  "--shuffle", "--trials", "--settle",
-                                        "--label", "--out",     "--future", "--lean"};
+static const char* const own_flags[] = {"--life", "--shuffle", "--trials", "--settle",  "--label",
+                                        "--out",  "--future",  "--lean",   "--read-own"};
 
 static TaskTicker ticker;
 static Predictor predictor;
@@ -187,7 +194,9 @@ static double majority(const std::vector<int>& label, int classes) {
 
 // the life's numbers as csv lines (question "life")
 static void life_csv(FILE* csv, const char* label, const LifeNumbers& n, const PredictScore& s,
-                     const uint64_t hop[7]) {
+                     const uint64_t hop[7], const uint64_t pred[2]) {
+    std::fprintf(csv, "%s,life,pred_seen,%llu\n%s,life,pred_sent,%llu\n", label,
+                 (unsigned long long)pred[0], label, (unsigned long long)pred[1]);
     size_t w = n.windows.size(), edge = w / 10 > 0 ? w / 10 : 1;
     double late = 0;
     for (size_t i = w > edge ? w - edge : 0; i < w; i++) {
@@ -196,8 +205,8 @@ static void life_csv(FILE* csv, const char* label, const LifeNumbers& n, const P
     std::fprintf(csv, "%s,life,task_late,%.6g\n", label, late);
     std::fprintf(csv, "%s,life,ticks_per_s,%.6g\n", label,
                  n.seconds > 0 ? (double)n.ticks / n.seconds : 0.0);
-    static const char* const keys[7] = {"hop_verdicts", "hop_taught", "hop_steps", "hop_rewires",
-                                        "hop_near", "hop_fired", "hop_cellticks"};
+    static const char* const keys[7] = {"hop_verdicts", "hop_taught", "hop_steps",    "hop_rewires",
+                                        "hop_near",     "hop_fired",  "hop_cellticks"};
     for (int i = 0; i < 7; i++) {
         std::fprintf(csv, "%s,life,%s,%llu\n", label, keys[i], (unsigned long long)hop[i]);
     }
@@ -210,6 +219,17 @@ static void life_csv(FILE* csv, const char* label, const LifeNumbers& n, const P
         std::fprintf(csv, "%s,life,pred_h%d_balanced,%.6g\n", label, s.horizon[i], (on + off) / 2);
         std::fprintf(csv, "%s,life,pred_h%d_changed_right,%.6g\n", label, s.horizon[i],
                      t.changed ? (double)t.changed_right / (double)t.changed : 0.0);
+        const PredictOutsideTally& o = s.outside[i]; // --predict-outside
+        if (o.total > 0) {
+            double hit = o.on ? (double)o.on_right / (double)o.on : 0;
+            double rest =
+                o.total > o.on ? (double)(o.right - o.on_right) / (double)(o.total - o.on) : 0;
+            std::fprintf(csv, "%s,life,out_h%d_right,%.6g\n%s,life,out_h%d_balanced,%.6g\n", label,
+                         s.horizon[i], (double)o.right / (double)o.total, label, s.horizon[i],
+                         (hit + rest) / 2);
+            std::fprintf(csv, "%s,life,out_h%d_sent,%.6g\n", label, s.horizon[i],
+                         (double)o.sent / (double)o.total);
+        }
     }
 }
 
@@ -262,8 +282,10 @@ int probe_predict(int argc, char** argv) {
         live(*blob, flags, life, nullptr, lived);
     }
     skill = predictor.score;
-    uint64_t hop[7];
+    uint64_t hop[7], hop_pred[2];
     blob_hop_counts(*blob, hop);
+    blob_hop_pred_counts(*blob, hop_pred);
+    bool own = int_arg(argc, argv, "--read-own", 0) != 0;
     blob->genome.learning_on = 0;
     std::fflush(stdout);
 
@@ -333,9 +355,13 @@ int probe_predict(int argc, char** argv) {
             if (predictor.on) {
                 predict_count(predictor, *blob);
             }
+            if (own) {
+                plug_count(plug, *blob);
+            }
         }
         int buttons = plug.motor_lines;
         int move = (int)(mix(coin) % (uint64_t)(buttons + 1)) - 1;
+        move = own ? plug_choice(plug) : move;
         read_remember(tt.task, memory, move);
         TaskStepIn in;
         in.move = move;
@@ -429,11 +455,14 @@ int probe_predict(int argc, char** argv) {
         FutureScore inner = future_fit(fut_hidden, hc, fut_lines, count, fut_rows, h);
         FutureScore both =
             lean ? FutureScore{} : future_fit(fut_both, hc + count, fut_lines, count, fut_rows, h);
-        double values[6] = {sheet.right, lines.right, sheet.same, sheet.common, inner.right,
-                            both.right};
-        static const char* const keys[6] = {"sheet", "lines", "same", "common", "hidden", "both"};
+        double values[10] = {sheet.right,    lines.right,  sheet.same,     sheet.common,
+                             inner.right,    both.right,   inner.balanced, inner.changed,
+                             lines.balanced, lines.changed};
+        static const char* const keys[10] = {"sheet",     "lines",    "same",       "common",
+                                             "hidden",    "both",     "hidden_bal", "hidden_chg",
+                                             "lines_bal", "lines_chg"};
         std::printf("%-24s future h=%d", label, h);
-        for (int k = 0; k < 6; k++) {
+        for (int k = 0; k < 10; k++) {
             if (lean && (k == 0 || k == 5)) {
                 continue; // not read
             }
@@ -447,7 +476,10 @@ int probe_predict(int argc, char** argv) {
         at = comma ? comma + 1 : nullptr;
     }
     if (csv && life > 0) {
-        life_csv(csv, label, lived, skill, hop);
+        life_csv(csv, label, lived, skill, hop, hop_pred);
+    }
+    if (csv && own) {
+        std::fprintf(csv, "%s,read,own_score,%.6g\n", label, task_window_score(tt.task));
     }
     if (csv) {
         std::fclose(csv);

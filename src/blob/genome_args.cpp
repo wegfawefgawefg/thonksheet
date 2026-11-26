@@ -228,6 +228,7 @@ static const GenomeField fields[] = {
     {"hop_rewire_every", &Genome::hop_rewire_every},
     {"hop_loose", &Genome::hop_loose},
     {"hop_balance", &Genome::hop_balance},
+    {"hop_pred_fine", &Genome::hop_pred_fine},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {
