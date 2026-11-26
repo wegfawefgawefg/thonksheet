@@ -1015,3 +1015,17 @@ co-activity runs ties the held units together and loses their order.
      pass; give the output a rule for good-or-bad-only verdicts that keeps one line
      up, one line down; find why parity of 3 fell; and say what one counter store
      for all re-picking rules needs (idea 186). *building*
+189. **The error carried in timing, as the brain may do it.** The owner, 2026-11-26: do
+     real neurons use timing to get a kind of backprop. Three known forms, none tried
+     here: (a) a burst as the error (idea 29; Payeur 2021): feedback from above lands
+     on a second input site of the cell and turns a spike into two close spikes; a
+     wire then carries "fired" and "should fire more" at once, and a synapse learns
+     from burst against single spike; (b) the change in a cell's own firing as its
+     error (Hinton 2007, Bengio 2015): feedback nudges the cell a little after it
+     answered, and each input that was on steps by the sign of that change, which is
+     what spike-timing learning computes; (c) a mark that lasts seconds and a strong
+     late signal that cashes it (plateau potentials, Bittner 2017). On the model
+     bench first, each against the one-hop rule (0.961 / 0.758 written in) and its
+     coin: what each needs in bits, and whether (a) or (b) can replace the hashed
+     error wires with the sheet's own wires. *queued*
+

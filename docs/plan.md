@@ -152,6 +152,8 @@ Queued, in order:
    Behind it: idea 187 (the predictor cells given the same output, so the prediction
    loop closes inside the blob with no labels), then the closed loop on the delayed
    rows with marks that last (idea 177's time result).
+   Also queued: idea 189 (the error carried in timing: bursts, the change in a cell's
+   own firing, marks cashed by a late strong signal), on the model bench.
 9a. *(done, merged: docs/results-2026-11-26-output-inside.md, `scripts/outputinside.sh`;
    the loop closed inside the blob: 0.956 to 0.961 / 0.759 to 0.776, its own answer
    0.925 to 0.936 right online; one line up, one line down)*
