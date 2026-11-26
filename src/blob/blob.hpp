@@ -200,6 +200,18 @@ struct Blob {
 
     // idea 175's rate controls (regulate_rate.cpp): made on first use while one is on
     struct RateState* rate = nullptr;
+
+    // the blob's own output (genome out_on, learn_output.cpp). written by the world like
+    // sense_in: motor_line names each button's motor cells (a byte a neuron, its line, 255
+    // none; made at birth while out_on, null otherwise) and motor_line_set counts the
+    // namings; out_read, set before a tick, asks for the votes of the step that ends with
+    // it. written by the blob in that tick: out_vote, a vote a line, for out_lines lines.
+    uint8_t* motor_line = nullptr;
+    uint32_t motor_line_set = 0;
+    int out_read = 0;
+    int out_lines = 0;
+    int32_t out_vote[64] = {};
+    struct OutputState* output = nullptr;
 };
 
 // birth and death
@@ -315,6 +327,22 @@ void blob_hop_error_places(Blob& blob, const int16_t* x, const int16_t* y, int c
 // rewires, and over the windows read, near cell-ticks and fired cell-ticks of the learners
 // against all learner cell-ticks (all zero while off)
 void blob_hop_counts(const Blob& blob, uint64_t out[7]);
+
+// out_on, the blob's own output (learn_output.cpp). nothing while out_on is 0.
+// the world names a motor cell as one of a button's (line 255: of none). a new naming
+// starts a fresh output: its counters go back to zero
+inline void blob_motor_line(Blob& blob, int neuron, int line) {
+    if (blob.motor_line) {
+        blob.motor_line[neuron] = (uint8_t)line;
+        blob.motor_line_set++;
+    }
+}
+// the verdict on the step just read: the lines that were right, as a mask (pairs: a pattern
+// answer, each right line stands against the other line of its pair). written before
+// blob_reward; the counters move in the next tick's learning step
+void blob_output_verdict(Blob& blob, uint64_t right, int pairs);
+// verdicts heard, verdicts on which a line moved, lines moved
+void blob_output_counts(const Blob& blob, uint64_t out[4]);
 
 // the motor cells' wiring put back as born (born again from the same genome and seed) and
 // the readout's counters dropped, for a frozen read after a taught life (motor_reborn.cpp)

@@ -413,6 +413,31 @@ struct Genome {
                          // count past this bound is skipped (1..127). without it a sign
                          // that comes more often than the other pushes every often-on
                          // source one way, whatever it says about the answer
+    // the blob's own output (idea 182, learn_output.cpp,
+    // docs/results-2026-11-26-output-inside.md). 0 is off and changes nothing. beside these,
+    // hop_teach 6 is a new value of the number above: the one-hop rule's errors are the
+    // lines this output stepped at the verdict (wrong and too close: lower; the right one:
+    // higher).
+    int out_on = 0;      // 1: each motor cell of a button keeps a signed counter per source
+                         // it can hear; a line's vote is its cells' counters summed over the
+                         // sources that fired in the window, read at the end of the step in
+                         // place of the motor cells' spikes; told the right line, it learns
+                         // as a perceptron with a margin. the readout's own rule is skipped
+    int out_bits = 12;   // the counters' width, as bit planes (4..16)
+    int out_margin = 2;  // too close: within this many steps' worth of the right line's vote
+    int out_window = 15; // a source is on if it fired in the last this many ticks (1..15)
+    int out_fine = 0;    // >0: the zone of the errors sent to the cells, in steps' worth,
+                         // when it is not to be out_margin
+    int out_pay = 0;     // 1: the one-hop rule's errors go back along the output's own
+                         // sources, by the sign of each counter, not on the hashed wires
+    int out_top = 0;     // 1: of the wrong lines that were too close only the highest steps
+                         // down (one line down for one up, so what the lines share cannot
+                         // drift); 2: the same, but the cells still hear of every close line
+    int out_hidden = 0;  // 1: no motor cell counts a sensor cell
+    // and readout_good 3, a new value of the number above: the motor cells as they are,
+    // told the right line, learn as a perceptron with a margin (learn_readout.cpp): the
+    // cells of a wrong line whose spikes were within hop_fine 32nds of the right line's
+    // lose their active inputs, the right line's cells then gain. needs hop_on
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

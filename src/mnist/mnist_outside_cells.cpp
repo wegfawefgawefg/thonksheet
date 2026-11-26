@@ -12,12 +12,17 @@
 //                         hear (9 local tiles and its far tiles; itself left out; no
 //                         inhibitory source on a far slot), sensor cells included. 0: a line
 //                         reads every non-sensor cell once
+//   --outside-read 2      as 1, but no cell reads a sensor cell
+//   --outside-top 1       only the wrong line with the highest vote can be too close (one
+//                         line down for one line up, so what all lines share cannot drift)
 //   --outside-act 1       a source is one bit: it fired in the last --outside-window (15)
 //                         ticks of the digit. 0: its spike count over the digit
 //   --outside-bits N      a weight stops at +-(2^(N-1) - 1) (16)
 //   --outside-step-shift N   each spike steps a weight with chance 2^-N (0: every spike)
 //   --outside-vote 1      a line's vote is the number of its cells whose own sum is over
 //                         zero (cells that would spike once), not the sum
+//   --outside-vote 3      as 1, but a cell's bar is the running mean of its own sum (over
+//                         about 64 digits), as threshold regulation would hold it
 //   --outside-vote 2      each cell wires its highest weights at its born count, one bit
 //                         each (an inhibitory source by its most negative weight, and it
 //                         then counts -5); the vote is the sum of the cells' drives
@@ -40,15 +45,16 @@ struct MotorCell {
 struct OutsideCells {
     int lines = 0, neurons = 0, tiles = 0;
     int read = 0, act = 0, bits = 16, step_shift = 0, vote = 0, rule = 0, margin = 2, zone = 0;
-    int window = 15, inhibit_gain = 5;
+    int window = 15, inhibit_gain = 5, top = 0;
     std::vector<int32_t> w;    // lines x neurons: the weight a line's cells keep for a source
     std::vector<int32_t> mult; // lines x neurons: how many of the line's places hear it
     std::vector<int32_t> a;    // this digit's activity per neuron
-    std::vector<uint8_t> inhibitory;
+    std::vector<uint8_t> inhibitory, skip; // skip: sources no cell may read
     std::vector<MotorCell> cells;
     std::vector<int> first;                // line l's cells: cells[first[l] .. first[l + 1])
     std::vector<std::vector<int>> wired;   // vote 2: each cell's wired sources
     std::vector<uint8_t> stale;            // vote 2: the line's cells must re-pick
+    std::vector<int64_t> bar;              // vote 3: 64 times each cell's running mean sum
     uint64_t rng = 0x6c6164646572ull;
 };
 
@@ -58,7 +64,7 @@ static bool flag_bit(const uint64_t* words, int n) {
 
 // may cell c wire source s through slot k
 static bool usable(const OutsideCells& o, const MotorCell& c, int k, int s) {
-    return s != c.n && !(k >= LOCAL_SLOTS && o.inhibitory[(size_t)s]);
+    return s != c.n && !o.skip[(size_t)s] && !(k >= LOCAL_SLOTS && o.inhibitory[(size_t)s]);
 }
 
 OutsideCells* outside_cells_make(const Sheet& s, int argc, char** argv) {
@@ -77,14 +83,17 @@ OutsideCells* outside_cells_make(const Sheet& s, int argc, char** argv) {
     o->margin = int_flag(argc, argv, "--outside-margin", 2);
     o->zone = int_flag(argc, argv, "--outside-zone-32", 0);
     o->window = int_flag(argc, argv, "--outside-window", 15);
+    o->top = int_flag(argc, argv, "--outside-top", 0);
     o->inhibit_gain = b.genome.inhibit_gain;
     size_t all = (size_t)o->lines * (size_t)o->neurons;
     o->w.assign(all, 0);
     o->mult.assign(all, 0);
     o->a.assign((size_t)o->neurons, 0);
     o->inhibitory.assign((size_t)o->neurons, 0);
+    o->skip.assign((size_t)o->neurons, 0);
     for (int n = 0; n < o->neurons; n++) {
         o->inhibitory[(size_t)n] = flag_bit(b.inhibitory, n);
+        o->skip[(size_t)n] = o->read == 2 && flag_bit(b.sensor, n);
     }
     o->first.assign((size_t)o->lines + 1, 0);
     for (int l = 0; l < o->lines; l++) {
@@ -123,6 +132,7 @@ OutsideCells* outside_cells_make(const Sheet& s, int argc, char** argv) {
     }
     o->wired.resize(o->cells.size());
     o->stale.assign((size_t)o->lines, 1);
+    o->bar.assign(o->cells.size(), 0);
     return o;
 }
 
@@ -207,7 +217,7 @@ static void votes(OutsideCells& o, int64_t* vote, int64_t* size) {
         }
         // the cells' own sums: the tiles' sums (all sources, and excitatory ones for far slots)
         std::vector<int64_t> all((size_t)o.tiles, 0), exc((size_t)o.tiles, 0);
-        for (int n = 0; o.vote == 1 && n < o.neurons; n++) {
+        for (int n = 0; o.vote != 2 && n < o.neurons; n++) {
             int64_t x = (int64_t)w[n] * o.a[(size_t)n];
             all[(size_t)(n / TILE_NEURONS)] += x;
             exc[(size_t)(n / TILE_NEURONS)] += o.inhibitory[(size_t)n] ? 0 : x;
@@ -231,7 +241,9 @@ static void votes(OutsideCells& o, int64_t* vote, int64_t* size) {
                 bool own = k < LOCAL_SLOTS && c.src[k] == c.n / TILE_NEURONS;
                 sum -= own ? (int64_t)w[c.n] * o.a[(size_t)c.n] : 0;
             }
-            v += sum > 0;
+            int64_t& bar = o.bar[(size_t)i];
+            v += o.vote == 3 ? 64 * sum > bar : sum > 0;
+            bar += sum - bar / 64;
         }
         vote[l] = v;
     }
@@ -273,10 +285,15 @@ int outside_cells_digit(const Sheet& s, OutsideCells& o, const uint8_t* counts, 
         return vote[low] + o.margin * unit > vote[high];
     };
     bool any = false;
+    int high = -1;
     for (int l = 0; l < o.lines; l++) {
         bool lower = known && l != label && close(l, label);
         sign[l] = (int8_t)(lower ? -1 : 0);
         any |= lower;
+        high = lower && (high < 0 || vote[l] > vote[high]) ? l : high;
+    }
+    for (int l = 0; o.top && l < o.lines; l++) {
+        sign[l] = (int8_t)(l == high ? -1 : 0);
     }
     if (any) {
         sign[label] = 1;

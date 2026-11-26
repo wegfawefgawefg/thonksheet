@@ -8,7 +8,7 @@
 // the group that was right.
 void plug_hop_lines(const Plug& plug, Blob& blob, int move, int right, uint64_t pattern,
                     uint64_t tied, uint64_t graded) {
-    if (!blob.genome.hop_on) {
+    if (!blob.genome.hop_on && !blob.genome.out_on) {
         return;
     }
     uint64_t pressed = 0, want = 0;
@@ -28,9 +28,12 @@ void plug_hop_lines(const Plug& plug, Blob& blob, int move, int right, uint64_t 
         pressed = move >= 0 && move < 64 ? 1ull << move : 0;
         want = right >= 0 && right < 64 ? 1ull << right : 0;
     }
+    // the blob's own output (genome out_on) hears which lines were right
+    blob_output_verdict(blob, want, plug.shape.pattern_bits > 0);
     blob_hop_lines(blob, pressed, want, plug.motor_lines);
     if (plug.shape.pattern_bits == 0) {
         // each line's spikes in the step, for the rule's own-error forms (hop_teach 4, 5)
         blob_hop_votes(blob, plug.last_count, plug.motor_lines);
     }
 }
+

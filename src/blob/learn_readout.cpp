@@ -1,4 +1,5 @@
 #include "blob/blob.hpp"
+#include "blob/hop_state.hpp"
 #include "blob/opponent.hpp"
 #include "blob/random_words.hpp"
 #include "blob/tick_steps.hpp"
@@ -161,9 +162,52 @@ static void keep_window(Blob& blob, int ages) {
     }
 }
 
+// readout_good 3 (idea 182): the perceptron with a margin on the motor cells as they are.
+// told the right line: the cells of each wrong line whose spikes were within hop_fine 32nds
+// of the right line's lose their active inputs, and then the right line's cells gain theirs;
+// a step won clear moves nothing. good and bad play no part. needs hop_on (the step's
+// votes) and the cells' lines (blob.motor_line)
+static void learn_readout_margin(Blob& blob) {
+    const Genome& g = blob.genome;
+    int line[64], sign[64], dir[256] = {};
+    int count = blob.motor_line ? hop_margin_lines(blob, line, sign) : 0;
+    if (count == 0) {
+        return;
+    }
+    for (int i = 0; i < count; i++) {
+        dir[line[i]] = sign[i];
+    }
+    int ages = g.readout_trace_ticks;
+    ages = ages < 1 ? 1 : (ages > HISTORY - 1 ? HISTORY - 1 : ages);
+    uint64_t* trace = blob.active_trace;
+    for (int t = 0; t <= blob.tile_count; t++) {
+        uint64_t r = 0;
+        for (int age = 1; age <= ages; age++) {
+            r |= map_at(blob, age)[t];
+        }
+        trace[t] = r;
+    }
+    uint32_t up = 0, down = 0;
+    for (int t = 0; t < blob.tile_count; t++) {
+        for (uint64_t cells = blob.motor_attached[t]; cells; cells &= cells - 1) {
+            int n = t * TILE_NEURONS + __builtin_ctzll(cells);
+            int d = dir[blob.motor_line[n]];
+            if (d != 0) {
+                (d > 0 ? up : down) += move_inputs(blob, n, d, trace, ages, g.readout_shift);
+            }
+        }
+    }
+    blob.stats.strengthened += up;
+    blob.stats.weakened += down;
+}
+
 void learn_readout(Blob& blob, int valence) {
     const Genome& g = blob.genome;
     if (valence == 0) {
+        return;
+    }
+    if (g.readout_good == 3) {
+        learn_readout_margin(blob);
         return;
     }
     if (valence > 0 && !g.readout_good) {

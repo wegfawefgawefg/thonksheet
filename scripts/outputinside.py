@@ -4,6 +4,7 @@ See scripts/outputinside.sh. Each table is a fixed recipe; one line runs it and 
 
 import os
 import re
+import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
@@ -11,6 +12,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 os.environ.setdefault("EVERYEVENT_BUILD", os.environ.get("OUTPUTINSIDE_BUILD", "build"))
 import everyevent as ee  # noqa: E402  the sheet's jobs, one run's numbers, the arms before
+import hop  # noqa: E402  the toys' life and old readout
 import hop2  # noqa: E402  running one job, the toy tables
 import inside  # noqa: E402  the engine's readout as scripts/mnist.sh has it
 
@@ -30,8 +32,40 @@ def engine(flags):
     return ee.judged(5, EV + " --g.hop_fine 8 " + flags)
 
 
+def loop(flags=""):
+    """the closed loop, no outside part: the blob's own output answers, learns from the
+    right line, and its steps are the one-hop rule's errors (hop_teach 6)"""
+    return "--g.learn_mode 5 --life-teach 6 " + EV + " --g.out_on 1 " + flags
+
+
 COIN_OUT = "--life-outside-coin 1"
+COIN_IN = "--g.hop_coin 3"
 ARMS = {
+    # the blob's own output alone (the one-hop rule off), then the closed loop
+    "alone": ("--g.learn_mode 5 --life-teach 6 --g.out_on 1", None),
+    "in": (loop(), COIN_IN),
+    "inm1": (loop("--g.out_margin 1"), COIN_IN),
+    "inm4": (loop("--g.out_margin 4"), COIN_IN),
+    "inm8": (loop("--g.out_margin 8"), COIN_IN),
+    "inf1": (loop("--g.out_fine 1"), COIN_IN),
+    "inf4": (loop("--g.out_fine 4"), COIN_IN),
+    "inf8": (loop("--g.out_fine 8"), COIN_IN),
+    "inw5": (loop("--g.out_window 5"), COIN_IN),
+    "inb8": (loop("--g.out_bits 8"), COIN_IN),
+    "in64": (loop("--g.hop_rewire_every 64"), COIN_IN),
+    # what the ladder found: no sensor cell counted; only the top wrong line steps; 16 bits
+    "aloneh": ("--g.learn_mode 5 --life-teach 6 --g.out_on 1 --g.out_hidden 1", None),
+    "alonehb16": ("--g.learn_mode 5 --life-teach 6 --g.out_on 1 --g.out_hidden 1 "
+                  "--g.out_bits 16", None),
+    "inh": (loop("--g.out_hidden 1"), COIN_IN),
+    "inb16": (loop("--g.out_bits 16"), COIN_IN),
+    "inhb16": (loop("--g.out_hidden 1 --g.out_bits 16"), COIN_IN),
+    "intop": (loop("--g.out_top 1"), COIN_IN),
+    "intop2": (loop("--g.out_top 2"), COIN_IN),
+    "inhtop": (loop("--g.out_hidden 1 --g.out_top 1"), COIN_IN),
+    "inhtop2": (loop("--g.out_hidden 1 --g.out_top 2"), COIN_IN),
+    # the errors back along the output's own sources instead of the hashed wires
+    "pay": (loop("--g.out_pay 1"), COIN_IN),
     # the ladder, outside: one difference a rung from the whole-number output (outint2)
     "fld": (rung("--outside-read 1"), COIN_OUT),
     "fldbit": (rung("--outside-read 1 --outside-act 1"), COIN_OUT),
@@ -41,12 +75,25 @@ ARMS = {
                COIN_OUT),
     "fld8s6": (rung("--outside-read 1 --outside-bits 8 --outside-step-shift 6"), COIN_OUT),
     "fld6": (rung("--outside-read 1 --outside-act 1 --outside-bits 6"), COIN_OUT),
+    # the same read with no sensor cell among the sources; only the top wrong line steps
+    "fldh": (rung("--outside-read 2"), COIN_OUT),
+    "fldhbit": (rung("--outside-read 2 --outside-act 1"), COIN_OUT),
+    "fldh12": (rung("--outside-read 2 --outside-act 1 --outside-bits 12"), COIN_OUT),
+    "outtop": (rung("--outside-top 1"), COIN_OUT),
+    "fldtop": (rung("--outside-read 1 --outside-act 1 --outside-bits 12 --outside-top 1"),
+               COIN_OUT),
+    "fldhtop": (rung("--outside-read 2 --outside-act 1 --outside-bits 12 --outside-top 1"),
+                COIN_OUT),
     # the engine's rules in whole numbers on the same read (told good or bad only)
     "fldr1": (rung("--outside-read 1 --outside-bits 20 --outside-rule 1"), COIN_OUT),
     "fldr2": (rung("--outside-read 1 --outside-bits 20 --outside-rule 2"), COIN_OUT),
     "fldr3": (rung("--outside-read 1 --outside-bits 20 --outside-rule 3"), COIN_OUT),
     # cells that vote one bit each; cells with one-bit wiring at their born count
     "com": (rung("--outside-read 1 --outside-act 1 --outside-bits 12 --outside-vote 1"), COIN_OUT),
+    "comreg": (rung("--outside-read 1 --outside-act 1 --outside-bits 12 --outside-vote 3"),
+               COIN_OUT),
+    "comregz8": (rung("--outside-read 1 --outside-act 1 --outside-bits 12 --outside-vote 3 "
+                      "--outside-zone-32 8"), COIN_OUT),
     "comz8": (rung("--outside-read 1 --outside-act 1 --outside-bits 12 --outside-vote 1 "
                    "--outside-zone-32 8"), COIN_OUT),
     "bit1": (rung("--outside-read 1 --outside-act 1 --outside-bits 12 --outside-vote 2 "
@@ -59,6 +106,14 @@ ARMS = {
     "engrun": (engine("--g.readout_good 2" + GATE), "--g.hop_coin 3"),
     "engrunstr": (engine("--g.readout_good 2 --g.readout_evidence_strong 2" + GATE),
                   "--g.hop_coin 3"),
+    # the engine's motor cells as they are, told the right line: the margin perceptron's rule
+    "engans": (engine("--g.readout_good 3"), "--g.hop_coin 3"),
+    "engansstr": (engine("--g.readout_good 3 --g.readout_evidence_strong 2"), "--g.hop_coin 3"),
+    "engans4": (engine("--g.readout_good 3 --g.readout_shift 4"), "--g.hop_coin 3"),
+    "engansf4": (ee.judged(5, EV + " --g.hop_fine 4 --g.readout_good 3"), "--g.hop_coin 3"),
+    # the runner-up rule's votes with a thinner zone, and as "told the right line on bad steps"
+    "engrunf2": (ee.judged(5, EV + " --g.hop_fine 2 --g.readout_good 2" + GATE), "--g.hop_coin 3"),
+    "engrun2": (ee.judged(2, EV + " --g.readout_good 2" + GATE), "--g.hop_coin 3"),
 }
 ee.ARMS.update(ARMS)
 
@@ -69,6 +124,37 @@ RECIPES = {
         "fldr2", "fldr3", "com", "comz8", "bit1", "bit1c"], "coins": [], "shuffled": []},
     "ladderengine": {"kind": "sheet", "val": True, "seeds": [1, 2], "folder": "ladder", "arms": [
         "eng", "enggate", "engrun", "engrunstr"], "coins": [], "shuffled": []},
+    "ladderengine2": {"kind": "sheet", "val": True, "seeds": [1, 2], "folder": "ladder", "arms": [
+        "engans", "engansf4", "engans4", "engrunf2", "engrun2"], "coins": [], "shuffled": []},
+    "ladder2": {"kind": "sheet", "val": True, "seeds": [1, 2], "folder": "ladder", "arms": [
+        "fldh", "fldhbit", "fldh12", "outtop", "fldtop", "fldhtop", "comreg", "comregz8"],
+        "coins": [], "shuffled": []},
+    # the blob's own output, validation, seeds 1 and 2: alone, the closed loop, its knobs
+    "loop": {"kind": "sheet", "val": True, "seeds": [1, 2], "arms": [
+        "born", "alone", "aloneh", "alonehb16", "in", "inh", "inb16", "inhb16", "intop",
+        "intop2", "inhtop", "inhtop2"], "coins": [], "shuffled": []},
+    "loopknobs": {"kind": "sheet", "val": True, "seeds": [1, 2], "folder": "loop", "arms": [
+        "inm1", "inm4", "inm8", "inf1", "inf4", "inf8", "inw5", "inb8", "in64"],
+        "coins": [], "shuffled": []},
+    # the toys: a life with the blob's own output teaching the cells, then a fresh output
+    # on the frozen sheet (the old readout, as the every-event doc scored them; "own": a
+    # fresh output of the new kind instead)
+    "toys": {"kind": "toy", "tasks": ["xor", "parity3"], "seeds": list(range(5, 13)), "settings": [
+        ("born", None, ""), ("old", EV + " --g.hop_teach 2", ""),
+        ("in", EV + " --g.hop_teach 6 --g.out_on 1", ""),
+        ("incoin", EV + " --g.hop_teach 6 --g.out_on 1 --g.hop_coin 3", ""),
+        ("bornown", None, "--g.out_on 1"),
+        ("inown", EV + " --g.hop_teach 6 --g.out_on 1", "--g.out_on 1")]},
+    # two rows of the quick map that lean on the output (scripts/oneset.sh), seeds 5-12
+    "map": {"kind": "map", "rows": "echo16,mnist", "columns": [
+        ("base", ""),
+        ("own", "--g.learn_mode 5 --motor-spread 128 --g.out_on 1"),
+        ("ownloop", "--g.learn_mode 5 --motor-spread 128 --g.out_on 1 " + EV +
+         " --g.hop_teach 6")]},
+    # ticks a second of an MNIST life, one at a time (--jobs 1)
+    "speed": {"kind": "sheet", "val": False, "seeds": [5], "arms": [
+        "eng", "engrun", "outint2", "alone", "in", "pay"], "coins": [], "shuffled": [],
+        "tests": ["mnist"], "life": (20000, 2000)},
     "smoke": {"kind": "sheet", "val": True, "seeds": [1], "arms": [
         "born", "outint2", "fld12", "com", "bit1", "fldr3", "engrun"], "coins": ["fld12"],
         "shuffled": ["fld12"]},
@@ -85,6 +171,12 @@ def teach_share(path):
     return (v[-1] - v[-2]) / (n[-1] - n[-2])
 
 
+def own_frozen(path):
+    """the blob's own answer on the scored digits after the life, frozen"""
+    m = re.search(r"own answer on the \w+ digits, frozen: ([0-9.]+)", open(path).read())
+    return float(m.group(1)) if m else None
+
+
 def table(r, outdir, name):
     seeds = r["seeds"]
     fmt, mean = hop2.fmt, hop2.mean
@@ -92,9 +184,9 @@ def table(r, outdir, name):
     for test in r.get("tests", list(ee.TESTS)):
         lines += ["", "%s, %s: a fresh linear reader of the non-sensor cells (%s) after the life"
                   % (name, test, "validation" if r["val"] else "test digits"),
-                  "%-16s %s  %-7s %-5s %-6s %-6s %-6s %-5s %-6s" % (
+                  "%-16s %s  %-7s %-5s %-6s %-6s %-6s %-6s %-5s %-6s" % (
                       "arm", " ".join("%-6d" % s for s in seeds), "mean", "rate", "pixels",
-                      "own", "outsd", "teach", "t/s")]
+                      "own", "ownT", "outsd", "teach", "t/s")]
         got = {}
         for run, _ in ee.sheet_runs(r):
             paths = [os.path.join(outdir, "%s-%s-%d.txt" % (test, run, s)) for s in seeds]
@@ -102,10 +194,11 @@ def table(r, outdir, name):
             got[run] = v
             avg = lambda k: mean([x[k] for x in v if x])
             teach = mean([teach_share(p) for p, x in zip(paths, v) if x])
-            lines.append("%-16s %s  %s  %s  %s  %s  %s  %s  %s" % (
+            frozen = mean([own_frozen(p) for p, x in zip(paths, v) if x])
+            lines.append("%-16s %s  %s  %s  %s  %s  %s  %s  %s  %s" % (
                 run, " ".join(fmt(x["score"]) if x else "  -   " for x in v), fmt(avg("score")),
                 fmt(avg("rate"), "%4.1f"), fmt(avg("pixels"), "%4.1f"),
-                fmt(avg("readout"), "%5.3f"), fmt(avg("outside"), "%5.3f"),
+                fmt(avg("readout"), "%5.3f"), fmt(frozen, "%5.3f"), fmt(avg("outside"), "%5.3f"),
                 fmt(teach, "%4.2f"), fmt(avg("speed"), "%6.0f")))
         for run, _ in ee.sheet_runs(r):
             arm = run.split("-")[0]
@@ -118,9 +211,63 @@ def table(r, outdir, name):
                         run, other, sum(d) / len(d), sum(x > 0 for x in d), len(d), min(d), max(d)))
     lines.append("(rate: hidden spikes per 1,000 cell-ticks while read; pixels: pixel inputs per "
                  "hidden excitatory cell; own: the blob's own answer's share right in the last "
-                 "tenth of the life; outsd: the outside output's; teach: the share of the last "
+                 "tenth of the life; ownT: its own answer on the scored digits after the life, "
+                 "frozen (it means something only with out_on); outsd: the outside output's; teach: the share of the last "
                  "tenth's digits that sent an error; t/s: the life's ticks a second)")
     return "\n".join(lines)
+
+
+def toy_jobs(r, outdir, quick):
+    """(life flags or None for a born sheet, flags of the fresh output's phase) per setting"""
+    jobs = []
+    life = hop.LIFE.replace("--steps 40000", "--steps 4000") if quick else hop.LIFE
+    for task in r["tasks"]:
+        for name, life_flags, then_flags in r["settings"]:
+            for s in r["seeds"]:
+                text = "%s %s %s %s" % (hop.TASKS[task], life, hop.READOUT, life_flags or "")
+                cmd = ["nice", "-n", "19", ee.PROBE, "transfer", "--life", " ".join(text.split()),
+                       "--then", hop.TASKS[task].split()[1], "--then-steps",
+                       "2000" if quick else "20000", "--seed", str(s)]
+                cmd += ["--born", "1"] if life_flags is None else []
+                cmd += then_flags.split() + (["--window", "100"] if quick else [])
+                jobs.append((cmd, os.path.join(outdir, "toy-%s-%s-%d.txt" % (task, name, s))))
+    return jobs
+
+
+def toy_table(r, outdir):
+    seeds = r["seeds"]
+    lines = ["a fresh output on the frozen sheet after a 40,000-step life, late score (first "
+             "quarter); life: the blob's own answer late in the life; seeds %s" %
+             ",".join(map(str, seeds))]
+    for task in r["tasks"]:
+        lines.append("%-8s %-9s %s   mean (first quarter)  life" % (
+            task, "setting", " ".join("%-6d" % s for s in seeds)))
+        for name, _, _ in r["settings"]:
+            v = [hop.toy_score(os.path.join(outdir, "toy-%s-%s-%d.txt" % (task, name, s)))
+                 for s in seeds]
+            got = [x for x in v if x]
+            cells = " ".join("%.3f " % x[1] if x else "  -   " for x in v)
+            avg = ("%.3f (%.3f)" % (hop2.mean([x[1] for x in got]), hop2.mean([x[0] for x in got]))
+                   if got else "-")
+            life = hop2.mean([x[2] for x in got])
+            lines.append("%-8s %-9s %s   %s  %s" % ("", name, cells, avg, hop2.fmt(life, "%.3f")))
+    return "\n".join(lines)
+
+
+def map_rows(r, outdir, opt):
+    """scripts/oneset.py for each column on the recipe's rows; its tables kept as text"""
+    seeds = "5" if opt["quick"] else "5-12"
+    text = []
+    for name, flags in r["columns"]:
+        cmd = ["python3", os.path.join(ROOT, "scripts", "oneset.py"), "run", name, "--rows",
+               r["rows"], "--seeds", seeds, "--jobs", str(opt["jobs"]), "--blobrun",
+               os.path.join(ee.BUILD, "blobrun")]
+        cmd += ["--"] + flags.split() if flags else []
+        done = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                              cwd=ROOT)
+        text.append("column %s: %s\n%s" % (name, flags or "(scripts/variants/oneset.txt)",
+                                           done.stdout))
+    return "\n".join(text)
 
 
 def one(name, r, opt):
@@ -134,9 +281,9 @@ def one(name, r, opt):
     if kind == "sheet":
         jobs, show = ee.sheet_jobs(r, outdir, quick), lambda: table(r, outdir, name)
     elif kind == "toy":
-        jobs, show = hop2.toy_jobs(r, outdir, quick), lambda: hop2.toy_table(r, outdir)
+        jobs, show = toy_jobs(r, outdir, quick), lambda: toy_table(r, outdir)
     else:
-        jobs, show = hop2.calc_jobs(r, outdir, quick), lambda: hop2.calc_table(r, outdir)
+        jobs, show = [], lambda: map_rows(r, outdir, opt)
     if not opt["table_only"]:
         jobs = jobs[::-1] if opt["reverse"] else jobs
         with ThreadPoolExecutor(max_workers=opt["jobs"]) as pool:

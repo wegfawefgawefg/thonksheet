@@ -1,4 +1,5 @@
 #include "blob/hop_state.hpp"
+#include "blob/output_state.hpp"
 #include "blob/random_words.hpp"
 #include "blob/weight_levels.hpp"
 
@@ -74,6 +75,7 @@ void hop_free(Blob& blob) {
     std::free(blob.hop->ring_up);
     std::free(blob.hop->ring_down);
     std::free(blob.hop->balance);
+    std::free(blob.hop->pay);
     hop_planes_free(*blob.hop);
     std::free(blob.hop);
     blob.hop = nullptr;
@@ -395,6 +397,15 @@ void learn_hop(Blob& blob) {
     int window = g.hop_window < 1 ? 1 : (g.hop_window > HISTORY - 1 ? HISTORY - 1 : g.hop_window);
     int64_t stride = (int64_t)blob.tile_count + 1;
     uint32_t taught = 0;
+    // out_pay: the button errors go back along the blob's own output's sources, by the sign
+    // of each counter (learn_output.cpp), not on the hashed wires
+    bool pay = g.out_pay && blob.output && blob.output->lines > 0;
+    if (pay && !h.pay) {
+        h.pay = (uint64_t*)std::calloc((size_t)stride * 2, sizeof(uint64_t));
+    }
+    if (pay) {
+        output_pay(blob, line, sign, from_pred, h.pay, h.pay + stride);
+    }
     for (int t = 0; t < blob.tile_count; t++) {
         // the window's near maps for this tile, and the cells near at least once
         uint64_t near[HISTORY], any = 0;
@@ -408,8 +419,8 @@ void learn_hop(Blob& blob) {
         for (; any; any &= any - 1) {
             int b = __builtin_ctzll(any);
             int n = t * TILE_NEURONS + b;
-            int sum = 0;
-            for (int i = 0; i < count; i++) {
+            int sum = pay ? (int)((h.pay[t] >> b) & 1) - (int)((h.pay[stride + t] >> b) & 1) : 0;
+            for (int i = pay ? from_pred : 0; i < count; i++) {
                 sum += sign[i] * wire(blob, h, g.hop_wire_shift, n, line[i]);
             }
             if (sum == 0) {

@@ -1,6 +1,7 @@
 #include "blob/blob.hpp"
 #include "blob/learn_rule.hpp"
 #include "blob/long_memory.hpp"
+#include "blob/output_state.hpp"
 #include "blob/tick_steps.hpp"
 
 // one tick: integrate and fire, regulate, learn.
@@ -17,6 +18,10 @@ static void tick_learn(Blob& blob, int read_now) {
     // the error sent one hop to every hidden cell, beside whatever the learn mode does
     if (g.hop_on) {
         learn_hop(blob);
+    }
+    // the blob's own output moves on the verdict just given (after the rule read its errors)
+    if (g.out_on) {
+        learn_output(blob);
     }
     // idea 120: the rule table, alone (1, 3) or beside the learn mode on the inside (2)
     if (g.rule_on) {
@@ -42,7 +47,8 @@ static void tick_learn(Blob& blob, int read_now) {
             thin = learn_margin(blob);
         }
         // hop_who 4: the motor cells learn by the one-hop rule, not the readout's
-        bool hop_motor = g.hop_on && (g.hop_who & 4);
+        // out_on: the motor cells' spikes are not the output, so their rule is skipped too
+        bool hop_motor = (g.hop_on && (g.hop_who & 4)) || g.out_on;
         if ((thin || g.margin_win != 2) && !hop_motor) {
             learn_readout(blob, blob.pending_valence);
         }
@@ -82,6 +88,9 @@ void blob_tick(Blob& blob) {
     long_memory_after_fire(blob);
     if (g.hop_on && g.learning_on) {
         hop_after_fire(blob); // the near maps only feed learning
+    }
+    if (g.out_on && blob.out_read) {
+        output_read(blob); // the world asked for the blob's own votes on this tick
     }
 
     // "fired recently": OR of the last recent_ticks maps

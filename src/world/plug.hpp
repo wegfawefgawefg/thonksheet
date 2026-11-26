@@ -118,6 +118,13 @@ void plug_mark_vote(const Plug& plug, Blob& blob, int move);
 // pattern answer the right pattern); for a pattern, the bits that won, tied and are graded
 void plug_hop_lines(const Plug& plug, Blob& blob, int move, int right, uint64_t pattern,
                     uint64_t tied, uint64_t graded);
+// the blob's own output (genome out_on, src/blob/learn_output.cpp; nothing unless the genome
+// asks): each button's motor cells named to the blob (on) or un-named; at the end of a step
+// its vote a line put in place of the spike counts, before plug_choice or plug_pattern (a
+// vote may be negative, so the choice is the signed one). the caller sets blob.out_read
+// before the step's last tick
+void plug_output_lines(const Plug& plug, Blob& blob, bool on);
+void plug_output_votes(Plug& plug, const Blob& blob);
 
 // task values to line bits, once per step
 void plug_set_lines(Plug& plug, const TaskSense& sense);
