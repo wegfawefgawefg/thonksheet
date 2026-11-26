@@ -112,6 +112,8 @@ class Life:
             d = R.compete(c[:, L], A, S, o["shift"])
         elif fam in ("f1", "f1g"):
             xf = X.made_up(xb, self.gen)
+            if o.get("coin"):  # the control: "made up" is another real digit; the bit says nothing
+                xf = xb[torch.randperm(len(xb), generator=self.gen)]
             cf, Af = self.look(xf)
             shown.append(cf)
             gate = None
@@ -215,7 +217,7 @@ def run_one(task_name, fam, ctrl, seed, sheet_path, out_path, opt, wiring_out=No
     born_levels = life.model.levels.clone()
     res = {"task": task_name, "family": fam, "arm": opt.get("arm", fam), "ctrl": ctrl,
            "seed": seed}
-    res.update({k: opt[k] for k in ("shift", "rate", "push", "batch", "cap", "reg")})
+    res.update({k: opt[k] for k in ("shift", "rate", "push", "batch", "cap", "reg") if k in opt})
     marks = sorted(set(min(n, opt["life"]) for n in opt["checkpoints"]))
     reads = {}
     if fam == "born":

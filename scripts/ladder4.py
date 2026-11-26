@@ -14,7 +14,8 @@ See ladder4.sh.
 An arm is a family and optional settings after dots: f0, f0.cap4, f2.rate0.25, f4.push0.5,
 f0.shift3 (shift: a cell moves with chance 2^-shift a spike; rate: family 2's chance a wrong
 guess; push: family 4's chance a shared source steps down; cap: the tile's winners, at most
-this many spikes a tick in a tile; batch: digits between re-picks; reg: regulation's rate).
+this many spikes a tick in a tile; batch: digits between re-picks; reg: regulation's rate;
+coin1: family 1 with "made up" digits that are other real digits, so the bit says nothing).
 """
 
 import gzip
