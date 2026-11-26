@@ -19,6 +19,7 @@ int probe_predict(int argc, char** argv);
 int probe_timewire(int argc, char** argv);
 int probe_looptrace(int argc, char** argv);
 int probe_ratehealth(int argc, char** argv);
+int probe_capsplit(int argc, char** argv);
 
 int int_arg(int argc, char** argv, const char* name, int fallback) {
     for (int i = 1; i + 1 < argc; i++) {
@@ -60,6 +61,7 @@ static const Probe probes[] = {
     {"timewire", probe_timewire},
     {"looptrace", probe_looptrace},
     {"ratehealth", probe_ratehealth},
+    {"capsplit", probe_capsplit},
 };
 
 int main(int argc, char** argv) {
