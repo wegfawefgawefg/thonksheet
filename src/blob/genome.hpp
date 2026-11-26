@@ -370,6 +370,26 @@ struct Genome {
     // changes nothing.
     int sector_step_shift = 0; // the sector bias takes its one step only with chance
                                // 2^-this a tick, so a cue's burst does not shut its own loop
+    // a rate control that does not fight the rest (idea 175, regulate_rate.cpp,
+    // docs/results-2026-11-26-rate-control.md). 0 is off and changes nothing.
+    // the dead band: >0, the per-spike walk of a cell's threshold is replaced by a count of its
+    // spikes over a window of 2^this ticks; at the window's end the threshold steps
+    // rate_band_step up if the count is over 2^rate_band_high times the cell's share of the
+    // target, down if under 2^-rate_band_low of it, and not at all in between
+    int rate_band_shift = 0;
+    int rate_band_low = 2;
+    int rate_band_high = 2;
+    int rate_band_step = 1;
+    // a critical period: >0, the per-cell walk runs for this many ticks of a life, then stops
+    // (with threshold_late_shift > 0 it goes on 2^this slower; with rate_band_shift the dead
+    // band takes over)
+    int threshold_reg_until = 0;
+    int threshold_late_shift = 0;
+    // inhibition in proportion: >0, a sector's bias is a slow part (the usual one-step move,
+    // on the ticks sector_step_shift lets through) plus this many threshold steps per
+    // target's worth of smoothed activity over the target (none under it, at most 4x this).
+    // with sector_tiles 1 a sector is one tile; sector_smooth_shift sets how fast it counts
+    int sector_gain = 0;
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

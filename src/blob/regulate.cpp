@@ -1,5 +1,6 @@
 #include "blob/blob.hpp"
 #include "blob/random_words.hpp"
+#include "blob/regulate_rate.hpp"
 #include "blob/tick_steps.hpp"
 
 // regulation: sector bias (fast) and per-neuron thresholds (slow).
@@ -16,6 +17,14 @@ static void regulate_one_sector(Blob& blob, int sector, int spikes, int wrong, i
     int sur = (int)blob.sector_surprise[sector];
     sur += ((wrong << 8) - sur) >> g.sector_smooth_shift;
     blob.sector_surprise[sector] = (uint32_t)(sur < 0 ? 0 : sur);
+
+    // idea 175: inhibition in proportion on top of a slow part (regulate_rate.cpp)
+    if (g.sector_gain > 0) {
+        if (g.sector_reg_on) {
+            regulate_sector_gain(blob, sector, act, step);
+        }
+        return;
+    }
 
     // a dead band of an eighth of the target either side, then one step
     if (!g.sector_reg_on || !step) {
@@ -74,15 +83,15 @@ static void regulate_sectors(Blob& blob) {
     blob.surprise_high = blob.surprise_level > (uint32_t)g.surprise_high_per_1024 * 256 ? 1 : 0;
 }
 
-// a neuron that fires gets a little harder to fire; every neuron slowly gets easier.
-// sensors and pacemakers keep theirs.
-static void regulate_thresholds(Blob& blob) {
+// a neuron that fires gets a little harder to fire (chance 2^-up_shift); every neuron slowly
+// gets easier (2^-down_shift a tick). sensors and pacemakers keep theirs.
+static void regulate_thresholds(Blob& blob, int up_shift, int down_shift) {
     const Genome& g = blob.genome;
     const uint64_t* fired = blob.spikes[blob.now];
     for (int t = 0; t < blob.tile_count; t++) {
         uint64_t fixed = blob.sensor[t] | blob.pacemaker[t];
-        uint64_t up = fired[t] & ~fixed & sparse_word(blob.rng, g.threshold_up_shift);
-        uint64_t down = ~fixed & sparse_word(blob.rng, g.threshold_down_shift) & ~up;
+        uint64_t up = fired[t] & ~fixed & sparse_word(blob.rng, up_shift);
+        uint64_t down = ~fixed & sparse_word(blob.rng, down_shift) & ~up;
         while (up) {
             int n = t * TILE_NEURONS + __builtin_ctzll(up);
             up &= up - 1;
@@ -100,9 +109,25 @@ static void regulate_thresholds(Blob& blob) {
     }
 }
 
+// idea 175: per-cell thresholds walk as above; after a critical period (threshold_reg_until
+// ticks) the walk stops, goes on 2^threshold_late_shift slower, or hands over to the dead band
+// (rate_band_shift, which runs from birth when there is no critical period)
+static void regulate_cells(Blob& blob) {
+    const Genome& g = blob.genome;
+    bool late = g.threshold_reg_until > 0 && blob.stats.tick >= (uint64_t)g.threshold_reg_until;
+    if (g.rate_band_shift > 0 && (late || g.threshold_reg_until <= 0)) {
+        regulate_band(blob);
+    } else if (!late) {
+        regulate_thresholds(blob, g.threshold_up_shift, g.threshold_down_shift);
+    } else if (g.threshold_late_shift > 0) {
+        regulate_thresholds(blob, g.threshold_up_shift + g.threshold_late_shift,
+                            g.threshold_down_shift + g.threshold_late_shift);
+    }
+}
+
 void tick_regulate(Blob& blob) {
     regulate_sectors(blob);
     if (blob.genome.threshold_reg_on) {
-        regulate_thresholds(blob);
+        regulate_cells(blob);
     }
 }

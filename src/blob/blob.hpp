@@ -197,6 +197,9 @@ struct Blob {
 
     // competitive learning's bounds on its counters (genome compete_on, learn_compete.cpp)
     struct CompeteState* compete = nullptr;
+
+    // idea 175's rate controls (regulate_rate.cpp): made on first use while one is on
+    struct RateState* rate = nullptr;
 };
 
 // birth and death
