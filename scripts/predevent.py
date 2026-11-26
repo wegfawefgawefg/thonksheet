@@ -66,7 +66,7 @@ def parse(argv):
         sys.exit(1)
     opt = {"name": argv[0], "seeds": [1, 2], "jobs": 3, "steps": 20000, "trials": 3000,
            "worlds": ["catch", "forage"], "arms": ["born", "pred", "old", "ev1f0"],
-           "base": "predhop", "table_only": False, "extra": []}
+           "base": "predhop", "as": None, "table_only": False, "extra": []}
     i = 1
     while i < len(argv):
         a = argv[i]
@@ -84,8 +84,8 @@ def parse(argv):
         elif a in ("--worlds", "--arms"):
             opt[a[2:]] = val.split(",")
             i += 1
-        elif a == "--base":
-            opt["base"] = val
+        elif a in ("--base", "--as"):
+            opt[a[2:]] = val
             i += 1
         else:
             opt["extra"].append(a)
@@ -109,13 +109,22 @@ def job(world, arm, seed, opt, folder):
     return cmd + opt["extra"], base + ".txt", base + ".csv"
 
 
+def rule_off(arms, k=""):
+    """the rule-off life in a list of arms: pred, or predo2 (the same sheet, with the
+    outside predictor learning beside it)"""
+    for name in ("pred" + k, "predo2" + k, "predo1" + k):
+        if name in arms:
+            return name
+    return "pred" + k
+
+
 def controls(arm, arms):
     """the arms an arm is set against: born, the rule off, its coin, its shuffled life"""
     if arm.startswith(("born", "pred")) or arm[-1] in "cs" or arm[-2:] in ("ck", "sk"):
         return []
     k = "k" if arm.endswith("k") else ""
     stem = arm[:-1] if k else arm
-    wanted = ["born" + k, "pred" + k, stem + "c" + k, stem + "s" + k]
+    wanted = ["born" + k, rule_off(arms, k), stem + "c" + k, stem + "s" + k]
     return [c for c in wanted if c in arms]
 
 
@@ -137,7 +146,8 @@ def tables(opt, folder):
     for (w, a, s), d in data.items():
         for (q, k), v in d.items():
             csv.append(f"{q},{w},{k},{a},{s},{v:.6g}")
-    open(os.path.join(OUT, opt["name"] + ".csv"), "w").write("\n".join(csv) + "\n")
+    table = opt["as"] or opt["name"]  # --as NAME: the tables under another name
+    open(os.path.join(OUT, table + ".csv"), "w").write("\n".join(csv) + "\n")
     head = "| world | what | " + " | ".join(arms) + " |"
     rule = "|---|---|" + "---|" * len(arms)
 
@@ -183,7 +193,8 @@ def tables(opt, folder):
             kk = "k" if a.endswith("k") else ""
             stem = a[:-1] if kk else a
             cells = [ph.diff(got(w, a, q, k), got(w, c, q, k))[0] if c in cs else "-"
-                     for c in ("born" + kk, "pred" + kk, stem + "c" + kk, stem + "s" + kk)]
+                     for c in ("born" + kk, rule_off(arms, kk), stem + "c" + kk,
+                               stem + "s" + kk)]
             what = q if q != "future" else k
             out.append(f"| {w} | {what} | {a} | " + " | ".join(cells) + " |")
 
@@ -221,15 +232,33 @@ def tables(opt, folder):
         if any(v is not None for a in arms for v in got(w, a, "read", "own_score")):
             out.append(f"| {w} | read on its own moves: score | " +
                        " | ".join(cell(w, a, "read", "own_score") for a in lived) + " |")
+    out.append("\nThe life's numbers paired over seeds (mean, seeds above / below): an arm less "
+               "the rule-off life, and less its coin.\n")
+    out.append("| world | what | arm | - rule off | - its coin |")
+    out.append("|---|---|---|---|---|")
+    for w in worlds:
+        for key, name in (("task_late", "task, late score"),
+                          ("pred_h1_balanced", "predictor cells h=1"),
+                          ("pred_h8_balanced", "predictor cells h=8"),
+                          ("out_h1_balanced", "outside predictor h=1"),
+                          ("out_h8_balanced", "outside predictor h=8")):
+            for a in lived:
+                cs = controls(a, arms)
+                kk = "k" if a.endswith("k") else ""
+                stem = a[:-1] if kk else a
+                cells = [ph.diff(got(w, a, "life", key), got(w, c, "life", key))[0]
+                         if c in cs else "-" for c in (rule_off(arms, kk), stem + "c" + kk)]
+                if cs and cells != ["-", "-"]:
+                    out.append(f"| {w} | {name} | {a} | " + " | ".join(cells) + " |")
     out.append("\nTask, late score, paired with the rule-off life (mean, seeds above / below):\n")
     for w in worlds:
-        ref = "pred" if "pred" in arms else None
+        ref = rule_off(arms) if rule_off(arms) in arms else None
         if ref:
             out.append(f"- {w}: " + "; ".join(
                 f"{a} {ph.diff(got(w, a, 'life', 'task_late'), got(w, ref, 'life', 'task_late'))[0]}"
                 for a in lived if a != ref))
     text = "\n".join(out) + "\n"
-    open(os.path.join(OUT, opt["name"] + ".md"), "w").write(text)
+    open(os.path.join(OUT, table + ".md"), "w").write(text)
     print(text)
 
 

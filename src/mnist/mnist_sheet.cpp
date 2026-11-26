@@ -151,6 +151,29 @@ static int one_digit(Sheet& s, bool learn, Rows* counts, std::vector<uint8_t>& c
     return tt.move >= 0 && tt.move == tt.right_move;
 }
 
+// --life-moved (mnist_moved.cpp): one digit shown for several steps, a pixel further each
+// step along its own direction; before each step but the first the new frame grades the
+// guess made after the step before
+static int moved_digit(Sheet& s, bool learn, Rows* counts, std::vector<uint8_t>& c) {
+    Task& task = s.tt->task;
+    int64_t shown = task.shown;
+    int image = task.image, cue = task.cue, partner = task.partner;
+    int steps = moved_steps(s), right = 0;
+    for (int j = 0; j < steps; j++) {
+        task.shown = shown;
+        task.image = image;
+        task.cue = cue;
+        task.partner = partner;
+        shift_direction(image % SHIFT_DIRECTIONS, j - steps / 2, task.settings.mnist_dx,
+                        task.settings.mnist_dy);
+        moved_grade(s);
+        right = one_digit(s, learn, counts, c);
+        moved_keep(s, c.data(), j + 1 < steps);
+    }
+    task.settings.mnist_dx = task.settings.mnist_dy = 0;
+    return right;
+}
+
 int64_t sheet_train(Sheet& s, int64_t digits, bool learn, Rows* counts) {
     std::vector<uint8_t> c(counts ? (size_t)s.blob->neuron_count : 0);
     if (counts) {
@@ -158,7 +181,8 @@ int64_t sheet_train(Sheet& s, int64_t digits, bool learn, Rows* counts) {
     }
     int64_t right = 0;
     for (int64_t i = 0; i < digits; i++) {
-        right += one_digit(s, learn, counts, c);
+        bool moved = s.moved && counts;
+        right += moved ? moved_digit(s, learn, counts, c) : one_digit(s, learn, counts, c);
     }
     return right;
 }

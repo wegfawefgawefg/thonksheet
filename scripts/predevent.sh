@@ -31,12 +31,24 @@
 # kept: running a line again only runs what is missing.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+mnist_here() { [ -d data/mnist ] || [ -n "${THONK_MNIST:-}" ]; }
+if [ "${1:-}" = moved ]; then
+    mnist_here || { echo "no data/mnist: scripts/get_mnist.sh" >&2; exit 1; }
+    scripts/build.sh --target blobmnist >/dev/null
+    shift
+    exec python3 scripts/predmoved.py "$@"
+fi
 scripts/build.sh --target blobprobe >/dev/null
 if [ "${1:-}" = smoke ]; then
     shift
     python3 scripts/predevent.py smoke "$@" --worlds catch,delayed-echo \
-        --arms born,pred,old,ev1f0,ev15f8,ev15f8c,ev15f8s,ev14f8nk,bornk
-    exec python3 scripts/predevent.py smoke-one "$@" --base one --worlds catch,order \
-        --arms pred,ev15f8 --read-own 1
+        --arms born,pred,old,ev1f0,ev15f8,ev15f0o2,ev15f0o2c,ev15f0o2s,ev14f8nk,bornk
+    python3 scripts/predevent.py smoke-one "$@" --base one --worlds catch,order \
+        --arms pred,ev15f0o2 --read-own 1
+    if mnist_here; then
+        scripts/build.sh --target blobmnist >/dev/null
+        exec python3 scripts/predmoved.py smoke-moved "$@"
+    fi
+    exit 0
 fi
 exec python3 scripts/predevent.py "$@"

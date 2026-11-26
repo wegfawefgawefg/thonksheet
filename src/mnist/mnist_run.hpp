@@ -44,6 +44,10 @@ struct Sheet {
     // --life-outside (mnist_outside.cpp): while set, the hop rule's error lines come from a
     // softmax layer outside the sheet that reads each digit's counts
     struct Outside* outside = nullptr;
+    // --life-moved (mnist_moved.cpp, idea 183): while set, each digit of the life is shown
+    // for several steps, a pixel further each step, and a predictor outside the sheet sends
+    // the hop rule its next-frame errors
+    struct Moved* moved = nullptr;
     uint64_t shuffle_rng = 0;
     std::vector<int> shuffle_cells, shuffle_perm;
     // the repeatability probes (mnist_repeat.cpp); 0 is off and changes nothing
@@ -83,6 +87,18 @@ Outside* outside_make(const Sheet& s, int argc, char** argv);
 void outside_free(Outside* o);
 void outside_digit(Sheet& s, const uint8_t* counts, int label);
 double outside_right(Outside& o);
+
+// the moved-digit life of --life-moved (mnist_moved.cpp): made for a life (null unless
+// asked); steps a digit is shown for; before a step, the frame about to be shown grades the
+// guess made after the step before and the errors go to the hop rule; after a step, its
+// counts are kept for the next guess (more: the same digit has another step); a line on the
+// predictor since last asked
+Moved* moved_make(const Sheet& s, int argc, char** argv);
+void moved_free(Moved* m);
+int moved_steps(const Sheet& s);
+void moved_grade(Sheet& s);
+void moved_keep(Sheet& s, const uint8_t* counts, bool more);
+void moved_report(Sheet& s, const char* label);
 
 // own flags are read by the caller; everything else is blobrun's (task, plug, --g. numbers)
 bool sheet_start(Sheet& s, int argc, char** argv, const char* const* own, int own_count);
