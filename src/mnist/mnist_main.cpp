@@ -4,6 +4,7 @@
 //   blobmnist online [blobrun flags]                      the sheet's readout from good and bad
 //   blobmnist ladder [blobrun flags]                      readers one handicap at a time
 // Each command's own flags are listed at the top of its file. scripts/mnist.sh runs it all.
+//   --data DIR      any command: read the idx files from DIR, not data/mnist
 
 #include "mnist/mnist_ladder.hpp"
 #include "mnist/mnist_run.hpp"
@@ -30,7 +31,24 @@ const char* text_flag(int argc, char** argv, const char* name, const char* fallb
     return fallback;
 }
 
+// --data DIR: the folder of the four idx files, for any command (the same as THONK_MNIST=DIR;
+// scripts/get_data.sh fetches other sets in MNIST's format). taken out of the flags here, so
+// no command has to know it
+static void take_data_flag(int& argc, char** argv) {
+    for (int i = 1; i + 1 < argc; i++) {
+        if (std::strcmp(argv[i], "--data") == 0) {
+            setenv("THONK_MNIST", argv[i + 1], 1);
+            for (int j = i; j + 2 < argc; j++) {
+                argv[j] = argv[j + 2];
+            }
+            argc -= 2;
+            return;
+        }
+    }
+}
+
 int main(int argc, char** argv) {
+    take_data_flag(argc, argv);
     const char* what = argc > 1 ? argv[1] : "";
     if (std::strcmp(what, "baselines") == 0) {
         return mnist_baselines(argc, argv);
