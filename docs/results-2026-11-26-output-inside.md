@@ -9,7 +9,7 @@ This job builds the output inside.
 **The answer: the smallest change is a rule, not more accuracy: at each verdict, told the
 right line, exactly two lines move, the right one up and the highest wrong line that came
 too close down, and those two lines are the error the one-hop rule hears; on the engine's
-motor cells as they are (a new value of `readout_good`, no new state) that output is right
+motor cells as they are (a new value of `readout_good`, no new counters) that output is right
 0.86 of the time during an MNIST life and the closed loop reads 0.945 / 0.732; with each
 motor cell's counters used as the weights themselves, summed over the sources that fired
 and read once a step (`out_on`: a signed 12-bit counter per source a motor cell can hear,
@@ -61,18 +61,24 @@ after the life, test digits, seeds 5-12, unless it says validation.)
   rule, teaches no better than at 0.67.
 - **The closed loop, as fixed before the test digits,** reads 0.9559 / 0.7594: every seed
   of both tests over born (+0.031 / +0.082), over its coin (+0.018 / +0.080) and over a
-  shuffled-digit life (+0.030 / +0.090). On MNIST every seed is over the outside softmax output (+0.005) and 0.005 under
-  the written-in sheet; on pairs every seed is under the outside outputs (-0.011 and
-  -0.008) and the mean is level with the written-in sheet (0.761). Its own output is right
-  0.925 / 0.708 online and 0.931 / 0.715 on the test digits afterwards, frozen. Hidden
-  cells fire at 38.7 / 33.5 per 1,000 cell-ticks while read (born 33.1 / 32.7); with the
-  rate held at target the MNIST gain is the same (+0.0315 at 31, 4 of 4 seeds).
+  shuffled-digit life (+0.030 / +0.090). On MNIST every seed is over the outside softmax
+  output (+0.005) and 0.005 under the written-in sheet; on pairs every seed is under the
+  outside outputs (-0.011 and -0.008) and the mean is level with the written-in sheet
+  (0.761). Its own output is right 0.925 / 0.708 online and 0.931 / 0.715 on the test
+  digits afterwards, frozen. Hidden cells fire at 38.7 / 33.5 per 1,000 cell-ticks while
+  read (born 33.1 / 32.7); with the rate held at target the MNIST gain is the same
+  (+0.0315 at 31, 4 of 4 seeds).
 - **With the two knobs validation liked** (a source is "on" for 10 ticks, not 15;
   inhibitory and pacemaker cells learn too) the loop reads 0.9613 / 0.7757: over the first
   setting on every seed of both tests (+0.005 / +0.016), over the outside softmax output
   at its own best settings (+0.011, 8 of 8; +0.006, 6 of 8), over the same rule as an
   outside output on 15 of 16 seeds, +0.018 / +0.096 over its coin. This arm was chosen
   after the first report was known, by validation numbers only.
+- **The smaller change** (the engine's motor cells as they are, told the right line, two
+  buttons moving): 0.9454 / 0.7319 on test, the output right 0.857 / 0.624, every seed
+  over born and over its coin; the counters-as-weights output is over it on every seed
+  (+0.011 / +0.028). With its zone a sixteenth instead of a quarter it reads 0.952 / 0.736
+  on validation (two seeds; not run on test), where the outside softmax output read 0.951.
 - **The output alone**, on a sheet that does not learn, is right 0.906 / 0.620 online
   (0.914 / 0.628 on the test digits). The engine's readout on that sheet: 0.68 / 0.51.
 - **One zone for both tests.** The margin is counted in steps' worth, so it scales with
@@ -289,7 +295,8 @@ Each rung is the output that makes the one-hop rule's errors during a 60,000-dig
 every-event job's `EV`), then the sheet is frozen and a fresh linear reader is fit. "right":
 the output's share right in the last tenth of the life. "reader": the fresh reader on the
 validation digits. "teach": the share of the last tenth's digits that sent any error.
-`scripts/outputinside.sh ladder`, `ladder2`, `ladder3`, `ladderengine`, `ladderengine2`.
+`scripts/outputinside.sh ladder`, `ladder2`, `ladder3`, `ladderengine`, `ladderengine2`,
+`ladderengine3`.
 
 Every close line steps (the every-event job's rule):
 
@@ -330,6 +337,7 @@ has two lines, so there this is the same rule and the same run as above:
 | rung | what | MNIST right | reader | teach |
 |---|---|---|---|---|
 | outtop | outint2 so | 0.933 | 0.9566 | 0.17 |
+| outtopm1, outtopm8 | outtop at a margin of 1 and of 8 steps' worth (2 above) | 0.927, 0.928 | 0.9577, 0.9554 | 0.15, 0.25 |
 | fldtop | fld12 so (fields, one bit a source, 12 bits) | 0.928 | 0.9566 | 0.19 |
 | fldhtop | no sensor cell read | 0.927 | 0.9538 | 0.19 |
 | fld8top | 8-bit counters, every event | 0.927 | 0.9552 | 0.18 |
@@ -340,10 +348,14 @@ has two lines, so there this is the same rule and the same run as above:
 | bit1top | one-bit wiring at the born count | 0.903 | 0.9555 | 0.33 |
 | enganstop | the engine's motor cells as they are (`readout_good 4`) | 0.857 | 0.9445 | 0.44 |
 | enganstop4 | the same at chance 2^-4 | 0.864 | 0.9459 | 0.42 |
+| enganstopf4 | the same, the zone an eighth in spikes (a quarter above) | 0.859 | 0.9496 | 0.30 |
+| enganstopf2 | the zone a sixteenth | 0.847 | 0.9519 | 0.23 |
+| enganstopf4s4 | the zone an eighth, chance 2^-4 | 0.871 | 0.9506 | 0.27 |
 
-(Two seeds: the two are within 0.004 of each other on MNIST and 0.012 on pairs for every
-row but engrun2 (0.005 / 0.016) and comreg (0.007). `com`, `bit1` and `engans` on pairs
-work because with two lines one goes up and one comes down already.)
+(Two seeds: the two are within 0.006 of each other on MNIST for every row but comreg
+(0.007), and within 0.016 on pairs for every row but eng (0.030). `com`, `bit1` and `engans` on pairs work because with two lines
+one goes up and one comes down already. On pairs, old layout, the `enganstop` rows read
+0.7271, 0.7357, 0.7327, 0.7359, 0.7360 with the output right 0.57 to 0.62.)
 
 What it says:
 
@@ -383,9 +395,14 @@ What it says:
   is back at 0.942.
 - **The engine's own motor cells under that rule** (`enganstop`): right 0.86 online, reader
   0.9445. That is the smallest change that works: no new state, a new value of
-  `readout_good`. Its distance from the counters-as-weights rows (0.93, 0.957) is what
-  spiking against a regulated bar, a quarter-wide zone in spikes and chance steps cost
-  together; a narrower zone was run after (below).
+  `readout_good`. Part of its distance from the counters-as-weights rows (0.93, 0.957) is
+  the zone: a quarter in spikes sends an error on 44% of the digits, a sixteenth on 23%,
+  and at a sixteenth the reader is 0.952 with the output no better (0.85). So the spiking
+  readout, told the right line and moving two buttons, teaches the cells as well as the
+  every-event job's outside softmax output did (0.951 on this slice). What is left
+  between it and the counters-as-weights output is the output's own accuracy (0.86
+  against 0.93) and 0.005 on the reader. The narrower zones were run on validation only;
+  the report's `enganstope` is the quarter.
 - **With no new code at all**: the runner-up readout with the rule told the right button
   on bad steps (`engrun2`) reads 0.941, where the every-event job had 0.935 with the plain
   readout. Two lines named, no zone.
@@ -424,7 +441,6 @@ Knobs on `intope`:
 | intopeb8, b16 | 8-bit or 16-bit counters (12) | 0.928, 0.927 / 0.695, 0.698 | 0.9565, 0.9554 / 0.7656, 0.7635 |
 | intope64 | the cells re-pick together every 64 verdicts | 0.929 / 0.704 | 0.9557 / 0.7624 |
 | intopeall | inhibitory and pacemaker cells learn too (`hop_who 3`) | 0.933 / 0.704 | 0.9594 / 0.7701 |
-
 | intopeallw10 | both: more learner kinds and a 10-tick window (`loopcombo`) | 0.940 / 0.714 | 0.9604 / 0.7796 |
 | paytopeall, paytopew10 | payment with more learner kinds; with a 10-tick window | 0.931, 0.929 / 0.714, 0.720 | 0.9606, 0.9569 / 0.7776, 0.7750 |
 | paytopeallw10 | payment with both | 0.936 / 0.716 | 0.9615 / 0.7804 |
@@ -433,9 +449,10 @@ Knobs on `intope`:
 0.013 on pairs for every arm but the coin (0.017). 16-bit counters give 12-bit's runs to
 the digit when one line steps: no counter passes 12 bits.)
 
-- **The closed loop reads 0.9575 / 0.7635 on this slice** (the every-event job's outside
-  outputs here: softmax 0.9513 / 0.7189, softmax at fine 0.3 0.9459 / 0.7795, whole-number
-  0.9444 / 0.7702), and its own output is right 0.927 / 0.698 of the time online.
+- **The closed loop reads 0.9554 / 0.7635 on this slice** (`intope`; 0.9575 on MNIST
+  without the even layout; the every-event job's outside outputs here: softmax 0.9513 /
+  0.7189, softmax at fine 0.3 0.9459 / 0.7795, whole-number 0.9444 / 0.7702), and its own
+  output is right 0.927 / 0.698 of the time online.
 - **Which lines step is the whole of the MNIST gain.** Every close line: 0.849 online,
   reader 0.941. The top one only: 0.927, 0.9575. The output stepping one line with the
   cells told of every close line: 0.913, 0.942. So it is what the cells are told (two
@@ -630,12 +647,15 @@ used at all.
 | payment (`paytope`) | 0.9557 | 0.7642 | |
 | payment - hashed wires | -0.0002 | +0.0048 | 3 of 8 / 7 of 8 |
 | payment over its coin | +0.0173 | +0.0729 | 8 of 8 / 8 of 8 |
+| at the second report's setting: `paytopeallw10` - `intopeallw10` (0.9616 / 0.7773 against 0.9613 / 0.7757) | +0.0004 | +0.0016 | 6 of 8 / 3 of 8 |
 | on validation (2 seeds): the old layout, `paytop` - `intop` | -0.0023 | +0.0148 | 0 of 2 / 2 of 2 |
 | on validation: the even layout, `paytope` - `intope` | +0.0016 | +0.0066 | 2 of 2 / 1 of 2 |
 
-- **Level on MNIST, a little better on pairs** (+0.005, 7 of 8 seeds). About half the
-  model's lead on pairs and none of it on MNIST. The cells fire a little less under it
-  (37.0 / 31.3 against 38.7 / 33.5) and its output is right as often (0.924 / 0.714).
+- **Level on MNIST, a little better on pairs** (+0.005, 7 of 8 seeds) at the first
+  setting, and level on both at the second, where the hashed wires already read 0.776 on
+  pairs. At best half the model's lead on pairs and none of it on MNIST. The cells fire
+  a little less under it (37.0 / 31.3 against 38.7 / 33.5) and its output is right as
+  often (0.924 / 0.714).
 - **It works with no wires of its own.** The hashed wires were the one part of the
   one-hop rule that came from nowhere; here the error returns along counters the output
   already keeps, for about 60,000 word operations a verdict that teaches.
@@ -721,9 +741,10 @@ twin. "base" is the map's own column, the engine's readout. `scripts/outputinsid
 
 Under the base column neither row passes; both pass here (a row passes at halfway from
 chance to perfect and over its twin). The output-gap doc's best readout rule had sixteen
-cues at 0.72 on a 40,000-step life. The comparison is not even: the old readout hears good and bad, this output is told the
-right button. Nothing broke; the rest of the map was not run, and every row whose task
-gives no right button (the bandits, the cart, catch) would leave this output at its twin.
+cues at 0.72 on a 40,000-step life. The comparison is not even: the old readout hears
+good and bad, this output is told the right button. The rest of the map was not run, and
+every row whose task gives no right button (the bandits, the cart, catch) would leave this
+output at its twin.
 
 One thing did break on the way and is fixed: on tasks that give no verdict for "no move"
 (the toys, the map; MNIST calls it wrong) a newborn output, every vote zero, tied, made no
@@ -772,6 +793,8 @@ about 58,000. `scripts/outputinside.sh speed --jobs 1`.
   each over born and over its coin on every seed; the closed loop over its shuffled life
   on every seed). Born's eight numbers on each test and `outtop`'s eight on the pair test
   equal the every-event job's to the digit.
+- Real, and a loss: parity of 3 (8 seeds, the same fresh reader, every seed lower than
+  under the every-event arm). Real: xor, and the two map rows (8 seeds each).
 - **The output is told the right line at every verdict.** So was the one-hop rule
   (`hop_teach 2`) and so were the outside outputs. The engine's old readout learns from
   good and bad alone; this one cannot. On a task with no answer line it does nothing.
@@ -821,6 +844,9 @@ about 58,000. `scripts/outputinside.sh speed --jobs 1`.
   and nothing in the sheet hears it. The ladder says a cell voting one bit (its sum over
   zero) keeps 0.88 online and 0.955 on the reader once one line steps, which would be a
   verdict spike a cell; it was run outside the blob only.
+- **The smaller change at its better zone on the test digits.** `readout_good 4` with the
+  zone a sixteenth reads 0.952 / 0.736 on validation (two seeds); the report ran the
+  quarter (0.945 / 0.732).
 - **Pattern answers** (the calc battery): the output handles a pair of lines an answer bit
   and it was not run there.
 - **Why parity of 3 loses** under the new loop (0.758 against 0.919 by the same fresh
@@ -938,7 +964,8 @@ The closed loop's own flags, for any blobrun or blobmnist line: `--g.learn_mode 
   one-bit vote, one-bit wiring at a fixed count, the engine's spiking motor cells) goes
   silent (0.10 to 0.18). With only the top wrong line stepping every one of them holds:
   8-bit counters 0.927, 6-bit 0.915, one-bit votes 0.879, one-bit wiring 0.903, the
-  engine's own motor cells 0.86. This is the output-gap doc's "with many buttons a good
+  engine's own motor cells 0.86 (and their cells read 0.945 / 0.732 on test; 0.952 on
+  validation with the zone a sixteenth). This is the output-gap doc's "with many buttons a good
   should move only the competitors", for every verdict and with the answer given.
   [likely: validation, 2 seeds a rung, every rung the same way; the engine's cells 8 seeds]
 - New finding: **what the cells must be told is two lines.** The right line and the one
