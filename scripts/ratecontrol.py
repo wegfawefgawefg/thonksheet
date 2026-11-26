@@ -171,10 +171,13 @@ def summary(names, opt, tests):
         if "alive" in r:
             w, d, ok = alive_row(r["alive"])
             passes += ok
-            cells.append("%s-%s, %s / %s, %s, %s, %s%s" % (
-                fmt(w["rate_lo"], 2), fmt(w["rate_hi"], 2), fmt(w["silent"], 3),
-                fmt(w["stuck"], 3), fmt(w["cap"], 3), fmt(w["jump"], 2), w["stage0"],
-                " **pass**" if ok else ""))
+            if not d:
+                cells.append("-")
+            else:
+                cells.append("%s-%s, %s / %s, %s, %s, %s%s" % (
+                    fmt(w["rate_lo"], 2), fmt(w["rate_hi"], 2), fmt(w["silent"], 3),
+                    fmt(w["stuck"], 3), fmt(w["cap"], 3), fmt(w["jump"], 2), w["stage0"],
+                    " **pass**" if ok else ""))
             detail.append((name, d))
         if "read" in r:
             (mn, pr, corr, rate, grate, gread), ok = read_row(r["read"])
@@ -196,10 +199,13 @@ def summary(names, opt, tests):
                 fmt(st[0], 1), fmt(st[2], 3), fmt(st[4], 2), " **pass**" if ok else ""))
         if "map" in r:
             cols, ok = map_row(*r["map"])
+            # the standard control's columns are the reference, not a result
+            ok = ok and name != "std"
             passes += ok
             worst = min([d for c in cols.values() for d in c[2].values()] or [0])
             cells.append("%s; %+.3f%s" % (" / ".join(
-                "%s (%s)" % (c[0], c[1]) for c in cols.values()), worst, " **pass**" if ok else ""))
+                "%s (%s)" % ("-" if c[0] is None else c[0], c[1]) for c in cols.values()), worst,
+                " **pass**" if ok else ""))
         head.append("| %s | %s | %d |" % (name, " | ".join(cells), passes))
     lines = head + ["", "Alive in detail (mean of the seeds): setting, world, rate over target, "
                     "silent, stuck, at cap, silent plain hidden, silent integrator and time "
