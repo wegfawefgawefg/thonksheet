@@ -40,6 +40,7 @@ def loop(flags=""):
 
 TOPE = "--g.out_top 1 --motor-spread-even 1"
 TOY_OUT = " --g.hop_teach 6 --g.out_on 1 --g.out_top 1"  # the toys' life with the new output
+OLD_AFTER = ["--after", "out_on 0"]  # blobprobe: the old readout as the fresh output
 COIN_OUT = "--life-outside-coin 1"
 COIN_IN = "--g.hop_coin 3"
 ARMS = {
@@ -238,14 +239,25 @@ RECIPES = {
     # the rate held at target (threshold regulation uncapped), MNIST, seeds 5-8
     "cap": {"kind": "sheet", "val": False, "seeds": [5, 6, 7, 8], "extra": ee.CAP,
             "arms": ["born", "intope"], "coins": ["intope"], "shuffled": [], "tests": ["mnist"]},
-    # the toys: a life with the blob's own output teaching the cells, then a fresh output
-    # on the frozen sheet (the old readout, as the every-event doc scored them; "own": a
-    # fresh output of the new kind instead)
+    # the toys: a life, then a fresh output on the frozen sheet. the probe keeps the life's
+    # genome numbers for the fresh output, so after a life with out_on the fresh output is
+    # of the new kind ("in", "incoin"; "bornown": the same on a born sheet); OLD_AFTER puts
+    # the old readout there instead ("inold", "incoinold"), the reader the every-event doc
+    # scored with ("born", "old")
     "toys": {"kind": "toy", "tasks": ["xor", "parity3"], "seeds": list(range(5, 13)), "settings": [
-        ("born", None, ""), ("old", EV + " --g.hop_teach 2", ""),
-        ("in", EV + TOY_OUT, ""), ("incoin", EV + TOY_OUT + " --g.hop_coin 3", ""),
-        ("bornown", None, "--g.out_on 1 --g.out_top 1"),
-        ("inown", EV + TOY_OUT, "--g.out_on 1 --g.out_top 1")]},
+        ("born", None, []), ("old", EV + " --g.hop_teach 2", []),
+        ("inold", EV + TOY_OUT, OLD_AFTER),
+        ("incoinold", EV + TOY_OUT + " --g.hop_coin 3", OLD_AFTER),
+        ("bornown", None, ["--g.out_on", "1", "--g.out_top", "1"]),
+        ("in", EV + TOY_OUT, []), ("incoin", EV + TOY_OUT + " --g.hop_coin 3", [])]},
+    # a first look at why parity of 3 loses: a wider margin, no sensor cell counted, and
+    # the cells told on every step the output had wrong or close (the old readout as the
+    # fresh output in each)
+    "toys2": {"kind": "toy", "tasks": ["parity3"], "seeds": list(range(5, 13)), "folder": "toys",
+              "settings": [
+        ("inm8old", EV + TOY_OUT + " --g.out_margin 8", OLD_AFTER),
+        ("inm32old", EV + TOY_OUT + " --g.out_margin 32", OLD_AFTER),
+        ("inhold", EV + TOY_OUT + " --g.out_hidden 1", OLD_AFTER)]},
     # two rows of the quick map that lean on the output (scripts/oneset.sh), seeds 5-12
     "map": {"kind": "map", "rows": "echo16,mnist", "columns": [
         ("base", ""),
@@ -320,7 +332,7 @@ def table(r, outdir, name):
 
 
 def toy_jobs(r, outdir, quick):
-    """(life flags or None for a born sheet, flags of the fresh output's phase) per setting"""
+    """(life flags or None for a born sheet, args for the fresh output's phase) per setting"""
     jobs = []
     life = hop.LIFE.replace("--steps 40000", "--steps 4000") if quick else hop.LIFE
     for task in r["tasks"]:
@@ -331,7 +343,7 @@ def toy_jobs(r, outdir, quick):
                        "--then", hop.TASKS[task].split()[1], "--then-steps",
                        "2000" if quick else "20000", "--seed", str(s)]
                 cmd += ["--born", "1"] if life_flags is None else []
-                cmd += then_flags.split() + (["--window", "100"] if quick else [])
+                cmd += then_flags + (["--window", "100"] if quick else [])
                 jobs.append((cmd, os.path.join(outdir, "toy-%s-%s-%d.txt" % (task, name, s))))
     return jobs
 
@@ -339,7 +351,7 @@ def toy_jobs(r, outdir, quick):
 def toy_table(r, outdir):
     seeds = r["seeds"]
     lines = ["a fresh output on the frozen sheet after a 40,000-step life, late score (first "
-             "quarter); life: the blob's own answer late in the life; seeds %s" %
+             "quarter); life: the answering output's late score in the life; seeds %s" %
              ",".join(map(str, seeds))]
     for task in r["tasks"]:
         lines.append("%-8s %-9s %s   mean (first quarter)  life" % (

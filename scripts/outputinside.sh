@@ -11,11 +11,15 @@
 #   looppair      the pair test with the buttons' cells spread evenly, or all of them
 #   looppay       the errors back along the output's own sources (out_pay)
 #   loopknobs     margin, the cells' own zone, window, width, re-pick every 64, who learns
+#   loopcombo     the knobs that looked better, together
 #   report        the closed loop on test digits, seeds 5-12, beside born, its coin, a
 #                 shuffled-digit life, payment, the output alone, the same rule outside
+#   report2       the setting validation picked afterwards, and it with payment
 #   reportcells   the same rule on the motor cells as they are (readout_good 4), seeds 5-12
+#   recheck       the first report's main arm again (it ran before the tie rule went in)
 #   cap           the closed loop with the rate held at target, MNIST, seeds 5-8
 #   toys          xor and parity of 3 with the blob's own output teaching the cells
+#   toys2         parity of 3 with a wider margin, with no sensor cell read
 #   map           two rows of the quick map that lean on the output (scripts/oneset.sh)
 #   speed         one MNIST life each, alone (--jobs 1): the life's ticks a second
 #   smoke         one seed, every part (use with --quick)
