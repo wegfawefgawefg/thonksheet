@@ -248,7 +248,8 @@ int probe_capsplit(int argc, char** argv) {
         if (!ticker_after_tick(tt, *blob)) {
             continue;
         }
-        if (tt.valence != 0) {
+        // with a critic the blob hears every step, valence 0 included (as run/life.cpp)
+        if (tt.valence != 0 || flags.genome.critic_on) {
             if (tt.plug.shape.pattern_bits > 0) {
                 plug_mark_pattern(tt.plug, *blob, tt.in.pattern, tt.in.pattern_tied,
                                   tt.task.pattern_graded);
@@ -288,7 +289,7 @@ int probe_capsplit(int argc, char** argv) {
         step++;
         if (step % flags.window == 0) {
             scores.push_back(task_window_score(tt.task));
-            std::printf("window %zu score %.4f rate %.2f button thresholds", scores.size(),
+            std::printf("window %zu score %.6f rate %.2f button thresholds", scores.size(),
                         scores.back(),
                         (double)window_fired * 1024.0 / ((double)window_ticks * inner));
             for (int l = 0; l < lines && l < 4; l++) {

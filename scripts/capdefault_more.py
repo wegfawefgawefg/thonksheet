@@ -5,6 +5,7 @@ hop2), so their finished runs in the main checkout are copied in place of runnin
 
 import contextlib
 import io
+import json
 import os
 import re
 import shutil
@@ -22,7 +23,16 @@ CAP = "--g.threshold_cap 1000"
 COLS = ["base", "a2rucomp", "best"]
 # what the map is run with besides cap 64 (nothing) and cap 1000: name -> genome numbers.
 # set after the rate part was read (docs/results-2026-11-26-cap-default.md, part 2)
-FIXES = {}
+FIXES = {
+    # the cap lifted and an honest target of 64 (the sector's target and the walk's own)
+    "t64": CAP + " --g.sector_target_per_1024 64 --g.threshold_down_shift 8",
+    # a cap between the two
+    "c128": "--g.threshold_cap 128",
+    # the cap lifted for every cell but the motor cells (through the probe: no genome number)
+    "m64": CAP + " --cap-motor 64",
+}
+# the ones the map runs when --fixes does not say
+MAP_FIXES = ["t64", "c128"]
 MUST = ["xor", "echo16", "order", "mnist"]
 
 
@@ -39,12 +49,80 @@ def fmt(v, d=4):
 
 def variants(opt):
     out = [("64", ""), ("1000", CAP)]
-    for name in opt.get("fixes") or FIXES:
+    for name in MAP_FIXES if opt.get("fixes") is None else opt["fixes"]:
         out.append((name, FIXES[name]))
     return out
 
 
+PROBE_FLAGS = ("--cap-motor", "--cap-hidden", "--cap-memory", "--hold-motor", "--hold-hidden")
+PROBE_CACHE = os.path.join(O.OUT, "cache-capsplit.jsonl")
+
+
+def probe_life(args):
+    """one quick-map life through `blobprobe capsplit` (for caps by kind of cell, which
+    blobrun has no number for): a cache row as scripts/oneset.py keeps them"""
+    own, probe, life = [], [], []
+    i = 0
+    while i < len(args) - 1:
+        width = O.TWO_VALUES.get(args[i], 1)
+        part = own if args[i].startswith("--g.") else probe if args[i] in PROBE_FLAGS else life
+        part.extend(args[i:i + 1 + width])
+        i += 1 + width
+    cmd = ["nice", "-n", "19", os.path.join(ROOT, "build", "blobprobe"), "capsplit", "--seed",
+           life[life.index("--seed") + 1], "--life", " ".join(life), "--look-steps", "200"]
+    done = subprocess.run(cmd + probe + own, capture_output=True, text=True, cwd=ROOT)
+    if done.returncode != 0:
+        raise RuntimeError(" ".join(args) + "\n" + done.stderr)
+    windows = [float(x) for x in re.findall(r"^window \d+ score (\S+)", done.stdout, re.M)]
+    return {"key": " ".join(args), "windows": windows, "probe": 1}
+
+
+def run_probe_column(flags, seeds, rows, opt):
+    """a column with probe flags: lives and twins that are not in the cache yet"""
+    from concurrent.futures import ThreadPoolExecutor
+    cache = O.load_cache()
+    todo = []
+    for rname, rargs in rows:
+        for s in seeds:
+            for f in (flags, twin_args(flags)):
+                args = O.life_cmd(rargs, f, s)
+                if " ".join(args) not in cache and args not in todo:
+                    todo.append(args)
+    todo.sort(key=lambda a: ("mnist" not in a, "50" not in a))
+    if todo:
+        print("capdefault: %d probe lives, %d at a time" % (len(todo), opt["jobs"]),
+              file=sys.stderr, flush=True)
+    with ThreadPoolExecutor(opt["jobs"]) as ex:
+        for row in ex.map(probe_life, todo):
+            with open(PROBE_CACHE, "a") as f:
+                f.write(json.dumps(row) + "\n")
+
+
+def probe_check(opt):
+    """the probe's life against blobrun's: every row, the base rule at cap 64, seed 5"""
+    from concurrent.futures import ThreadPoolExecutor
+    rows, cols = O.read_map(O.MORE)
+    rows = O.pick_rows(rows, "echo2,chain" if opt["quick"] else ",".join(opt.get("rows") or []))
+    cache = O.load_cache()
+    log = os.path.join(opt["out"], "probe-check.txt")
+    if not opt["table_only"]:
+        jobs = [O.life_cmd(rargs, cols["base"], 5) for _, rargs in rows]
+        with ThreadPoolExecutor(opt["jobs"]) as ex, open(log, "w") as f:
+            for (rname, _), row in zip(rows, ex.map(probe_life, jobs)):
+                old = cache.get(row["key"])
+                diff = max(abs(a - b) for a, b in zip(row["windows"], old["windows"])) if old \
+                    and len(old["windows"]) == len(row["windows"]) else None
+                f.write("%s: %d windows, largest difference to blobrun's cached life %s\n" % (
+                    rname, len(row["windows"]), "-" if diff is None else "%.6f" % diff))
+    return open(log).read().rstrip() if os.path.exists(log) else "not run"
+
+
 def run_column(name, flags, seeds, rows, opt):
+    if any(f in PROBE_FLAGS for f in flags):
+        all_rows = O.read_map(O.MORE)[0]
+        run_probe_column(flags, seeds, O.pick_rows(all_rows, ",".join(rows) if rows else ""),
+                         opt)
+        return
     cmd = ["python3", os.path.join(ROOT, "scripts", "oneset.py"), "run", name, "--seeds",
            ",".join(map(str, seeds)), "--jobs", str(opt["jobs"])]
     cmd += (["--rows", ",".join(rows)] if rows else []) + ["--"] + flags
@@ -145,7 +223,8 @@ COMPETE = "--g.compete_on 1 --g.tile_winners 4 --g.compete_shift 5"
 # pair test as the hop2 job's "same" recipe (taught lives for both rules)
 TAUGHT = "--life %d " + " ".join(I.RULE) + " --life-teach 2"
 INSIDE = {
-    ("mnist", "born"): ("the born sheet", ""),
+    ("mnist", "born"): ("the born sheet (the hop job's: the rule's numbers set, no life)",
+                        "--g.hop_on 1 --g.hop_shift 7"),
     ("mnist", "born-tw"): ("born, the tile's winners at 4 in the read", B5),
     ("mnist", "comp"): ("competitive learning, a life with no reward", "--life %d " + B5),
     ("mnist", "hop"): ("the one-hop rule, told the answer", TAUGHT + " --g.hop_on 1 "
@@ -257,6 +336,98 @@ def inside_test(opt):
     if checks:
         lines += ["", "Copied from the earlier jobs' outputs (same flags), seed %d run again "
                   "with this build: " % seeds[0] + "; ".join(checks)]
+    return "\n".join(lines)
+
+
+# ---- the first press, step by step ----
+
+def first_press(opt):
+    """the chain with three buttons at cap 1000, the last 2,000 steps one by one: what is
+    pressed on a stage-0 step that follows a stage-1 step (fresh), and on one that follows a
+    stage-0 step where the third button or B was pressed"""
+    import capdefault as C
+    rows, cols = O.read_map(O.MORE)
+    rows = dict(rows)
+    seeds = [5] if opt["quick"] else (opt["seeds"] or list(range(5, 13)))
+    names = ["base"] if opt["quick"] else COLS
+    jobs = []
+    for col in names:
+        for s in seeds:
+            cmd, _ = C.look_job(opt, rows, cols, "chain", col, "k3-1000", s)
+            out = os.path.join(opt["out"], "trace", "chain-%s-k3-1000-s%d.txt" % (col, s))
+            jobs.append((cmd + ["--trace", "400" if opt["quick"] else "2000"], out))
+    if not opt["table_only"]:
+        C.pool(jobs, opt["jobs"])
+    lines = ["The chain with three buttons at cap 1000, the last 2,000 steps one by one, seeds "
+             "%s. Each cell: share of those stage-0 steps on which A / B / the third button was "
+             "pressed (steps counted)." % ",".join(map(str, seeds)), "",
+             "| column | after a stage-1 step | after the third button on stage 0 | after B on "
+             "stage 0 |", "|---|---|---|---|"]
+    for col in names:
+        count = {k: [0, 0, 0, 0] for k in ("fresh", "third", "b")}
+        for s in seeds:
+            path = os.path.join(opt["out"], "trace", "chain-%s-k3-1000-s%d.txt" % (col, s))
+            text = open(path).read() if os.path.exists(path) else ""
+            m = re.search(r"^chain: A (\d+) B (\d+)", text, re.M)
+            if not m:
+                continue
+            a, b = int(m.group(1)), int(m.group(2))
+            # the stage is the right answer: A on stage 0, B on stage 1
+            steps = [(int(r), int(p)) for r, p in re.findall(
+                r"^step \d+ right (-?\d+) pressed (-?\d+)", text, re.M)]
+            for (r0, p0), (r1, p1) in zip(steps, steps[1:]):
+                if r1 != a:
+                    continue
+                key = "fresh" if r0 == b else "b" if p0 == b else "third" if p0 not in (a, -1) \
+                    else None
+                if key:
+                    count[key][0 if p1 == a else 1 if p1 == b else 2 if p1 >= 0 else 3] += 1
+        cells = []
+        for k in ("fresh", "third", "b"):
+            n = sum(count[k])
+            cells.append("- " if not n else "%.2f / %.2f / %.2f (%d)" % (
+                count[k][0] / n, count[k][1] / n, count[k][2] / n, n))
+        lines.append("| %s | %s |" % (col, " | ".join(cells)))
+    return "\n".join(lines)
+
+
+# ---- alive: long lives under a cap (the rate-control job's first test) ----
+
+ALIVE = {"std": "", "e": CAP, "c128": "--g.threshold_cap 128", "c256": "--g.threshold_cap 256"}
+
+
+def alive(opt):
+    """160,000-step lives (echo at 3 tiles, delayed echo of 2) and the 20,000-digit MNIST
+    world under base, base with competitive learning and the one setting, as
+    scripts/ratecontrol.sh's alive test (blobprobe ratehealth). std (cap 64) and e (cap 1000)
+    are that job's runs, copied"""
+    import ratecontrol as RC
+    import ratecontrol_tests as T
+    seeds = [5] if opt["quick"] else (opt["seeds"] or [5, 6])
+    names = ["c256"] if opt["quick"] else (opt.get("arms") or list(ALIVE))
+    lines = ["Long lives, seeds %s (cap 64 and cap 1000: the rate-control job's runs). Mean of "
+             "the seeds at the end of the life: rate over target; silent and stuck shares of "
+             "non-sensor cells; hidden thresholds at the cap; silent share of plain hidden "
+             "cells; the first 100 ticks back after a 2,000-tick gap over the rate before; late "
+             "score." % ",".join(map(str, seeds)), "",
+             "| cap | setting | world | rate | silent | stuck | at cap | hidden silent | gap "
+             "jump | late |", "|---|---|---|---|---|---|---|---|---|---|"]
+    for name in names:
+        old = os.path.join(MAIN, "ratecontrol", "alive", name)
+        copied = name in ("std", "e") and not opt["quick"]
+        if copied and os.path.isdir(old) and not opt["table_only"]:
+            folder = os.path.join(opt["out"], "alive", name)
+            os.makedirs(folder, exist_ok=True)
+            for f in os.listdir(old):
+                if f.endswith(".txt") and not os.path.exists(os.path.join(folder, f)):
+                    shutil.copyfile(os.path.join(old, f), os.path.join(folder, f))
+        o = {"out": opt["out"], "seeds": seeds, "quick": opt["quick"], "jobs": opt["jobs"],
+             "table_only": opt["table_only"] or copied}
+        _, detail, _ = RC.alive_row(T.alive(name, ALIVE[name].split(), o))
+        cap = {"std": "64", "e": "1000"}.get(name, name[1:])
+        for x in detail:
+            lines.append("| %s | %s | %s | %s |" % (cap, x[0], x[1], " | ".join(
+                fmt(v, 3) for v in (x[2], x[3], x[4], x[5], x[6], x[8], x[9]))))
     return "\n".join(lines)
 
 

@@ -36,10 +36,13 @@ ARMS = {
     "holdmotor64": ("cap 64, motor cells' thresholds held as born", "", "--hold-motor 1", ""),
     "bias64": ("cap 64, the rate held by the sector bias (room to 64)",
                "--g.sector_bias_max 64", "", ""),
+    "bias256": ("cap 64, the sector bias given room to 256", "--g.sector_bias_max 256", "", ""),
     "t64": ("cap 1000, target 64", CAP + " " + T64, "", ""),
     "t128": ("cap 1000, target 128", CAP + " " + T128, "", ""),
     "s64": ("cap 1000, sector target 64 alone (the walk still at 32)",
             CAP + " --g.sector_target_per_1024 64", "", ""),
+    "m64t64": ("cap 64 on motor cells, 1000 on the rest, target 64", CAP + " " + T64,
+               "--cap-motor 64", ""),
     "c64t64": ("cap 64, target 64", T64, "", ""),
     "c64t16": ("cap 64, target 16", T16, "", ""),
     "c128": ("cap 128", "--g.threshold_cap 128", "", ""),
@@ -47,6 +50,8 @@ ARMS = {
     "k3-64": ("three buttons, cap 64", "", "", "--k 3"),
     "k3-1000": ("three buttons, cap 1000", CAP, "", "--k 3"),
     "k4-1000": ("four buttons, cap 1000", CAP, "", "--k 4"),
+    "k3-motorfree": ("three buttons, cap 1000 on motor cells, 64 on the rest", CAP,
+                     "--cap-hidden 64 --cap-memory 64", "--k 3"),
     "nocue-64": ("no stage line, cap 64", "", "", "--chain-cue 0"),
     "nocue-1000": ("no stage line, cap 1000", CAP, "", "--chain-cue 0"),
 }
@@ -58,6 +63,9 @@ CHAIN = [
      list(range(5, 13))),
     (["chain"], COLS, ["c64", "c1000", "k3-1000"], [1, 2, 3, 4]),
     (["chain"], ["critic"], ["c64", "c1000", "k3-64", "k3-1000"], list(range(5, 13))),
+    # added after the first table was read
+    (["chain"], COLS, ["bias256", "k3-motorfree", "c128", "c256", "t64", "t128", "m64t64"],
+     list(range(5, 13))),
 ]
 RATE = [
     (["mnist", "far3", "far5"], COLS, ["c64", "c1000", "t64", "t128", "s64", "bias64",
@@ -244,6 +252,19 @@ def chain_table(opt):
                     if any(got):
                         lines.append("- %s %s: %s" % (col, arm, " ".join(
                             fmt(p["late"], 2) if p else "-" for p in got)))
+            lines += ["", "The vote (spikes in the step of A's cells / B's cells) on stage 0 and "
+                      "on stage 1, and how alike the hidden cells' spike counts are on the two "
+                      "stages (cosine), mean of the seeds:", ""]
+            for col in cnames:
+                for arm in arms:
+                    got = [p for p in looks(opt, "chain", col, arm, seeds) if p]
+                    c = [chain_numbers(p) for p in got]
+                    if not got:
+                        continue
+                    v = lambda key, who: fmt(mean([x[key].get(p[who]) for x, p in zip(c, got)]), 0)  # noqa: E731
+                    lines.append("- %s %s: stage 0 %s / %s, stage 1 %s / %s, alike %s" % (
+                        col, arm, v("votes0", "A"), v("votes0", "B"), v("votes1", "A"),
+                        v("votes1", "B"), fmt(mean([p.get("alike") for p in got]))))
     lines += ["", "Arms: " + "; ".join("%s: %s" % (a, ARMS[a][0]) for a in ARMS)]
     return "\n".join(lines)
 
@@ -254,12 +275,13 @@ def rate_table(opt):
         seeds = [5] if opt["quick"] else seeds
         lines += ["", "Seeds %s. late: the quick map's score; rate: spikes per 1,024 cell-ticks "
                   "over the last 2,000 steps, sensor cells left out, and apart for hidden and "
-                  "motor cells; at 64+: share of thresholds at 64 or more; stuck: share of motor "
-                  "cells firing on over a quarter of the ticks; bias at +max: share of sectors "
+                  "motor cells; at 64+: share of thresholds at 64 or more; silent: share of hidden "
+                  "cells with no spike in those steps; stuck: share of motor cells firing on "
+                  "over a quarter of the ticks; bias at +max: share of sectors "
                   "with the bias at its limit." % ",".join(map(str, seeds)), "",
                   "| row | column | arm | late (lowest-highest) | rate | hidden rate | motor rate "
-                  "| hidden at 64+ | motor at 64+ | motor stuck | bias at +max | seeds |",
-                  "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+                  "| hidden at 64+ | motor at 64+ | hidden silent | motor stuck | bias at +max | seeds "
+                  "|", "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
         for row in rnames:
             for col in cnames:
                 for arm in opt.get("arms") or arms + EXTRA_RATE:
@@ -270,18 +292,19 @@ def rate_table(opt):
                     k = lambda kind, key: fmt(mean([p.get(kind, {}).get(key) for p in got]),  # noqa: E731
                                               1 if key == "rate" else 3)
                     lines.append("| %s | %s | %s | %s (%s-%s) | %s | %s | %s | %s | %s | %s | %s "
-                                 "| %d |" % (
+                                 "| %s | %d |" % (
                                      row, col, arm, fmt(mean(late)), fmt(min(late), 2),
                                      fmt(max(late), 2), fmt(mean([p["rate"] for p in got]), 1),
                                      k("hidden", "rate"), k("motor", "rate"), k("hidden", "high"),
-                                     k("motor", "high"), k("motor", "stuck"),
+                                     k("motor", "high"), k("hidden", "silent"),
+                                     k("motor", "stuck"),
                                      fmt(mean([p.get("biastop") for p in got]), 2), len(got)))
     lines += ["", "Arms: " + "; ".join("%s: %s" % (a, ARMS[a][0]) for a in ARMS)]
     return "\n".join(lines)
 
 
 # arms added to the rate part after its first table was read (run with --arms)
-EXTRA_RATE = ["holdmotor", "holdmotor64", "c64t64", "c64t16", "c128", "c256"]
+EXTRA_RATE = ["holdmotor", "holdmotor64", "m64t64", "c64t64", "c64t16", "c128", "c256"]
 
 
 def main():
@@ -291,13 +314,13 @@ def main():
             "set -")[0])
         return 1
     opt = {"seeds": None, "jobs": 3, "quick": False, "table_only": False, "arms": None,
-           "rows": None, "cols": None}
+           "rows": None, "cols": None, "fixes": None}
     what, i = argv[0], 1
     while i < len(argv):
         a = argv[i]
         if a in ("--quick", "--table-only"):
             opt[a[2:].replace("-", "_")] = True
-        elif a in ("--seeds", "--jobs", "--arms", "--rows", "--cols"):
+        elif a in ("--seeds", "--jobs", "--arms", "--rows", "--cols", "--fixes"):
             v = argv[i + 1]
             opt[a[2:]] = seeds_of(v) if a == "--seeds" else int(v) if a == "--jobs" else v.split(",")
             i += 1
@@ -311,7 +334,8 @@ def main():
     parts = {"chain": lambda: (run_part(CHAIN, opt), chain_table(opt))[1],
              "rate": lambda: (run_part(rate_part(opt), opt), rate_table(opt))[1],
              "map": lambda: M.quick_map(opt), "inside": lambda: M.inside_test(opt),
-             "speed": lambda: M.speed(opt)}
+             "speed": lambda: M.speed(opt), "first": lambda: M.first_press(opt),
+             "probecheck": lambda: M.probe_check(opt), "alive": lambda: M.alive(opt)}
     names = list(parts) if what in ("smoke", "table", "all") else what.split(",")
     if what == "smoke":
         opt["quick"] = True
