@@ -221,6 +221,7 @@ static const GenomeField fields[] = {
     {"threshold_reg_until", &Genome::threshold_reg_until},
     {"threshold_late_shift", &Genome::threshold_late_shift},
     {"sector_gain", &Genome::sector_gain},
+    {"rate_band_motor", &Genome::rate_band_motor},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

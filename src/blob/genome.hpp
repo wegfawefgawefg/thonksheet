@@ -390,6 +390,9 @@ struct Genome {
     // target's worth of smoothed activity over the target (none under it, at most 4x this).
     // with sector_tiles 1 a sector is one tile; sector_smooth_shift sets how fast it counts
     int sector_gain = 0;
+    // 1: with the dead band or after the critical period, motor cells (the output's) keep the
+    // per-spike walk; only the rest change rule
+    int rate_band_motor = 0;
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

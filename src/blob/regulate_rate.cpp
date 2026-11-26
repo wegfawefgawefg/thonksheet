@@ -58,7 +58,9 @@ void regulate_band(Blob& blob) {
     uint64_t tick = blob.stats.tick;
     const uint64_t* fired = blob.spikes[blob.now];
     for (int t = 0; t < blob.tile_count; t++) {
-        uint64_t fixed = blob.sensor[t] | blob.pacemaker[t];
+        // with rate_band_motor the motor cells walk instead (regulate.cpp)
+        uint64_t fixed =
+            blob.sensor[t] | blob.pacemaker[t] | (g.rate_band_motor ? blob.motor[t] : 0);
         uint16_t* c = r.count + (size_t)t * TILE_NEURONS;
         // count this tick's spikes
         for (uint64_t m = fired[t] & ~fixed; m; m &= m - 1) {

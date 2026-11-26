@@ -27,6 +27,19 @@ CANDIDATES = {
     "d": ("slow sector bias, per-cell walk", SLOW + " " + CAP),
     "ac": ("dead band and inhibition in proportion", BAND + " " + GAIN + " " + CAP),
     "ad": ("dead band and slow sector bias", BAND + " " + SLOW + " " + CAP),
+    # added after the screen: the dead band leaves the sheet's mean to the sector bias, and
+    # +16 is not enough under competitive learning
+    "a64": ("dead band, the sector bias to 64", BAND + " --g.sector_bias_max 64 " + CAP),
+    # and only a cell that is nearly silent (under a 32nd of its share) steps down, so the
+    # tile's losers under its winners do not sink to the floor
+    "a5": ("dead band from a 32nd to four times, the sector bias to 64",
+           BAND + " --g.rate_band_low 5 --g.sector_bias_max 64 " + CAP),
+    # the same with the output's own cells on the walk (the readout leans on it)
+    "a5m": ("a5, motor cells keep the walk",
+            BAND + " --g.rate_band_low 5 --g.sector_bias_max 64 --g.rate_band_motor 1 " + CAP),
+    # and the sector's bias slow, so neither part moves during a read
+    "a5ms": ("a5m with the slow sector bias", BAND + " --g.rate_band_low 5 --g.sector_bias_max "
+             "64 --g.rate_band_motor 1 " + SLOW + " " + CAP),
 }
 TESTS = ["alive", "read", "latch", "pred", "map"]
 RUN = {"alive": T.alive, "read": T.read, "latch": T.latch, "pred": T.pred, "map": T.quick_map}

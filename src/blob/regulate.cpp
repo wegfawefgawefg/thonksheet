@@ -84,12 +84,13 @@ static void regulate_sectors(Blob& blob) {
 }
 
 // a neuron that fires gets a little harder to fire (chance 2^-up_shift); every neuron slowly
-// gets easier (2^-down_shift a tick). sensors and pacemakers keep theirs.
-static void regulate_thresholds(Blob& blob, int up_shift, int down_shift) {
+// gets easier (2^-down_shift a tick). sensors and pacemakers keep theirs. motor_only: only
+// motor cells walk (the same draws)
+static void regulate_thresholds(Blob& blob, int up_shift, int down_shift, bool motor_only) {
     const Genome& g = blob.genome;
     const uint64_t* fired = blob.spikes[blob.now];
     for (int t = 0; t < blob.tile_count; t++) {
-        uint64_t fixed = blob.sensor[t] | blob.pacemaker[t];
+        uint64_t fixed = blob.sensor[t] | blob.pacemaker[t] | (motor_only ? ~blob.motor[t] : 0);
         uint64_t up = fired[t] & ~fixed & sparse_word(blob.rng, up_shift);
         uint64_t down = ~fixed & sparse_word(blob.rng, down_shift) & ~up;
         while (up) {
@@ -111,17 +112,24 @@ static void regulate_thresholds(Blob& blob, int up_shift, int down_shift) {
 
 // idea 175: per-cell thresholds walk as above; after a critical period (threshold_reg_until
 // ticks) the walk stops, goes on 2^threshold_late_shift slower, or hands over to the dead band
-// (rate_band_shift, which runs from birth when there is no critical period)
+// (rate_band_shift, which runs from birth when there is no critical period). with
+// rate_band_motor the motor cells keep the walk whatever the others do
 static void regulate_cells(Blob& blob) {
     const Genome& g = blob.genome;
     bool late = g.threshold_reg_until > 0 && blob.stats.tick >= (uint64_t)g.threshold_reg_until;
-    if (g.rate_band_shift > 0 && (late || g.threshold_reg_until <= 0)) {
+    bool band = g.rate_band_shift > 0 && (late || g.threshold_reg_until <= 0);
+    if (band) {
         regulate_band(blob);
     } else if (!late) {
-        regulate_thresholds(blob, g.threshold_up_shift, g.threshold_down_shift);
+        regulate_thresholds(blob, g.threshold_up_shift, g.threshold_down_shift, false);
+        return;
     } else if (g.threshold_late_shift > 0) {
         regulate_thresholds(blob, g.threshold_up_shift + g.threshold_late_shift,
-                            g.threshold_down_shift + g.threshold_late_shift);
+                            g.threshold_down_shift + g.threshold_late_shift, false);
+        return;
+    }
+    if (g.rate_band_motor) {
+        regulate_thresholds(blob, g.threshold_up_shift, g.threshold_down_shift, true);
     }
 }
 
