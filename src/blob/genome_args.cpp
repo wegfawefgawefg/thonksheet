@@ -213,6 +213,7 @@ static const GenomeField fields[] = {
     {"actor_good", &Genome::actor_good},
     {"actor_unjudged", &Genome::actor_unjudged},
     {"replay_bad_only", &Genome::replay_bad_only},
+    {"sector_step_shift", &Genome::sector_step_shift},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

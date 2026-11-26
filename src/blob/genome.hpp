@@ -366,6 +366,10 @@ struct Genome {
     int replay_bad_only = 0;   // 1: the backward walk runs on bad only, even with readout_good
     int actor_good = 0;        // 1: a good surprise teaches the actor's good half (pressed
                                // gain, others lose) whatever readout_good says
+    // learned loops that hold (idea 172, docs/results-2026-11-26-loops.md). 0 is off and
+    // changes nothing.
+    int sector_step_shift = 0; // the sector bias takes its one step only with chance
+                               // 2^-this a tick, so a cue's burst does not shut its own loop
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs
