@@ -23,11 +23,11 @@ constexpr int MOVED_LINES = 121;
 
 struct Moved {
     int steps = 3, margin = 2;
-    std::vector<int> cols;      // the non-sensor cells
-    std::vector<int> pixel;     // the predicted pixels, as places on the 28 x 28 sheet
-    std::vector<int16_t> w;     // pixels x cols
-    std::vector<uint8_t> x;     // the step before's counts, by column
-    bool have = false;          // x is a step of the digit now shown
+    std::vector<int> cols;  // the non-sensor cells
+    std::vector<int> pixel; // the predicted pixels, as places on the 28 x 28 sheet
+    std::vector<int16_t> w; // pixels x cols
+    std::vector<uint8_t> x; // the step before's counts, by column
+    bool have = false;      // x is a step of the digit now shown
     int64_t seen = 0, right = 0, on = 0, on_right = 0, sent = 0;
 };
 

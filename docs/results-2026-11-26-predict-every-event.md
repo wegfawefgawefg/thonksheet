@@ -9,8 +9,80 @@ This job runs prediction errors through the repaired rule: 12-bit counters that 
 every marked input, a signed error per prediction line with a fine zone, and the errors of
 the far horizons as well as the next step's.
 
-(The answer, the short version and the tables are written below the predictions once the
-runs are in.)
+**The answer: yes for the inside, but only in a world with time in it and with a better
+predictor than the sheet's own, no for catch and forage, and barely for the task: with
+every-event counters and the errors of a predictor that is right most of the time and
+silent inside a margin (a whole-number perceptron outside the sheet), sent from several
+horizons, the hidden cells on delayed echo come to hold the time since the cue well enough
+that the
+sheet's own predictor cells go from 0.59 to 0.73 eight steps ahead (their coin 0.61, every
+one of 8 seeds) and one sheet in eight learns the task; with the predictor cells' own
+errors the far horizons give over half of that (0.68) and the next step alone is still
+"what just changed"; a fine zone on those cells' answers makes things worse; and under the
+one setting's button rule the life's score falls on three worlds of four.**
+
+## Short version
+
+Hidden cells read by a fresh linear reader after a 20,000-step life, or the predictors'
+own balanced skill late in the life. "coin": the same life, the cells given another step's
+errors. 8 seeds (5 to 12) unless said.
+
+| | rule off | prediction errors | its coin | |
+|---|---|---|---|---|
+| catch: which way the paddle moved, the cells' own next-step errors | 0.549 (born 0.521) | 0.799 | 0.618 | idea 164's rule 0.742 |
+| ... the same with the rate held (4 seeds) | born 0.528 | 0.781 | 0.702 | |
+| delayed echo: the sheet's own predictor cells, 8 steps on; outside errors, four horizons | 0.592 | **0.733** | 0.609 | every seed above |
+| ... the cells' own errors, four horizons | 0.592 | 0.679 | 0.608 | 7 seeds of 8 |
+| ... the cells' own errors, the next step alone | 0.592 | 0.629 | 0.609 | |
+| delayed echo: the outside predictor, 8 steps on | 0.584 | **0.740** | 0.603 | every seed above |
+| delayed echo: time since the cue, hidden cells | 0.897 (born 0.859) | 0.983 | 0.955 | shuffled life 0.883 |
+| delayed echo: the task's late score, the far three horizons | 0.514 | 0.575 | 0.512 | one seed at 0.80 |
+| predict-next: the sheet's own predictor cells, 1 step on | 0.687 | 0.734 | 0.699 | 8 of 8 |
+| MNIST, digits moved a pixel a step, no labels: the usual labelled read | born 0.925 | **0.944** | 0.938 | 8 of 8 over both |
+
+- **The fine zone.** For a button line it compares a wrong line's spikes with the right
+  line's. A prediction line is one bit answered by two groups of motor cells, so its like
+  is the split between the two: the wrong group's share of the pair's spikes
+  (`--g.hop_pred_fine`, in 32nds). On the predictor cells' answers every zone but "wrong
+  answers only" is worse (screen, 2 seeds: the paddle read 0.91 wrong-only, 0.49 to 0.75
+  with a zone), because those cells are seldom right by a margin.
+- **The predictor cells are a poor output.** One step on they are 0.63 balanced on catch
+  where a perceptron on the same sheet is 0.84, and under "every line keeps its common
+  value" on the plain share. Idea 178's lesson again: a free target is not a good error.
+- **What just changed: learned, a little stronger on catch (0.799 against 0.742, 5 seeds
+  of 8), the same on forage (0.323 against 0.324).** One step ahead the catch cells now
+  read the lines' future as well as the lines do (0.774; lines 0.770; born 0.751). With
+  the rate held the coin gets most of the paddle read (0.702) and all of forage's.
+- **The future is taught on delayed echo, by a good predictor's errors.** Both predictors
+  gain 0.14 to 0.16 at 8 steps and 0.07 at 1 step, 8 seeds of 8 over the rule-off life and
+  the coin; the cells hold the time since the cue (0.983) and keep the cue, which the old
+  rule lost. It holds under the other regulation setting and on the sheet's own moves.
+  Predict-next gains a third as much at 1 step; mountain car leans the same way on 2
+  seeds; catch, forage, chain and echo gain nothing.
+- **Which horizons.** Several together teach about twice what one does; the far three
+  alone do as well as all four; the next step alone gives half; 2 alone or 8 alone a
+  third (3 seeds).
+- **Which pieces.** As on MNIST, the good error and the every-event counters only work
+  together: the outside error on the old chance counters is level with its coin (3 seeds).
+- **The task.** On idea 164's sheet it moves only on delayed echo (+0.04, +0.06; 7 seeds of
+  8; one sheet does the task, frozen, at 0.80). With the one setting's button rule the
+  life's score falls where the readout was doing well (order -0.14, delayed echo at 2
+  steps -0.07, forage -0.09; 3 seeds), while a fresh reader of the same cells is level or
+  better: the sheet's own readout does not follow cells that keep being re-picked.
+- **The plane store** is safe in prediction lives on idea 164's sheet (the predictor cells
+  and buttons are motor cells; the rule teaches hidden cells), and fights any rule that
+  re-picks hidden cells from another store: competitive learning, the tags, and the one
+  setting's backward walk.
+- **MNIST with moved digits.** Next-frame errors with no labels lift the labelled read
+  0.925 to 0.944; 0.013 of that the coin gets too, 0.005 is the errors being this step's
+  (8 seeds of 8). The loop does not close there: the next-frame predictor is as good on the
+  untaught sheet.
+- **Cost.** The next step alone: 0.76 to 0.81 of the rule-off life's speed. Four horizons:
+  0.46 to 0.56 (four verdicts a step). 8 words a neuron for the kept steps.
+- **What it means for the queue.** Same as idea 178's: the missing part is the output. A
+  predictor inside the sheet that is right most of the time and steps only inside a
+  margin would make this a result of the method; the far horizons already give half of it
+  from the cells as they are.
 
 ## Predictions (written and committed before any scoring run)
 
@@ -339,6 +411,17 @@ Per seed (5 to 12). Cells at 8 steps: rule off 0.600, 0.579, 0.591, 0.580, 0.602
   life, +0.020 over their coin on 6 seeds of 8), and the next step alone, from outside,
   about half (+0.075, +0.068 over its coin).
 
+**The other regulation setting** (`--g.threshold_cap 1000`, seeds 5 to 8,
+`scripts/predevent.sh cap --as capde ...`). The rates are level without it, so this is not
+a rate check; it asks whether the result leans on the default regulation, as the paddle
+read's margin over its coin did. Rule off / `ev15f0o2` / its coin: the outside predictor
+8 steps on 0.538 / 0.664 / 0.541 (4 seeds of 4 over both), time since the cue 0.829 /
+0.961 / 0.882 (4 of 4), the cue 0.683 / 0.724 / 0.691 (4 of 4), the future 8 steps on
+0.614 / 0.716 / 0.616 (4 of 4 over the coin). The inside gain holds, with wider margins
+over the coin. The sheet's own predictor cells do not show it there: under that setting
+they are poor to begin with (0.542 at 8 steps with the rule off, against 0.592) and gain
++0.028 (+0.015 over the coin, 3 of 4). The task: 0.502 / 0.514 / 0.494.
+
 ### Predict-next
 
 | | rule off | `ev1f0` | its coin | `ev1f0o2` | its coin | `ev15f0o2` | its coin | its shuffled life | `ev14f0o2` | its coin |
@@ -362,57 +445,52 @@ Per seed (5 to 12). Cells at 8 steps: rule off 0.600, 0.579, 0.591, 0.580, 0.602
   thirds of the gain on the next symbol and nearly all of it on the symbol before.
 - The task does not move.
 
-## MNIST with something to predict in time: moved digits (part 4)
+## Which horizons teach, and which pieces matter (delayed echo)
 
-Built because part 2 showed a gain. `blobmnist ceiling --life-moved 3`
-(`src/mnist/mnist_moved.cpp`): in the life every digit is shown for 3 steps in a row, one
-pixel further each step along one of four directions (the digit's own, by its number), so
-the next frame follows from this one and the way it is going. The sheet has no motor cells
-to spare for 784 lines, so the errors come from the outside predictor alone: 121 pixels on
-a lattice (every second pixel of the middle 22 x 22), one row of 16-bit weights each over
-the non-sensor cells' counts, margin 2 steps, its signs sent to the every-event rule as
-prediction lines one step back. No label reaches the sheet. A 20,000-digit life (60,000
-steps, the ticks of the usual 60,000-digit life), then the usual read: frozen, a fresh
-linear reader of the non-sensor cells fit on 60,000 unmoved digits with their labels.
-`scripts/predevent.sh moved movedtest --test --seeds 5-12 --arms born,moved,movedc,moveds`.
+The sheet's own predictor cells' balanced skill 8 steps on, in the last quarter of the
+life (the rule off: 0.592 on seeds 5 to 12, 0.590 on seeds 5 to 7). `scripts/predevent.sh
+time ...` (8 seeds, `out/predevent/cells8.md`, `time8.md`) and `... --as pieces` (3 seeds,
+`out/predevent/pieces.md`).
 
-Test digits, seeds 5 to 12:
+| horizons that teach | the cells' own errors | less rule off | less its coin | the outside predictor's errors | less rule off | less its coin |
+|---|---|---|---|---|---|---|
+| 1 | 0.629 | +0.038 (8/0) | +0.020 (6/2) | 0.666 | +0.075 (8/0) | +0.068 (7/1) |
+| 1, 2, 4, 8 | **0.679** | +0.088 (7/1) | +0.071 (7/1) | **0.733** | +0.141 (8/0) | +0.124 (8/0) |
+| 2, 4, 8 | 0.672 | +0.080 (7/1) | +0.065 (8/0) | 0.731 | +0.140 (8/0) | +0.135 (8/0) |
+| 2 alone (3 seeds) | | | | 0.640 | +0.050 (3/0) | |
+| 8 alone (3 seeds) | | | | 0.634 | +0.045 (3/0) | |
 
-| arm | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | mean | rate | pixels | next-frame predictor |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| born | 0.9248 | 0.9272 | 0.9273 | 0.9239 | 0.9255 | 0.9192 | 0.9249 | 0.9278 | **0.9251** | 33.1 | 7.2 | |
-| next-frame errors (`moved`) | 0.9452 | 0.9437 | 0.9427 | 0.9445 | 0.9420 | 0.9441 | 0.9423 | 0.9452 | **0.9437** | 44.3 | 6.4 | 0.869 |
-| its coin: another step's errors | 0.9401 | 0.9348 | 0.9383 | 0.9357 | 0.9401 | 0.9416 | 0.9375 | 0.9387 | 0.9384 | 38.5 | 5.6 | 0.860 |
-| pixels shuffled afresh every step | 0.9258 | 0.9227 | 0.9237 | 0.9230 | 0.9261 | 0.9233 | 0.9254 | 0.9269 | 0.9246 | 33.2 | 7.5 | 0.617 |
+- **Several horizons together teach about twice what any one does**, from either error
+  source; the next step is not needed (the far three alone do as well as all four). One
+  horizon alone, near or far, gives a third to a half.
+- **The sheet's own errors do more than half of it when the far horizons are in.** No
+  outside predictor: the cells' skill 8 steps on goes 0.592 to 0.679 (7 seeds of 8; its
+  coin 0.608) and 1 step on 0.699 to 0.740 (coin 0.703). That part of the result is inside
+  the method. But a fresh reader does not see it beyond the coin: time since the cue 0.947
+  against the coin's 0.970 (1 seed of 8 above), the future 8 steps on +0.010 over the coin
+  (6 of 8), and the cue is read 0.034 worse than born. With the outside predictor's errors
+  all of those go the right way (above).
 
-"rate": hidden spikes per 1,000 cell-ticks while read; "pixels": pixel inputs a hidden
-excitatory cell; "next-frame predictor": the outside predictor's balanced skill in the last
-tenth of the life. Seed by seed: next-frame errors less born +0.0186 (8 of 8; +0.0154 to
-+0.0249); less the coin **+0.0054 (8 of 8; +0.0019 to +0.0089)**; less the shuffled life
-+0.0191 (8 of 8); the coin less born +0.0133 (8 of 8). On the validation slice (seeds 1,
-2): born 0.9259, a life on moved digits with the rule off 0.9268, next-frame errors 0.9466,
-coin 0.9412, shuffled 0.9245, margin 1 0.9456.
+The pieces, on seeds 5 to 7:
 
-- **Predicting the next frame, with no labels, lifts the labelled read from 0.925 to
-  0.944** on every seed. Beside it from their own docs: the labelled every-event rule on an
-  outside output's error 0.951, competitive learning 0.952, the engine's old rule from the
-  answer 0.938.
-- **Most of that is not the errors being about what was shown.** The coin gets 0.938, so
-  0.013 of the 0.019 comes from the rule re-picking cells under errors of the right kind
-  and number, and 0.005 from the errors being this step's (8 seeds of 8, small). In the
-  labelled runs of idea 178 the coin got 0.007 of 0.026.
-- **The loop does not close here.** The next-frame predictor is as good on the untaught
-  sheet (0.869 with the rule off, validation) as on the taught one (0.869): a moving digit's
-  next frame can already be read from the cells as born, so there was little for the cells
-  to learn about time.
-- **The rate held at target** (`--g.threshold_cap 1000`, seeds 5 to 8,
-  `scripts/predevent.sh moved movedcap ...`): born 0.9221, next-frame errors 0.9402, coin
-  0.9319, all read at 31. The gain over born is the same (+0.0180, 4 of 4) and the margin
-  over the coin a little wider (+0.0083, 4 of 4: +0.0055, +0.0123, +0.0049, +0.0104). So it
-  does not ride on the rate (44 against 33 when the rate is free).
-- The pair test shown as two halves one after the other was not built (below).
+| counters | error | horizons | cells, 8 steps | its coin | outside, 8 steps | its coin |
+|---|---|---|---|---|---|---|
+| the rule off | | | 0.590 | | 0.559 | |
+| 6 bits, chance 1/32 (`old`) | the cells' own | 1 | 0.630 | | | |
+| 6 bits, chance 1/32 (`oldo2`) | outside | 1 | 0.626 | 0.637 | 0.607 | 0.623 |
+| every event (`ev15f0`) | the cells' own | 1, 2, 4, 8 | 0.664 | 0.625 | | |
+| every event (`ev15f0o2`) | outside, margin 2 | 1, 2, 4, 8 | **0.723** | 0.611 | **0.731** | 0.587 |
+| every event (`ev15f0o1`) | outside, margin 1 | 1, 2, 4, 8 | 0.691 | | 0.721 | |
+| every event (`ev15f0o4`) | outside, margin 4 | 1, 2, 4, 8 | 0.753 | | 0.746 | |
+| every event, near-not-fired marks (`ev15f0o2n`) | outside, margin 2 | 1, 2, 4, 8 | 0.668 | | 0.646 | |
 
-TODO-PIECES
+- **Idea 178's finding again: the good error and the every-event counters only work
+  together.** The outside predictor's error on the old chance counters is level with its
+  own coin (0.626 against 0.637, 0 seeds of 3 above). On every-event counters it is 0.11
+  over its coin on every seed.
+- A wider margin read higher on these three seeds (4 steps: 0.753) and a narrower one
+  lower; the margin was not picked (2 is idea 178's). Idea 164's near-not-fired marks are
+  worse here.
 
 ## The other six worlds (seeds 5 and 6: a screen)
 
@@ -442,14 +520,41 @@ life and the coin, on idea 164's other worlds. `scripts/predevent.sh others ...`
 - No task score moves (cartpole 17.0 steps a fall, 16.8 with the rule off, 17.1 under the
   coin; pendulum 0.221, 0.244 with the rule off, 0.221 under the coin).
 
+## The read on the sheet's own moves (seeds 5 to 7)
+
+Idea 164's doc left this open: its read took moves from a coin, so the next lines hung on a
+press nobody could know. `--read-own 1` lets the frozen sheet's own buttons move it (each
+arm then sees its own world, so only differences against that arm's own lines mean
+anything), and gives the frozen sheet's score. `scripts/predevent.sh own ...`.
+
+| | rule off | `ev1f0` | `ev14f0o2` | its coin |
+|---|---|---|---|---|
+| catch: every line 1 step on, hidden cells less the lines' own reader | -0.012 | -0.002 | -0.004 | -0.003 |
+| catch: the frozen sheet's score | 0.215 | 0.232 | 0.244 | 0.235 |
+| delayed echo: the cue | 0.696 | 0.680 | 0.776 | 0.645 |
+| delayed echo: time since the cue | 0.868 | 0.926 | 0.979 | 0.938 |
+| delayed echo: every line 8 steps on, balanced | 0.647 | 0.679 | 0.714 | 0.648 |
+| delayed echo: the frozen sheet's score | 0.469 | 0.480 | 0.602 | 0.472 |
+
+- **On its own moves the catch sheet still holds what its lines hold and no more.** The
+  hidden cells' reader sits just under the lines' reader in every arm. The coin read was
+  not hiding a future.
+- **Delayed echo reads the same way as under the coin's moves**: the cue +0.13 over the
+  coin (3 seeds of 3), time since the cue +0.04 (3 of 3).
+- **One sheet of the three does the task frozen.** The frozen scores of `ev14f0o2` are
+  0.805, 0.502, 0.498 (the rule-off sheets 0.451, 0.495, 0.462; the coin's 0.485, 0.485,
+  0.444). Seed 5 is the sheet whose life ended at 0.799: it learned delayed echo and keeps
+  it with learning off. The other two are at chance. So the task gain above is one sheet
+  in eight that learned the task, and seven that moved by a few hundredths.
+
 ## The task, and the plane store beside other rules (part 3)
 
 **On idea 164's sheet and button rule** (the tables above; 8 seeds). The life's late score
 with prediction errors teaching the hidden cells, less the rule-off life: catch -0.012
 (cells' own errors; its coin -0.028), forage -0.017 (coin -0.019), predict-next +0.012 to
 -0.001 over four arms (their coins -0.016 to -0.003), delayed echo +0.040 and +0.061 with
-the outside predictor's far errors (7 seeds of 8 each; coins +0.013 and -0.002). So the task does not move, except on
-delayed echo, a little, where the inside gain is.
+the outside predictor's far errors (7 seeds of 8 each; coins +0.013 and -0.002). So the
+task does not move, except on delayed echo, a little, where the inside gain is.
 
 **With the one setting's button rule** (`--base one`: the output rule with the margin gate,
 time and hold cells, tiring, two winners, and the backward walk on bad steps, on the same
@@ -503,9 +608,142 @@ all.
 - If the every-event rule is to run beside any of these, they need one store: the plane
   counters stepped by both (idea 178's doc proposed the same for competitive learning).
 
-TODO-COST
+## MNIST with something to predict in time: moved digits (part 4)
 
-TODO-REAL
+Built because part 2 showed a gain. `blobmnist ceiling --life-moved 3`
+(`src/mnist/mnist_moved.cpp`): in the life every digit is shown for 3 steps in a row, one
+pixel further each step along one of four directions (the digit's own, by its number), so
+the next frame follows from this one and the way it is going. The sheet has no motor cells
+to spare for 784 lines, so the errors come from the outside predictor alone: 121 pixels on
+a lattice (every second pixel of the middle 22 x 22), one row of 16-bit weights each over
+the non-sensor cells' counts, margin 2 steps, its signs sent to the every-event rule as
+prediction lines one step back. No label reaches the sheet. A 20,000-digit life (60,000
+steps, the ticks of the usual 60,000-digit life), then the usual read: frozen, a fresh
+linear reader of the non-sensor cells fit on 60,000 unmoved digits with their labels.
+`scripts/predevent.sh moved movedtest --test --seeds 5-12 --arms born,moved,movedc,moveds`.
+
+Test digits, seeds 5 to 12:
+
+| arm | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | mean | rate | pixels | next-frame predictor |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| born | 0.9248 | 0.9272 | 0.9273 | 0.9239 | 0.9255 | 0.9192 | 0.9249 | 0.9278 | **0.9251** | 33.1 | 7.2 | |
+| next-frame errors (`moved`) | 0.9452 | 0.9437 | 0.9427 | 0.9445 | 0.9420 | 0.9441 | 0.9423 | 0.9452 | **0.9437** | 44.3 | 6.4 | 0.869 |
+| its coin: another step's errors | 0.9401 | 0.9348 | 0.9383 | 0.9357 | 0.9401 | 0.9416 | 0.9375 | 0.9387 | 0.9384 | 38.5 | 5.6 | 0.860 |
+| pixels shuffled afresh every step | 0.9258 | 0.9227 | 0.9237 | 0.9230 | 0.9261 | 0.9233 | 0.9254 | 0.9269 | 0.9246 | 33.2 | 7.5 | 0.617 |
+
+"rate": hidden spikes per 1,000 cell-ticks while read; "pixels": pixel inputs a hidden
+excitatory cell; "next-frame predictor": the outside predictor's balanced skill in the last
+tenth of the life. Seed by seed: next-frame errors less born +0.0186 (8 of 8; +0.0154 to
++0.0249); less the coin **+0.0054 (8 of 8; +0.0019 to +0.0089)**; less the shuffled life
++0.0191 (8 of 8); the coin less born +0.0133 (8 of 8). On the validation slice (seeds 1,
+2): born 0.9259, a life on moved digits with the rule off 0.9268, next-frame errors 0.9466,
+coin 0.9412, shuffled 0.9245, margin 1 0.9456.
+
+- **Predicting the next frame, with no labels, lifts the labelled read from 0.925 to
+  0.944** on every seed. Beside it from their own docs: the labelled every-event rule on an
+  outside output's error 0.951, competitive learning 0.952, the engine's old rule from the
+  answer 0.938.
+- **Most of that is not the errors being about what was shown.** The coin gets 0.938, so
+  0.013 of the 0.019 comes from the rule re-picking cells under errors of the right kind
+  and number, and 0.005 from the errors being this step's (8 seeds of 8, small). In the
+  labelled runs of idea 178 the coin got 0.007 of 0.026.
+- **The loop does not close here.** The next-frame predictor is as good on the untaught
+  sheet (0.869 with the rule off, validation) as on the taught one (0.869): a moving digit's
+  next frame can already be read from the cells as born, so there was little for the cells
+  to learn about time.
+- **The rate held at target** (`--g.threshold_cap 1000`, seeds 5 to 8,
+  `scripts/predevent.sh moved movedcap ...`): born 0.9221, next-frame errors 0.9402, coin
+  0.9319, all read at 31. The gain over born is the same (+0.0180, 4 of 4) and the margin
+  over the coin a little wider (+0.0083, 4 of 4: +0.0055, +0.0123, +0.0049, +0.0104). So it
+  does not ride on the rate (44 against 33 when the rate is free).
+- The pair test shown as two halves one after the other was not built (below).
+
+## Cost (part 5)
+
+**Speed.** One life at a time on this PC (`scripts/predevent.sh speed ... --jobs 1`; the
+governor makes any number here rough), seed 5, ticks a second over a 20,000-step life with
+the predictor cells at four horizons:
+
+| life | catch | of the rule off | delayed echo | of the rule off |
+|---|---|---|---|---|
+| the rule off (`pred`) | 24,500 | | 48,000 | |
+| the rule off, the outside predictor learning beside (`predo2`) | 22,100 | 0.90 | 42,200 | 0.88 |
+| idea 164's rule (`old`) | 21,000 | 0.86 | 40,400 | 0.84 |
+| every-event, the next step (`ev1f0`) | 18,800 | 0.76 | 38,700 | 0.81 |
+| every-event, four horizons (`ev15f0`) | 11,300 | 0.46 | 27,100 | 0.56 |
+| the same on the outside predictor's errors (`ev15f0o2`) | 11,000 | 0.45 | 26,600 | 0.55 |
+| the far three, outside errors (`ev14f0o2`) | 12,400 | 0.50 | 28,100 | 0.59 |
+
+A moved-digit MNIST life: 55,400 with the rule off, 28,900 with it (0.52). Under the one
+setting's button rule the rule-off lives ran at 3,900 (catch) to 15,700 (delayed echo),
+three at a time, and `ev14f0o2` at 0.6 to 0.8 of that; why that button rule is so slow on
+this sheet was not looked at.
+
+- With the next step alone the every-event rule costs a quarter to a fifth, a little more
+  than the old rule. Each further horizon is another verdict a step: on catch, where nearly
+  every step has a wrong line at every horizon, four horizons are four verdicts a step
+  (79,000 in 20,000 steps), about 420 cells taught each, 2.2 billion counter steps and 4.8
+  million re-picks in the life. That is what halves the speed.
+- The outside predictor's arithmetic (152 rows of weights times about 3,500 counts a step)
+  costs a tenth of the rule-off life. It is not part of the blob.
+
+**Memory**, beyond idea 178's planes (132 words a neuron at 12 bits):
+
+- The kept steps for the far horizons: 16 steps of 16 spike maps and 16 near maps, 512
+  words a tile, 8 words a neuron (266 KB on this 4,096-neuron sheet). Allocated only when a
+  horizon past one step teaches. A horizon of 8 needs 8 of the 16 steps, and a verdict
+  reads at most the last 15 ticks of a step, so this could be cut to 4 words a neuron; it
+  was not. Copying the rings is 2,080 words a step.
+- The predictor's kept answers: 16 steps of two 16-bit counts per line and horizon (10 KB
+  for 38 lines).
+- The coin's ring is a control (131 KB) and the outside predictor a measuring stick (16
+  bits per line, horizon and cell: 1.1 MB on catch; 121 x 3,072 for the moved digits).
+- Nothing on the tick's path changes: the near maps are the old rule's. The far verdicts
+  run at a step's start, outside the tick, on the rule's own code.
+
+## What is real, what is suspect
+
+- Real: on delayed echo, with every-event counters and the outside predictor's errors
+  from several horizons, the hidden cells come to hold the time since the cue (and keep
+  the cue), and both predictors get better at 1 and 8 steps by amounts their coin does not
+  get. 8 seeds, every seed on one side for the predictors; holds under the other
+  regulation setting for the outside predictor and the fresh reads; holds on the sheet's
+  own moves (3 seeds).
+- Real, smaller: the same with the sheet's own predictor cells' errors when the far
+  horizons teach (cells at 8 steps +0.088, +0.071 over the coin, 7 seeds of 8), seen in
+  the predictor cells' skill only, not by a fresh reader beyond the coin.
+- Real, small: predict-next one step on (+0.03 to +0.04 over the coin on both predictors,
+  8 of 8); MNIST with moved digits (+0.005 over the coin, 8 of 8; +0.008 with the rate
+  held, 4 of 4).
+- Real: the old paths. Four reference lives byte-identical; idea 164's arms the same csv
+  lines as the base commit's build; the `old` arm here gives idea 164's numbers to the
+  digit on its seeds.
+- **The working error does not come from the sheet.** It comes from a table outside the
+  blob: 16 bits per line, horizon and non-sensor cell, a vote over spike counts, a step
+  only inside a margin. The sheet's own predictor cells give about half of it at best.
+- **One world.** The clear result is delayed echo: a world whose future is a clock. Mountain
+  car (2 seeds) and predict-next (1 step) lean the same way at a third of the size; catch,
+  forage, chain and echo show nothing. The worlds here mostly have no hidden state that
+  matters; catch's dot falls straight down, so there is no ball direction to learn.
+- **The task claim is one sheet.** Late score +0.04 and +0.06 on 7 seeds of 8, but one seed
+  at 0.80 carries the far-three mean, and the frozen sheets of the other seeds checked are
+  at chance.
+- **"What just changed" is less clean than idea 164 had it.** With the rate held the coin
+  gets most of the paddle read and all of forage's.
+- The screens are two seeds an arm (the fine zones, near-not-fired marks, the far horizons
+  on catch and forage, the six other worlds); the pieces three; the one-setting task runs
+  three. None of those is quoted for a small difference.
+- The read's moves come from a coin, except in the own-moves check (3 seeds, 2 worlds).
+- In a world with a period the coin is a slightly stronger control than it looks: one
+  step in six of the last 256 has this step's phase, so a sixth of the coin's errors are
+  the right kind.
+- The "right button" on ask steps (0.62) is arithmetic on a share, not a measured split.
+- The shuffled-frame life's predictors learn on shuffled frames; its errors are more
+  numerous than the real life's.
+- Lives are 20,000 steps; nothing says whether the gains keep growing.
+- The MNIST coin gets 0.013 by itself, twice what idea 178's coins got; why was not looked
+  at.
+- Speeds are from one PC under a temperature governor.
 
 ## Not done
 
@@ -559,7 +797,7 @@ scripts/predevent.sh moved movedtest --test --seeds 5-12 --arms born,moved,moved
 scripts/predevent.sh moved movedcap --test --seeds 5-8 --arms bornk,movedk,movedck
 scripts/predevent.sh NAME --table-only --as OTHER --seeds ... --arms ...      a table from finished runs, saved as OTHER.md
 out/predevent/refcheck.sh                 the four reference lives against main's
-out/predevent/oldcheck.sh                 idea 164's arms against the base commit's build (needs out/predevent/base-src built)
+out/predevent/oldcheck.sh                 idea 164's arms against the base commit's build (out/predevent/base-src)
 out/predevent/perseed.py NAME table world key arm,arm    one number seed by seed from NAME.csv
 ```
 
@@ -574,6 +812,9 @@ one two, one under the one setting's button rule three, a moved-digit MNIST run 
   horizons, coins, `blob_hop_predicted`, `blob_hop_keep_step`, `blob_hop_pred_counts`.
 - `src/blob/learn_hop.cpp`: the eleven lines that gathered the prediction lines replaced by
   a call to `hop_pred_errors`; `hop_pred_free` in `hop_free`; a comment line. Nothing else.
+  One meaning changed: `hop_coin 3` on prediction lines used to do what `hop_coin 1` does
+  (each error on a random line); it is now "another step's errors", as it is for buttons.
+  No arm of idea 164 or 178 used that pair.
 - `src/blob/hop_state.hpp`: the kept steps, the coin ring and two counts at the end of
   `HopState`; two constants; two declarations.
 - `src/blob/blob.hpp`: three declarations after `blob_hop_error_places`.
@@ -595,5 +836,101 @@ one two, one under the one setting's button rule three, a moved-digit MNIST run 
 - Checks: a build with no warnings; the four reference lives byte-identical
   (`out/predevent/refcheck.sh`, run again on the last commit); idea 164's five arms and the
   plane path the same csv lines as the base commit's build (`out/predevent/oldcheck.sh`);
-  `scripts/predevent.sh smoke --quick` end to end. Every file is under 500 lines
+  `scripts/predevent.sh smoke --quick` end to end (its moved-digit part needs
+  `data/mnist` or `THONK_MNIST` and is skipped without). Every file is under 500 lines
   (`predict_read.cpp` 489, `learn_hop.cpp` 440).
+- Shared files touched, for the merge: `src/blob/learn_hop.cpp`, `hop_state.hpp`,
+  `blob.hpp`, `genome.hpp`, `genome_args.cpp`; `src/run/predict.cpp`, `predict.hpp`;
+  `src/world/predict_settings.hpp`, `predict_flags.cpp`; `src/probe/predict_read.cpp`,
+  `predict_future.cpp`, `predict_future.hpp`, `predict_labels.cpp`, `predict_labels.hpp`;
+  `src/mnist/mnist_sheet.cpp`, `mnist_ceiling.cpp`, `mnist_wiring.cpp`, `mnist_run.hpp`;
+  `CMakeLists.txt`. `hop_lines.cpp`, `hop_planes.cpp` and `tick.cpp` are untouched.
+
+## What should change elsewhere (for the coordinator; not edited here)
+
+- `docs/findings.md`, the idea 164 finding ("Prediction errors sent to every hidden cell
+  teach it what just changed, and not more of the future"): it needs a second half.
+  **With a good predictor's errors and every-event counters they do teach the future,
+  where the world has time in it.** Delayed echo, 8 seeds: the sheet's own predictor cells
+  8 steps on 0.592 to 0.733 (coin 0.609, every seed), the outside predictor 0.584 to 0.740
+  (coin 0.603), time since the cue 0.859 born to 0.983 (coin 0.955), the cue kept (0.723;
+  idea 164's rule 0.618). Several horizons together teach twice what one does. The errors
+  came from a whole-number perceptron outside the sheet; the predictor cells' own errors
+  give 0.679 when the far horizons teach and 0.629 from the next step alone. Predict-next
+  a third as much at 1 step; catch, forage, chain, echo nothing. [solid for delayed echo
+  with the outside predictor: 8 seeds, coin, shuffled life, a second regulation setting,
+  the sheet's own moves; one world]
+- The same finding, its first half: every-event counters make "what just changed" a
+  little stronger on catch (0.799 against 0.742, 5 seeds of 8) and not on forage; against
+  the better coin (another step's errors) the paddle read is +0.18 (8 of 8); **with the
+  rate held the coin gets most of it** (0.781 against 0.702; forage level). [the caveat is
+  4 seeds]
+- A candidate: **a fine zone needs an output that is usually right.** On the predictor
+  cells' answers (0.63 balanced on catch) every zone but "wrong answers only" reads worse
+  (2 seeds, screen). The every-event doc's fine-zone finding should say what it leans on.
+  [hint]
+- The every-event finding ("every-event counters and a good error only work together")
+  gains a second case: prediction lines on delayed echo, the outside error on chance
+  counters level with its coin (3 seeds), on every-event counters +0.11 over it.
+- Finding 47 (churn): the fresh ridge reader gets about half of the delayed echo gain
+  under the coin; the online predictors get none of it under the coin. The predictors'
+  own skill is the cleaner measure of "the future is taught".
+- A candidate: **prediction errors on the inside cost a readout that already works.**
+  Under the one setting's button rule the life's score falls on order (-0.14), delayed
+  echo at 2 steps (-0.07) and forage (-0.09) while a fresh reader of the same cells is
+  level or better (3 seeds). Idea 178 saw the same on MNIST's own readout. [hint: 3 seeds]
+- A candidate: **next-frame prediction with no labels lifts MNIST's labelled read 0.925
+  to 0.944** (digits moved a pixel a step, an outside next-frame predictor's errors, 8
+  seeds; its coin 0.938; rate held 0.940 against 0.932). [likely: 8 seeds; most of the gain
+  is not the errors' tie to the frame shown]
+- `docs/plan.md`: item 3c done (this doc). What it leaves, in order: (1) a predictor
+  inside the sheet with the two properties that mattered (right most of the time; a step
+  and an error only inside a margin), which is item 9's output with prediction lines as
+  its targets; the far horizons already give half the gain from the predictor cells as
+  they are; (2) one counter store for every rule that re-picks hidden cells (planes
+  stepped by the walk, the tags and competitive learning as well), without which the
+  every-event rule cannot run under the one setting; (3) worlds with hidden state that the
+  task needs (a ball with a direction, a cue that matters later): catch and forage cannot
+  show a future being learned because theirs is in the lines; (4) the readout keeping up
+  with cells that are being re-picked (the task falls under the one setting).
+- `docs/ideas.md`: idea 183 done, with the answer above. New ideas: a margin predictor
+  made of the sheet's own cells (per line and horizon, a vote and a margin, as the
+  whole-number perceptron here); prediction errors gated off while the readout is doing
+  well (the rule costs a working readout); the pair test shown as two halves; a catch with
+  a ball that moves sideways.
+- `docs/predictions.md`: the predictions above and their scores (below).
+- `docs/design.md`, `docs/notes-world.md` (not edited here): `hop_pred.cpp`,
+  `hop_pred_fine`, `blob_hop_predicted`, `blob_hop_keep_step`, `blob_hop_pred_counts`,
+  `hop_coin 3` on prediction lines, `--predict-hop` as a set of horizons,
+  `--predict-outside`, `blobprobe predict --read-own` and its new keys, `blobmnist ceiling
+  --life-moved`, `scripts/predevent.sh`.
+
+## Predictions, scored
+
+| prediction | p | outcome |
+|---|---|---|
+| 1. `ev1f0` reads the paddle 0.03 over the old rule and 0.05 over its coin | 0.55 | happened: +0.057 (5 seeds of 8) and +0.181 (8 of 8) |
+| ... forage's last move 0.02 over the old rule | 0.4 | no: -0.001 |
+| 2. the hidden reader of the future +0.02 over born and +0.01 over both controls on 2 worlds | 0.15 | one world in one arm: delayed echo at 8 steps with the outside errors (+0.112, +0.051, +0.093); catch at 1 step with the cells' own (+0.022, +0.028, +0.018); never two worlds in one arm |
+| 3. far horizons add 0.02 beyond the next step alone on 2 worlds | 0.2 | one world: delayed echo (the cells' skill at 8 steps 0.733 against 0.666; from their own errors 0.679 against 0.629); predict-next +0.013 |
+| 4. a fine zone above 0 reads the paddle better | 0.3 | no (0.49 to 0.75 against 0.91, screen) |
+| ... the rate climbs and the reads fall | 0.5 | happened (58 spikes per 1,000 at "wrong or tied") |
+| 5. the right button +0.02 over born and +0.01 over the coin on catch or forage | 0.2 | no (catch +0.000; forage is at 1.000 born); on delayed echo +0.022 and +0.019 |
+| 6. the task within 0.03 on catch and forage | 0.6 | happened (-0.012, -0.017) |
+| ... 0.03 better on some task world, most seeds | 0.12 | happened: delayed echo +0.040 and +0.061 (7 of 8), one sheet carrying most of it |
+| ... 0.03 worse on some | 0.35 | happened, under the one setting's button rule: order -0.14, forage -0.09, delayed echo at 2 steps -0.07 |
+| 7. the predictor cells' skill +0.01 on catch or forage, not under the coin | 0.2 | no (catch -0.010, forage +0.004); yes on delayed echo and predict-next |
+| 8. the best arm read at over 36 spikes per 1,000 | 0.6 | the paddle arm yes (38.4); the delayed echo arms no (31.9) |
+| ... the paddle read keeps half its gain with the rate held | 0.6 | happened (+0.253 of +0.283), but the coin gets most of it there |
+| 9. four horizons cost 0.5 to 0.8 of the speed | 0.6 | delayed echo yes (0.56); catch no (0.46) |
+| 10. delayed echo's cue read worse than born | 0.7 | with the cells' own errors yes (-0.033, 0 seeds of 7 above); with the outside errors no (+0.017) |
+| ... time since the cue +0.05 over born | 0.6 | happened (+0.095 to +0.124) |
+| ... its coin within 0.02 | 0.6 | with the cells' own errors yes (+0.017); with the outside errors no (+0.028 to +0.043 over the coin) |
+| 11. within 0.03 with and without the walk | 0.6 | order and delayed echo yes; forage and catch no (0.06, 0.07 worse beside the walk) |
+| 12. the one sentence is "still only what just changed" | 0.65 | wrong for delayed echo; right for catch and forage and for the cells' own next-step errors |
+
+I had the predictor as given and asked only what the counters and the zone would do with
+its errors. What decided the job was the predictor: its own errors are poor, the fine zone
+cannot fix that, and a better one outside the sheet made the future learnable where there
+was a future to learn. I did not foresee that the far horizons would matter (0.2), that the
+rule would cost the task under the one setting's button rule, or the MNIST number.

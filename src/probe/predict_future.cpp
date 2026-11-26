@@ -94,7 +94,8 @@ FutureScore future_fit(const std::vector<uint8_t>& x, int d, const std::vector<u
         }
         int64_t total = (int64_t)(to - from) * count, off = total - on;
         balanced = ((on ? (double)on_right / (double)on : 0.0) +
-                    (off ? (double)(right - on_right) / (double)off : 0.0)) / 2;
+                    (off ? (double)(right - on_right) / (double)off : 0.0)) /
+                   2;
         changed = moved ? (double)moved_right / (double)moved : 0.0;
         return to > from ? (double)right / (double)total : 0.0;
     };

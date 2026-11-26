@@ -6,7 +6,7 @@
 // the one-hop rule's state (learn_hop.cpp), shared with its error lines (hop_lines.cpp) and
 // its wide counters (hop_planes.cpp). core-only.
 
-enum { HOP_PRED_FIRST = 64 }; // prediction error line l is wire line HOP_PRED_FIRST + l
+enum { HOP_PRED_FIRST = 64 };           // prediction error line l is wire line HOP_PRED_FIRST + l
 constexpr uint32_t HOP_COIN_RING = 256; // hop_coin 3: the verdicts whose errors are kept
 constexpr int HOP_KEPT = 16;            // idea 183: steps whose rings are kept (a power of two)
 constexpr int HOP_PRED_HORIZONS = 4;    // idea 183: horizons whose errors can teach

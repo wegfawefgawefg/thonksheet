@@ -51,8 +51,8 @@
 int int_arg(int argc, char** argv, const char* name, int fallback);
 const char* text_arg(int argc, char** argv, const char* name, const char* fallback);
 
-static const char* const own_flags[] = {"--life",  "--shuffle", "--trials", "--settle", "--label",
-                                        "--out",   "--future",  "--lean",   "--read-own"};
+static const char* const own_flags[] = {"--life", "--shuffle", "--trials", "--settle",  "--label",
+                                        "--out",  "--future",  "--lean",   "--read-own"};
 
 static TaskTicker ticker;
 static Predictor predictor;
@@ -205,8 +205,8 @@ static void life_csv(FILE* csv, const char* label, const LifeNumbers& n, const P
     std::fprintf(csv, "%s,life,task_late,%.6g\n", label, late);
     std::fprintf(csv, "%s,life,ticks_per_s,%.6g\n", label,
                  n.seconds > 0 ? (double)n.ticks / n.seconds : 0.0);
-    static const char* const keys[7] = {"hop_verdicts", "hop_taught", "hop_steps", "hop_rewires",
-                                        "hop_near", "hop_fired", "hop_cellticks"};
+    static const char* const keys[7] = {"hop_verdicts", "hop_taught", "hop_steps",    "hop_rewires",
+                                        "hop_near",     "hop_fired",  "hop_cellticks"};
     for (int i = 0; i < 7; i++) {
         std::fprintf(csv, "%s,life,%s,%llu\n", label, keys[i], (unsigned long long)hop[i]);
     }
@@ -222,8 +222,8 @@ static void life_csv(FILE* csv, const char* label, const LifeNumbers& n, const P
         const PredictOutsideTally& o = s.outside[i]; // --predict-outside
         if (o.total > 0) {
             double hit = o.on ? (double)o.on_right / (double)o.on : 0;
-            double rest = o.total > o.on ? (double)(o.right - o.on_right) / (double)(o.total - o.on)
-                                         : 0;
+            double rest =
+                o.total > o.on ? (double)(o.right - o.on_right) / (double)(o.total - o.on) : 0;
             std::fprintf(csv, "%s,life,out_h%d_right,%.6g\n%s,life,out_h%d_balanced,%.6g\n", label,
                          s.horizon[i], (double)o.right / (double)o.total, label, s.horizon[i],
                          (hit + rest) / 2);
@@ -455,12 +455,12 @@ int probe_predict(int argc, char** argv) {
         FutureScore inner = future_fit(fut_hidden, hc, fut_lines, count, fut_rows, h);
         FutureScore both =
             lean ? FutureScore{} : future_fit(fut_both, hc + count, fut_lines, count, fut_rows, h);
-        double values[10] = {sheet.right,    lines.right,   sheet.same,     sheet.common,
-                             inner.right,    both.right,    inner.balanced, inner.changed,
+        double values[10] = {sheet.right,    lines.right,  sheet.same,     sheet.common,
+                             inner.right,    both.right,   inner.balanced, inner.changed,
                              lines.balanced, lines.changed};
-        static const char* const keys[10] = {"sheet",      "lines",     "same",       "common",
-                                             "hidden",     "both",      "hidden_bal", "hidden_chg",
-                                             "lines_bal",  "lines_chg"};
+        static const char* const keys[10] = {"sheet",     "lines",    "same",       "common",
+                                             "hidden",    "both",     "hidden_bal", "hidden_chg",
+                                             "lines_bal", "lines_chg"};
         std::printf("%-24s future h=%d", label, h);
         for (int k = 0; k < 10; k++) {
             if (lean && (k == 0 || k == 5)) {

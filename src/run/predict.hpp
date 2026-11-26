@@ -35,10 +35,10 @@
 struct OutsidePredictor {
     bool on = false;
     int margin = 0;
-    std::vector<int> cell;       // the non-sensor cells it reads
-    std::vector<uint8_t> count;  // their spikes this step
-    std::vector<uint8_t> kept;   // PREDICT_RING steps of counts
-    std::vector<int16_t> weight; // bits x cells
+    std::vector<int> cell;                  // the non-sensor cells it reads
+    std::vector<uint8_t> count;             // their spikes this step
+    std::vector<uint8_t> kept;              // PREDICT_RING steps of counts
+    std::vector<int16_t> weight;            // bits x cells
     int8_t error[PREDICT_MAX_TARGETS] = {}; // the horizon just graded: +1 higher, -1 lower, 0 fine
 };
 
