@@ -15,6 +15,11 @@ static void tick_learn(Blob& blob, int read_now) {
     if (g.compete_on) {
         learn_compete(blob, read_now);
     }
+    // out_judge: told only good or bad, the blob's own output works out its move now,
+    // before the rule reads which lines moved
+    if (g.out_on && g.out_judge) {
+        output_judge(blob);
+    }
     // the error sent one hop to every hidden cell, beside whatever the learn mode does
     if (g.hop_on) {
         learn_hop(blob);
@@ -48,7 +53,8 @@ static void tick_learn(Blob& blob, int read_now) {
         }
         // hop_who 4: the motor cells learn by the one-hop rule, not the readout's
         // out_on: the motor cells' spikes are not the output, so their rule is skipped too
-        bool hop_motor = (g.hop_on && (g.hop_who & 4)) || g.out_on;
+        // (out_cells: they keep their rule; their spikes are heard by the sheet only)
+        bool hop_motor = (g.hop_on && (g.hop_who & 4)) || (g.out_on && !g.out_cells);
         if ((thin || g.margin_win != 2) && !hop_motor) {
             learn_readout(blob, blob.pending_valence);
         }

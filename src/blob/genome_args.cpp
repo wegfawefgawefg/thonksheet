@@ -237,6 +237,10 @@ static const GenomeField fields[] = {
     {"out_pay", &Genome::out_pay},
     {"out_top", &Genome::out_top},
     {"out_hidden", &Genome::out_hidden},
+    {"out_judge", &Genome::out_judge},
+    {"out_tell", &Genome::out_tell},
+    {"out_cells", &Genome::out_cells},
+    {"hop_deaf", &Genome::hop_deaf},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {

@@ -445,6 +445,19 @@ struct Genome {
     // cells of a wrong line whose spikes were within hop_fine 32nds of the right line's
     // lose their active inputs, the right line's cells then gain. needs hop_on.
     // readout_good 4: only the highest of those wrong lines (and hop_teach 5 names only it)
+    // idea 188 (docs/results-2026-11-26-loop-everywhere.md), all off by default.
+    int out_judge = 0;   // >0: the output hears only good or bad for the line it pressed,
+                         // never the right line (learn_output.cpp). still one line up for
+                         // one down. good: if the runner-up was within out_margin the pressed
+                         // line steps up and the runner-up down; a good won clear moves
+                         // nothing. bad: the pressed line steps down and one other line up:
+                         // 1 the runner-up, 2 a line drawn by chance, 3 the lowest line,
+                         // 4 none (a control: it breaks the discipline)
+    int out_tell = 0;    // out_judge: 1: on bad the cells hear only of the pressed line
+                         // ("lower"); the line that stepped up was a guess
+    int out_cells = 0;   // 1: with out_on the motor cells still learn by the readout's own
+                         // rule, so the sheet hears an answer in spikes (nothing reads them)
+    int hop_deaf = 0;    // 1: the one-hop rule's cells may not count or wire a motor cell
 };
 
 // "--g.name value" on a command line overrides one genome number, for tuning runs

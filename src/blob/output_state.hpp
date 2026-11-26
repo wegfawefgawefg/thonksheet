@@ -21,6 +21,8 @@ struct OutputState {
     int8_t step[OUT_MAX_LINES] = {};       // the verdict's move per line: +1 up, -1 down
     int8_t teach[OUT_MAX_LINES] = {};      // the error per line for the cells (hop_teach 6)
     int pending = 0;                       // a verdict's move not yet made
+    uint64_t pressed = 0;                  // out_judge: the lines pressed at that verdict
+    int heard = 0;                         // out_judge: a verdict waits for its good or bad
     uint64_t counts[4] = {};               // see blob_output_counts
     uint64_t* tally = nullptr;             // out_pay: per tile, paid then charged, bit-sliced
 };
@@ -34,6 +36,9 @@ void output_pay(Blob& blob, const int* line, const int* sign, int count, uint64_
 // after the fire step of a tick the world asked a read on (blob.out_read): the votes of the
 // step ending now into blob.out_vote
 void output_read(Blob& blob);
+// out_judge: the move of a verdict that said only good or bad (blob.pending_valence), made
+// up in the learning step before the one-hop rule reads its errors
+void output_judge(Blob& blob);
 // the verdict's move, in the learning step
 void learn_output(Blob& blob);
 void output_free(Blob& blob);
