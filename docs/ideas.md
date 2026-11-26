@@ -968,7 +968,11 @@ co-activity runs ties the held units together and loses their order.
      times in three. Walk a ladder from the outside 16-bit perceptron down to the
      engine's readout to find what it lacks, build that in bits, close the loop with
      no outside part, then send the error back along the output's own wires (idea
-     177's payment). *building*
+     177's payment). *done: docs/results-2026-11-26-output-inside.md,
+     `scripts/outputinside.sh`, `--g.out_on 1 --g.out_top 1 --g.hop_teach 6`. The
+     loop closed inside the blob reads 0.956 to 0.961 / 0.759 to 0.776 and answers
+     MNIST 0.925 to 0.936 right online. The missing piece was one line up, one line
+     down. Holes: told the right line only; parity of 3 fell. Next: ideas 188, 187.*
 183. **Prediction errors again, with the rule that works.** Idea 164 sent prediction
      errors down the one-hop wires with the chance counters and found only "what
      just changed". A predictor's error is always honest (the world gives the
@@ -1006,3 +1010,8 @@ co-activity runs ties the held units together and loses their order.
      come from an outside predictor; the sheet's predictor cells are a poor output.
      Apply whatever idea 182 finds for the buttons to the predictor cells. *queued
      behind idea 182*
+188. **The closed loop on every row.** Idea 182 ran MNIST, pairs and two rows of the
+     map. Run the whole quick map under it as one setting, looking inside each new
+     pass; give the output a rule for good-or-bad-only verdicts that keeps one line
+     up, one line down; find why parity of 3 fell; and say what one counter store
+     for all re-picking rules needs (idea 186). *building*

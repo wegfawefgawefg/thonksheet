@@ -198,6 +198,19 @@ Each one: what the brain does, then what we do.
     growth.
 21. **Quiet phases.** Sleep: input cut, noise up, every weight has a small chance to lose a
     level, strong ones a smaller chance. Planned, not in the first build.
+22. **The one-hop error rule with every-event counters** (`hop_on`, `hop_bits`; ideas 159,
+    167, 178). Each error line of the output reaches each cell with chance one half on a
+    fixed hashed wire with a fixed sign. A cell that was near its bar in the window sums
+    the signs it got; every input of it that was on steps a 12-bit counter up or down (bit
+    planes, no chance), and the cell re-picks its inputs from the top counters at its born
+    counts. 132 words a neuron.
+23. **The blob's own output** (`out_on`, `out_top`; idea 182). A signed counter per source a
+    motor cell can hear, in bit planes; a line's vote is its cells' counters summed over
+    the sources that fired in the window, read once a step. Told the right line, the right
+    line steps up and the highest wrong line within the margin steps down; those two lines
+    are the one-hop rule's errors (`hop_teach 6`). 11 x `out_bits` words a motor cell; an
+    AND and a popcount a plane a slot a motor cell a step; no chance, no re-pick. The world
+    reads a number a line, not spikes. Off by default; docs/results-2026-11-26-output-inside.md.
 
 ### What the evidence says (2026-11-24)
 

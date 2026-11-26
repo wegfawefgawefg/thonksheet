@@ -44,7 +44,7 @@ are ordered by the one question above. An item is struck when done, with where t
 is.
 
 Running (four), as of 2026-11-26:
-- Queued item 9a (idea 182): the blob's own output, good enough to teach the inside.
+- Queued item 9b (idea 188): the closed loop on every row; good-or-bad only; parity of 3.
 - Queued item 2n (idea 184): motor cells regulated apart; a chain row a coin cannot pass.
 - Queued item 11c (idea 185): a harder real-data test with more room.
 - Queued item 2j (idea 174): do the inner rules learn more from a steadier sheet.
@@ -147,9 +147,14 @@ Queued, in order:
    linear reader gets 0.95 from the lived sheet, the sheet's own readout 0.72 and falling.
    Takes in item 9 (the weighted vote, the drift). This gap is now the largest number on
    the board.
-9a. *(running, idea 182)* The blob's own output: a ladder from the outside 16-bit
-   perceptron down to the engine's readout, the missing piece built in bits, the
-   loop closed with no outside part, then payment along the output's own wires.
+9b. *(running, idea 188)* The closed loop on the whole quick map as one setting, an
+   output rule for good-or-bad-only verdicts, why parity of 3 fell, one counter store.
+   Behind it: idea 187 (the predictor cells given the same output, so the prediction
+   loop closes inside the blob with no labels), then the closed loop on the delayed
+   rows with marks that last (idea 177's time result).
+9a. *(done, merged: docs/results-2026-11-26-output-inside.md, `scripts/outputinside.sh`;
+   the loop closed inside the blob: 0.956 to 0.961 / 0.759 to 0.776, its own answer
+   0.925 to 0.936 right online; one line up, one line down)*
 3c. *(done, merged: docs/results-2026-11-26-predict-every-event.md,
    `scripts/predevent.sh`; on delayed echo the cells learn the future from an outside
    predictor's errors; the sheet's own predictor cells are too poor; ideas 186 and 187

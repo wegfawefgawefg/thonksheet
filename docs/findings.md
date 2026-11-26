@@ -540,6 +540,37 @@ Each line is one job's result; most are on few seeds or unfinished, and are grad
   coin. Cost: four horizons run at about half speed. The plane store fights any
   rule that re-picks hidden cells from another store (competitive learning, the
   tags, the backward walk).
+- **The loop is closed inside the blob: its own output teaches its own cells
+  features, by local rules on whole numbers** (idea 182, queue item 9a,
+  docs/results-2026-11-26-output-inside.md, `scripts/outputinside.sh`; merged
+  2026-11-26). The blob's own output (`out_on`): each motor cell keeps a signed
+  counter per source it can hear; a line's vote is the counters summed over the
+  sources that fired. Told the right line, exactly two lines move: the right one
+  up, the highest wrong line that came too close down (`out_top 1`). Those two
+  lines are the error the one-hop rule hears (`hop_teach 6`), into every-event
+  counters. After a 60,000-digit life, fresh reader, 8 seeds, MNIST / pairs: the
+  setting fixed before the test digits 0.956 / 0.759; the setting picked on
+  validation afterwards (a 10-tick window, inhibitory and pacemaker cells learning
+  too) 0.961 / 0.776; born 0.925 / 0.677; coin 0.938 / 0.680; shuffled-digit life
+  0.926 / 0.670; the backprop teacher's wiring 0.966 / 0.785. Every seed over born,
+  coin and shuffled. The blob's own answer is right 0.925 to 0.936 online on MNIST
+  (the old readout: 0.68); the output alone on a sheet that does not learn 0.906.
+  With the rate held at target the gain is the same. What the old readout lacked
+  was not accuracy: it moved every button at every verdict, so what the lines share
+  drifted, and it sent the cells an error on two digits in three. An output right
+  0.71 of the time teaches as well as one right 0.90 if only two lines move. One
+  margin (2 steps' worth) serves both tests. Payment along the output's own sources
+  works with no hashed wires and is level with them. Costs and holes: the output
+  must be told the right line (nothing on good-or-bad-only tasks); the world reads
+  ten numbers, not spikes; parity of 3 fell (cells read 0.758 by the old fresh
+  readout against 0.919; born 0.552; cause not found); the second setting has no
+  shuffled life yet. 132 words a motor cell at 12 bits; a closed-loop MNIST life
+  runs at 38,400 ticks a second against 5,700 under the old readout. My re-run
+  from main, seeds 5 and 6, on the merged build: 0.9553 and 0.9563 on MNIST (coin
+  0.9359 and 0.9364, shuffled 0.9259 and 0.9271, born 0.9248 and 0.9272), 0.7654
+  and 0.7649 on pairs (coin 0.6821 and 0.6752, shuffled 0.6763 and 0.6742), the
+  second setting 0.9607 and 0.9615 / 0.7798 and 0.7797: the agent's numbers to the
+  digit.
 - **The owner's vvm converges once four things change** (idea 135): the input is written
   into the state, an operation leaves most bits alone, lookup is by nearness, and new
   inputs make their own detectors. It holds across 20 silent steps (1.00; the GRU 0.49),
@@ -1065,6 +1096,18 @@ docs/results-2026-11-25-mnist.md
     The two-button chain is passed by a coin on the first press; cap 64 helped MNIST
     online by letting motor cells fire six times their share. Look inside a pass
     before calling it learning, and give motor cells their own regulation.
+
+63. **One line up, one line down.** [likely: a ladder of 20 rungs on validation, the
+    closed loop on 8 test seeds] An output learns stably in narrow counters, one-bit
+    votes or spiking cells when a verdict moves the right line up and only the
+    highest too-close wrong line down. Any rule that brings several lines down for
+    one up drifts and fails. The same two lines are what the hidden cells need to
+    hear. Accuracy of the output matters less than this.
+64. **Local rules on bits make the inside learn features on real data.** [likely: one
+    engine, MNIST and the pair test, 8 seeds, coin, shuffled and rate-held controls,
+    re-run from main; one family of data; told the right answer] Within 0.005 /
+    0.009 of what a backprop teacher finds inside the same constraints. Not yet:
+    other data, good-or-bad only, time, and beside the other rules.
 
 ## What the literature adds (docs/mechanism-catalogue.md, docs/outside-catalogue.md)
 
