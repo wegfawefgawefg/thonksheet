@@ -1,5 +1,5 @@
+#include "blob/hop_state.hpp"
 #include "blob/random_words.hpp"
-#include "blob/tag_store.hpp"
 #include "blob/weight_levels.hpp"
 
 #include <cstdlib>
@@ -42,25 +42,12 @@
 // (or alone: hop_teach 0 sends no button errors). with places (blob_hop_error_places) a
 // prediction line reaches only the cells within `reach` cells of its sensor group, still with
 // a hashed sign (the predictive-coding form); without, the hashed wires as for the buttons.
-
-struct HopState {
-    uint64_t* near = nullptr; // HISTORY x (tile_count + 1) words, at the spike ring's index
-    int8_t* bounds = nullptr; // per neuron 8: lowest wired, highest unwired, lowest strong,
-                              // highest weak, each for excitatory and inhibitory sources
-    uint8_t* fresh = nullptr; // per neuron: the bounds are up to date
-    uint64_t salt = 0;
-    uint64_t pressed = 0, right = 0; // the lines of the step just judged
-    int lines = 0;
-    int pending = 0;
-    uint64_t counts[7] = {}; // see blob_hop_counts
-    int32_t rate[64] = {};   // hop_teach 3: each line's running rate of being right, x65536
-    // idea 164: the prediction errors waiting for the next tick, and the lines' places
-    int8_t pred_error[HOP_MAX_PRED] = {};
-    int pred_lines = 0, pred_pending = 0, pred_reach = 0;
-    int16_t pred_x[HOP_MAX_PRED] = {}, pred_y[HOP_MAX_PRED] = {};
-};
-
-enum { HOP_PRED_FIRST = 64 }; // prediction error line l is wire line HOP_PRED_FIRST + l
+//
+// idea 178 (docs/results-2026-11-26-every-event.md), each off by default: hop_bits keeps the
+// counters as bit planes wide enough to step on every marked input (hop_shift 0;
+// hop_planes.cpp); hop_teach 4, 5 take the output's own signed error per line
+// (hop_lines.cpp, which holds every button error); hop_who lets inhibitory, pacemaker and
+// motor cells learn too.
 
 enum { LOW_WIRED = 0, HIGH_UNWIRED = 2, LOW_STRONG = 4, HIGH_WEAK = 6 };
 
@@ -84,6 +71,9 @@ void hop_free(Blob& blob) {
     std::free(blob.hop->near);
     std::free(blob.hop->bounds);
     std::free(blob.hop->fresh);
+    std::free(blob.hop->ring_up);
+    std::free(blob.hop->ring_down);
+    hop_planes_free(*blob.hop);
     std::free(blob.hop);
     blob.hop = nullptr;
 }
@@ -130,9 +120,15 @@ void blob_hop_counts(const Blob& blob, uint64_t out[7]) {
     }
 }
 
-// which cells of tile t learn: hidden excitatory ones
+// which cells of tile t learn: hidden excitatory ones; with hop_who also inhibitory (1),
+// pacemaker (2) and motor (4) cells. sensor cells never
 static uint64_t learners(const Blob& blob, int t) {
-    return ~(blob.sensor[t] | blob.motor[t] | blob.pacemaker[t] | blob.inhibitory[t]);
+    int who = blob.genome.hop_who;
+    uint64_t out = blob.sensor[t];
+    out |= who & 1 ? 0 : blob.inhibitory[t];
+    out |= who & 2 ? 0 : blob.pacemaker[t];
+    out |= who & 4 ? 0 : blob.motor[t];
+    return ~out;
 }
 
 void hop_after_fire(Blob& blob) {
@@ -191,19 +187,6 @@ static int wire(const Blob& blob, const HopState& h, int shift, int n, int line)
     return (z >> 63) ? 1 : -1;
 }
 
-// which sources of slot k a neuron may wire (as tag_rewire), and which are inhibitory
-static uint64_t usable(const Blob& blob, int n, int k, uint32_t src) {
-    uint64_t u = src == (uint32_t)blob.tile_count ? 0 : ~0ull;
-    u &= k == 4 ? ~(1ull << (n % TILE_NEURONS)) : ~0ull;
-    u &= k >= LOCAL_SLOTS ? ~blob.inhibitory[src] : ~0ull;
-    u &= ~deep_blocked(blob, n, src);
-    return u;
-}
-
-static uint64_t kind_of(const Blob& blob, int k, uint32_t src) {
-    return k < LOCAL_SLOTS ? blob.inhibitory[src] : 0;
-}
-
 // exact bounds from the counters and the wiring
 static void bounds_make(Blob& blob, int n, int8_t* bd) {
     const int8_t* c = tag_row(blob, n);
@@ -215,8 +198,8 @@ static void bounds_make(Blob& blob, int n, int8_t* bd) {
     }
     for (int k = 0; k < SLOTS; k++) {
         uint32_t src = slot_source(blob, n, k);
-        uint64_t u = usable(blob, n, k, src);
-        uint64_t kind = kind_of(blob, k, src);
+        uint64_t u = hop_usable(blob, n, k, src);
+        uint64_t kind = hop_kind_of(blob, k, src);
         int64_t w = blob_weight_index(n, k);
         uint64_t wired = connected_bits(blob.w0[w], blob.w1[w]), strong = blob.w1[w];
         for (uint64_t m = u; m; m &= m - 1) {
@@ -247,7 +230,7 @@ static bool step_slot(Blob& blob, int n, int k, uint32_t src, uint64_t up, uint6
     int top = (1 << ((bits < 2 ? 2 : (bits > 8 ? 8 : bits)) - 1)) - 1;
     int64_t w = blob_weight_index(n, k);
     uint64_t wired = connected_bits(blob.w0[w], blob.w1[w]), strong = blob.w1[w];
-    uint64_t kind = kind_of(blob, k, src);
+    uint64_t kind = hop_kind_of(blob, k, src);
     bool cross = false;
     for (; up; up &= up - 1) {
         int b = __builtin_ctzll(up);
@@ -286,24 +269,42 @@ static bool step_slot(Blob& blob, int n, int k, uint32_t src, uint64_t up, uint6
     return cross;
 }
 
-// hop_teach 3: every line's error, target less its running rate (the coin control draws the
-// target line at random); then the rates move toward the targets
-static int target_errors(Blob& blob, HopState& h, int* line, int* sign) {
+// the same move on bit-plane counters (hop_bits): a slot's marked sources step together, and
+// the cell re-picks its top counters at once, or with hop_rewire_every when its turn comes
+static void move_cell_planes(Blob& blob, HopState& h, int n, bool more, uint32_t ages,
+                             int planes) {
     const Genome& g = blob.genome;
-    uint64_t right = h.right;
-    if (g.hop_coin) {
-        right = 1ull << rng_below(blob.rng, (uint32_t)h.lines);
+    uint64_t* row = hop_plane_row(blob, h, n);
+    int moved = 0;
+    for (int k = 0; k < SLOTS; k++) {
+        uint32_t src = slot_source(blob, n, k);
+        if (src == (uint32_t)blob.tile_count) {
+            continue;
+        }
+        int delay = blob.slot_delay[blob_weight_index(n, k)];
+        uint64_t mark = 0;
+        for (uint32_t a = ages; a; a &= a - 1) {
+            int age = __builtin_ctz(a);
+            if (age + delay > HISTORY - 1) {
+                break; // older than the ring keeps
+            }
+            mark |= blob.spikes[(blob.now - age - delay) & (HISTORY - 1)][src];
+        }
+        mark &= hop_usable(blob, n, k, src) & sparse_word(blob.rng, g.hop_shift);
+        uint64_t kind = hop_kind_of(blob, k, src);
+        uint64_t excite = mark & ~kind, inhibit = mark & kind;
+        moved += hop_planes_step(row + k * planes, planes, more ? excite : inhibit,
+                                 more ? inhibit : excite);
     }
-    int shift = g.hop_rate_shift < 1 ? 1 : (g.hop_rate_shift > 16 ? 16 : g.hop_rate_shift);
-    int count = 0;
-    for (int l = 0; l < h.lines; l++) {
-        int32_t target = (int32_t)((right >> l) & 1) << 16;
-        int32_t e = target - h.rate[l];
-        h.rate[l] += e / (1 << shift);
-        line[count] = l;
-        sign[count++] = e;
+    h.counts[2] += (uint64_t)moved;
+    if (moved == 0) {
+        return;
     }
-    return count;
+    if (g.hop_rewire_every > 0) {
+        h.dirty[n / TILE_NEURONS] |= 1ull << (n % TILE_NEURONS);
+        return;
+    }
+    h.counts[3] += hop_planes_rewire(blob, h, n);
 }
 
 // one taught cell: its marked sources move toward firing more (more) or less. ages: the
@@ -311,6 +312,11 @@ static int target_errors(Blob& blob, HopState& h, int* line, int* sign) {
 static void move_cell(Blob& blob, int n, bool more, uint32_t ages) {
     const Genome& g = blob.genome;
     HopState& h = *blob.hop;
+    int planes = hop_plane_count(g);
+    if (planes > 0) {
+        move_cell_planes(blob, h, n, more, ages, planes);
+        return;
+    }
     int8_t* bd = h.bounds + (size_t)n * 8;
     tag_row(blob, n);
     if (!h.fresh[n]) {
@@ -332,7 +338,7 @@ static void move_cell(Blob& blob, int n, bool more, uint32_t ages) {
             }
             mark |= blob.spikes[(blob.now - age - delay) & (HISTORY - 1)][src];
         }
-        mark &= usable(blob, n, k, src);
+        mark &= hop_usable(blob, n, k, src);
         if (!mark) {
             continue;
         }
@@ -340,7 +346,7 @@ static void move_cell(Blob& blob, int n, bool more, uint32_t ages) {
         if (!mark) {
             continue;
         }
-        uint64_t kind = kind_of(blob, k, src);
+        uint64_t kind = hop_kind_of(blob, k, src);
         uint64_t excite = mark & ~kind, inhibit = mark & kind;
         cross |= step_slot(blob, n, k, src, more ? excite : inhibit, more ? inhibit : excite, bd,
                            moved);
@@ -363,33 +369,8 @@ void learn_hop(Blob& blob) {
     int valence = blob.pending_valence;
     // the error lines: the buttons' (hop_teach 0: none), then the predictions'
     int line[HOP_PRED_FIRST + HOP_MAX_PRED], sign[HOP_PRED_FIRST + HOP_MAX_PRED], count = 0;
-    if (buttons && g.hop_teach == 3) {
-        count = target_errors(blob, h, line, sign);
-    }
-    for (int l = 0; buttons && g.hop_teach != 0 && g.hop_teach != 3 && l < h.lines; l++) {
-        bool pressed = (h.pressed >> l) & 1, right = (h.right >> l) & 1;
-        int e = 0;
-        if (valence < 0) {
-            e = pressed && !right ? -1 : (g.hop_teach == 2 && right && !pressed ? 1 : 0);
-        } else if (g.hop_good && pressed) {
-            e = 1;
-        }
-        if (e != 0) {
-            line[count] = l;
-            sign[count++] = e;
-        }
-    }
-    // the coin control: the same errors, each on a line of its kind drawn at random.
-    // hop_coin 2: on distinct lines, so errors never cancel on one line and as many cells
-    // are taught
-    for (int i = 0; g.hop_coin && g.hop_teach != 3 && i < count; i++) {
-        line[i] = (int)rng_below(blob.rng, (uint32_t)h.lines);
-        for (int j = 0; g.hop_coin == 2 && j < i; j++) {
-            if (line[j] == line[i]) {
-                line[i] = (int)rng_below(blob.rng, (uint32_t)h.lines);
-                j = -1;
-            }
-        }
+    if (buttons) {
+        count = hop_button_errors(blob, h, valence, line, sign);
     }
     int from_pred = count;
     for (int l = 0; h.pred_pending && l < h.pred_lines; l++) {
@@ -433,10 +414,22 @@ void learn_hop(Blob& blob) {
             for (int a = 1; a <= window; a++) {
                 ages |= (uint32_t)((near[a] >> b) & 1) << a;
             }
+            // hop_loose: one mark a verdict, a source on at any tick of the window
+            ages = g.hop_loose ? (uint32_t)((2u << window) - 2u) : ages;
             move_cell(blob, n, sum > 0, ages);
             taught++;
         }
     }
     h.counts[0]++;
     h.counts[1] += taught;
+    // hop_rewire_every: the cells whose counters moved re-pick together, every so many
+    // verdicts that taught
+    if (g.hop_rewire_every > 0 && h.dirty && h.counts[0] % (uint64_t)g.hop_rewire_every == 0) {
+        for (int t = 0; t < blob.tile_count; t++) {
+            for (uint64_t m = h.dirty[t]; m; m &= m - 1) {
+                h.counts[3] += hop_planes_rewire(blob, h, t * TILE_NEURONS + __builtin_ctzll(m));
+            }
+            h.dirty[t] = 0;
+        }
+    }
 }

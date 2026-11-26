@@ -41,6 +41,9 @@ struct Sheet {
     // shuffled by a permutation drawn fresh for that digit (same ink, no structure)
     int shuffle = 0;
     int teach = 0; // --life-teach: the life is judged (the readout and the hop rule learn)
+    // --life-outside (mnist_outside.cpp): while set, the hop rule's error lines come from a
+    // softmax layer outside the sheet that reads each digit's counts
+    struct Outside* outside = nullptr;
     uint64_t shuffle_rng = 0;
     std::vector<int> shuffle_cells, shuffle_perm;
     // the repeatability probes (mnist_repeat.cpp); 0 is off and changes nothing
@@ -73,6 +76,13 @@ struct RowsOut {
 };
 void rows_write(const RowsOut& train, const RowsOut& test, const std::vector<int>& cols,
                 const char* path);
+
+// the outside output of --life-outside (mnist_outside.cpp): made for a life, given each
+// digit's counts and answer, its share right since last asked
+Outside* outside_make(const Sheet& s, int argc, char** argv);
+void outside_free(Outside* o);
+void outside_digit(Sheet& s, const uint8_t* counts, int label);
+double outside_right(Outside& o);
 
 // own flags are read by the caller; everything else is blobrun's (task, plug, --g. numbers)
 bool sheet_start(Sheet& s, int argc, char** argv, const char* const* own, int own_count);

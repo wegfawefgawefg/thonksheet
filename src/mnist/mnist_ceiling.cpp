@@ -22,6 +22,11 @@
 //                  2 told the right button), and before the read the motor cells go back to
 //                  their born wiring, so the reader cannot read what the output learned
 //                  (docs/results-2026-11-25-hop.md)
+//   --life-outside 1   in that life the hop rule's error lines come from a softmax layer
+//                  outside the sheet (mnist_outside.cpp; idea 178), not from the buttons.
+//                  alone the life is not judged, so the sheet's readout does not learn
+//   --life-reborn 0    after a judged life the motor cells keep what they learned (for
+//                  lives in which they learned by the hop rule, --g.hop_who 4)
 //   --shift 1      the reader also scored on test digits moved 1 and 2 pixels
 //   --val 1        validation slice instead of the test set
 //   --pair 1|2     two half-size digits on the sheet, two buttons: 1 the parity of their
@@ -48,7 +53,9 @@ static const char* const ceiling_own[] = {
     "--shift",     "--val",         "--gap",          "--views",      "--scale",   "--live",
     "--live-coin", "--life",        "--life-shuffle", "--life-teach", "--pair",    "--pair-mix",
     "--describe",  "--wiring-load", "--rows-out",     "--twice",      "--rec-cut", "--delays-one",
-    "--pace-off",  "--read-freeze", "--reset-digit",  "--input-every", "--count-from", "--inh-fast"};
+    "--pace-off",  "--read-freeze", "--reset-digit",  "--input-every", "--count-from", "--inh-fast",
+    "--life-outside", "--life-outside-coin", "--life-reborn", "--outside-lr-1000",
+    "--outside-fine-1000"};
 
 // a copy of rows with only the given columns
 static void pick_columns(const Rows& in, const std::vector<int>& cols, Rows& out) {
@@ -176,10 +183,16 @@ int mnist_ceiling(int argc, char** argv) {
     s.blob->genome.hop_teach = s.teach > 0 ? s.teach : s.blob->genome.hop_teach;
     if (pretrain > 0) {
         s.shuffle = int_flag(argc, argv, "--life-shuffle", 0);
+        if (int_flag(argc, argv, "--life-outside", 0)) {
+            s.outside = outside_make(s, argc, argv);
+            s.blob->genome.hop_teach = 0; // the buttons send the rule nothing
+        }
         life_run(s, pretrain, 10, born);
         s.shuffle = 0;
+        outside_free(s.outside);
+        s.outside = nullptr;
     }
-    if (s.teach > 0) {
+    if (s.teach > 0 && int_flag(argc, argv, "--life-reborn", 1)) {
         blob_motor_reborn(*s.blob, s.flags.seed);
     }
     int64_t live = int_flag(argc, argv, "--live", 0);

@@ -41,7 +41,9 @@ static void tick_learn(Blob& blob, int read_now) {
         if (g.margin_percent && blob.pending_valence > 0) {
             thin = learn_margin(blob);
         }
-        if (thin || g.margin_win != 2) {
+        // hop_who 4: the motor cells learn by the one-hop rule, not the readout's
+        bool hop_motor = g.hop_on && (g.hop_who & 4);
+        if ((thin || g.margin_win != 2) && !hop_motor) {
             learn_readout(blob, blob.pending_valence);
         }
         if (mode == 5) {

@@ -296,6 +296,9 @@ void blob_mark_vote(Blob& blob, int pressed, int runner, const int* runner_cells
 // pressed (for a pattern answer, the group of each graded bit that won) and which were right.
 // written by the world before blob_reward; does nothing while hop_on is 0 (learn_hop.cpp)
 void blob_hop_lines(Blob& blob, uint64_t pressed, uint64_t right, int lines);
+// hop_on, hop_teach 4 or 5: each motor line's spikes in that step, written after
+// blob_hop_lines (hop_lines.cpp); unused by the other settings
+void blob_hop_votes(Blob& blob, const int* count, int lines);
 // hop_on, idea 164: the input lines' prediction errors as more error lines of the same rule
 // (+1 the line came on and was not predicted, -1 predicted and stayed off, 0 right), taught
 // on the next tick with the marks of the ticks before it, beside any button lines. nothing
