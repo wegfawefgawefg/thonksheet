@@ -66,6 +66,15 @@ ARMS = {
     # on the digits it is unsure of), or nothing of it (form 2: the answer as signs always)
     "outwhen": (outside(EV + " --outside-form 1"), "--life-outside-coin 1"),
     "outsigns": (outside(EV + " --outside-form 2"), "--life-outside-coin 1"),
+    # the softmax output with a wider fine zone (the ladder's was 0.1, not tuned)
+    "outf3": (outside(EV + " --outside-fine-1000 300"), "--life-outside-coin 1"),
+    "outf5": (outside(EV + " --outside-fine-1000 500"), "--life-outside-coin 1"),
+    # the outside output in whole numbers (a perceptron with a margin, no floats)
+    "outint": (outside(EV + " --outside-form 3"), "--life-outside-coin 1"),
+    "outint0": (outside(EV + " --outside-form 3 --outside-margin 0"), "--life-outside-coin 1"),
+    "outint1": (outside(EV + " --outside-form 3 --outside-margin 1"), "--life-outside-coin 1"),
+    "outint2": (outside(EV + " --outside-form 3 --outside-margin 2"), "--life-outside-coin 1"),
+    "outint32": (outside(EV + " --outside-form 3 --outside-margin 32"), "--life-outside-coin 1"),
     # piece 3 on it: who learns
     "ev3i": (judged(3, EV + INH), "--g.hop_coin 1"),
     "ev3all": (judged(3, EV + ALL + " --life-reborn 0"), "--g.hop_coin 1"),
@@ -78,6 +87,11 @@ ARMS = {
     "out": (outside(EV), "--life-outside-coin 1"),
     "outi": (outside(EV + INH), "--life-outside-coin 1"),
     "outall": (outside(EV + ALL), "--life-outside-coin 1"),
+    # the outside output's errors in a judged life, so the sheet's own readout learns beside
+    "outj": (" ".join(inside.RULE) + " --life-teach 3 --life-outside 1 " + EV,
+             "--life-outside-coin 1"),
+    "outintj": (" ".join(inside.RULE) + " --life-teach 3 --life-outside 1 " + EV +
+                " --outside-form 3 --outside-margin 2", "--life-outside-coin 1"),
     # the same errors and learners on the old counters (6-bit, chance 2^-3): the ladder's T7
     "out6all": (outside(HOP + " --g.hop_shift 3" + ALL), "--life-outside-coin 1"),
     # piece 4: the model's other differences, on out and on outall
@@ -85,6 +99,7 @@ ARMS = {
     "outloose": (outside(EV + " --g.hop_loose 1"), "--life-outside-coin 1"),
     "outboth": (outside(EV + " --g.hop_rewire_every 64 --g.hop_loose 1"), "--life-outside-coin 1"),
     "out9": (outside(HOP + " --g.hop_bits 9 --g.hop_shift 0"), "--life-outside-coin 1"),
+    "out16": (outside(HOP + " --g.hop_bits 16 --g.hop_shift 0"), "--life-outside-coin 1"),
     "outall64": (outside(EV + ALL + " --g.hop_rewire_every 64"), "--life-outside-coin 1"),
     "outallloose": (outside(EV + ALL + " --g.hop_loose 1"), "--life-outside-coin 1"),
     "outallboth": (outside(EV + ALL + " --g.hop_rewire_every 64 --g.hop_loose 1"),
@@ -103,19 +118,37 @@ RECIPES = {
     "pick2": {"kind": "sheet", "val": True, "seeds": [1, 2], "arms": [
         "ev3bal", "ev5bal", "ev2", "ev5f4", "ev5f16", "outwhen", "outsigns"],
         "coins": [], "shuffled": []},
+    "pick3": {"kind": "sheet", "val": True, "seeds": [1, 2], "arms": [
+        "outint", "outint2", "outint32", "out16"], "coins": [], "shuffled": []},
+    "pick5": {"kind": "sheet", "val": True, "seeds": [1, 2], "arms": [
+        "outint0", "outint1"], "coins": [], "shuffled": []},
+    "pick6": {"kind": "sheet", "val": True, "seeds": [1, 2], "arms": ["outf3", "outf5"],
+              "coins": [], "shuffled": []},
     # piece 4 on the validation slice (only if pieces 1 to 3 leave a gap)
     "pick4": {"kind": "sheet", "val": True, "seeds": [1, 2], "arms": [
         "out64", "outloose", "outboth", "out9", "outallboth"], "coins": [], "shuffled": []},
-    # the report: test digits, seeds 5-12, each beside born, its coin and its shuffled life
+    # the report: test digits, seeds 5-12, the key arms beside born, coin and shuffled lives
     "report": {"kind": "sheet", "val": False, "seeds": list(range(5, 13)), "arms": [
-        "born", "old", "ev3", "outall"], "coins": ["old", "ev3", "outall"],
-        "shuffled": ["ev3", "outall"]},
-    # the rate held at target, seeds 5-8
+        "born", "out", "outall", "outint2"], "coins": ["out", "outall", "outint2"],
+        "shuffled": ["out", "outall", "outint2"]},
+    # the pieces beside them, seeds 5-8 (same folder as report: one table)
+    "pieces": {"kind": "sheet", "val": False, "seeds": [5, 6, 7, 8], "folder": "report", "arms": [
+        "born", "old", "ev3", "ev2", "ev5", "out6all", "outi", "out", "outall", "outint2"],
+        "coins": ["ev3", "ev5", "out", "outall", "outint2"], "shuffled": []},
+    # the rate held at target, MNIST, seeds 5-8
     "cap": {"kind": "sheet", "val": False, "seeds": [5, 6, 7, 8], "extra": CAP,
-            "arms": ["born", "outall"], "coins": ["outall"], "shuffled": []},
-    # the sheet's own readout during the life and the life's speed: run alone (--jobs 1)
-    "speed": {"kind": "sheet", "val": False, "seeds": [5], "arms": ["off", "old", "ev3"],
-              "coins": [], "shuffled": [], "tests": ["mnist"]},
+            "arms": ["born", "out", "outall"], "coins": ["out", "outall"], "shuffled": [],
+            "tests": ["mnist"]},
+    # the sheet's own readout during a judged MNIST life, seeds 5-8: the rule off, the old
+    # rule, every-event from the answer and from the votes, and the outside errors
+    "online": {"kind": "sheet", "val": False, "seeds": [5, 6, 7, 8], "folder": "report",
+               "arms": ["off", "old", "ev3", "ev2", "ev5", "outj", "outintj"], "coins": [],
+               "shuffled": []},
+    # the life's speed, one run at a time (--jobs 1): judged MNIST lives and unjudged ones
+    # (20,000-digit lives and a short read: only the t/s column means anything)
+    "speed": {"kind": "sheet", "val": False, "seeds": [5], "arms": [
+        "off", "old", "ev3", "ev3b6", "outj", "out6all", "out", "out64", "outall", "outint2"],
+        "coins": [], "shuffled": [], "tests": ["mnist"], "life": (20000, 2000)},
     # the toys the old rule taught: told the answer on bad steps (hop_teach 2), old against
     # every-event counters
     "toys": {"kind": "toy", "tasks": ["xor", "parity3"], "seeds": list(range(5, 13)), "settings": [
@@ -148,7 +181,8 @@ def sheet_runs(r):
 
 def sheet_jobs(r, outdir, quick):
     jobs = []
-    life, fit = (3000, 5000) if quick else (60000, 60000)
+    life, fit = (3000, 5000) if quick else r.get("life", (60000, 60000))
+    short = quick or "life" in r
     for test in r.get("tests", list(TESTS)):
         for name, flags in sheet_runs(r):
             for s in r["seeds"]:
@@ -158,7 +192,7 @@ def sheet_jobs(r, outdir, quick):
                     cmd += ["--life", str(life)] + flags.split()
                 cmd += TESTS[test].split() + r.get("extra", "").split()
                 cmd += ["--val", "1"] if r["val"] else []
-                cmd += ["--test-count", "2000"] if quick else []
+                cmd += ["--test-count", "2000"] if short else []
                 jobs.append((cmd, os.path.join(outdir, "%s-%s-%d.txt" % (test, name, s))))
     return jobs
 
@@ -259,7 +293,8 @@ def one(name, r, opt):
     quick = opt["quick"]
     if quick and "seeds" in r:
         r["seeds"] = r["seeds"][:1]
-    outdir = os.path.join(ROOT, "out", "everyevent", name + ("-quick" if quick else ""))
+    outdir = os.path.join(ROOT, "out", "everyevent",
+                          r.get("folder", name) + ("-quick" if quick else ""))
     os.makedirs(outdir, exist_ok=True)
     kind = r["kind"]
     if kind == "sheet":
@@ -274,7 +309,8 @@ def one(name, r, opt):
             list(pool.map(hop2.run, jobs))
     text = table()
     print(text)
-    open(os.path.join(outdir, "table.txt"), "w").write(text + "\n")
+    open(os.path.join(outdir, "table%s.txt" % ("-" + name if "folder" in r else "")),
+         "w").write(text + "\n")
 
 
 def main():

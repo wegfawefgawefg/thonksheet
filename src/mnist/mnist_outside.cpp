@@ -21,6 +21,13 @@
 //                           line it has under 1 - fine, the cells get the answer (the right
 //                           line higher, every other line lower); on the rest nothing
 //   --outside-form 2        no fine zone: the answer as signs on every digit
+//   --outside-form 3        the same job in whole numbers, no floats: a 16-bit weight per
+//                           line per cell, a line's vote is its weights times the counts,
+//                           and a perceptron step with a margin: a wrong line whose vote is
+//                           within --outside-margin N (8) steps' worth of the right line's
+//                           loses the counts and is told "lower", and the right line then
+//                           gains them and is told "higher". a hint that the output the
+//                           rule needs can be built from integers
 
 struct Outside {
     std::vector<int> cols;  // the non-sensor cells
@@ -28,7 +35,8 @@ struct Outside {
     std::vector<float> bias, x;
     int lines = 0;
     float lr = 0.3f, fine = 0.1f;
-    int coin = 0, form = 0;
+    int coin = 0, form = 0, margin = 8;
+    std::vector<int16_t> w; // form 3: lines x cols
     std::vector<int8_t> ring; // the last 256 digits' error signs
     int64_t ring_count = 0;
     uint64_t rng = 0x6f757473696465ull;
@@ -51,6 +59,8 @@ Outside* outside_make(const Sheet& s, int argc, char** argv) {
     o->fine = (float)int_flag(argc, argv, "--outside-fine-1000", 100) / 1000.0f;
     o->coin = int_flag(argc, argv, "--life-outside-coin", 0);
     o->form = int_flag(argc, argv, "--outside-form", 0);
+    o->margin = int_flag(argc, argv, "--outside-margin", 8);
+    o->w.assign(o->form == 3 ? (size_t)o->lines * o->cols.size() : 0, 0);
     o->ring.assign((size_t)256 * (size_t)o->lines, 0);
     return o;
 }
@@ -65,10 +75,61 @@ double outside_right(Outside& o) {
     return share;
 }
 
+// form 3: the whole-number output's answer, error signs and step for one digit
+static void whole_digit(Outside& o, const uint8_t* counts, int label, int8_t* sign) {
+    size_t d = o.cols.size();
+    int64_t vote[PLUG_MAX_MOTOR_LINES], size = 0;
+    int best = 0;
+    for (size_t j = 0; j < d; j++) {
+        size += (int64_t)counts[o.cols[j]] * counts[o.cols[j]];
+    }
+    for (int l = 0; l < o.lines; l++) {
+        const int16_t* row = &o.w[(size_t)l * d];
+        int64_t a = 0;
+        for (size_t j = 0; j < d; j++) {
+            a += (int64_t)row[j] * counts[o.cols[j]];
+        }
+        vote[l] = a;
+        best = a > vote[best] ? l : best;
+    }
+    o.right += best == label;
+    o.seen++;
+    // one step moves a line's vote by `size`; too close is within `margin` steps
+    auto step = [&](int l, int dir) {
+        int16_t* row = &o.w[(size_t)l * d];
+        for (size_t j = 0; j < d; j++) {
+            int v = row[j] + dir * counts[o.cols[j]];
+            row[j] = (int16_t)(v > 32767 ? 32767 : (v < -32767 ? -32767 : v));
+        }
+    };
+    bool any = false;
+    for (int l = 0; l < o.lines; l++) {
+        bool close = l != label && vote[l] + o.margin * size > vote[label];
+        sign[l] = (int8_t)(close ? -1 : 0);
+        any |= close;
+        if (close) {
+            step(l, -1);
+        }
+    }
+    if (any && label >= 0 && label < o.lines) {
+        sign[label] = 1;
+        step(label, 1);
+    }
+}
+
+// the signs to the blob; the coin control swaps them for another digit's first
+static void send_signs(Sheet& s, Outside& o, int8_t* sign);
+
 // one digit of the life: the layer answers, its error signs go to the blob, it learns
 void outside_digit(Sheet& s, const uint8_t* counts, int label) {
     Outside& o = *s.outside;
     size_t d = o.cols.size();
+    if (o.form == 3) {
+        int8_t sign[PLUG_MAX_MOTOR_LINES];
+        whole_digit(o, counts, label, sign);
+        send_signs(s, o, sign);
+        return;
+    }
     float size = 0;
     for (size_t j = 0; j < d; j++) {
         o.x[j] = (float)counts[o.cols[j]];
@@ -109,6 +170,10 @@ void outside_digit(Sheet& s, const uint8_t* counts, int label) {
         }
         o.bias[(size_t)l] -= step * e;
     }
+    send_signs(s, o, sign);
+}
+
+static void send_signs(Sheet& s, Outside& o, int8_t* sign) {
     if (o.coin) {
         // this digit's signs go into the ring, another digit's come out (splitmix64)
         int64_t kept = o.ring_count < 256 ? o.ring_count : 256;

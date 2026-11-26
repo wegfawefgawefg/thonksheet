@@ -4,10 +4,14 @@
 # is a fixed recipe in scripts/everyevent.py:
 #   pick      every arm on the validation slice, seeds 1 and 2, MNIST and the pair test
 #   pick4     the model's other differences (re-pick every 64, one mark a digit, 9 bits)
-#   report    the key arms on test digits, seeds 5-12, beside born, coin and shuffled lives
-#   cap       the best arm with the rate held at target, seeds 5-8
-#   speed     the rule off, the old rule and every-event in one judged MNIST life each:
-#             the sheet's own readout and the life's ticks a second (run with --jobs 1)
+#   pick2     after pick: each cell taught "more" and "less" equally often, other margins,
+#             told the right button, and which part of the outside output's error matters
+#   report    the key arms (out, outall) on test digits, seeds 5-12, beside born, their coin
+#             and their shuffled-digit lives
+#   pieces    the other arms beside them, seeds 5-8 (same folder as report)
+#   cap       the key arms with the rate held at target, MNIST, seeds 5-8
+#   online    the sheet's own readout during a judged MNIST life, seeds 5-8 (report's folder)
+#   speed     one MNIST life each, alone (--jobs 1): the life's ticks a second
 #   toys      xor and parity of 3: the old rule against every-event counters, seeds 5-12
 #   calc      the calc held-out columns (xor4, add4), seeds 5 and 6
 #   smoke     one seed, every part (use with --quick)
