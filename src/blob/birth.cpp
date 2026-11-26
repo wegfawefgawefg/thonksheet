@@ -4,6 +4,7 @@
 #include "blob/long_memory.hpp"
 #include "blob/critic.hpp"
 #include "blob/random_words.hpp"
+#include "blob/regulate_rate.hpp"
 #include "blob/tag_store.hpp"
 #include "blob/tick_steps.hpp"
 #include "blob/weight_levels.hpp"
@@ -365,6 +366,7 @@ void blob_free(Blob* blob) {
     std::free(blob->replay); // one block (blob/replay.hpp)
     hop_free(*blob);
     compete_free(*blob);
+    rate_free(*blob);
     long_memory_free(*blob);
     delete blob;
 }

@@ -214,6 +214,14 @@ static const GenomeField fields[] = {
     {"actor_unjudged", &Genome::actor_unjudged},
     {"replay_bad_only", &Genome::replay_bad_only},
     {"sector_step_shift", &Genome::sector_step_shift},
+    {"rate_band_shift", &Genome::rate_band_shift},
+    {"rate_band_low", &Genome::rate_band_low},
+    {"rate_band_high", &Genome::rate_band_high},
+    {"rate_band_step", &Genome::rate_band_step},
+    {"threshold_reg_until", &Genome::threshold_reg_until},
+    {"threshold_late_shift", &Genome::threshold_late_shift},
+    {"sector_gain", &Genome::sector_gain},
+    {"rate_band_motor", &Genome::rate_band_motor},
 };
 
 void apply_genome_args(int argc, char** argv, Genome& g) {
