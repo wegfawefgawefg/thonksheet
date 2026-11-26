@@ -4,7 +4,7 @@ about,flags,,,,,,--g.learn_mode 5 --g.readout_evidence 1 --g.readout_shift 4 --g
 about,life,,,,,,--ticks 20 --sensor-side 3 --motor-side 3 --steps 40000 --window 1000
 about,seeds,,,,,,5 6 7 8 9 10 11 12
 about,date,,,,,,2026-11-25
-about,commit,,,,,,
+about,commit,,,,,,"31f5c1f (matched by its genome file; run on stevejobs)"
 about,wall,,,,,,"1195 min, 2 runs at a time"
 about,speed,,,,,,"single core under nice -n 19, CPU clock capped at about 4.6 GHz, other agents' runs on the machine: not comparable with quiet runs"
 about,frozen readout,,,,,,yes
